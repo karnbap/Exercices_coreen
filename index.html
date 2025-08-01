@@ -275,7 +275,6 @@
     </div>
 
     <script>
-        const apiKey = ""; 
         let currentAudio = null;
 
         function base64ToArrayBuffer(base64) {
@@ -330,28 +329,21 @@
             }
 
             try {
-                const payload = {
-                    contents: [{ parts: [{ text: text }] }],
-                    generationConfig: {
-                        responseModalities: ["AUDIO"],
-                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
-                    },
-                    model: "gemini-2.5-flash-preview-tts"
-                };
-
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, {
+                // *** CHANGEMENT CLÉ : On appelle notre propre fonction serveur ***
+                const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ text: text }) // On envoie le texte à notre fonction
                 });
                 
-                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `La requête a échoué: ${response.status}`);
+                }
 
                 const result = await response.json();
-                const part = result?.candidates?.[0]?.content?.parts?.[0];
-                const audioData = part?.inlineData?.data;
-                const mimeType = part?.inlineData?.mimeType;
+                const audioData = result.audioData;
+                const mimeType = result.mimeType;
 
                 if (audioData && mimeType && mimeType.startsWith("audio/")) {
                     const sampleRateMatch = mimeType.match(/rate=(\d+)/);
@@ -367,10 +359,10 @@
                         buttonElement.innerHTML = originalContent;
                     };
                 } else {
-                    throw new Error("Invalid audio data in response.");
+                    throw new Error("Données audio invalides dans la réponse du serveur.");
                 }
             } catch (error) {
-                console.error("Error generating or playing audio:", error);
+                console.error("Erreur lors de la génération ou de la lecture audio:", error);
                 buttonElement.classList.remove('loading');
                 buttonElement.innerHTML = originalContent;
             }
