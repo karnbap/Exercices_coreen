@@ -55,7 +55,7 @@
                          <td class="p-4 border-b text-gray-600">
                              <strong class="text-lg text-gray-800">Lie une information au verbe.</strong>
                              <p class="mt-2">Spécifie des informations complémentaires comme le <strong>temps</strong>, le <strong>lieu (statique/destination)</strong>, ou le <strong>prix</strong>.</p>
-                             <em class="block mt-2 text-gray-500">Ex: <strong>3시에</strong> 만나요 (Temps), <strong>집에</strong> 있어요 (Lieu), 한 개<strong>에</strong> 천 원 (Prix).</em>
+                             <em class="block mt-2 text-gray-500">Ex: <strong>3시에</strong> 만나요 (On se voit à 3h), <strong>집에</strong> 있어요 (Je suis à la maison), 한 개<strong>에</strong> 천 원 (1000 won par pièce).</em>
                          </td>
                      </tr>
                      <tr class="hover:bg-amber-50">
@@ -63,7 +63,7 @@
                          <td class="p-4 border-b text-gray-600">
                             <strong class="text-lg text-gray-800">Indique le point de départ.</strong>
                             <p class="mt-2">Marque l'origine d'une <strong>action</strong> (lieu où elle se déroule), d'un <strong>trajet</strong>, ou d'un <strong>changement d'état</strong>.</p>
-                            <em class="block mt-2 text-gray-500">Ex: <strong>도서관에서</strong> 공부해요 (Action), <strong>서울에서</strong> 왔어요 (Trajet), <strong>학생에서</strong> 선생님이 되었어요 (État).</em>
+                            <em class="block mt-2 text-gray-500">Ex: <strong>도서관에서</strong> 공부해요 (J'étudie à la bibliothèque), <strong>서울에서</strong> 왔어요 (Je viens de Séoul), <strong>학생에서</strong> 선생님이 되었어요 (Je suis devenu professeur).</em>
                          </td>
                      </tr>
                  </tbody>
@@ -180,9 +180,15 @@
                                 <button onclick="checkChoiceAnswer('${q.id}', '에서')" class="btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">에서</button>
                              </div>`;
                 } else { // write or listen
+                    let questionText = q.text;
+                    if (sectionType === 'write') {
+                        questionText = q.text.replace('( ? )', `<input type="text" id="${q.id}-input" class="w-20 text-center">`);
+                    } else { // listen
+                        questionText = `<input type="text" id="${q.id}-input" class="w-full" placeholder="Écrivez ce que vous entendez...">`;
+                    }
                     html += `<p class="font-semibold">${isLocationQuestion ? 'Étape 2 : ' : ''}Complétez la phrase et vérifiez.</p>
                              <div class="mt-2 flex items-center space-x-2">
-                                <div class="w-full text-lg">${q.text.replace('( ? )', `<input type="text" id="${q.id}-input" class="w-20 text-center">`)}</div>
+                                <div class="w-full text-lg">${questionText}</div>
                                 <button onclick="checkWrittenAnswer('${q.id}')" class="btn btn-primary px-4 py-2 rounded-lg">Vérifier</button>
                              </div>`;
                 }
@@ -198,7 +204,7 @@
         function checkAnalysis(questionId, userChoice) {
             const feedbackEl = document.getElementById(`feedback-analysis-${questionId}`);
             const answerSectionEl = document.getElementById(`answer-section-${questionId}`);
-            const question = [...questions.read, ...questions.write].find(q => q.id === questionId);
+            const question = [...questions.read, ...questions.write, ...questions.listen].find(q => q.id === questionId);
             const correctType = (question.verbType === 'action' || question.verbType === 'origin') ? 'action' : 'state';
 
             feedbackEl.style.display = 'block';
@@ -275,4 +281,4 @@
         document.addEventListener('DOMContentLoaded', renderAllSections);
     </script>
 </body>
-</html>
+</ht
