@@ -2,24 +2,50 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Devoirs de Coréen</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devoirs de Coréen - Accueil</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-    <div class="text-center bg-white p-10 rounded-lg shadow-lg">
-        <h1 class="text-3xl font-bold text-indigo-600 mb-6">숙제 목록</h1>
-        <ul class="space-y-4">
-            <li>
-                <a href="/assignments/homework-01.html" class="text-xl text-blue-500 hover:underline">
-                     devoirs pour le 05/08/2025
-                </a>
-            </li>
-            <li>
-                <a href="/assignments/homework-02.html" class="text-xl text-blue-500 hover:underline">
-                    devoirs pour le 12/08/2025
-                </a>
-            </li>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl text-center bg-white p-8 md:p-12 rounded-2xl shadow-lg">
+        <header>
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-600 mb-4">숙제 목록</h1>
+            <p class="text-gray-600 mb-8">아래 목록에서 숙제를 선택하세요.</p>
+        </header>
+
+        <main>
+            <ul class="space-y-4 text-left">
+                
+                <!-- === 숙제 링크 1 === -->
+                <li>
+                    <a href="assignments/kimchi.html" 
+                       class="block w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-indigo-100 transition">
+                        <span class="text-xl font-semibold text-indigo-700">Devoirs pour 김치찌개 + la négation</span>
+                        <span class="block text-gray-500 mt-1"> Excercices pour 김치찌개 + la négation .</span>
+                    </a>
+                </li>
+
+
+                <!-- === Julie의 숙제 링크 (경로 수정됨) === -->
+                <li>
+                    <!-- Julie의 파일도 assignments 폴더 안에 있도록 경로를 수정했습니다. -->
+                    <a href="assignments/Julie020825.html" 
+                       class="block w-full text-left p-4 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition border border-yellow-200">
+                        <span class="text-xl font-semibold text-yellow-800">Devoirs pour Julie (02/08/2025)</span>
+                        <span class="block text-gray-500 mt-1">Exercices de révision personnalisés.</span>
+                    </a>
+                </li>
+
             </ul>
+        </main>
     </div>
+
 </body>
 </html>
