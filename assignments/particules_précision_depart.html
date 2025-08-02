@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice : particules de précision et de départ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; }
+        .quiz-container { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #f9fafb; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .btn { transition: all 0.3s ease; }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-secondary { background-color: #6b7280; color: white; }
+        .btn-secondary:hover { background-color: #4b5563; }
+        .btn-audio { background-color: #f59e0b; color: white; }
+        .btn-audio:hover { background-color: #d97706; }
+        .feedback { font-size: 1rem; font-weight: bold; margin-top: 0.5rem; padding: 0.5rem; border-radius: 0.5rem; display: none; }
+        .feedback.correct { color: #16a34a; background-color: #dcfce7; }
+        .feedback.incorrect { color: #dc2626; background-color: #fee2e2; }
+        .answer-key { background-color: #eef2ff; border: 1px solid #c7d2fe; padding: 0.75rem; border-radius: 0.5rem; color: #4338ca; font-weight: 500; }
+        input[type="text"] { border: 2px solid #d1d5db; border-radius: 0.5rem; padding: 0.5rem 0.75rem; transition: border-color 0.3s; }
+        input[type="text"]:focus { outline: none; border-color: #3b82f6; }
+        .tip-box { background-color: #fefce8; border-left: 4px solid #facc15; padding: 1rem; margin-top: 1.5rem; }
+        .hint-box { font-size: 0.9rem; color: #4b5563; background-color: #f3f4f6; padding: 0.5rem; border-radius: 0.5rem; margin-top: 0.5rem; }
+        .analysis-box { background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+        .question-block { padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; background-color: white; }
+        .section-title { border-bottom: 2px solid #3b82f6; padding-bottom: 0.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="quiz-container">
+        <div class="text-center mb-8">
+            <a href="/index.html" class="text-indigo-600 hover:text-indigo-800 mb-4 block">&larr; Retour à la liste</a>
+            <h1 class="text-4xl font-bold text-gray-800">연습 문제: '에' vs '에서' (심화)</h1>
+            <p class="text-gray-600 mt-2">Exercices pour maîtriser les usages variés de '에' et '에서'.</p>
+        </div>
+
+        <!-- 설명 -->
+        <div class="mb-12 p-6 bg-white rounded-lg shadow-sm">
+             <h2 class="text-2xl font-semibold text-blue-700 mb-4">📌 Concepts Clés : '에' vs '에서'</h2>
+             <table class="w-full text-left border-collapse">
+                 <thead>
+                     <tr>
+                         <th class="border-b-2 p-4 text-lg font-bold text-gray-700">Particule</th>
+                         <th class="border-b-2 p-4 text-lg font-bold text-gray-700">Concept Principal</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     <tr class="hover:bg-blue-50">
+                         <td class="p-4 border-b font-mono text-xl text-blue-600 align-top">에</td>
+                         <td class="p-4 border-b text-gray-600">
+                             <strong class="text-lg text-gray-800">Lie une information au verbe.</strong>
+                             <p class="mt-2">Spécifie des informations complémentaires comme le <strong>temps</strong>, le <strong>lieu (statique/destination)</strong>, ou le <strong>prix</strong>.</p>
+                             <em class="block mt-2 text-gray-500">Ex: <strong>3시에</strong> 만나요 (Temps), <strong>집에</strong> 있어요 (Lieu), 한 개<strong>에</strong> 천 원 (Prix).</em>
+                         </td>
+                     </tr>
+                     <tr class="hover:bg-amber-50">
+                         <td class="p-4 border-b font-mono text-xl text-amber-600 align-top">에서</td>
+                         <td class="p-4 border-b text-gray-600">
+                            <strong class="text-lg text-gray-800">Indique le point de départ.</strong>
+                            <p class="mt-2">Marque l'origine d'une <strong>action</strong> (lieu où elle se déroule), d'un <strong>trajet</strong>, ou d'un <strong>changement d'état</strong>.</p>
+                            <em class="block mt-2 text-gray-500">Ex: <strong>도서관에서</strong> 공부해요 (Action), <strong>서울에서</strong> 왔어요 (Trajet), <strong>학생에서</strong> 선생님이 되었어요 (État).</em>
+                         </td>
+                     </tr>
+                 </tbody>
+             </table>
+
+             <div class="tip-box">
+                 <p class="font-bold text-lg text-yellow-800 flex items-center"><i class="fas fa-lightbulb mr-3"></i>L'astuce pour ne plus se tromper !</p>
+                 <p class="mt-2 text-gray-700">Quand on utilise '에', on connecte une information (lieu, temps, prix) au verbe.</p>
+                 <p class="mt-2 text-gray-700">Mais si le verbe décrit une <strong>ACTION</strong>, on ajoute <strong>"서"</strong> à "에" pour montrer le point de départ de cette action.</p>
+                 <ul class="list-disc list-inside mt-2 pl-2 text-gray-700">
+                     <li><strong>에</strong> = Lie la destination / le lieu à un verbe d'état.</li>
+                     <li><strong>에 + 서</strong> = Montre qu'une <strong>action</strong> se déroule à cet endroit.</li>
+                 </ul>
+                 <p class="mt-3 font-semibold text-gray-800">Donc, quand un lieu apparaît, demandez-vous : le verbe décrit une <strong>action</strong> ou un <strong>état</strong> ? C'est la clé !</p>
+             </div>
+        </div>
+
+        <!-- 듣기 연습 -->
+        <div class="mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 section-title">듣기 (Compréhension orale) - 10개</h2>
+            <p class="text-gray-600 mb-6">Écoutez la phrase et complétez l'exercice.</p>
+            <div id="listening-questions" class="space-y-6">
+                <!-- Questions will be dynamically inserted here -->
+            </div>
+            <button onclick="showAllAnswers('listen')" class="btn btn-secondary mt-6 px-4 py-2 rounded-lg">Voir toutes les réponses</button>
+        </div>
+    </div>
+
+    <script>
+        const listeningQuestions = [
+            { id: 'listen1', type: 'choice', text: 'Écoutez et choisissez.', sentence: '친구를 카페에서 만나요.', options: ['친구를 카페에 만나요.', '친구를 카페에서 만나요.'], correctAnswer: 'B' },
+            { id: 'listen2', type: 'choice', text: 'Écoutez et choisissez.', sentence: '수업은 세 시에 시작해요.', options: ['수업은 3시에 시작해요.', '수업은 3시에서 시작해요.'], correctAnswer: 'A' },
+            { id: 'listen3', type: 'choice', text: 'Écoutez et choisissez.', sentence: '저는 시장에 가요.', options: ['저는 시장에 가요.', '저는 시장에서 가요.'], correctAnswer: 'A' },
+            { id: 'listen4', type: 'choice', text: 'Écoutez et choisissez.', sentence: '12월에 눈이 많이 와요.', options: ['12월에 눈이 많이 와요.', '12월에서 눈이 많이 와요.'], correctAnswer: 'A' },
+            { id: 'listen5', type: 'dictation', text: 'Écoutez et écrivez la phrase.', sentence: '집에서 학교까지 걸어서 10분 걸려요.' },
+            { id: 'listen6', type: 'dictation', text: 'Écoutez et écrivez la phrase.', sentence: '이 식당에서 자주 저녁을 먹어요.' },
+            { id: 'listen7', type: 'dictation', text: 'Écoutez et écrivez la phrase.', sentence: '약속은 6시 30분에 있어요.' },
+            { id: 'listen8', type: 'dictation', text: 'Écoutez et écrivez la phrase.', sentence: '저는 파리에서 태어났어요.' },
+            { id: 'listen9', type: 'dictation', text: 'Écoutez et écrivez la phrase.', sentence: '이 가방은 얼마에 사셨어요?' },
+            { id: 'listen10', type: 'dictation', text: 'Écoutez et écrivez la phrase.', sentence: '저는 매일 아침 8시에 회사에 가요.' }
+        ];
+
+        function renderListeningQuestions() {
+            const container = document.getElementById('listening-questions');
+            let html = '';
+            listeningQuestions.forEach((q, index) => {
+                html += `<div class="question-block">`;
+                html += `<p class="text-lg mb-2">${index + 1}. ${q.text}</p>`;
+                html += `<button onclick="speak(this, '${q.sentence}')" class="btn btn-audio px-4 py-2 rounded-lg mb-2"><i class="fas fa-play mr-2"></i> Écouter</button>`;
+                if (q.type === 'choice') {
+                    html += `<div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                                <button onclick="checkChoiceAnswer('${q.id}', 'A')" class="btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 w-full text-left">A) ${q.options[0]}</button>
+                                <button onclick="checkChoiceAnswer('${q.id}', 'B')" class="btn px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 w-full text-left">B) ${q.options[1]}</button>
+                             </div>`;
+                    html += `<div id="feedback-${q.id}" class="feedback"></div><div id="answer-${q.id}" class="hidden mt-2 answer-key">Réponse: <strong>${q.correctAnswer}) ${q.options[q.correctAnswer === 'A' ? 0 : 1]}</strong></div>`;
+                } else { // dictation
+                    html += `<div class="flex items-center space-x-2">
+                                <input type="text" id="${q.id}-input" class="w-full" placeholder="Écrivez ce que vous entendez...">
+                                <button onclick="checkWrittenAnswer('${q.id}')" class="btn btn-primary px-4 py-2 rounded-lg">Vérifier</button>
+                             </div>`;
+                    html += `<div id="feedback-${q.id}" class="feedback"></div><div id="answer-${q.id}" class="hidden mt-2 answer-key">Réponse: <strong>${q.sentence}</strong></div>`;
+                }
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function checkChoiceAnswer(questionId, selectedAnswer) {
+            const feedbackEl = document.getElementById(`feedback-${questionId}`);
+            const question = listeningQuestions.find(q => q.id === questionId);
+            const isCorrect = question.correctAnswer === selectedAnswer;
+            
+            feedbackEl.style.display = 'block';
+            if(isCorrect) {
+                feedbackEl.innerHTML = 'Parfait ! 🎉';
+                feedbackEl.className = 'feedback correct';
+            } else {
+                feedbackEl.innerHTML = 'Incorrect. Essayez encore !';
+                feedbackEl.className = 'feedback incorrect';
+            }
+        }
+
+        function checkWrittenAnswer(questionId) {
+            const inputEl = document.getElementById(`${questionId}-input`);
+            const feedbackEl = document.getElementById(`feedback-${questionId}`);
+            const userAnswer = inputEl.value.trim().replace(/[.,!?;]/g, '');
+            const question = listeningQuestions.find(q => q.id === questionId);
+            const correctAnswer = question.sentence.replace(/[.,!?;]/g, '');
+            
+            const isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+            
+            feedbackEl.style.display = 'block';
+            if (isCorrect) {
+                feedbackEl.innerHTML = 'Parfait ! 🎉';
+                feedbackEl.className = 'feedback correct';
+            } else {
+                feedbackEl.innerHTML = 'Ce n\'est pas tout à fait ça. Vérifiez la phrase.';
+                feedbackEl.className = 'feedback incorrect';
+            }
+        }
+        
+        function showAllAnswers(section) {
+            const answerKeys = document.querySelectorAll(`[id^=answer-${section}]`);
+            answerKeys.forEach(el => el.classList.remove('hidden'));
+        }
+
+        // --- Audio Generation Logic (Identical to other homework files) ---
+        function base64ToArrayBuffer(base64){const binaryString=window.atob(base64);const len=binaryString.length;const bytes=new Uint8Array(len);for(let i=0;i<len;i++){bytes[i]=binaryString.charCodeAt(i)}return bytes.buffer}function pcmToWav(pcmData,sampleRate){const pcm16=new Int16Array(pcmData);const header=new ArrayBuffer(44);const view=new DataView(header);function writeString(view,offset,string){for(let i=0;i<string.length;i++){view.setUint8(offset+i,string.charCodeAt(i))}}writeString(view,0,'RIFF');view.setUint32(4,36+pcm16.byteLength,true);writeString(view,8,'WAVE');writeString(view,12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);const numChannels=1;view.setUint16(22,numChannels,true);view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*numChannels*2,true);view.setUint16(32,numChannels*2,true);view.setUint16(34,16,true);writeString(view,36,'data');view.setUint32(40,pcm16.byteLength,true);return new Blob([header,pcm16],{type:'audio/wav'})}
+        async function speak(button,text){const originalContent=button.innerHTML;const loadingSpinner=`<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Patientez...`;button.innerHTML=loadingSpinner;button.disabled=true;try{const response=await fetch('/.netlify/functions/generate-audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})});if(!response.ok){throw new Error(`Erreur du serveur: ${response.statusText}`)}const{audioData,mimeType}=await response.json();if(audioData&&mimeType?.startsWith("audio/")){const sampleRateMatch=mimeType.match(/rate=(\d+)/);const sampleRate=sampleRateMatch?parseInt(sampleRateMatch[1],10):24000;const pcmData=base64ToArrayBuffer(audioData);const pcm16=new Int16Array(pcmData);const wavBlob=pcmToWav(pcm16,sampleRate);const audioUrl=URL.createObjectURL(wavBlob);const audio=new Audio(audioUrl);audio.play();audio.onended=()=>{URL.revokeObjectURL(audioUrl);button.innerHTML=originalContent;button.disabled=false};audio.onerror=()=>{URL.revokeObjectURL(audioUrl);button.innerHTML=originalContent;button.disabled=false}}else{throw new Error("Données audio invalides reçues du serveur.")}}catch(error){console.error("Erreur lors de la génération de la parole:",error);alert("Désolé, une erreur est survenue lors de la génération de l'audio.");button.innerHTML=originalContent;button.disabled=false}}
+        
+        document.addEventListener('DOMContentLoaded', renderListeningQuestions);
+    </script>
+</body>
+</html>
