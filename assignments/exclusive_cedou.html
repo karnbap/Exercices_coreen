@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exercices de Coréen : Écoute, Écriture et Mémorisation</title>
+    <title>Exercices de Coréen : Écoute et Écriture pour Cédou</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -104,6 +104,10 @@
     </div>
 
     <script>
+        // Netlify 환경 변수에서 API 키를 가져오거나, 로컬 환경에서는 빈 문자열로 둡니다.
+        // Netlify에서 빌드할 때, 환경 변수 이름을 "GEMINI_API_KEY"로 설정해주세요.
+        const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : "";
+
         // Logique du lecteur audio personnalisé
         const playAudio = async (text) => {
             const payload = {
@@ -120,34 +124,41 @@
                 },
                 model: "gemini-2.5-flash-preview-tts"
             };
-            const apiKey = ""; 
+            
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            const part = result?.candidates?.[0]?.content?.parts?.[0];
-            const audioData = part?.inlineData?.data;
-            const mimeType = part?.inlineData?.mimeType;
-
-            if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-                if (sampleRateMatch) {
-                    const sampleRate = parseInt(sampleRateMatch[1], 10);
-                    const pcmData = base64ToArrayBuffer(audioData);
-                    const pcm16 = new Int16Array(pcmData);
-                    const wavBlob = pcmToWav(pcm16, sampleRate);
-                    const audioUrl = URL.createObjectURL(wavBlob);
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                } else {
-                    console.error('Sample rate not found in mimeType:', mimeType);
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
                 }
-            } else {
-                console.error('Invalid audio data received:', result);
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    if (sampleRateMatch) {
+                        const sampleRate = parseInt(sampleRateMatch[1], 10);
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        const pcm16 = new Int16Array(pcmData);
+                        const wavBlob = pcmToWav(pcm16, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                    } else {
+                        console.error('Sample rate not found in mimeType:', mimeType);
+                    }
+                } else {
+                    console.error('Invalid audio data received:', result);
+                }
+            } catch (error) {
+                console.error('Error during audio generation:', error);
             }
         };
 
@@ -202,65 +213,65 @@
         };
 
         const questions = [
-            // Mots 1-10: Combinaison de mots et prononciation
-            { type: 'mot', audioText: "돼지고기", hintFr: "La viande de cochon", hintKrInitial: "ㄷㅈㄱㄱ", answer: "돼지고기" },
-            { type: 'mot', audioText: "고기집", hintFr: "Maison de viande = restaurant BBQ", hintKrInitial: "ㄱㄱㅈ", answer: "고기집" },
-            { type: 'mot', audioText: "코", hintFr: "Le nez", hintKrInitial: "ㅋ", answer: "코" },
-            { type: 'mot', audioText: "꼬꼬꼬", hintFr: "Le son d'un poulet qui chante", hintKrInitial: "ㄲㄲㄲ", answer: "꼬꼬꼬" },
-            { type: 'mot', audioText: "책", hintFr: "Un livre", hintKrInitial: "ㅊ", answer: "책" },
-            { type: 'mot', audioText: "있어요", hintFr: "Il y a / Il existe", hintKrInitial: "ㅇㅆㅇ", answer: "있어요" },
-            { type: 'mot', audioText: "감사합니다", hintFr: "Merci (très poli)", hintKrInitial: "ㄱㅅㅎㄴㄷ", answer: "감사합니다" },
-            { type: 'mot', audioText: "빵", hintFr: "Le pain", hintKrInitial: "ㅃ", answer: "빵" },
-            { type: 'mot', audioText: "공", hintFr: "Une balle / Le chiffre zéro", hintKrInitial: "ㄱ", answer: "공" },
-            { type: 'mot', audioText: "방", hintFr: "Une chambre", hintKrInitial: "ㅂ", answer: "방" },
-            
-            // Phrases 1-10: Salutations et présentations
-            { type: 'phrase', audioText: "반찬 좀 더 주세요", hintFr: "Donnez-moi un peu plus d'accompagnements (반찬)", hintKrInitial: "ㅈ ㄷ ㅈㅅㅇ", answer: "좀 더 주세요" },
-            { type: 'phrase', audioText: "제 이름은 줄리예요", hintFr: "Mon nom est Julie", hintKrInitial: "ㅈ ㅇㄹㅇ ㅈㄹㅇㅇ", answer: "제 이름은 줄리예요" },
-            { type: 'phrase', audioText: "저는 마리라고 해요", hintFr: "Je m'appelle Marie", hintKrInitial: "ㅈㄴ ㅁㄹㄹㄱ ㅎㅇ", answer: "저는 마리라고 해요" },
-            { type: 'phrase', audioText: "이름이 뭐예요", hintFr: "Quel est votre nom ?", hintKrInitial: "ㅇㄹㅇ ㅁㅇㅇ", answer: "이름이 뭐예요" },
-            { type: 'phrase', audioText: "저는 세드릭이라고 해요. 이름이 뭐예요?", hintFr: "Je m'appelle Cedric. Quel est votre nom ?", hintKrInitial: "ㅈㄴ ㅅㄷㄹㅇㄹㄱ ㅎㅇ. ㅇㄹㅇ ㅁㅇㅇ?", answer: "저는 세드릭이라고 해요. 이름이 뭐예요?" },
-            { type: 'phrase', audioText: "어디에 살아요", hintFr: "Où habitez-vous ?", hintKrInitial: "ㅇㄷㅇ ㅅㄹㅇ", answer: "어디에 살아요" },
-            { type: 'phrase', audioText: "이거 주세요", hintFr: "Donnez-moi ça svp (proche de vous)", hintKrInitial: "ㅇㄱ ㅈㅅㅇ", answer: "이거 주세요" },
-            { type: 'phrase', audioText: "그거 얼마예요", hintFr: "Ça coûte combien ?! (proche de la personne à qui vous parlez)", hintKrInitial: "ㄱㄱ ㅇㅁㅇㅇ", answer: "그거 얼마예요" },
-            { type: 'phrase', audioText: "화장실 어디예요", hintFr: "Où sont les toilettes ?", hintKrInitial: "ㅎㅈㅅ ㅇㄷㅇㅇ", answer: "화장실 어디예요" },
-            { type: 'phrase', audioText: "화장실 있어요", hintFr: "Y a-t-il des toilettes ?", hintKrInitial: "ㅎㅈㅅ ㅇㅆㅇ", answer: "화장실 있어요" },
-
-            // Phrases 11-20: Expressions de base
-            { type: 'phrase', audioText: "괜찮아요", hintFr: "Ça va / C'est bon / Ça va aller !", hintKrInitial: "ㄱㅊㅇㅇ", answer: "괜찮아요" },
-            { type: 'phrase', audioText: "미안해요", hintFr: "Désolé(e). (Forme polie)", hintKrInitial: "ㅁㅇㅎㅇ", answer: "미안해요" },
-            { type: 'phrase', audioText: "저기요", hintFr: "Excusez-moi ! (Pour attirer l'attention)", hintKrInitial: "ㅈㄱㅇ", answer: "저기요" },
-            { type: 'phrase', audioText: "잠시만요", hintFr: "Un instant s'il vous plaît.", hintKrInitial: "ㅈㅅㅁㅇ", answer: "잠시만요" },
-            { type: 'phrase', audioText: "카드 돼요?", hintFr: "Acceptez-vous la carte?", hintKrInitial: "ㅋㄷ ㄷㅇ?", answer: "카드 돼요?" },
-            { type: 'phrase', audioText: "맛있어요", hintFr: "C'est délicieux !", hintKrInitial: "ㅁㅇㅆㅇ", answer: "맛있어요" },
-            { type: 'phrase', audioText: "안녕히 가세요", hintFr: "Au revoir (à quelqu'un qui part)", hintKrInitial: "ㅇㄴㅎ ㄱㅅㅇ", answer: "안녕히 가세요" },
-            { type: 'phrase', audioText: "안녕히 계세요", hintFr: "Au revoir (à quelqu'un qui reste)", hintKrInitial: "ㅇㄴㅎ ㄱㅅㅇ", answer: "안녕히 계세요" },
-            { type: 'phrase', audioText: "없어요", hintFr: "Il n'y a pas.", hintKrInitial: "ㅇㅆㅇ", answer: "없어요" },
-            { type: 'phrase', audioText: "반가워요", hintFr: "Enchanté(e) de vous rencontrer (amical, poli)", hintKrInitial: "ㅂㄱㅇㅇ", answer: "반가워요" },
-            
-            // Mots 11-20: Nombres
-            { type: 'mot', audioText: "일", hintFr: "1 (un)", hintKrInitial: "ㅇ", answer: "일" },
-            { type: 'mot', audioText: "이", hintFr: "2 (deux)", hintKrInitial: "ㅇ", answer: "이" },
-            { type: 'mot', audioText: "삼", audioText: "삼", hintFr: "3 (trois)", hintKrInitial: "ㅅ", answer: "삼" },
-            { type: 'mot', audioText: "사", hintFr: "4 (quatre)", hintKrInitial: "ㅅ", answer: "사" },
-            { type: 'mot', audioText: "오", hintFr: "5 (cinq)", hintKrInitial: "ㅇ", answer: "오" },
-            { type: 'mot', audioText: "육", hintFr: "6 (six)", hintKrInitial: "ㅇ", answer: "육" },
-            { type: 'mot', audioText: "칠", hintFr: "7 (sept)", hintKrInitial: "ㅊ", answer: "칠" },
-            { type: 'mot', audioText: "팔", hintFr: "8 (huit)", hintKrInitial: "ㅍ", answer: "팔" },
-            { type: 'mot', audioText: "구", hintFr: "9 (neuf)", hintKrInitial: "ㄱ", answer: "구" },
-            { type: 'mot', audioText: "십", hintFr: "10 (dix)", hintKrInitial: "ㅅ", answer: "십" },
-            
-            // Mots 21-30: Vocabulaire de voyage et de restaurant
-            { type: 'mot', audioText: "소고기", hintFr: "Bœuf", hintKrInitial: "ㅅㄱㄱ", answer: "소고기" },
-            { type: 'mot', audioText: "닭고기", hintFr: "Poulet", hintKrInitial: "ㄷㄱㄱ", answer: "닭고기" },
+            // Mots 1-10: Nouveaux mots
+            { type: 'mot', audioText: "더", hintFr: "plus / encore une fois", hintKrInitial: "ㄷ", answer: "더" },
+            { type: 'mot', audioText: "저", hintFr: "Je (formel)", hintKrInitial: "ㅈ", answer: "저" },
+            { type: 'mot', audioText: "반찬", hintFr: "accompagnements", hintKrInitial: "ㅂㅊ", answer: "반찬" },
+            { type: 'mot', audioText: "주세요", hintFr: "donnez-moi", hintKrInitial: "ㅈㅅㅇ", answer: "주세요" },
+            { type: 'mot', audioText: "괜찮아요", hintFr: "Ça va / C'est bon", hintKrInitial: "ㄱㅊㅇㅇ", answer: "괜찮아요" },
+            { type: 'mot', audioText: "맛있어요", hintFr: "C'est délicieux", hintKrInitial: "ㅁㅇㅆㅇ", answer: "맛있어요" },
             { type: 'mot', audioText: "물", hintFr: "Eau", hintKrInitial: "ㅁ", answer: "물" },
             { type: 'mot', audioText: "맥주", hintFr: "Bière", hintKrInitial: "ㅁㅉ", answer: "맥주" },
             { type: 'mot', audioText: "소주", hintFr: "Soju (alcool coréen)", hintKrInitial: "ㅅㅈ", answer: "소주" },
             { type: 'mot', audioText: "메뉴판", hintFr: "Menu", hintKrInitial: "ㅁㄴㅍ", answer: "메뉴판" },
-            { type: 'mot', audioText: "숟가락", hintFr: "Cuillère", hintKrInitial: "ㅅㄱㄹ", answer: "숟가락" },
-            { type: 'mot', audioText: "젓가락", hintFr: "Baguettes", hintKrInitial: "ㅈㄱㄹ", answer: "젓가락" },
-            { type: 'mot', audioText: "반찬", hintFr: "Plats d'accompagnement", hintKrInitial: "ㅂㅊ", answer: "반찬" },
-            { type: 'mot', audioText: "생선", hintFr: "Poisson", hintKrInitial: "ㅅㅅ", answer: "생선" }
+            
+            // Phrases 1-10: Nouvelles phrases
+            { type: 'phrase', audioText: "반찬 좀 더 주세요", hintFr: "Donnez-moi un peu plus d'accompagnements", hintKrInitial: "ㅂㅊ ㅈ ㄷ ㅈㅅㅇ", answer: "반찬 좀 더 주세요" },
+            { type: 'phrase', audioText: "이름이 뭐예요?", hintFr: "Quel est votre nom ?", hintKrInitial: "ㅇㄹㅇ ㅁㅇㅇ?", answer: "이름이 뭐예요?" },
+            { type: 'phrase', audioText: "저는 Cédric이라고 해요", hintFr: "Je m'appelle Cédric", hintKrInitial: "ㅈㄴ ㅅㄷㄹㅇㄹㄱ ㅎㅇ", answer: "저는 Cédric이라고 해요" },
+            { type: 'phrase', audioText: "어디에 살아요?", hintFr: "Où habitez-vous ?", hintKrInitial: "ㅇㄷㅇ ㅅㄹㅇ?", answer: "어디에 살아요?" },
+            { type: 'phrase', audioText: "이거 주세요", hintFr: "Donnez-moi ça svp", hintKrInitial: "ㅇㄱ ㅈㅅㅇ", answer: "이거 주세요" },
+            { type: 'phrase', audioText: "그거 얼마예요?", hintFr: "Ça coûte combien ?!", hintKrInitial: "ㄱㄱ ㅇㅁㅇㅇ?", answer: "그거 얼마예요?" },
+            { type: 'phrase', audioText: "화장실 어디예요?", hintFr: "Où sont les toilettes ?", hintKrInitial: "ㅎㅈㅅ ㅇㄷㅇㅇ?", answer: "화장실 어디예요?" },
+            { type: 'phrase', audioText: "안녕히 가세요", hintFr: "Au revoir (à une personne qui part)", hintKrInitial: "ㅇㄴㅎ ㄱㅅㅇ", answer: "안녕히 가세요" },
+            { type: 'phrase', audioText: "안녕히 계세요", hintFr: "Au revoir (à une personne qui reste)", hintKrInitial: "ㅇㄴㅎ ㄱㅅㅇ", answer: "안녕히 계세요" },
+            { type: 'phrase', audioText: "친구", hintFr: "ami(e) du même âge", hintKrInitial: "ㅊㄱ", answer: "친구" },
+            
+            // Mots 11-20: Nombres et vocabulaire
+            { type: 'mot', audioText: "하나", hintFr: "1", hintKrInitial: "ㅎㄴ", answer: "하나" },
+            { type: 'mot', audioText: "둘", hintFr: "2", hintKrInitial: "ㄷ", answer: "둘" },
+            { type: 'mot', audioText: "셋", hintFr: "3", hintKrInitial: "ㅅ", answer: "셋" },
+            { type: 'mot', audioText: "넷", hintFr: "4", hintKrInitial: "ㄴ", answer: "넷" },
+            { type: 'mot', audioText: "다섯", hintFr: "5", hintKrInitial: "ㄷㅅ", answer: "다섯" },
+            { type: 'mot', audioText: "여섯", hintFr: "6", hintKrInitial: "ㅇㅅ", answer: "여섯" },
+            { type: 'mot', audioText: "일곱", hintFr: "7", hintKrInitial: "ㅇㄱ", answer: "일곱" },
+            { type: 'mot', audioText: "여덟", hintFr: "8", hintKrInitial: "ㅇㄷ", answer: "여덟" },
+            { type: 'mot', audioText: "아홉", hintFr: "9", hintKrInitial: "ㅇㅎ", answer: "아홉" },
+            { type: 'mot', audioText: "열", hintFr: "10", hintKrInitial: "ㅇ", answer: "열" },
+
+            // Phrases 11-20: Voyager en Corée
+            { type: 'phrase', audioText: "이거 얼마예요?", hintFr: "Ça coûte combien ?", hintKrInitial: "ㅇㄱ ㅇㅁㅇㅇ?", answer: "이거 얼마예요?" },
+            { type: 'phrase', audioText: "잠시만요", hintFr: "Un instant s'il vous plaît", hintKrInitial: "ㅈㅅㅁㅇ", answer: "잠시만요" },
+            { type: 'phrase', audioText: "고구마 주세요", hintFr: "Donnez-moi une patate douce (고구마)", hintKrInitial: "ㄱㄱㅁ ㅈㅅㅇ", answer: "고구마 주세요" },
+            { type: 'phrase', audioText: "어디로 가요?", hintFr: "Où allez-vous ?", hintKrInitial: "ㅇㄷㄹ ㄱㅇ?", answer: "어디로 가요?" },
+            { type: 'phrase', audioText: "감사합니다", hintFr: "Merci", hintKrInitial: "ㄱㅅㅎㄴㄷ", answer: "감사합니다" },
+            { type: 'phrase', audioText: "죄송합니다", hintFr: "Désolé(e) (très poli)", hintKrInitial: "ㅈㅅㅎㄴㄷ", answer: "죄송합니다" },
+            { type: 'phrase', audioText: "괜찮아요", hintFr: "Ça va", hintKrInitial: "ㄱㅊㅇㅇ", answer: "괜찮아요" },
+            { type: 'phrase', audioText: "메뉴판 주세요", hintFr: "Donnez-moi le menu", hintKrInitial: "ㅁㄴㅍ ㅈㅅㅇ", answer: "메뉴판 주세요" },
+            { type: 'phrase', audioText: "물 주세요", hintFr: "Donnez-moi de l'eau", hintKrInitial: "ㅁ ㅈㅅㅇ", answer: "물 주세요" },
+            { type: 'phrase', audioText: "맛있어요!", hintFr: "C'est délicieux !", hintKrInitial: "ㅁㅇㅆㅇ!", answer: "맛있어요!" },
+
+            // Mots 21-30: Divers
+            { type: 'mot', audioText: "김치", hintFr: "Kimchi", hintKrInitial: "ㄱㅊ", answer: "김치" },
+            { type: 'mot', audioText: "밥", hintFr: "Riz cuit", hintKrInitial: "ㅂ", answer: "밥" },
+            { type: 'mot', audioText: "국", hintFr: "Soupe", hintKrInitial: "ㄱ", answer: "국" },
+            { type: 'mot', audioText: "집", hintFr: "Maison", hintKrInitial: "ㅈ", answer: "집" },
+            { type: 'mot', audioText: "친구", hintFr: "Ami", hintKrInitial: "ㅊㄱ", answer: "친구" },
+            { type: 'mot', audioText: "선생님", hintFr: "Professeur", hintKrInitial: "ㅅㅅㄴ", answer: "선생님" },
+            { type: 'mot', audioText: "학생", hintFr: "Étudiant", hintKrInitial: "ㅎㅅ", answer: "학생" },
+            { type: 'mot', audioText: "학교", hintFr: "École", hintKrInitial: "ㅎㄱ", answer: "학교" },
+            { type: 'mot', audioText: "사과", hintFr: "Pomme", hintKrInitial: "ㅅㄱ", answer: "사과" },
+            { type: 'mot', audioText: "바나나", hintFr: "Banane", hintKrInitial: "ㅂㄴㄴ", answer: "바나나" }
         ];
 
         let score = 0;
