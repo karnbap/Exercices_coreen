@@ -1,8 +1,3 @@
-<!-- ======================================================= -->
-<!-- FICHIER 1 : Julie020825.html (Code HTML principal)      -->
-<!-- Placez ce fichier à la racine de votre dossier.         -->
-<!-- ======================================================= -->
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -36,7 +31,7 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-3xl">
         <header class="text-center mb-10">
-            <a href="/Exercices_coreen/index.html" class="text-indigo-600 hover:text-indigo-800 mb-4 block">&larr; Retour à la liste</a>
+            <a href="/index.html" class="text-indigo-600 hover:text-indigo-800 mb-4 block">&larr; Retour à la liste</a>
             <h1 class="text-3xl md:text-4xl font-bold text-slate-900 korean">한국어 음성 플래시카드</h1>
             <p class="text-lg text-slate-600 mt-2">Flashcards Interactives de Coréen (30 cartes)</p>
         </header>
@@ -82,9 +77,6 @@
             { id: 30, type: 'chosung', frenchPrompt: "Complétez la phrase (intention/raison) : Je suis fatigué(e), je vais me coucher tôt.", koreanHint: "ㅍㄱㅎㅅ ㅇㅉ ㅈㅇㄱㅇㅇ.", koreanAnswer: "피곤해서 일찍 자야겠어요.", frenchNote: "`~해서` indique la raison, et `~야겠어요` exprime une intention ou une nécessité ressentie par le locuteur." }
         ];
 
-        // --- Le reste du JavaScript est identique à la version précédente ---
-        // --- SAUF la fonction speak() qui est modifiée ci-dessous ---
-
         function renderFlashcards() {
             const container = document.getElementById('flashcard-container');
             let html = '';
@@ -104,7 +96,6 @@
         function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes.buffer; }
         function pcmToWav(pcmData, sampleRate) { const header = new ArrayBuffer(44); const view = new DataView(header); function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } } const channels = 1, bitsPerSample = 16; const byteRate = sampleRate * channels * (bitsPerSample / 8); const blockAlign = channels * (bitsPerSample / 8); const dataSize = pcmData.byteLength; const fileSize = 36 + dataSize; writeString(view, 0, 'RIFF'); view.setUint32(4, fileSize, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true); writeString(view, 36, 'data'); view.setUint32(40, dataSize, true); return new Blob([header, pcmData], { type: 'audio/wav' }); }
         
-        // [MODIFIÉ] La fonction speak appelle maintenant notre fonction serveur
         async function speak(button, text) {
             const originalContent = button.innerHTML;
             const loadingSpinner = `<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="ml-2">Patientez...</span>`;
@@ -112,9 +103,8 @@
             button.disabled = true;
 
             try {
-                // IMPORTANT : L'URL pointe vers la fonction serveur.
-                // Pour Netlify, le chemin est '/.netlify/functions/NOM_DU_FICHIER_JS'
-                const response = await fetch('/.netlify/functions/speak', {
+                // [CORRIGÉ] L'URL pointe maintenant vers la bonne fonction serveur : 'generate-audio'
+                const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text })
@@ -152,77 +142,3 @@
     </script>
 </body>
 </html>
-
-```javascript
-/* ======================================================= */
-/* FICHIER 2 : netlify/functions/speak.js (Fonction Serveur) */
-/* Créez un dossier 'netlify', puis un sous-dossier         */
-/* 'functions', et placez ce fichier 'speak.js' à l'intérieur.  */
-/* ======================================================= */
-
-// Cette fonction s'exécute sur le serveur de Netlify, pas dans le navigateur.
-// Elle a besoin de 'node-fetch' pour fonctionner. Netlify l'installera pour vous.
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
-exports.handler = async function(event) {
-  // 1. Sécurité : n'accepter que les requêtes POST
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
-  try {
-    // 2. Récupérer la clé API stockée de manière sécurisée dans les variables d'environnement de Netlify
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        throw new Error("La clé API GEMINI_API_KEY n'est pas configurée sur Netlify.");
-    }
-    
-    // 3. Récupérer le texte envoyé depuis la page HTML
-    const { text } = JSON.parse(event.body);
-    if (!text) {
-        return { statusCode: 400, body: 'Le texte est manquant.' };
-    }
-
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-    const payload = {
-        contents: [{ parts: [{ text: text }] }],
-        generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
-        },
-        model: "gemini-2.5-flash-preview-tts"
-    };
-    
-    // 4. Appeler l'API de Google depuis le serveur
-    const googleResponse = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-
-    if (!googleResponse.ok) {
-        const errorBody = await googleResponse.text();
-        console.error("Erreur de l'API Google:", errorBody);
-        return { statusCode: googleResponse.status, body: `Erreur de l'API Google: ${errorBody}` };
-    }
-
-    const result = await googleResponse.json();
-    const part = result?.candidates?.[0]?.content?.parts?.[0];
-    const audioData = part?.inlineData?.data;
-    const mimeType = part?.inlineData?.mimeType;
-
-    // 5. Renvoyer les données audio à la page HTML
-    return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audioData, mimeType })
-    };
-
-  } catch (error) {
-    console.error("Erreur de la fonction serveur:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Échec de la génération de la parole.' })
-    };
-  }
-};
