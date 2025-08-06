@@ -1,115 +1,146 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Devoirs de Coréen - Accueil</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', 'Noto Sans KR', sans-serif;
-            background-color: #f8fafc; /* Very light grey background */
-        }
-        .korean-title {
-            font-family: 'Noto Sans KR', sans-serif;
-            font-weight: 700;
-        }
-        .hanok-icon {
-            stroke: #4b5563; /* Grey color for the icon */
-        }
-        .task-item a {
-            transition: all 0.2s ease-in-out;
-            border: 1px solid #e5e7eb; /* Light grey border */
-        }
-        .task-item a:hover {
-            border-color: #3b82f6; /* Royal blue border on hover */
-            background-color: #eff6ff; /* Pastel blue background on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px -2px rgb(0 0 0 / 0.05);
-        }
-        .new-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #ef4444; /* Red accent color */
-            border-radius: 50%;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devoirs de Coréen - Accueil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* * ## Style Guide ##
+         * Font: 'Inter' pour le français, 'Gowun Batang' pour le coréen pour un style calligraphique.
+         * Background: Une texture subtile de papier hanji (papier coréen traditionnel) pour évoquer une peinture à l'encre.
+         * Buttons: Effet 3D imitant une fenêtre traditionnelle coréenne (Changho).
+         * Palette: Noir encre (먹색), blanc papier, et un rouge sceau pour les accents.
+        */
+        body {
+            font-family: 'Inter', 'Gowun Batang', sans-serif;
+            /* Arrière-plan subtil imitant une texture de papier ou une peinture à l'encre */
+            background-color: #f1f1f1;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.03"/></svg>');
+        }
+        .korean-title {
+            font-family: 'Gowun Batang', serif;
+            font-weight: 700;
+        }
+        /* Style du bouton "fenêtre" pour un effet 3D */
+        .window-button {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db; /* Bordure du cadre de la fenêtre */
+            border-radius: 0.75rem; /* Bords légèrement arrondis */
+            /* Ombre portée pour donner de la profondeur et un effet 3D */
+            box-shadow: 
+                inset 1px 1px 2px rgba(255, 255, 255, 0.8), /* Lumière intérieure */
+                inset -1px -1px 2px rgba(0, 0, 0, 0.05),   /* Ombre intérieure */
+                2px 4px 8px rgba(0, 0, 0, 0.08);         /* Ombre extérieure */
+            transition: all 0.2s ease-in-out;
+        }
+        .window-button:hover {
+            transform: translateY(-3px) scale(1.01); /* La fenêtre s'avance légèrement */
+            box-shadow: 
+                inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+                inset -1px -1px 2px rgba(0, 0, 0, 0.05),
+                4px 8px 16px rgba(0, 0, 0, 0.1); /* Ombre plus prononcée */
+        }
+        .window-button:active {
+            transform: translateY(1px) scale(1); /* Effet de pression */
+            box-shadow: 
+                inset 2px 2px 4px rgba(0, 0, 0, 0.08), /* Ombre intérieure plus forte */
+                1px 1px 2px rgba(0, 0, 0, 0.08);
+        }
+        /* Point rouge pour les nouvelles tâches */
+        .new-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #c81e1e; /* Rouge sceau (dojang) */
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.5);
+            flex-shrink: 0; /* Empêche le point de rétrécir */
+        }
+    </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-6">
 
-    <div class="w-full max-w-2xl text-center bg-white p-8 md:p-12 rounded-xl shadow-sm border border-slate-200">
-        <header class="flex flex-col items-center mb-10">
-            <!-- Hanok Roof Icon -->
-            <svg class="hanok-icon mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9.5L12 4L21 9.5" />
-                <path d="M19 9.5V21H5V9.5" />
-                <path d="M12 15A3 3 0 0 1 12 9A3 3 0 0 1 12 15Z" />
-            </svg>
-            <h1 class="text-4xl font-bold text-slate-800 korean-title">숙제 목록</h1>
-            <p class="text-slate-500 mt-2">Liste des devoirs de coréen</p>
-        </header>
+    <div class="w-full max-w-2xl bg-white/80 backdrop-blur-sm p-8 md:p-12 rounded-2xl shadow-2xl border border-slate-200/80">
+        
+        <header class="flex flex-col items-center mb-10 text-center">
+            <!-- Icône de toit de Hanok, stylisée comme un coup de pinceau -->
+            <svg class="mb-4 text-gray-800" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9.5L12 4L21 9.5" />
+                <path d="M19 9.5V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V9.5" />
+                <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke-width="1"/>
+            </svg>
+            <h1 class="text-4xl font-bold text-slate-800 korean-title">숙제 목록</h1>
+            <p class="text-slate-600 mt-2 text-lg">Liste des devoirs de coréen</p>
+        </header>
 
-        <main>
-            <ul class="space-y-4 text-left">
-                
-                <li class="task-item">
-                    <a href="assignments/kimchi.html" 
-                       class="block w-full text-left p-5 rounded-lg bg-white">
-                        <span class="text-xl font-semibold text-slate-700">Devoirs pour 김치찌개 + la négation</span>
-                        <span class="block text-slate-500 mt-1 text-sm">Exercices sur la négation et le vocabulaire de la cuisine.</span>
-                    </a>
-                </li>
-
-                <li class="task-item">
-                    <a href="assignments/Julie020825.html" 
-                       class="block w-full text-left p-5 rounded-lg bg-white">
-                        <span class="text-xl font-semibold text-slate-700">Devoirs pour Julie (Flashcards)</span>
-                        <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
-                    </a>
-                </li>
+        <main>
+            <ul class="space-y-5">
                 
-                <li class="task-item">
-                    <a href="assignments/particules_précision_depart.html" 
-                       class="block w-full text-left p-5 rounded-lg bg-white">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700">Devoirs sur '에' et '에서'</span>
-                            <!-- Red dot for the newest assignment -->
-                            <div class="new-dot"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm">Exercices sur les particules de précision et de départ.</span>
-                    </a>
-                </li>
+                <!-- Standardisation de chaque item de la liste pour un alignement parfait -->
+                <li>
+                    <a href="assignments/kimchi.html" class="window-button block w-full text-left p-5">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-grow">
+                                <span class="text-xl font-semibold text-slate-800">Devoirs pour 김치찌개 + la négation</span>
+                                <span class="block text-slate-500 mt-1 text-sm">Exercices sur la négation et le vocabulaire de la cuisine.</span>
+                            </div>
+                        </div>
+                    </a>
+                </li>
 
-                <li class="task-item">
-                    <a href="/assignments/exclusive_cedou.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700">Devoirs pour Cédou (02/08/2025)</span>
-                            <!-- Red dot for the newest assignment -->
-                            <div class="new-dot"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
-                    </a>
-                </li>
+                <li>
+                    <a href="assignments/Julie020825.html" class="window-button block w-full text-left p-5">
+                         <div class="flex justify-between items-start">
+                            <div class="flex-grow">
+                                <span class="text-xl font-semibold text-slate-800">Devoirs pour Julie (Flashcards)</span>
+                                <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="assignments/particules_précision_depart.html" class="window-button block w-full text-left p-5">
+                        <div class="flex justify-between items-start">
+                             <div class="flex-grow pr-4">
+                                <span class="text-xl font-semibold text-slate-800">Devoirs sur '에' et '에서'</span>
+                                <span class="block text-slate-500 mt-1 text-sm">Exercices sur les particules de précision et de départ.</span>
+                            </div>
+                            <div class="new-dot mt-1.5"></div>
+                        </div>
+                    </a>
+                </li>
 
- 		<li class="task-item">
-                    <a href="assignments/comme.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Comment on dit 'comme un ange' en coréen</span>
-                            <!-- Red dot for the newest assignment -->
-                            <div class="new-dot"></div>
-                        </div>
-                    <span class="block text-slate-500 mt-1 text-sm">
-    Expression idiomatique en coréen avec 'comme'.
-</span>
-                    </a>
-                </li>
+                <li>
+                    <a href="/assignments/exclusive_cedou.html" class="window-button block w-full text-left p-5">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-grow pr-4">
+                                <span class="text-xl font-semibold text-slate-800">Devoirs pour Cédou (02/08/2025)</span>
+                                <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
+                            </div>
+                            <div class="new-dot mt-1.5"></div>
+                        </div>
+                    </a>
+                </li>
 
-            </ul>
-        </main>
-    </div>
+                <li>
+                    <a href="assignments/comme.html" class="window-button block w-full text-left p-5">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-grow pr-4">
+                                <span class="text-xl font-semibold text-slate-800">Comment on dit 'comme un ange'</span>
+                                <span class="block text-slate-500 mt-1 text-sm">Expression idiomatique en coréen avec 'comme'.</span>
+                            </div>
+                            <div class="new-dot mt-1.5"></div>
+                        </div>
+                    </a>
+                </li>
+
+            </ul>
+        </main>
+    </div>
 
 </body>
 </html>
