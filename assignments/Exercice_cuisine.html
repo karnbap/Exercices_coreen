@@ -44,7 +44,7 @@
         // netlify.toml 설정에 따라 API 경로를 설정합니다.
         // `netlify/functions` 폴더의 파일 이름이 tts.js가 아니라면 경로를 수정해주세요.
         // (예: 파일 이름이 speech.js -> "/api/speech")
-        const NETLIFY_API_URL = "/api/generate-audio"; 
+        const NETLIFY_API_URL = "/.netlify/functions/generate-audio"; 
 
         // --- DATA / 데이터 ---
         const questions = [
