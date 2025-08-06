@@ -170,46 +170,59 @@
             const button = document.getElementById(`audio-btn-${id}`);
             const icon = button.querySelector('i');
 
-            // Disable button and show spinner
             button.disabled = true;
             icon.className = 'fas fa-spinner fa-spin';
 
             try {
-                // Call the Netlify function to generate audio
                 const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: question.audioText,
-                        // Alternate voices based on the speaker for a more natural dialogue
                         speaker: question.speaker.includes('수정') ? 'female' : 'male'
                     }),
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
-                    throw new Error(`Erreur du serveur (${response.status}): ${errorData.message || 'Détails non disponibles'}`);
+                // --- Improved Error Handling ---
+                // First, get the raw text of the response to analyze it.
+                const responseText = await response.text();
+                let data;
+
+                try {
+                    // Try to parse the text as JSON.
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    // If parsing fails, the response was not valid JSON (e.g., an HTML error page).
+                    console.error("La réponse du serveur n'est pas un JSON valide:", responseText);
+                    throw new Error(`Réponse inattendue du serveur. Le serveur a peut-être renvoyé une erreur HTML.`);
                 }
 
-                const data = await response.json();
-                if (data.audioUrl) {
+                // Now, check if the response status was OK.
+                if (!response.ok) {
+                    // Use the message from the parsed JSON if available.
+                    const errorMessage = data.message || response.statusText;
+                    throw new Error(`Erreur du serveur (${response.status}): ${errorMessage}`);
+                }
+
+                // Finally, check if the valid JSON contains the audioUrl.
+                if (data && data.audioUrl) {
                     const audio = new Audio(data.audioUrl);
                     audio.play();
                     audio.onended = () => {
-                        // Re-enable button and reset icon when audio finishes
                         button.disabled = false;
                         icon.className = 'fas fa-play';
                     };
                     audio.onerror = () => {
-                        throw new Error("Impossible de charger ou lire le fichier audio.");
+                        throw new Error("Impossible de charger ou lire le fichier audio depuis l'URL fournie.");
                     }
                 } else {
-                    throw new Error("L'URL de l'audio n'a pas été reçue du serveur.");
+                    // The response was JSON but didn't have the expected URL.
+                    console.error("Réponse JSON reçue mais sans audioUrl:", data);
+                    throw new Error("L'URL de l'audio n'a pas été reçue dans la réponse du serveur.");
                 }
             } catch (error) {
                 console.error("Erreur lors de la lecture de l'audio:", error);
                 showErrorModal(error.message || "Une erreur inconnue est survenue lors de la génération de l'audio.");
-                // Re-enable button and reset icon on error
                 button.disabled = false;
                 icon.className = 'fas fa-play';
             }
