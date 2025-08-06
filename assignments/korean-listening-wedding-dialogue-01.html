@@ -36,26 +36,13 @@
             transition: background-color 0.3s, transform 0.2s;
         }
 
-        .audio-btn:hover {
+        .audio-btn:hover:not(:disabled) {
             transform: scale(1.05);
         }
-
-        .audio-btn.loading {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-            }
-
-            70% {
-                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-            }
+        
+        .audio-btn:disabled {
+            cursor: not-allowed;
+            background-color: #9ca3af;
         }
 
         .result-box {
@@ -118,156 +105,32 @@
             <!-- Les questions seront injectées ici par JavaScript -->
         </div>
     </div>
+    
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <h3 class="text-xl font-bold text-red-600 mb-4">오류 발생</h3>
+            <p id="error-message" class="text-slate-700 mb-6"></p>
+            <button onclick="closeErrorModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
+                확인
+            </button>
+        </div>
+    </div>
 
     <script>
         // --- DATA ---
         const questions = [
-            {
-                id: 1,
-                speaker: '수정 (👩)',
-                audioText: '진영아!',
-                koreanAnswer: '진영아!',
-                frenchAnswer: 'Jinyoung !',
-                initialConsonants: 'ㅈㅇㅇ!',
-                vocabulary: [
-                    { kor: '-아/야', fr: 'Suffixe vocatif (pour appeler quelqu\'un)' }
-                ]
-            },
-            {
-                id: 2,
-                speaker: '진영 (👩)',
-                audioText: '어! 수정아, 왔어?',
-                koreanAnswer: '어! 수정아, 왔어?',
-                frenchAnswer: 'Oh ! Sujeong, tu es là ?',
-                initialConsonants: 'ㅇ! ㅅㅈㅇ, ㅇㅇ?',
-                vocabulary: [
-                    { kor: '오다', fr: 'venir' },
-                    { kor: '왔어?', fr: 'tu es venu(e) ? (passé informel)' }
-                ]
-            },
-            {
-                id: 3,
-                speaker: '수정 (👩)',
-                audioText: '응. 오늘 너무 예쁘다. 천사 같아. 결혼 정말 축하해!',
-                koreanAnswer: '응. 오늘 너무 예쁘다. 천사 같아. 결혼 정말 축하해!',
-                frenchAnswer: 'Oui. Tu es si jolie aujourd\'hui. On dirait un ange. Vraiment félicitations pour ton mariage !',
-                initialConsonants: 'ㅇ. ㅇㄴ ㄴㅁ ㅇㅃㄷ. ㅊㅅ ㄱㅇ. ㄱㅎ ㅈㅁ ㅊㅋㅎ!',
-                vocabulary: [
-                    { kor: '오늘', fr: 'aujourd\'hui' },
-                    { kor: '너무', fr: 'très' },
-                    { kor: '예쁘다', fr: 'être joli(e)' },
-                    { kor: '천사', fr: 'ange' },
-                    { kor: '같다', fr: 'ressembler à, être comme' },
-                    { kor: '결혼', fr: 'mariage' },
-                    { kor: '정말', fr: 'vraiment' },
-                    { kor: '축하하다', fr: 'féliciter' }
-                ]
-            },
-            {
-                id: 4,
-                speaker: '진영 (👩)',
-                audioText: '고마워. 그런데 나 지금 너무 긴장돼.',
-                koreanAnswer: '고마워. 그런데 나 지금 너무 긴장돼.',
-                frenchAnswer: 'Merci. Mais je suis si nerveuse maintenant.',
-                initialConsonants: 'ㄱㅁㅇ. ㄱㄹㄷ ㄴ ㅈㄱ ㄴㅁ ㄱㅈㄷ.',
-                vocabulary: [
-                    { kor: '고맙다', fr: 'remercier' },
-                    { kor: '그런데', fr: 'mais, cependant' },
-                    { kor: '나', fr: 'je/moi (informel)' },
-                    { kor: '지금', fr: 'maintenant' },
-                    { kor: '긴장되다', fr: 'être nerveux/tendu' }
-                ]
-            },
-            {
-                id: 5,
-                speaker: '수정 (👩)',
-                audioText: '정말? 긴장하지 마.',
-                koreanAnswer: '정말? 긴장하지 마.',
-                frenchAnswer: 'Vraiment ? Ne sois pas nerveuse.',
-                initialConsonants: 'ㅈㅁ? ㄱㅈㅎㅈ ㅁ.',
-                vocabulary: [
-                    { kor: '-지 마', fr: 'ne... pas (impératif négatif)' }
-                ]
-            },
-            {
-                id: 6,
-                speaker: '진영 (👩)',
-                audioText: '응. 알겠어. 근데 혼자 왔어?',
-                koreanAnswer: '응. 알겠어. 근데 혼자 왔어?',
-                frenchAnswer: 'Oui, d\'accord. Mais tu es venue seule ?',
-                initialConsonants: 'ㅇ. ㅇㄱㅇ. ㄱㄷ ㅎㅈ ㅇㅇ?',
-                vocabulary: [
-                    { kor: '알겠어', fr: 'd\'accord, compris' },
-                    { kor: '근데', fr: 'mais, au fait (contraction de 그런데)' },
-                    { kor: '혼자', fr: 'seul(e)' }
-                ]
-            },
-            {
-                id: 7,
-                speaker: '수정 (👩)',
-                audioText: '은진이는 오고 있어. 곧 도착할 거야.',
-                koreanAnswer: '은진이는 오고 있어. 곧 도착할 거야.',
-                frenchAnswer: 'Eunjin est en route. Elle arrivera bientôt.',
-                initialConsonants: 'ㅇㅈㅇㄴ ㅇㄱ ㅇㅇ. ㄱ ㄷㅊㅎ ㄱㅇ.',
-                vocabulary: [
-                    { kor: '오고 있다', fr: 'être en train de venir' },
-                    { kor: '곧', fr: 'bientôt' },
-                    { kor: '도착하다', fr: 'arriver' },
-                    { kor: '-(으)ㄹ 거야', fr: 'futur (promesse, intention)' }
-                ]
-            },
-            {
-                id: 8,
-                speaker: '진영 (👩)',
-                audioText: '그렇구나.',
-                koreanAnswer: '그렇구나.',
-                frenchAnswer: 'Ah, je vois.',
-                initialConsonants: 'ㄱㄹㄱㄴ.',
-                vocabulary: [
-                    { kor: '그렇구나', fr: 'Ah, c\'est donc ça / Je vois' }
-                ]
-            },
-            {
-                id: 9,
-                speaker: '수정 (👩)',
-                audioText: '자, 결혼 선물이야.',
-                koreanAnswer: '자, 결혼 선물이야.',
-                frenchAnswer: 'Tiens, c\'est un cadeau de mariage.',
-                initialConsonants: 'ㅈ, ㄱㅎ ㅅㅁㅇㅇ.',
-                vocabulary: [
-                    { kor: '자', fr: 'Tiens !' },
-                    { kor: '선물', fr: 'cadeau' },
-                    { kor: '-이야', fr: 'c\'est... (informel)' }
-                ]
-            },
-            {
-                id: 10,
-                speaker: '진영 (👩)',
-                audioText: '정말? 고마워. 이게 뭐야?',
-                koreanAnswer: '정말? 고마워. 이게 뭐야?',
-                frenchAnswer: 'Vraiment ? Merci. Qu\'est-ce que c\'est ?',
-                initialConsonants: 'ㅈㅁ? ㄱㅁㅇ. ㅇㄱ ㅁㅇ?',
-                vocabulary: [
-                    { kor: '이게', fr: 'ceci (contraction de 이것이)' },
-                    { kor: '뭐', fr: 'quoi' }
-                ]
-            },
-            {
-                id: 11,
-                speaker: '수정 (👩)',
-                audioText: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.',
-                koreanAnswer: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.',
-                frenchAnswer: 'C\'est un t-shirt de couple. Porte-le avec ton mari pendant votre lune de miel.',
-                initialConsonants: 'ㅋㅍ ㅌㅇ. ㅅㅎㅇㅎ ㄱㅅ ㅅㄹㅎㄱ ㄱㅇ ㅇㅇ.',
-                vocabulary: [
-                    { kor: '커플 티', fr: 't-shirt de couple' },
-                    { kor: '신혼여행', fr: 'voyage de noces' },
-                    { kor: '가서', fr: 'aller et puis...' },
-                    { kor: '신랑', fr: 'le marié, son mari' },
-                    { kor: '같이', fr: 'ensemble' },
-                    { kor: '입다', fr: 'porter (un vêtement)' }
-                ]
-            }
+            { id: 1, speaker: '수정 (👩)', audioText: '진영아!', koreanAnswer: '진영아!', frenchAnswer: 'Jinyoung !', initialConsonants: 'ㅈㅇㅇ!', vocabulary: [{ kor: '-아/야', fr: 'Suffixe vocatif (pour appeler quelqu\'un)' }] },
+            { id: 2, speaker: '진영 (👩)', audioText: '어! 수정아, 왔어?', koreanAnswer: '어! 수정아, 왔어?', frenchAnswer: 'Oh ! Sujeong, tu es là ?', initialConsonants: 'ㅇ! ㅅㅈㅇ, ㅇㅇ?', vocabulary: [{ kor: '오다', fr: 'venir' }, { kor: '왔어?', fr: 'tu es venu(e) ? (passé informel)' }] },
+            { id: 3, speaker: '수정 (👩)', audioText: '응. 오늘 너무 예쁘다. 천사 같아. 결혼 정말 축하해!', koreanAnswer: '응. 오늘 너무 예쁘다. 천사 같아. 결혼 정말 축하해!', frenchAnswer: 'Oui. Tu es si jolie aujourd\'hui. On dirait un ange. Vraiment félicitations pour ton mariage !', initialConsonants: 'ㅇ. ㅇㄴ ㄴㅁ ㅇㅃㄷ. ㅊㅅ ㄱㅇ. ㄱㅎ ㅈㅁ ㅊㅋㅎ!', vocabulary: [{ kor: '오늘', fr: 'aujourd\'hui' }, { kor: '너무', fr: 'très' }, { kor: '예쁘다', fr: 'être joli(e)' }, { kor: '천사', fr: 'ange' }, { kor: '같다', fr: 'ressembler à, être comme' }, { kor: '결혼', fr: 'mariage' }, { kor: '정말', fr: 'vraiment' }, { kor: '축하하다', fr: 'féliciter' }] },
+            { id: 4, speaker: '진영 (👩)', audioText: '고마워. 그런데 나 지금 너무 긴장돼.', koreanAnswer: '고마워. 그런데 나 지금 너무 긴장돼.', frenchAnswer: 'Merci. Mais je suis si nerveuse maintenant.', initialConsonants: 'ㄱㅁㅇ. ㄱㄹㄷ ㄴ ㅈㄱ ㄴㅁ ㄱㅈㄷ.', vocabulary: [{ kor: '고맙다', fr: 'remercier' }, { kor: '그런데', fr: 'mais, cependant' }, { kor: '나', fr: 'je/moi (informel)' }, { kor: '지금', fr: 'maintenant' }, { kor: '긴장되다', fr: 'être nerveux/tendu' }] },
+            { id: 5, speaker: '수정 (👩)', audioText: '정말? 긴장하지 마.', koreanAnswer: '정말? 긴장하지 마.', frenchAnswer: 'Vraiment ? Ne sois pas nerveuse.', initialConsonants: 'ㅈㅁ? ㄱㅈㅎㅈ ㅁ.', vocabulary: [{ kor: '-지 마', fr: 'ne... pas (impératif négatif)' }] },
+            { id: 6, speaker: '진영 (👩)', audioText: '응. 알겠어. 근데 혼자 왔어?', koreanAnswer: '응. 알겠어. 근데 혼자 왔어?', frenchAnswer: 'Oui, d\'accord. Mais tu es venue seule ?', initialConsonants: 'ㅇ. ㅇㄱㅇ. ㄱㄷ ㅎㅈ ㅇㅇ?', vocabulary: [{ kor: '알겠어', fr: 'd\'accord, compris' }, { kor: '근데', fr: 'mais, au fait (contraction de 그런데)' }, { kor: '혼자', fr: 'seul(e)' }] },
+            { id: 7, speaker: '수정 (👩)', audioText: '은진이는 오고 있어. 곧 도착할 거야.', koreanAnswer: '은진이는 오고 있어. 곧 도착할 거야.', frenchAnswer: 'Eunjin est en route. Elle arrivera bientôt.', initialConsonants: 'ㅇㅈㅇㄴ ㅇㄱ ㅇㅇ. ㄱ ㄷㅊㅎ ㄱㅇ.', vocabulary: [{ kor: '오고 있다', fr: 'être en train de venir' }, { kor: '곧', fr: 'bientôt' }, { kor: '도착하다', fr: 'arriver' }, { kor: '-(으)ㄹ 거야', fr: 'futur (promesse, intention)' }] },
+            { id: 8, speaker: '진영 (👩)', audioText: '그렇구나.', koreanAnswer: '그렇구나.', frenchAnswer: 'Ah, je vois.', initialConsonants: 'ㄱㄹㄱㄴ.', vocabulary: [{ kor: '그렇구나', fr: 'Ah, c\'est donc ça / Je vois' }] },
+            { id: 9, speaker: '수정 (👩)', audioText: '자, 결혼 선물이야.', koreanAnswer: '자, 결혼 선물이야.', frenchAnswer: 'Tiens, c\'est un cadeau de mariage.', initialConsonants: 'ㅈ, ㄱㅎ ㅅㅁㅇㅇ.', vocabulary: [{ kor: '자', fr: 'Tiens !' }, { kor: '선물', fr: 'cadeau' }, { kor: '-이야', fr: 'c\'est... (informel)' }] },
+            { id: 10, speaker: '진영 (👩)', audioText: '정말? 고마워. 이게 뭐야?', koreanAnswer: '정말? 고마워. 이게 뭐야?', frenchAnswer: 'Vraiment ? Merci. Qu\'est-ce que c\'est ?', initialConsonants: 'ㅈㅁ? ㄱㅁㅇ. ㅇㄱ ㅁㅇ?', vocabulary: [{ kor: '이게', fr: 'ceci (contraction de 이것이)' }, { kor: '뭐', fr: 'quoi' }] },
+            { id: 11, speaker: '수정 (👩)', audioText: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.', koreanAnswer: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.', frenchAnswer: 'C\'est un t-shirt de couple. Porte-le avec ton mari pendant votre lune de miel.', initialConsonants: 'ㅋㅍ ㅌㅇ. ㅅㅎㅇㅎ ㄱㅅ ㅅㄹㅎㄱ ㄱㅇ ㅇㅇ.', vocabulary: [{ kor: '커플 티', fr: 't-shirt de couple' }, { kor: '신혼여행', fr: 'voyage de noces' }, { kor: '가서', fr: 'aller et puis...' }, { kor: '신랑', fr: 'le marié, son mari' }, { kor: '같이', fr: 'ensemble' }, { kor: '입다', fr: 'porter (un vêtement)' }] }
         ];
 
         // --- Levenshtein Distance Function for scoring ---
@@ -275,12 +138,8 @@
             if (a.length === 0) return b.length;
             if (b.length === 0) return a.length;
             const matrix = [];
-            for (let i = 0; i <= b.length; i++) {
-                matrix[i] = [i];
-            }
-            for (let j = 0; j <= a.length; j++) {
-                matrix[0][j] = j;
-            }
+            for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+            for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
             for (let i = 1; i <= b.length; i++) {
                 for (let j = 1; j <= a.length; j++) {
                     if (b.charAt(i - 1) === a.charAt(j - 1)) {
@@ -293,9 +152,69 @@
             return matrix[b.length][a.length];
         }
 
+        // --- Modal Functions ---
+        function showErrorModal(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-modal').classList.remove('hidden');
+        }
+
+        function closeErrorModal() {
+            document.getElementById('error-modal').classList.add('hidden');
+        }
+
         // --- Core Functions ---
         const exerciseContainer = document.getElementById('exercise-container');
 
+        async function playAudio(id) {
+            const question = questions.find(q => q.id === id);
+            const button = document.getElementById(`audio-btn-${id}`);
+            const icon = button.querySelector('i');
+
+            // Disable button and show spinner
+            button.disabled = true;
+            icon.className = 'fas fa-spinner fa-spin';
+
+            try {
+                // Call the Netlify function to generate audio
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: question.audioText,
+                        // Alternate voices based on the speaker for a more natural dialogue
+                        speaker: question.speaker.includes('수정') ? 'female' : 'male'
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                    throw new Error(`Erreur du serveur (${response.status}): ${errorData.message || 'Détails non disponibles'}`);
+                }
+
+                const data = await response.json();
+                if (data.audioUrl) {
+                    const audio = new Audio(data.audioUrl);
+                    audio.play();
+                    audio.onended = () => {
+                        // Re-enable button and reset icon when audio finishes
+                        button.disabled = false;
+                        icon.className = 'fas fa-play';
+                    };
+                    audio.onerror = () => {
+                        throw new Error("Impossible de charger ou lire le fichier audio.");
+                    }
+                } else {
+                    throw new Error("L'URL de l'audio n'a pas été reçue du serveur.");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la lecture de l'audio:", error);
+                showErrorModal(error.message || "Une erreur inconnue est survenue lors de la génération de l'audio.");
+                // Re-enable button and reset icon on error
+                button.disabled = false;
+                icon.className = 'fas fa-play';
+            }
+        }
+        
         function renderQuestions() {
             let content = '';
             questions.forEach(q => {
@@ -334,50 +253,6 @@
             exerciseContainer.innerHTML = content;
         }
 
-        async function playAudio(id) {
-            const question = questions.find(q => q.id === id);
-            const button = document.getElementById(`audio-btn-${id}`);
-            const icon = button.querySelector('i');
-
-            button.classList.add('loading');
-            icon.className = 'fas fa-spinner fa-spin';
-
-            try {
-                // Using your Netlify function endpoint
-                const response = await fetch('/.netlify/functions/generate-audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text: question.audioText,
-                        // Assuming your API can handle a speaker parameter
-                        // Let's alternate voices based on speaker name for demonstration
-                        speaker: question.speaker.includes('수정') ? 'female' : 'male' 
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Erreur du serveur: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                if (data.audioUrl) {
-                    const audio = new Audio(data.audioUrl);
-                    audio.play();
-                    audio.onended = () => {
-                        button.classList.remove('loading');
-                        icon.className = 'fas fa-play';
-                    };
-                } else {
-                    throw new Error("L'URL de l'audio n'a pas été reçue.");
-                }
-            } catch (error) {
-                console.error("Erreur lors de la lecture de l'audio:", error);
-                alert("Désolé, une erreur est survenue lors de la génération de l'audio. Veuillez réessayer.");
-                button.classList.remove('loading');
-                icon.className = 'fas fa-play';
-            }
-        }
-
         function showHint(id, type) {
             const question = questions.find(q => q.id === id);
             const hintBox = document.getElementById(`hint-box-${id}`);
@@ -399,8 +274,8 @@
 
         function checkAnswer(id) {
             const question = questions.find(q => q.id === id);
-            const koreanInput = document.getElementById(`korean-input-${id}`).value.trim();
-            const resultBox = document.getElementById(`result-box-${id}`);
+            const koreanInput = document.getElementById(`korean-input-${q.id}`).value.trim();
+            const resultBox = document.getElementById(`result-box-${q.id}`);
 
             const cleanAnswer = str => str.replace(/[.,!?\s]/g, '');
             const userAnswerClean = cleanAnswer(koreanInput);
@@ -442,7 +317,6 @@
             resultBox.className = `result-box ${resultClass}`;
             resultBox.classList.remove('hidden');
         }
-
 
         // --- Initialisation ---
         document.addEventListener('DOMContentLoaded', renderQuestions);
