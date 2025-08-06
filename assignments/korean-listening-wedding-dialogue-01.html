@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice d'écoute en coréen - Dialogue de mariage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        .gowun-dodum {
+            font-family: 'Gowun Dodum', sans-serif;
+        }
+
+        .task-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .task-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .audio-btn {
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .audio-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .audio-btn.loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+
+        .result-box {
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .result-perfect {
+            background-color: #e0fbe0;
+            border: 1px solid #5cb85c;
+            color: #3d8b3d;
+        }
+
+        .result-good {
+            background-color: #dff0d8;
+            border: 1px solid #d6e9c6;
+            color: #3c763d;
+        }
+
+        .result-ok {
+            background-color: #fcf8e3;
+            border: 1px solid #faebcc;
+            color: #8a6d3b;
+        }
+
+        .result-bad {
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            color: #a94442;
+        }
+        
+        .hint-content {
+            background-color: #f9fafb;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50">
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-slate-800">Exercice d'écoute 🎧</h1>
+            <p class="text-slate-600 mt-2 text-lg">Dialogue de mariage (초보자용)</p>
+        </header>
+
+        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-8 rounded-md" role="alert">
+            <p class="font-bold">Instructions</p>
+            <p>1. Cliquez sur le bouton <i class="fas fa-play"></i> pour écouter la phrase.</p>
+            <p>2. Écrivez ce que vous entendez en coréen.</p>
+            <p>3. Utilisez les boutons d'indice si vous avez besoin d'aide.</p>
+            <p>4. Traduisez la phrase en français pour vérifier votre compréhension.</p>
+            <p>5. Cliquez sur "Vérifier" pour voir votre score et la correction.</p>
+        </div>
+
+        <div id="exercise-container" class="space-y-6">
+            <!-- Les questions seront injectées ici par JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const questions = [
+            {
+                id: 1,
+                speaker: '수정 (👩)',
+                audioText: '진영아!',
+                koreanAnswer: '진영아!',
+                frenchAnswer: 'Jinyoung !',
+                initialConsonants: 'ㅈㅇㅇ!',
+                vocabulary: [
+                    { kor: '-아/야', fr: 'Suffixe vocatif (pour appeler quelqu\'un)' }
+                ]
+            },
+            {
+                id: 2,
+                speaker: '진영 (👩)',
+                audioText: '어! 수정아, 왔어?',
+                koreanAnswer: '어! 수정아, 왔어?',
+                frenchAnswer: 'Oh ! Sujeong, tu es là ?',
+                initialConsonants: 'ㅇ! ㅅㅈㅇ, ㅇㅇ?',
+                vocabulary: [
+                    { kor: '오다', fr: 'venir' },
+                    { kor: '왔어?', fr: 'tu es venu(e) ? (passé informel)' }
+                ]
+            },
+            {
+                id: 3,
+                speaker: '수정 (👩)',
+                audioText: '응. 오늘 너무 예쁘다. 천사 같아. 결혼 정말 축하해!',
+                koreanAnswer: '응. 오늘 너무 예쁘다. 천사 같아. 결혼 정말 축하해!',
+                frenchAnswer: 'Oui. Tu es si jolie aujourd\'hui. On dirait un ange. Vraiment félicitations pour ton mariage !',
+                initialConsonants: 'ㅇ. ㅇㄴ ㄴㅁ ㅇㅃㄷ. ㅊㅅ ㄱㅇ. ㄱㅎ ㅈㅁ ㅊㅋㅎ!',
+                vocabulary: [
+                    { kor: '오늘', fr: 'aujourd\'hui' },
+                    { kor: '너무', fr: 'très' },
+                    { kor: '예쁘다', fr: 'être joli(e)' },
+                    { kor: '천사', fr: 'ange' },
+                    { kor: '같다', fr: 'ressembler à, être comme' },
+                    { kor: '결혼', fr: 'mariage' },
+                    { kor: '정말', fr: 'vraiment' },
+                    { kor: '축하하다', fr: 'féliciter' }
+                ]
+            },
+            {
+                id: 4,
+                speaker: '진영 (👩)',
+                audioText: '고마워. 그런데 나 지금 너무 긴장돼.',
+                koreanAnswer: '고마워. 그런데 나 지금 너무 긴장돼.',
+                frenchAnswer: 'Merci. Mais je suis si nerveuse maintenant.',
+                initialConsonants: 'ㄱㅁㅇ. ㄱㄹㄷ ㄴ ㅈㄱ ㄴㅁ ㄱㅈㄷ.',
+                vocabulary: [
+                    { kor: '고맙다', fr: 'remercier' },
+                    { kor: '그런데', fr: 'mais, cependant' },
+                    { kor: '나', fr: 'je/moi (informel)' },
+                    { kor: '지금', fr: 'maintenant' },
+                    { kor: '긴장되다', fr: 'être nerveux/tendu' }
+                ]
+            },
+            {
+                id: 5,
+                speaker: '수정 (👩)',
+                audioText: '정말? 긴장하지 마.',
+                koreanAnswer: '정말? 긴장하지 마.',
+                frenchAnswer: 'Vraiment ? Ne sois pas nerveuse.',
+                initialConsonants: 'ㅈㅁ? ㄱㅈㅎㅈ ㅁ.',
+                vocabulary: [
+                    { kor: '-지 마', fr: 'ne... pas (impératif négatif)' }
+                ]
+            },
+            {
+                id: 6,
+                speaker: '진영 (👩)',
+                audioText: '응. 알겠어. 근데 혼자 왔어?',
+                koreanAnswer: '응. 알겠어. 근데 혼자 왔어?',
+                frenchAnswer: 'Oui, d\'accord. Mais tu es venue seule ?',
+                initialConsonants: 'ㅇ. ㅇㄱㅇ. ㄱㄷ ㅎㅈ ㅇㅇ?',
+                vocabulary: [
+                    { kor: '알겠어', fr: 'd\'accord, compris' },
+                    { kor: '근데', fr: 'mais, au fait (contraction de 그런데)' },
+                    { kor: '혼자', fr: 'seul(e)' }
+                ]
+            },
+            {
+                id: 7,
+                speaker: '수정 (👩)',
+                audioText: '은진이는 오고 있어. 곧 도착할 거야.',
+                koreanAnswer: '은진이는 오고 있어. 곧 도착할 거야.',
+                frenchAnswer: 'Eunjin est en route. Elle arrivera bientôt.',
+                initialConsonants: 'ㅇㅈㅇㄴ ㅇㄱ ㅇㅇ. ㄱ ㄷㅊㅎ ㄱㅇ.',
+                vocabulary: [
+                    { kor: '오고 있다', fr: 'être en train de venir' },
+                    { kor: '곧', fr: 'bientôt' },
+                    { kor: '도착하다', fr: 'arriver' },
+                    { kor: '-(으)ㄹ 거야', fr: 'futur (promesse, intention)' }
+                ]
+            },
+            {
+                id: 8,
+                speaker: '진영 (👩)',
+                audioText: '그렇구나.',
+                koreanAnswer: '그렇구나.',
+                frenchAnswer: 'Ah, je vois.',
+                initialConsonants: 'ㄱㄹㄱㄴ.',
+                vocabulary: [
+                    { kor: '그렇구나', fr: 'Ah, c\'est donc ça / Je vois' }
+                ]
+            },
+            {
+                id: 9,
+                speaker: '수정 (👩)',
+                audioText: '자, 결혼 선물이야.',
+                koreanAnswer: '자, 결혼 선물이야.',
+                frenchAnswer: 'Tiens, c\'est un cadeau de mariage.',
+                initialConsonants: 'ㅈ, ㄱㅎ ㅅㅁㅇㅇ.',
+                vocabulary: [
+                    { kor: '자', fr: 'Tiens !' },
+                    { kor: '선물', fr: 'cadeau' },
+                    { kor: '-이야', fr: 'c\'est... (informel)' }
+                ]
+            },
+            {
+                id: 10,
+                speaker: '진영 (👩)',
+                audioText: '정말? 고마워. 이게 뭐야?',
+                koreanAnswer: '정말? 고마워. 이게 뭐야?',
+                frenchAnswer: 'Vraiment ? Merci. Qu\'est-ce que c\'est ?',
+                initialConsonants: 'ㅈㅁ? ㄱㅁㅇ. ㅇㄱ ㅁㅇ?',
+                vocabulary: [
+                    { kor: '이게', fr: 'ceci (contraction de 이것이)' },
+                    { kor: '뭐', fr: 'quoi' }
+                ]
+            },
+            {
+                id: 11,
+                speaker: '수정 (👩)',
+                audioText: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.',
+                koreanAnswer: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.',
+                frenchAnswer: 'C\'est un t-shirt de couple. Porte-le avec ton mari pendant votre lune de miel.',
+                initialConsonants: 'ㅋㅍ ㅌㅇ. ㅅㅎㅇㅎ ㄱㅅ ㅅㄹㅎㄱ ㄱㅇ ㅇㅇ.',
+                vocabulary: [
+                    { kor: '커플 티', fr: 't-shirt de couple' },
+                    { kor: '신혼여행', fr: 'voyage de noces' },
+                    { kor: '가서', fr: 'aller et puis...' },
+                    { kor: '신랑', fr: 'le marié, son mari' },
+                    { kor: '같이', fr: 'ensemble' },
+                    { kor: '입다', fr: 'porter (un vêtement)' }
+                ]
+            }
+        ];
+
+        // --- Levenshtein Distance Function for scoring ---
+        function levenshtein(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        // --- Core Functions ---
+        const exerciseContainer = document.getElementById('exercise-container');
+
+        function renderQuestions() {
+            let content = '';
+            questions.forEach(q => {
+                content += `
+                    <div id="card-${q.id}" class="task-card p-5">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-slate-700">Question ${q.id} <span class="text-base font-normal text-slate-500">${q.speaker}</span></h3>
+                            <button onclick="playAudio(${q.id})" id="audio-btn-${q.id}" class="audio-btn bg-blue-500 hover:bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="korean-input-${q.id}" class="block text-sm font-medium text-slate-600 mb-1">Écrivez en coréen :</label>
+                                <input type="text" id="korean-input-${q.id}" class="gowun-dodum w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent" placeholder="들리는 대로 적어보세요...">
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="showHint(${q.id}, 'consonants')" class="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 py-1 px-3 rounded-full">Indice 1 (초성)</button>
+                                <button onclick="showHint(${q.id}, 'vocab')" class="text-sm bg-amber-200 hover:bg-amber-300 text-amber-800 py-1 px-3 rounded-full">Indice 2 (Vocabulaire)</button>
+                            </div>
+                            <div id="hint-box-${q.id}" class="hidden"></div>
+                            <div>
+                                <label for="french-input-${q.id}" class="block text-sm font-medium text-slate-600 mb-1">Traduisez en français :</label>
+                                <input type="text" id="french-input-${q.id}" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent" placeholder="한국어 문장을 번역해 보세요...">
+                            </div>
+                        </div>
+                        <div class="mt-4 text-right">
+                            <button onclick="checkAnswer(${q.id})" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
+                                Vérifier
+                            </button>
+                        </div>
+                        <div id="result-box-${q.id}" class="result-box hidden"></div>
+                    </div>
+                `;
+            });
+            exerciseContainer.innerHTML = content;
+        }
+
+        async function playAudio(id) {
+            const question = questions.find(q => q.id === id);
+            const button = document.getElementById(`audio-btn-${id}`);
+            const icon = button.querySelector('i');
+
+            button.classList.add('loading');
+            icon.className = 'fas fa-spinner fa-spin';
+
+            try {
+                // Using your Netlify function endpoint
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: question.audioText,
+                        // Assuming your API can handle a speaker parameter
+                        // Let's alternate voices based on speaker name for demonstration
+                        speaker: question.speaker.includes('수정') ? 'female' : 'male' 
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur du serveur: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                if (data.audioUrl) {
+                    const audio = new Audio(data.audioUrl);
+                    audio.play();
+                    audio.onended = () => {
+                        button.classList.remove('loading');
+                        icon.className = 'fas fa-play';
+                    };
+                } else {
+                    throw new Error("L'URL de l'audio n'a pas été reçue.");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la lecture de l'audio:", error);
+                alert("Désolé, une erreur est survenue lors de la génération de l'audio. Veuillez réessayer.");
+                button.classList.remove('loading');
+                icon.className = 'fas fa-play';
+            }
+        }
+
+        function showHint(id, type) {
+            const question = questions.find(q => q.id === id);
+            const hintBox = document.getElementById(`hint-box-${id}`);
+            let hintContent = '';
+
+            if (type === 'consonants') {
+                hintContent = `<p class="text-slate-700 font-mono text-lg">${question.initialConsonants}</p>`;
+            } else if (type === 'vocab') {
+                hintContent = '<ul class="list-disc list-inside space-y-1">';
+                question.vocabulary.forEach(v => {
+                    hintContent += `<li><strong class="gowun-dodum">${v.kor}</strong>: ${v.fr}</li>`;
+                });
+                hintContent += '</ul>';
+            }
+            
+            hintBox.innerHTML = `<div class="hint-content">${hintContent}</div>`;
+            hintBox.classList.remove('hidden');
+        }
+
+        function checkAnswer(id) {
+            const question = questions.find(q => q.id === id);
+            const koreanInput = document.getElementById(`korean-input-${id}`).value.trim();
+            const resultBox = document.getElementById(`result-box-${id}`);
+
+            const cleanAnswer = str => str.replace(/[.,!?\s]/g, '');
+            const userAnswerClean = cleanAnswer(koreanInput);
+            const correctAnswerClean = cleanAnswer(question.koreanAnswer);
+
+            const distance = levenshtein(userAnswerClean, correctAnswerClean);
+            const maxLength = Math.max(userAnswerClean.length, correctAnswerClean.length);
+            const score = maxLength === 0 ? 100 : (1 - distance / maxLength) * 100;
+
+            let resultHTML = '';
+            let resultClass = '';
+
+            if (score === 100) {
+                resultClass = 'result-perfect';
+                resultHTML = '<p class="font-bold text-xl">완벽해요! 👑🎉👍 (Parfait !)</p>';
+            } else if (score >= 80) {
+                resultClass = 'result-good';
+                resultHTML = '<p class="font-bold text-lg">잘했어요! 🎉👍 (Bien joué !)</p>';
+            } else if (score >= 60) {
+                resultClass = 'result-ok';
+                resultHTML = '<p class="font-bold">꽤 잘했어요. 👍 (Assez bien fait.)</p>';
+            } else {
+                resultClass = 'result-bad';
+                resultHTML = '<p class="font-bold">땡! 틀렸어요! (Bip ! Faux !)</p>';
+            }
+
+            if (score < 100) {
+                resultHTML += `
+                    <div class="mt-2 text-left text-sm">
+                        <p><strong>Votre réponse :</strong> <span class="gowun-dodum">${koreanInput || "<em>(vide)</em>"}</span></p>
+                        <p><strong>Réponse correcte :</strong> <span class="gowun-dodum">${question.koreanAnswer}</span></p>
+                    </div>
+                `;
+            }
+            
+            resultHTML += `<hr class="my-2"><p class="text-left text-sm"><strong>Traduction :</strong> ${question.frenchAnswer}</p>`;
+
+            resultBox.innerHTML = resultHTML;
+            resultBox.className = `result-box ${resultClass}`;
+            resultBox.classList.remove('hidden');
+        }
+
+
+        // --- Initialisation ---
+        document.addEventListener('DOMContentLoaded', renderQuestions);
+    </script>
+</body>
+
+</html>
