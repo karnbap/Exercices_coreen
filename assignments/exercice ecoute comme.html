@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice de Dictée Coréenne - 한국어 받아쓰기 연습</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+        }
+        /* Custom focus styles for better accessibility */
+        .custom-focus:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* blue-500 with opacity */
+            border-color: #3b82f6; /* blue-500 */
+        }
+        /* Style for disabled button */
+        .speak-btn:disabled {
+            background-color: #93c5fd; /* blue-300 */
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-800">Exercice de Dictée Coréenne 🎧</h1>
+            <p class="text-lg text-slate-600 mt-2">한국어 받아쓰기 연습 (Netlify 음성 API)</p>
+        </header>
+
+        <main id="questions-container" class="space-y-6">
+            <!-- Les questions seront injectées ici par JavaScript -->
+            <!-- 자바스크립트로 문제가 여기에 추가됩니다 -->
+        </main>
+    </div>
+
+    <script type="module">
+        // --- CONFIGURATION / 설정 ---
+        // netlify.toml 설정에 따라 API 경로를 설정합니다.
+        // `netlify/functions` 폴더의 파일 이름이 tts.js가 아니라면 경로를 수정해주세요.
+        // (예: 파일 이름이 speech.js -> "/api/speech")
+        const NETLIFY_API_URL = "/api/generate-audio"; 
+
+        // --- DATA / 데이터 ---
+        const questions = [
+            { id: 1, korean: "저는 빵과 물을 먹어요.", french: "Je mange du pain et de l'eau.", hint2: "빵 (pa..): pain / 물 (e..): eau" },
+            { id: 2, korean: "고양이랑 강아지는 귀여워요.", french: "Les chats et les chiens sont mignons.", hint2: "고양이 (ch..): chat / 강아지 (ch...): chien" },
+            { id: 3, korean: "가방에 책과 공책이 있어요.", french: "Dans mon sac, il y a un livre et un cahier.", hint2: "책 (li...): livre / 공책 (ca...): cahier" },
+            { id: 4, korean: "저는 한국 드라마하고 한국 영화를 좋아해요.", french: "J'aime les dramas coréens et les films coréens.", hint2: "드라마 (dr...): drama / 영화 (fi..): film" },
+            { id: 5, korean: "저는 영화를 보고 잠을 자요.", french: "Je regarde un film et puis je dors.", hint2: "보다 (re...): regarder / 잠을 자다 (do...): dormir" },
+            { id: 6, korean: "학생은 공부를 하고 놀아요.", french: "L'étudiant étudie et puis il s'amuse.", hint2: "공부하다 (ét...): étudier / 놀다 (s'am...): s'amuser" },
+            { id: 7, korean: "어제 저녁을 먹고 숙제를 했어요.", french: "Hier, j'ai dîné et puis j'ai fait mes devoirs.", hint2: "저녁을 먹다 (dî...): dîner / 숙제 (de...): devoirs" },
+            { id: 8, korean: "샤워를 하고 옷을 입었어요.", french: "J'ai pris une douche et puis je me suis habillé.", hint2: "샤워를 하다 (pr... une douche): prendre une douche / 옷을 입다 (s'ha...): s'habiller" },
+            { id: 9, korean: "커피나 주스 주세요.", french: "Donnez-moi du café ou du jus.", hint2: "커피 (ca..): café / 주스 (j..): jus" },
+            { id: 10, korean: "버스나 지하철을 타요.", french: "Je prends le bus ou le métro.", hint2: "버스 (b..): bus / 지하철 (mé...): métro" },
+            { id: 11, korean: "아침에 빵이나 밥을 먹어요.", french: "Le matin, je mange du pain ou du riz.", hint2: "아침 (ma...): matin / 밥 (r..): riz (cuit)" },
+            { id: 12, korean: "주말에 보통 집에서 쉬거나 친구를 만나요.", french: "Le week-end, d'habitude je me repose à la maison ou je rencontre mes amis.", hint2: "쉬다 (se re...): se reposer / 만나다 (re...): rencontrer" },
+            { id: 13, korean: "시간이 있을 때, 음악을 듣거나 영화를 봐요.", french: "Quand j'ai le temps, j'écoute de la musique ou je regarde un film.", hint2: "음악을 듣다 (éc... de la musique): écouter de la musique / 영화를 보다 (re... un film): regarder un film" },
+            { id: 14, korean: "내일 쇼핑을 하거나 도서관에 갈 거예요.", french: "Demain, je vais faire du shopping ou aller à la bibliothèque.", hint2: "쇼핑을 하다 (fa... du shopping): faire du shopping / 도서관 (bi...): bibliothèque" },
+            { id: 15, korean: "배고파요. 라면을 끓여 먹거나 빵을 먹을 거예요.", french: "J'ai faim. Je vais me faire des ramyeon ou manger du pain.", hint2: "배고프다 (av... faim): avoir faim / 끓이다 (fa... bouillir): faire bouillir" },
+            { id: 16, korean: "한국 사람들은 김치찌개를 자주 먹어요.", french: "Les coréens mangent souvent du ragoût de kimchi.", hint2: "자주 (sou...): souvent / 먹다 (man...): manger" },
+            { id: 17, korean: "김치찌개에는 김치하고 돼지고기가 들어가요.", french: "Dans le ragoût de kimchi, on met du kimchi et de la viande de porc.", hint2: "돼지고기 (vi... de porc): viande de porc / 들어가다 (con...): contenir" },
+            { id: 18, korean: "먼저 돼지고기를 냄비에 넣고 볶아요.", french: "D'abord, on met la viande de porc dans la marmite et on la fait revenir.", hint2: "먼저 (d'ab...): d'abord / 볶다 (fa... revenir): faire revenir" },
+            { id: 19, korean: "그리고 돼지고기가 익으면 김치를 넣어요.", french: "Et quand la viande de porc est cuite, on ajoute le kimchi.", hint2: "익다 (être c...): être cuit / 넣다 (aj...): ajouter" },
+            { id: 20, korean: "마지막으로 물이나 육수를 넣고 끓이면 완성돼요.", french: "Pour finir, on ajoute de l’eau ou du bouillon, on laisse bouillir et c’est prêt.", hint2: "마지막으로 (po... finir): pour finir / 끓이다 (fa... bouillir): faire bouillir" },
+            { id: 21, korean: "마늘, 양파, 두부를 넣으면 더 맛있어요.", french: "Si on ajoute de l’ail, de l’oignon, du tofu, c’est encore meilleur.", hint2: "마늘 (a..): ail / 양파 (oi...): oignon / 더 (pl..): plus" }
+        ];
+
+        // --- AUDIO HELPERS / 오디오 헬퍼 ---
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const pcm16 = new Int16Array(pcmData);
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const dataSize = pcm16.length * 2;
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            for (let i = 0; i < pcm16.length; i++) {
+                view.setInt16(44 + i * 2, pcm16[i], true);
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        // --- SPEECH SYNTHESIS (Netlify API) / 음성 합성 (Netlify API) ---
+        const audioCache = {}; // Cache for generated audio
+
+        async function speak(text, buttonElement) {
+            const originalText = buttonElement.innerHTML;
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading... / 로딩 중...`;
+
+            try {
+                if (audioCache[text]) {
+                    const audio = new Audio(audioCache[text]);
+                    await audio.play();
+                    return;
+                }
+                
+                // Netlify API 호출
+                const response = await fetch(NETLIFY_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text }) // API가 받을 데이터 형식
+                });
+
+                if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+
+                const result = await response.json();
+                // API 응답 형식에 맞춰 audioData와 mimeType을 추출해야 합니다.
+                // 아래는 예시이며, 실제 API 응답 구조에 따라 수정이 필요할 수 있습니다.
+                const audioData = result.audioData; // e.g., result.audioContent, result.data 등
+                const mimeType = result.mimeType;   // e.g., "audio/L16;rate=24000"
+
+                if (audioData && mimeType?.startsWith("audio/")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const wavBlob = pcmToWav(pcmData, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    audioCache[text] = audioUrl;
+                    const audio = new Audio(audioUrl);
+                    await audio.play();
+                } else {
+                    throw new Error("Audio data not found in API response.");
+                }
+            } catch (error) {
+                console.error("Error generating speech:", error);
+                alert("음성 생성 중 오류가 발생했습니다. Netlify API 주소와 응답 형식을 확인해주세요.");
+            } finally {
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = originalText;
+            }
+        }
+
+        // --- HINT GENERATION / 힌트 생성 ---
+        function getChosung(text) {
+            const chosung = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+            let result = "";
+            for (let i = 0; i < text.length; i++) {
+                const charCode = text.charCodeAt(i);
+                if (charCode >= 0xAC00 && charCode <= 0xD7A3) { // Hangul Syllables
+                    const hangulIndex = charCode - 0xAC00;
+                    const chosungIndex = Math.floor(hangulIndex / (21 * 28));
+                    result += chosung[chosungIndex];
+                } else {
+                    result += text[i];
+                }
+            }
+            return result;
+        }
+
+        // --- RENDER QUESTIONS / 문제 렌더링 ---
+        const questionsContainer = document.getElementById('questions-container');
+        questions.forEach(q => {
+            const card = document.createElement('div');
+            card.className = 'question-card bg-white p-5 rounded-xl shadow-md border border-slate-200';
+            card.dataset.id = q.id;
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-blue-600">Question ${q.id} / 문제 ${q.id}</h2>
+                    <button data-action="speak" data-text="${q.korean}" class="speak-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 custom-focus flex items-center justify-center min-w-[150px]">
+                        Écouter 🔊 / 듣기
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="korean-answer-${q.id}" class="block text-sm font-medium text-slate-700 mb-1">Écrivez en coréen / 한국어로 받아쓰기</label>
+                        <input type="text" id="korean-answer-${q.id}" class="korean-answer w-full p-2 border border-slate-300 rounded-md custom-focus" placeholder="들리는 대로 적어보세요...">
+                    </div>
+                    <div>
+                        <label for="french-answer-${q.id}" class="block text-sm font-medium text-slate-700 mb-1">Traduisez en français / 프랑스어로 번역</label>
+                        <input type="text" id="french-answer-${q.id}" class="french-answer w-full p-2 border border-slate-300 rounded-md custom-focus" placeholder="뜻을 번역해 보세요...">
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button data-action="hint1" class="hint-btn bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-sm font-semibold py-1 px-3 rounded-full custom-focus">💡 Indice 1 (초성)</button>
+                    <button data-action="hint2" data-hint="${q.hint2}" class="hint-btn bg-orange-400 hover:bg-orange-500 text-orange-900 text-sm font-semibold py-1 px-3 rounded-full custom-focus">💡 Indice 2 (단어 뜻)</button>
+                </div>
+                <div class="hint-display mt-2 p-3 bg-slate-100 rounded-md text-slate-600 text-sm min-h-[40px]" style="display: none;"></div>
+                <div class="mt-4 text-right">
+                    <button data-action="check" class="check-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105 custom-focus">Vérifier / 정답 확인</button>
+                </div>
+                <div class="result-display mt-3 p-3 rounded-md text-sm"></div>`;
+            questionsContainer.appendChild(card);
+        });
+
+        // --- EVENT HANDLING / 이벤트 처리 ---
+        questionsContainer.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            
+            const card = target.closest('.question-card');
+            if (!card) return;
+
+            const questionId = parseInt(card.dataset.id);
+            const questionData = questions.find(q => q.id === questionId);
+            const hintDisplay = card.querySelector('.hint-display');
+            const action = target.dataset.action;
+
+            if (action === 'speak') {
+                speak(target.dataset.text, target);
+            } 
+            else if (action === 'hint1') {
+                hintDisplay.textContent = `초성 힌트: ${getChosung(questionData.korean)}`;
+                hintDisplay.style.display = 'block';
+            } 
+            else if (action === 'hint2') {
+                hintDisplay.textContent = `단어 힌트: ${target.dataset.hint}`;
+                hintDisplay.style.display = 'block';
+            } 
+            else if (action === 'check') {
+                const koreanInput = card.querySelector('.korean-answer');
+                const frenchInput = card.querySelector('.french-answer');
+                const resultDisplay = card.querySelector('.result-display');
+                const userAnswerKorean = koreanInput.value.trim().replace(/[.,!?]/g, "");
+                const correctAnswerKorean = questionData.korean.trim().replace(/[.,!?]/g, "");
+                const userAnswerFrench = frenchInput.value.trim().toLowerCase().replace(/[.,!?]/g, "");
+                const correctAnswerFrench = questionData.french.trim().toLowerCase().replace(/[.,!?]/g, "");
+
+                let isKoreanCorrect = userAnswerKorean === correctAnswerKorean;
+                let isFrenchCorrect = userAnswerFrench === correctAnswerFrench;
+
+                if (isKoreanCorrect && isFrenchCorrect) {
+                    resultDisplay.innerHTML = `<p class="font-bold text-green-700">🎉 Bravo ! C'est parfait ! / 완벽해요!</p>`;
+                    resultDisplay.className = 'result-display mt-3 p-3 rounded-md text-sm bg-green-100 border border-green-200';
+                } else {
+                    let feedback = '<p class="font-bold text-red-700 mb-2">🤔 Oups ! Vérifions ensemble. / 다시 확인해 봐요.</p>';
+                    if (!isKoreanCorrect) feedback += `<p><strong class="text-slate-600">🇰🇷 Coréen :</strong> ${questionData.korean}</p>`;
+                    if (!isFrenchCorrect) feedback += `<p><strong class="text-slate-600">🇫🇷 Français :</strong> ${questionData.french}</p>`;
+                    resultDisplay.innerHTML = feedback;
+                    resultDisplay.className = 'result-display mt-3 p-3 rounded-md text-sm bg-red-100 border border-red-200';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
