@@ -92,26 +92,37 @@
             <p class="text-slate-600 mt-2 text-lg">Dialogue de mariage (초보자용)</p>
         </header>
 
+        <!-- Student Info Section -->
+        <div class="bg-white p-5 rounded-lg shadow-md mb-8">
+            <label for="student-name" class="block text-lg font-bold text-slate-700 mb-2">Entrez votre nom :</label>
+            <input type="text" id="student-name" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400" placeholder="Ex: Cédric">
+        </div>
+
         <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-8 rounded-md" role="alert">
             <p class="font-bold">Instructions</p>
-            <p>1. Cliquez sur le bouton <i class="fas fa-play"></i> pour écouter la phrase.</p>
-            <p>2. Écrivez ce que vous entendez en coréen.</p>
-            <p>3. Utilisez les boutons d'indice si vous avez besoin d'aide.</p>
-            <p>4. Traduisez la phrase en français pour vérifier votre compréhension.</p>
-            <p>5. Cliquez sur "Vérifier" pour voir votre score et la correction.</p>
+            <p>1. Entrez votre nom ci-dessus pour commencer.</p>
+            <p>2. Cliquez sur <i class="fas fa-play"></i> pour écouter, puis écrivez et traduisez la phrase.</p>
+            <p>3. Quand vous avez terminé, cliquez sur le bouton "Terminer et envoyer les résultats" en bas de la page.</p>
         </div>
 
         <div id="exercise-container" class="space-y-6">
             <!-- Les questions seront injectées ici par JavaScript -->
         </div>
+
+        <!-- Finish Button -->
+        <div class="mt-10 text-center">
+            <button id="finish-btn" onclick="sendResults()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 disabled:bg-slate-400 disabled:cursor-not-allowed">
+                <i class="fas fa-paper-plane mr-2"></i> Terminer et envoyer les résultats
+            </button>
+        </div>
     </div>
     
-    <!-- Error Modal -->
-    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
-            <h3 class="text-xl font-bold text-red-600 mb-4">오류 발생</h3>
-            <p id="error-message" class="text-slate-700 mb-6"></p>
-            <button onclick="closeErrorModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="text-slate-700 mb-6"></p>
+            <button onclick="closeModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
                 확인
             </button>
         </div>
@@ -133,6 +144,34 @@
             { id: 11, speaker: '수정 (👩)', audioText: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.', koreanAnswer: '커플 티야. 신혼여행 가서 신랑하고 같이 입어.', frenchAnswer: 'C\'est un t-shirt de couple. Porte-le avec ton mari pendant votre lune de miel.', initialConsonants: 'ㅋㅍ ㅌㅇ. ㅅㅎㅇㅎ ㄱㅅ ㅅㄹㅎㄱ ㄱㅇ ㅇㅇ.', vocabulary: [{ kor: '커플 티', fr: 't-shirt de couple' }, { kor: '신혼여행', fr: 'voyage de noces' }, { kor: '가서', fr: 'aller et puis...' }, { kor: '신랑', fr: 'le marié, son mari' }, { kor: '같이', fr: 'ensemble' }, { kor: '입다', fr: 'porter (un vêtement)' }] }
         ];
 
+        // --- Student Data Tracking ---
+        let studentData = {
+            studentName: '',
+            startTime: null,
+            questions: questions.map(q => ({
+                id: q.id,
+                questionText: q.koreanAnswer,
+                listenCount: 0,
+                mistakeCount: 0,
+                userAnswer: '',
+                isCorrect: null
+            }))
+        };
+        let isTestStarted = false;
+
+        function startTestIfNeeded() {
+            if (isTestStarted) return;
+            const studentName = document.getElementById('student-name').value.trim();
+            if (!studentName) {
+                showModal('Attention !', 'Veuillez entrer votre nom avant de commencer.');
+                throw new Error("Student name is required.");
+            }
+            isTestStarted = true;
+            studentData.studentName = studentName;
+            studentData.startTime = new Date();
+            console.log(`Test started for ${studentName}`);
+        }
+
         // --- Levenshtein Distance Function for scoring ---
         function levenshtein(a, b) {
             if (a.length === 0) return b.length;
@@ -153,19 +192,29 @@
         }
 
         // --- Modal Functions ---
-        function showErrorModal(message) {
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('error-modal').classList.remove('hidden');
+        function showModal(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal').classList.remove('hidden');
         }
 
-        function closeErrorModal() {
-            document.getElementById('error-modal').classList.add('hidden');
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
         }
 
         // --- Core Functions ---
         const exerciseContainer = document.getElementById('exercise-container');
 
         async function playAudio(id) {
+            try {
+                startTestIfNeeded();
+            } catch (e) {
+                return; // Stop if name is not entered
+            }
+            
+            const questionData = studentData.questions.find(q => q.id === id);
+            questionData.listenCount++;
+
             const question = questions.find(q => q.id === id);
             const button = document.getElementById(`audio-btn-${id}`);
             const icon = button.querySelector('i');
@@ -183,112 +232,92 @@
                     }),
                 });
 
-                // --- Improved Error Handling ---
-                // First, get the raw text of the response to analyze it.
                 const responseText = await response.text();
+                // **DEBUGGING:** Log the raw server response to the console
+                console.log('Server response:', responseText);
+                
                 let data;
-
                 try {
-                    // Try to parse the text as JSON.
                     data = JSON.parse(responseText);
                 } catch (e) {
-                    // If parsing fails, the response was not valid JSON (e.g., an HTML error page).
-                    console.error("La réponse du serveur n'est pas un JSON valide:", responseText);
-                    throw new Error(`Réponse inattendue du serveur. Le serveur a peut-être renvoyé une erreur HTML.`);
+                    throw new Error(`Réponse inattendue du serveur (ce n'est pas un JSON valide).`);
                 }
 
-                // Now, check if the response status was OK.
                 if (!response.ok) {
-                    // Use the message from the parsed JSON if available.
-                    const errorMessage = data.message || response.statusText;
-                    throw new Error(`Erreur du serveur (${response.status}): ${errorMessage}`);
+                    throw new Error(`Erreur du serveur (${response.status}): ${data.message || response.statusText}`);
                 }
 
-                // Finally, check if the valid JSON contains the audioUrl.
                 if (data && data.audioUrl) {
                     const audio = new Audio(data.audioUrl);
                     audio.play();
-                    audio.onended = () => {
-                        button.disabled = false;
-                        icon.className = 'fas fa-play';
-                    };
-                    audio.onerror = () => {
-                        throw new Error("Impossible de charger ou lire le fichier audio depuis l'URL fournie.");
-                    }
+                    audio.onended = () => { button.disabled = false; icon.className = 'fas fa-play'; };
+                    audio.onerror = () => { throw new Error("Impossible de lire le fichier audio depuis l'URL."); }
                 } else {
-                    // The response was JSON but didn't have the expected URL.
-                    console.error("Réponse JSON reçue mais sans audioUrl:", data);
-                    throw new Error("L'URL de l'audio n'a pas été reçue dans la réponse du serveur.");
+                    throw new Error("L'URL de l'audio (audioUrl) n'a pas été trouvée dans la réponse du serveur.");
                 }
             } catch (error) {
-                console.error("Erreur lors de la lecture de l'audio:", error);
-                showErrorModal(error.message || "Une erreur inconnue est survenue lors de la génération de l'audio.");
+                console.error("Erreur Audio:", error);
+                showModal('Erreur Audio', error.message);
                 button.disabled = false;
                 icon.className = 'fas fa-play';
             }
         }
         
         function renderQuestions() {
-            let content = '';
-            questions.forEach(q => {
-                content += `
-                    <div id="card-${q.id}" class="task-card p-5">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-slate-700">Question ${q.id} <span class="text-base font-normal text-slate-500">${q.speaker}</span></h3>
-                            <button onclick="playAudio(${q.id})" id="audio-btn-${q.id}" class="audio-btn bg-blue-500 hover:bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl">
-                                <i class="fas fa-play"></i>
-                            </button>
-                        </div>
-                        <div class="mt-4 space-y-4">
-                            <div>
-                                <label for="korean-input-${q.id}" class="block text-sm font-medium text-slate-600 mb-1">Écrivez en coréen :</label>
-                                <input type="text" id="korean-input-${q.id}" class="gowun-dodum w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent" placeholder="들리는 대로 적어보세요...">
-                            </div>
-                            <div class="flex space-x-2">
-                                <button onclick="showHint(${q.id}, 'consonants')" class="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 py-1 px-3 rounded-full">Indice 1 (초성)</button>
-                                <button onclick="showHint(${q.id}, 'vocab')" class="text-sm bg-amber-200 hover:bg-amber-300 text-amber-800 py-1 px-3 rounded-full">Indice 2 (Vocabulaire)</button>
-                            </div>
-                            <div id="hint-box-${q.id}" class="hidden"></div>
-                            <div>
-                                <label for="french-input-${q.id}" class="block text-sm font-medium text-slate-600 mb-1">Traduisez en français :</label>
-                                <input type="text" id="french-input-${q.id}" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent" placeholder="한국어 문장을 번역해 보세요...">
-                            </div>
-                        </div>
-                        <div class="mt-4 text-right">
-                            <button onclick="checkAnswer(${q.id})" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-                                Vérifier
-                            </button>
-                        </div>
-                        <div id="result-box-${q.id}" class="result-box hidden"></div>
+            exerciseContainer.innerHTML = questions.map(q => `
+                <div id="card-${q.id}" class="task-card p-5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-slate-700">Question ${q.id} <span class="text-base font-normal text-slate-500">${q.speaker}</span></h3>
+                        <button onclick="playAudio(${q.id})" id="audio-btn-${q.id}" class="audio-btn bg-blue-500 hover:bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl"><i class="fas fa-play"></i></button>
                     </div>
-                `;
-            });
-            exerciseContainer.innerHTML = content;
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label for="korean-input-${q.id}" class="block text-sm font-medium text-slate-600 mb-1">Écrivez en coréen :</label>
+                            <input type="text" id="korean-input-${q.id}" class="gowun-dodum w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400" placeholder="들리는 대로 적어보세요...">
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="showHint(${q.id}, 'consonants')" class="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 py-1 px-3 rounded-full">Indice 1 (초성)</button>
+                            <button onclick="showHint(${q.id}, 'vocab')" class="text-sm bg-amber-200 hover:bg-amber-300 text-amber-800 py-1 px-3 rounded-full">Indice 2 (Vocabulaire)</button>
+                        </div>
+                        <div id="hint-box-${q.id}" class="hidden"></div>
+                        <div>
+                            <label for="french-input-${q.id}" class="block text-sm font-medium text-slate-600 mb-1">Traduisez en français :</label>
+                            <input type="text" id="french-input-${q.id}" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400" placeholder="한국어 문장을 번역해 보세요...">
+                        </div>
+                    </div>
+                    <div class="mt-4 text-right">
+                        <button onclick="checkAnswer(${q.id})" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Vérifier</button>
+                    </div>
+                    <div id="result-box-${q.id}" class="result-box hidden"></div>
+                </div>
+            `).join('');
         }
 
         function showHint(id, type) {
+            try { startTestIfNeeded(); } catch (e) { return; }
             const question = questions.find(q => q.id === id);
             const hintBox = document.getElementById(`hint-box-${id}`);
             let hintContent = '';
-
             if (type === 'consonants') {
                 hintContent = `<p class="text-slate-700 font-mono text-lg">${question.initialConsonants}</p>`;
             } else if (type === 'vocab') {
                 hintContent = '<ul class="list-disc list-inside space-y-1">';
-                question.vocabulary.forEach(v => {
-                    hintContent += `<li><strong class="gowun-dodum">${v.kor}</strong>: ${v.fr}</li>`;
-                });
+                question.vocabulary.forEach(v => { hintContent += `<li><strong class="gowun-dodum">${v.kor}</strong>: ${v.fr}</li>`; });
                 hintContent += '</ul>';
             }
-            
             hintBox.innerHTML = `<div class="hint-content">${hintContent}</div>`;
             hintBox.classList.remove('hidden');
         }
 
         function checkAnswer(id) {
+            try { startTestIfNeeded(); } catch (e) { return; }
+            
             const question = questions.find(q => q.id === id);
-            const koreanInput = document.getElementById(`korean-input-${q.id}`).value.trim();
-            const resultBox = document.getElementById(`result-box-${q.id}`);
+            const questionData = studentData.questions.find(q => q.id === id);
+            const koreanInput = document.getElementById(`korean-input-${id}`).value.trim();
+            const resultBox = document.getElementById(`result-box-${id}`);
+
+            questionData.userAnswer = koreanInput;
 
             const cleanAnswer = str => str.replace(/[.,!?\s]/g, '');
             const userAnswerClean = cleanAnswer(koreanInput);
@@ -304,15 +333,23 @@
             if (score === 100) {
                 resultClass = 'result-perfect';
                 resultHTML = '<p class="font-bold text-xl">완벽해요! 👑🎉👍 (Parfait !)</p>';
-            } else if (score >= 80) {
-                resultClass = 'result-good';
-                resultHTML = '<p class="font-bold text-lg">잘했어요! 🎉👍 (Bien joué !)</p>';
-            } else if (score >= 60) {
-                resultClass = 'result-ok';
-                resultHTML = '<p class="font-bold">꽤 잘했어요. 👍 (Assez bien fait.)</p>';
+                questionData.isCorrect = true;
             } else {
-                resultClass = 'result-bad';
-                resultHTML = '<p class="font-bold">땡! 틀렸어요! (Bip ! Faux !)</p>';
+                if(questionData.isCorrect === null) { // Count mistakes only on the first wrong try
+                    questionData.mistakeCount++;
+                }
+                questionData.isCorrect = false;
+
+                if (score >= 80) {
+                    resultClass = 'result-good';
+                    resultHTML = '<p class="font-bold text-lg">잘했어요! 🎉👍 (Bien joué !)</p>';
+                } else if (score >= 60) {
+                    resultClass = 'result-ok';
+                    resultHTML = '<p class="font-bold">꽤 잘했어요. 👍 (Assez bien fait.)</p>';
+                } else {
+                    resultClass = 'result-bad';
+                    resultHTML = '<p class="font-bold">땡! 틀렸어요! (Bip ! Faux !)</p>';
+                }
             }
 
             if (score < 100) {
@@ -323,12 +360,42 @@
                     </div>
                 `;
             }
-            
             resultHTML += `<hr class="my-2"><p class="text-left text-sm"><strong>Traduction :</strong> ${question.frenchAnswer}</p>`;
-
             resultBox.innerHTML = resultHTML;
             resultBox.className = `result-box ${resultClass}`;
             resultBox.classList.remove('hidden');
+        }
+
+        async function sendResults() {
+            if (!isTestStarted) {
+                showModal('Attention !', 'Veuillez entrer votre nom et répondre à au moins une question avant d\'envoyer les résultats.');
+                return;
+            }
+
+            const finishBtn = document.getElementById('finish-btn');
+            finishBtn.disabled = true;
+            finishBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Envoi en cours...';
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(studentData),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Une erreur est survenue lors de l\'envoi des résultats.');
+                }
+
+                showModal('Succès !', 'Vos résultats ont été envoyés avec succès. Merci !');
+            } catch (error) {
+                console.error('Failed to send results:', error);
+                showModal('Erreur', `Impossible d'envoyer les résultats. Veuillez réessayer plus tard. (${error.message})`);
+            } finally {
+                finishBtn.disabled = false;
+                finishBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Terminer et envoyer les résultats';
+            }
         }
 
         // --- Initialisation ---
