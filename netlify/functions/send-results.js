@@ -29,13 +29,17 @@ exports.handler = async function(event, context) {
         });
 
         // --- [BUG FIX] 안전하게 질문 데이터를 정렬합니다. ---
-        // 만약 questions 데이터가 없거나 배열이 아니면 빈 배열로 처리합니다.
         const safeQuestions = Array.isArray(questions) ? questions : [];
-        
-        // id를 기준으로 안전하게 정렬합니다. 
-        // 만약 a 또는 b 객체가 없거나 id가 없는 경우를 대비하여 기본값을 0으로 설정합니다.
         safeQuestions.sort((a, b) => (a?.id || 0) - (b?.id || 0));
         // ----------------------------------------------------
+
+        // --- [NEW] 총 걸린 시간 계산 ---
+        const endTime = new Date();
+        const durationInSeconds = startTime ? Math.round((endTime - new Date(startTime)) / 1000) : 0;
+        const minutes = Math.floor(durationInSeconds / 60);
+        const seconds = durationInSeconds % 60;
+        const durationFormatted = `${minutes} min ${seconds} sec`;
+        // ------------------------------------
 
         // 정답과 오답 개수를 계산합니다.
         const correctAnswers = safeQuestions.filter(q => q.isCorrect === true).length;
@@ -47,6 +51,7 @@ exports.handler = async function(event, context) {
             <h1>📝 Exercice d'écoute - Résultats</h1>
             <p><strong>Étudiant(e) :</strong> ${studentName || 'Non spécifié'}</p>
             <p><strong>Date de début :</strong> ${startTime ? new Date(startTime).toLocaleString('fr-FR') : 'Non spécifié'}</p>
+            <p><strong>Temps total :</strong> ${durationFormatted}</p>
             <hr>
             <h2>Score : ${score.toFixed(2)}% (${correctAnswers} / ${totalQuestions})</h2>
             <table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">
@@ -55,6 +60,7 @@ exports.handler = async function(event, context) {
                         <th>#</th>
                         <th>Question (Coréen)</th>
                         <th>Réponse de l'étudiant(e)</th>
+                        <th>Écoutes 🎧</th>
                         <th>Statut</th>
                     </tr>
                 </thead>
@@ -64,6 +70,7 @@ exports.handler = async function(event, context) {
                             <td>${q.id}</td>
                             <td>${q.questionText || ''}</td>
                             <td>${q.userAnswer || '<em>(Pas de réponse)</em>'}</td>
+                            <td>${q.listenCount || 0}</td>
                             <td>${q.isCorrect ? '✅ Correct' : '❌ Incorrect'}</td>
                         </tr>
                     `).join('')}
