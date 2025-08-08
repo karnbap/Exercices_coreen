@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>준비 운동 (Échauffement) - 08/08/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        .quiz-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .quiz-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .word-box {
+            cursor: pointer;
+            border: 2px solid #e5e7eb; /* gray-200 */
+            padding: 8px 16px;
+            border-radius: 8px;
+            user-select: none;
+        }
+        .word-box.selected {
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #dbeafe; /* blue-100 */
+            font-weight: bold;
+        }
+        .word-box.correct {
+            border-color: #22c55e; /* green-500 */
+            background-color: #dcfce7; /* green-100 */
+        }
+        .word-box.incorrect {
+            border-color: #ef4444; /* red-500 */
+            background-color: #fee2e2; /* red-100 */
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .drop-zone {
+            border: 2px dashed #9ca3af; /* gray-400 */
+            min-height: 50px;
+        }
+        .draggable {
+            cursor: grab;
+        }
+        .feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .feedback.correct { color: #22c55e; }
+        .feedback.incorrect { color: #ef4444; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600">준비 운동: 단어와 문장 튼튼하게 다지기 💪</h1>
+            <p class="text-slate-500 mt-2">Échauffement : Maîtriser les mots et les phrases (08/08/2025)</p>
+        </header>
+
+        <main class="space-y-12">
+            <!-- Quiz 1: 단어 짝 맞추기 -->
+            <section class="quiz-card p-6">
+                <h2 class="text-2xl font-bold mb-4 text-slate-700">Quiz 1: 단어 짝 맞추기 (Associer les mots)</h2>
+                <p class="text-slate-500 mb-6">프랑스어 단어와 뜻이 맞는 한국어 단어를 클릭해서 연결해 보세요!</p>
+                <div id="matching-quiz" class="grid grid-cols-2 gap-4">
+                    <div id="french-words" class="space-y-3"></div>
+                    <div id="korean-words" class="space-y-3"></div>
+                </div>
+                <div id="matching-feedback" class="mt-4 text-center font-bold"></div>
+                <button onclick="checkMatchingQuiz()" class="btn w-full mt-4 bg-indigo-500 text-white font-bold py-3 rounded-lg hover:bg-indigo-600">정답 확인</button>
+            </section>
+
+            <!-- Quiz 2: 빈칸 채우기 -->
+            <section class="quiz-card p-6">
+                <h2 class="text-2xl font-bold mb-4 text-slate-700">Quiz 2: 빈칸 채우기 (Remplir les blancs)</h2>
+                <p class="text-slate-500 mb-6">프랑스어 문장을 보고, 한국어 문장의 빈칸에 알맞은 단어를 써보세요.</p>
+                <div id="fill-in-quiz" class="space-y-6"></div>
+            </section>
+            
+            <!-- Quiz 3: 문장 배열하기 -->
+            <section class="quiz-card p-6">
+                 <h2 class="text-2xl font-bold mb-4 text-slate-700">Quiz 3: 문장 배열하기 (Mettre en ordre)</h2>
+                <p class="text-slate-500 mb-6">프랑스어 문장을 보고, 흩어져 있는 한국어 단어들을 올바른 순서로 배열해 보세요.</p>
+                <div id="unscramble-quiz" class="space-y-8"></div>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12">
+            <p class="text-slate-600 font-semibold">준비 운동 끝! 이제 듣기 연습으로 넘어가 볼까요?</p>
+             <a href="dictation_practice_080825.html" class="inline-block mt-4 btn bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600">
+                듣기 연습하러 가기 <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </footer>
+
+    </div>
+
+    <script>
+        const vocabulary = [
+            { fr: "entendre", ko: "들리다" },
+            { fr: "voir", ko: "보이다" },
+            { fr: "oui", ko: "네" },
+            { fr: "non", ko: "아니요" },
+            { fr: "comprendre", ko: "이해하다" },
+            { fr: "se souvenir", ko: "기억나다" },
+            { fr: "semaine", ko: "주" },
+            { fr: "prochaine", ko: "다음" }
+        ];
+
+        const sentences = [
+            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", blank: "들려요" },
+            { id: 2, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", blank: "못했어요" },
+            { id: 3, fr: "On se voit la semaine prochaine !", ko: "다음 주에 봐요.", blank: "다음" },
+            { id: 4, fr: "Comment on dit ça en coréen ?", ko: "한국어로 어떻게 말해요?", blank: "어떻게" }
+        ];
+        
+        const unscrambleSentences = [
+            { id: 1, fr: "Tu me vois bien ?", ko: ["잘", "보여요?"] },
+            { id: 2, fr: "Passez une bonne semaine.", ko: ["좋은", "한", "주", "보내세요."] },
+            { id: 3, fr: "Je ne me souviens pas.", ko: ["기억", "안나요."] }
+        ];
+
+        // --- Quiz 1: Matching ---
+        const frenchWordsContainer = document.getElementById('french-words');
+        const koreanWordsContainer = document.getElementById('korean-words');
+        let selectedFrench = null;
+        let selectedKorean = null;
+        let pairs = {};
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function initMatchingQuiz() {
+            const shuffledFr = shuffle([...vocabulary]);
+            const shuffledKo = shuffle([...vocabulary]);
+
+            shuffledFr.forEach(v => {
+                const div = document.createElement('div');
+                div.textContent = v.fr;
+                div.dataset.word = v.fr;
+                div.className = 'word-box text-center';
+                div.onclick = () => selectWord(div, 'fr');
+                frenchWordsContainer.appendChild(div);
+            });
+
+            shuffledKo.forEach(v => {
+                const div = document.createElement('div');
+                div.textContent = v.ko;
+                div.dataset.word = v.fr; // Link by French word
+                div.className = 'word-box text-center';
+                div.onclick = () => selectWord(div, 'ko');
+                koreanWordsContainer.appendChild(div);
+            });
+        }
+
+        function selectWord(element, lang) {
+            if (lang === 'fr') {
+                if(selectedFrench) selectedFrench.classList.remove('selected');
+                selectedFrench = element;
+                selectedFrench.classList.add('selected');
+            } else {
+                if(selectedKorean) selectedKorean.classList.remove('selected');
+                selectedKorean = element;
+                selectedKorean.classList.add('selected');
+            }
+
+            if (selectedFrench && selectedKorean) {
+                if (selectedFrench.dataset.word === selectedKorean.dataset.word) {
+                    pairs[selectedFrench.dataset.word] = true;
+                    selectedFrench.classList.add('correct');
+                    selectedKorean.classList.add('correct');
+                    selectedFrench.onclick = null;
+                    selectedKorean.onclick = null;
+                } else {
+                    selectedFrench.classList.add('incorrect');
+                    selectedKorean.classList.add('incorrect');
+                    setTimeout(() => {
+                        selectedFrench.classList.remove('incorrect');
+                        selectedKorean.classList.remove('incorrect');
+                    }, 500);
+                }
+                selectedFrench.classList.remove('selected');
+                selectedKorean.classList.remove('selected');
+                selectedFrench = null;
+                selectedKorean = null;
+            }
+        }
+
+        function checkMatchingQuiz() {
+            const feedbackEl = document.getElementById('matching-feedback');
+            const correctCount = Object.keys(pairs).length;
+            const totalCount = vocabulary.length;
+            if (correctCount === totalCount) {
+                feedbackEl.textContent = `🥳 완벽해요! (Parfait!) ${correctCount}/${totalCount}`;
+                feedbackEl.className = 'mt-4 text-center font-bold text-green-500';
+            } else {
+                feedbackEl.textContent = `🤔 ${correctCount}/${totalCount}개 맞았어요. 조금 더 힘내요! (Encore un effort!)`;
+                feedbackEl.className = 'mt-4 text-center font-bold text-amber-500';
+            }
+        }
+
+        // --- Quiz 2: Fill in the blank ---
+        const fillInContainer = document.getElementById('fill-in-quiz');
+        
+        function initFillInQuiz() {
+            sentences.forEach(s => {
+                const div = document.createElement('div');
+                const koreanSentence = s.ko.replace(s.blank, `<input type="text" id="blank-${s.id}" class="inline-block w-24 sm:w-32 p-1 border-b-2 border-slate-400 focus:border-indigo-500 focus:outline-none text-center bg-slate-100 rounded-t-md" placeholder="${s.blank.split('').map(()=>'＿').join('')}">`);
+                
+                div.innerHTML = `
+                    <p class="text-slate-600 mb-2">🇫🇷 ${s.fr}</p>
+                    <div class="flex items-center gap-4">
+                       <p class="text-lg">🇰🇷 ${koreanSentence}</p>
+                       <button onclick="checkFillIn(${s.id}, '${s.blank}')" class="btn bg-indigo-500 text-white px-4 py-1 rounded-md text-sm">확인</button>
+                       <span id="feedback-fill-${s.id}" class="feedback"></span>
+                    </div>
+                `;
+                fillInContainer.appendChild(div);
+            });
+        }
+
+        function checkFillIn(id, answer) {
+            const input = document.getElementById(`blank-${id}`);
+            const feedback = document.getElementById(`feedback-fill-${id}`);
+            if (input.value.trim().replace(/[.?!,]/g, '') === answer.replace(/[.?!,]/g, '')) {
+                feedback.textContent = '👍';
+                feedback.className = 'feedback correct';
+                input.classList.add('border-green-500');
+            } else {
+                feedback.textContent = '👎';
+                feedback.className = 'feedback incorrect';
+                 input.classList.add('border-red-500');
+            }
+        }
+        
+        // --- Quiz 3: Unscramble ---
+        const unscrambleContainer = document.getElementById('unscramble-quiz');
+
+        function initUnscrambleQuiz() {
+            unscrambleSentences.forEach(s => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p class="text-slate-600 mb-2">🇫🇷 ${s.fr}</p>
+                    <div id="drop-zone-${s.id}" class="drop-zone p-3 rounded-lg bg-slate-100 flex flex-wrap gap-2"></div>
+                    <div id="word-bank-${s.id}" class="p-3 flex flex-wrap gap-2 mt-2"></div>
+                    <div class="text-right mt-2">
+                        <button onclick="checkUnscramble(${s.id}, '${s.ko.join(' ')}')" class="btn bg-indigo-500 text-white px-4 py-1 rounded-md text-sm">확인</button>
+                        <span id="feedback-unscramble-${s.id}" class="feedback ml-2"></span>
+                    </div>
+                `;
+                unscrambleContainer.appendChild(div);
+
+                const wordBank = document.getElementById(`word-bank-${s.id}`);
+                const dropZone = document.getElementById(`drop-zone-${s.id}`);
+                
+                shuffle([...s.ko]).forEach(word => {
+                    const wordEl = document.createElement('span');
+                    wordEl.textContent = word;
+                    wordEl.className = 'word-box draggable bg-white';
+                    wordEl.draggable = true;
+                    wordEl.ondragstart = (e) => e.dataTransfer.setData('text/plain', e.target.textContent);
+                    wordBank.appendChild(wordEl);
+                });
+
+                dropZone.ondragover = (e) => e.preventDefault();
+                dropZone.ondrop = (e) => {
+                    e.preventDefault();
+                    const data = e.dataTransfer.getData('text');
+                    const originalEl = Array.from(wordBank.children).find(child => child.textContent === data);
+                    if (originalEl) {
+                        dropZone.appendChild(originalEl);
+                    }
+                };
+            });
+        }
+
+        function checkUnscramble(id, correctAnswer) {
+            const dropZone = document.getElementById(`drop-zone-${id}`);
+            const feedback = document.getElementById(`feedback-unscramble-${id}`);
+            const userAnswer = Array.from(dropZone.children).map(child => child.textContent).join(' ');
+
+            if (userAnswer === correctAnswer) {
+                feedback.textContent = '👍';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = '👎';
+                feedback.className = 'feedback incorrect';
+            }
+        }
+
+
+        // --- Initialize All Quizzes ---
+        window.onload = () => {
+            initMatchingQuiz();
+            initFillInQuiz();
+            initUnscrambleQuiz();
+        };
+    </script>
+</body>
+</html>
