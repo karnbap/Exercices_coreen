@@ -128,26 +128,26 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const exercises = [
-            { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1: "ㅊㅅ ㄱㅇㅇ", hint2: "천사 (cheonsa) = ange", voice: "Kore" },
-            { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1: "ㅇㄱ ㄲ ㄱㅇㅇ", hint2: "꿈 (kkum) = rêve", voice: "Puck" },
-            { sentence: "가족 같은 친구예요.", translation: "C'est une amie comme ma famille.", hint1: "ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2: "가족 (gajok) = famille", voice: "Charon" },
-            { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1: "ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2: "바다 (bada) = mer", voice: "Leda" },
-            { sentence: "소처럼 먹어요.", translation: "Il/Elle mange comme une vache.", hint1: "ㅅㅊㄹ ㅁㅇㅇ", hint2: "소 (so) = vache", voice: "Fenrir" },
-            { sentence: "그는 바람처럼 달려요.", translation: "Il court comme le vent.", hint1: "ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2: "바람 (baram) = vent", voice: "Orus" },
-            { sentence: "가수같이 노래를 잘해요.", translation: "Il/Elle chante bien comme un(e) chanteur(se).", hint1: "ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2: "가수 (gasu) = chanteur/chanteuse", voice: "Aoede" },
-            { sentence: "로봇같이 걸어요.", translation: "Il/Elle marche comme un robot.", hint1: "ㄹㅂㄱㅇ ㄱㅇㅇ", hint2: "로봇 (robot) = robot", voice: "Callirrhoe" },
-            { sentence: "친구랑 같이 갔어요.", translation: "Je suis allé(e) avec mon ami(e).", hint1: "ㅊㄱㄹ ㄱㅇ ㄱㅇㅇ", hint2: "같이 (gachi) = ici, 'ensemble'", voice: "Zephyr" },
-            { sentence: "별 같이 춤을 춰요.", translation: "Il/Elle danse comme une étoile.", hint1: "ㅂ ㄱㅇ ㅊㅇ ㅊㅇ", hint2: "별 (byeol) = étoile", voice: "Enceladus" },
-            { sentence: "오늘은 어제 같아요.", translation: "Aujourd'hui est comme hier.", hint1: "ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2: "어제 (eoje) = hier", voice: "Iapetus" },
-            { sentence: "그 사람은 배우 같아요.", translation: "Cette personne est comme un(e) acteur/actrice.", hint1: "ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2: "배우 (baeu) = acteur/actrice", voice: "Umbriel" },
-            { sentence: "얼음 같은 손.", translation: "Une main (froide) comme la glace.", hint1: "ㅇㅇ ㄱㅇ ㅅ", hint2: "얼음 (eoreum) = glace", voice: "Despina" },
-            { sentence: "설탕 같은 목소리.", translation: "Une voix (douce) comme le sucre.", hint1: "ㅅㅌ ㄱㅇ ㅁㅅㄹ", hint2: "설탕 (seoltang) = sucre", voice: "Erinome" },
-            { sentence: "인형 같은 아이.", translation: "Un enfant comme une poupée.", hint1: "ㅇㅎ ㄱㅇ ㅇㅇ", hint2: "인형 (inhyeong) = poupée", voice: "Algenib" },
-            { sentence: "물처럼 돈을 써요.", translation: "Il/Elle dépense de l'argent comme de l'eau.", hint1: "ㅁㅊㄹ ㄷㅇ ㅆㅇ", hint2: "물 (mul) = eau", voice: "Rasalgethi" },
-            { sentence: "거북이처럼 느려요.", translation: "Il/Elle est lent(e) comme une tortue.", hint1: "ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2: "거북이 (geobugi) = tortue", voice: "Laomedeia" },
-            { sentence: "전문가처럼 말해요.", translation: "Il/Elle parle comme un expert.", hint1: "ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2: "전문가 (jeonmunga) = expert", voice: "Achernar" },
-            { sentence: "아기같이 자요.", translation: "Il/Elle dort comme un bébé.", hint1: "ㅇㄱㄱㅇ ㅈㅇ", hint2: "아기 (agi) = bébé", voice: "Alnilam" },
-            { sentence: "영화배우처럼 잘생겼어요.", translation: "Il est beau comme un acteur de cinéma.", hint1: "ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2: "영화배우 (yeonghwabaeu) = acteur de cinéma", voice: "Schedar" }
+            { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1: "ㅊㅅ ㄱㅇㅇ", hint2: "천사 = ange", voice: "Kore" },
+            { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1: "ㅇㄱ ㄲ ㄱㅇㅇ", hint2: "꿈 = rêve", voice: "Puck" },
+            { sentence: "가족 같은 친구예요.", translation: "C'est une amie comme ma famille.", hint1: "ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2: "가족  = famille", voice: "Charon" },
+            { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1: "ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2: "바다 = mer, 넓은 = large", voice: "Leda" },
+            { sentence: "소처럼 먹어요.", translation: "Il/Elle mange comme une vache.", hint1: "ㅅㅊㄹ ㅁㅇㅇ", hint2: "소 = vache", voice: "Fenrir" },
+            { sentence: "그는 바람처럼 달려요.", translation: "Il court comme le vent.", hint1: "ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2: "바람  = vent", voice: "Orus" },
+            { sentence: "가수같이 노래를 잘해요.", translation: "Il/Elle chante bien comme un(e) chanteur(se).", hint1: "ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2: "가수  = chanteur/chanteuse", voice: "Aoede" },
+            { sentence: "로봇같이 걸어요.", translation: "Il/Elle marche comme un robot.", hint1: "ㄹㅂㄱㅇ ㄱㅇㅇ", hint2: "로봇 = robot", voice: "Callirrhoe" },
+            { sentence: "친구랑 같이 갔어요.", translation: "Je suis allé(e) avec mon ami(e).", hint1: "ㅊㄱㄹ ㄱㅇ ㄱㅇㅇ", hint2: "같이  = ici, 'ensemble'", voice: "Zephyr" },
+            { sentence: "별 같이 춤을 춰요.", translation: "Il/Elle danse comme une étoile.", hint1: "ㅂ ㄱㅇ ㅊㅇ ㅊㅇ", hint2: "별  = étoile", voice: "Enceladus" },
+            { sentence: "오늘은 어제 같아요.", translation: "Aujourd'hui est comme hier.", hint1: "ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2: "어제  = hier", voice: "Iapetus" },
+            { sentence: "그 사람은 배우 같아요.", translation: "Cette personne est comme un(e) acteur/actrice.", hint1: "ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2: "배우  = acteur/actrice", voice: "Umbriel" },
+            { sentence: "얼음 같은 손.", translation: "Une main (froide) comme la glace.", hint1: "ㅇㅇ ㄱㅇ ㅅ", hint2: "얼음 = glace", voice: "Despina" },
+            { sentence: "설탕 같은 목소리.", translation: "Une voix (douce) comme le sucre.", hint1: "ㅅㅌ ㄱㅇ ㅁㅅㄹ", hint2: "설탕  = sucre", voice: "Erinome" },
+            { sentence: "인형 같은 아이.", translation: "Un enfant comme une poupée.", hint1: "ㅇㅎ ㄱㅇ ㅇㅇ", hint2: "인형 = poupée", voice: "Algenib" },
+            { sentence: "물처럼 돈을 써요.", translation: "Il/Elle dépense de l'argent comme de l'eau.", hint1: "ㅁㅊㄹ ㄷㅇ ㅆㅇ", hint2: "물 = eau", voice: "Rasalgethi" },
+            { sentence: "거북이처럼 느려요.", translation: "Il/Elle est lent(e) comme une tortue.", hint1: "ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2: "거북이 = tortue", voice: "Laomedeia" },
+            { sentence: "전문가처럼 말해요.", translation: "Il/Elle parle comme un expert.", hint1: "ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2: "전문가  = expert", voice: "Achernar" },
+            { sentence: "아기같이 자요.", translation: "Il/Elle dort comme un bébé.", hint1: "ㅇㄱㄱㅇ ㅈㅇ", hint2: "아기 = bébé", voice: "Alnilam" },
+            { sentence: "영화배우처럼 잘생겼어요.", translation: "Il est beau comme un acteur de cinéma.", hint1: "ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2: "영화배우 = acteur de cinéma", voice: "Schedar" }
         ];
 
         const container = document.getElementById('dictation-exercises');
@@ -350,3 +350,4 @@
     </script>
 </body>
 </html>
+
