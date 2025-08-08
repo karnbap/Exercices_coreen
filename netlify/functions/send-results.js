@@ -1,136 +1,98 @@
-// /netlify/functions/send-results.js
+// 이메일 전송을 위한 nodemailer 모듈을 가져옵니다.
 const nodemailer = require('nodemailer');
 
-exports.handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+// Netlify 함수의 기본 핸들러
+exports.handler = async function(event, context) {
+    // POST 요청이 아니면 에러를 반환하고 함수를 종료합니다.
+    if (event.httpMethod !== 'POST') {
+        return { statusCode: 405, body: 'Method Not Allowed' };
+    }
 
-  try {
-    const data = JSON.parse(event.body);
+    try {
+        // 클라이언트(웹페이지)에서 보낸 학생 데이터를 파싱합니다.
+        const studentData = JSON.parse(event.body);
+        const { studentName, questions, startTime } = studentData;
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+        // Netlify 환경 변수에서 이메일 계정 정보를 안전하게 가져옵니다.
+        // 이 변수들은 Netlify 대시보드에서 설정해야 합니다.
+        const myEmail = process.env.GMAIL_USER;
+        const myPassword = process.env.GMAIL_APP_PASSWORD;
 
-    // --- Data Processing for Detailed Report ---
-    const totalListens = data.questions.reduce((sum, q) => sum + q.listenCount, 0);
-    const totalCorrect = data.questions.filter(q => q.isCorrect).length;
-    const overallSuccessRate = (totalCorrect / data.questions.length) * 100;
+        // Gmail SMTP 서버를 사용하기 위한 transporter 객체를 설정합니다.
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: myEmail,
+                pass: myPassword,
+            },
+        });
 
-    // Find top 5 most difficult questions (most wrong answers, then most attempts)
-    const difficultQuestions = [...data.questions]
-      .sort((a, b) => {
-        if (b.wrongAnswers.length !== a.wrongAnswers.length) {
-          return b.wrongAnswers.length - a.wrongAnswers.length;
-        }
-        return b.attemptCount - a.attemptCount;
-      })
-      .slice(0, 5)
-      .filter(q => q.wrongAnswers.length > 0 || !q.isCorrect) // Only show questions they actually struggled with
-      .map(q => `<li>Question #${q.id} (${q.wrongAnswers.length} erreur(s), ${q.attemptCount} tentative(s))</li>`)
-      .join('');
+        // --- [BUG FIX] 안전하게 질문 데이터를 정렬합니다. ---
+        // 만약 questions 데이터가 없거나 배열이 아니면 빈 배열로 처리합니다.
+        const safeQuestions = Array.isArray(questions) ? questions : [];
+        
+        // id를 기준으로 안전하게 정렬합니다. 
+        // 만약 a 또는 b 객체가 없거나 id가 없는 경우를 대비하여 기본값을 0으로 설정합니다.
+        safeQuestions.sort((a, b) => (a?.id || 0) - (b?.id || 0));
+        // ----------------------------------------------------
 
-    const questionsHtml = data.questions.map(q => {
-      const successRate = q.attemptCount === 0 ? 'N/A' : `${(q.isCorrect ? 1 : 0)}/${q.attemptCount}`;
-      const wrongAnswersList = q.wrongAnswers.length > 0
-        ? `<ul>${q.wrongAnswers.map(wa => `<li><del>${wa}</del></li>`).join('')}</ul>`
-        : '<em>(aucune)</em>';
+        // 정답과 오답 개수를 계산합니다.
+        const correctAnswers = safeQuestions.filter(q => q.isCorrect === true).length;
+        const totalQuestions = safeQuestions.length;
+        const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
 
-      return `
-        <tr style="border-bottom: 1px solid #eee; background-color: ${q.isCorrect ? '#f2fff2' : '#fff2f2'};">
-          <td style="padding: 12px; text-align: center; font-weight: bold;">${q.id}</td>
-          <td style="padding: 12px;">${q.questionText}</td>
-          <td style="padding: 12px; text-align: center;">${q.listenCount}</td>
-          <td style="padding: 12px; text-align: center;">${successRate} (${q.isCorrect ? 'Succès' : 'Échec'})</td>
-          <td style="padding: 12px;">${wrongAnswersList}</td>
-        </tr>
-      `;
-    }).join('');
+        // 이메일 본문을 HTML 형식으로 만듭니다.
+        const emailBody = `
+            <h1>📝 Exercice d'écoute - Résultats</h1>
+            <p><strong>Étudiant(e) :</strong> ${studentName || 'Non spécifié'}</p>
+            <p><strong>Date de début :</strong> ${startTime ? new Date(startTime).toLocaleString('fr-FR') : 'Non spécifié'}</p>
+            <hr>
+            <h2>Score : ${score.toFixed(2)}% (${correctAnswers} / ${totalQuestions})</h2>
+            <table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th>#</th>
+                        <th>Question (Coréen)</th>
+                        <th>Réponse de l'étudiant(e)</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${safeQuestions.map(q => `
+                        <tr style="background-color: ${q.isCorrect ? '#e9fde9' : '#ffebee'};">
+                            <td>${q.id}</td>
+                            <td>${q.questionText || ''}</td>
+                            <td>${q.userAnswer || '<em>(Pas de réponse)</em>'}</td>
+                            <td>${q.isCorrect ? '✅ Correct' : '❌ Incorrect'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
 
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; }
-          .container { max-width: 800px; margin: auto; border: 1px solid #e0e0e0; padding: 25px; border-radius: 10px; background-color: #f9f9f9; }
-          h1, h2 { color: #333; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
-          h1 { font-size: 24px; }
-          h2 { font-size: 20px; margin-top: 30px;}
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { padding: 12px; text-align: left; }
-          th { background-color: #efefef; font-weight: bold; }
-          tr:nth-child(even) { background-color: #ffffff; }
-          .summary-box { background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; }
-          .summary-box p { margin: 10px 0; font-size: 16px; }
-          ul { padding-left: 20px; margin: 0; }
-          li { margin-bottom: 5px; }
-          del { color: #d9534f; text-decoration: none; border-bottom: 1px dotted #d9534f; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>Résultats détaillés du test de coréen</h1>
-          
-          <div class="summary-box">
-            <p><strong>Étudiant :</strong> ${data.studentName}</p>
-            <p><strong>Date :</strong> ${new Date(data.startTime).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}</p>
-          </div>
+        // 이메일 옵션을 설정합니다.
+        const mailOptions = {
+            from: myEmail,
+            to: myEmail, // 결과를 받을 이메일 주소 (본인 이메일)
+            subject: `[Résultats] Exercice d'écoute de ${studentName}`,
+            html: emailBody,
+        };
 
-          <h2>Résumé de la performance 📊</h2>
-          <div class="summary-box">
-            <p><strong>Taux de réussite global :</strong> ${overallSuccessRate.toFixed(1)}% (${totalCorrect} / ${data.questions.length} phrases)</p>
-            <p><strong>Nombre total d'écoutes :</strong> ${totalListens} fois</p>
-            ${difficultQuestions ? `
-              <p><strong>Questions les plus difficiles (Top 5) :</strong></p>
-              <ul>${difficultQuestions}</ul>
-            ` : '<p><strong>Bravo, aucune difficulté majeure détectée !</strong></p>'}
-          </div>
+        // 설정한 옵션으로 이메일을 보냅니다.
+        await transporter.sendMail(mailOptions);
 
-          <h2>Détails par question 📝</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Phrase correcte</th>
-                <th>Écoutes</th>
-                <th>Réussite / Tentatives</th>
-                <th>Erreurs notées</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${questionsHtml}
-            </tbody>
-          </table>
-        </div>
-      </body>
-      </html>
-    `;
+        // 성공적으로 전송되면 200 상태 코드와 메시지를 반환합니다.
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: "Résultats envoyés avec succès !" }),
+        };
 
-    const mailOptions = {
-      from: `"Korean Pondant Résults" <${process.env.EMAIL_USER}>`,
-      to: process.env.RECIPIENT_EMAIL,
-      subject: `[Résultats] ${data.studentName} a terminé le test de coréen`,
-      html: emailHtml,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Résultats envoyés avec succès !' }),
-    };
-
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Erreur lors de l\'envoi de l\'e-mail.', error: error.message }),
-    };
-  }
+    } catch (error) {
+        // 에러가 발생하면 콘솔에 로그를 남기고 500 에러를 반환합니다.
+        console.error("Erreur lors de l'envoi de l'e-mail:", error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: "Erreur lors de l'envoi de l'e-mail." }),
+        };
+    }
 };
