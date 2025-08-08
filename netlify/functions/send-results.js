@@ -17,6 +17,7 @@ exports.handler = async function(event, context) {
         // 이 변수들은 Netlify 대시보드에서 설정해야 합니다.
         const myEmail = process.env.GMAIL_USER;
         const myPassword = process.env.GMAIL_APP_PASSWORD;
+        const recipientEmail = process.env.RECIPIENT_EMAIL; // 받는 사람 이메일 주소
 
         // Gmail SMTP 서버를 사용하기 위한 transporter 객체를 설정합니다.
         const transporter = nodemailer.createTransport({
@@ -73,7 +74,7 @@ exports.handler = async function(event, context) {
         // 이메일 옵션을 설정합니다.
         const mailOptions = {
             from: myEmail,
-            to: myEmail, // 결과를 받을 이메일 주소 (본인 이메일)
+            to: recipientEmail, // 결과를 받을 이메일 주소
             subject: `[Résultats] Exercice d'écoute de ${studentName}`,
             html: emailBody,
         };
