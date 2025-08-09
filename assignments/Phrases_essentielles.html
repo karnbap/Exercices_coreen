@@ -80,7 +80,7 @@
 
     <div id="app-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
         <header class="theme-bg-primary text-white p-6 text-center">
-            <h1 class="text-3xl font-bold">)Phrases essentielles en coréen </h1>
+            <h1 class="text-3xl font-bold">Leçon de Coréen Interactive 🇰🇷🇫🇷</h1>
             <p class="mt-2 text-lg">한국어 실력을 키워보아요! (Améliorons notre coréen !)</p>
         </header>
 
@@ -344,6 +344,8 @@
                     trackingData.dictationDetails[item.id] = { 
                         question: item.ko, 
                         plays: 0, 
+                        hint1Clicks: 0,
+                        hint2Clicks: 0,
                         isCorrect: null,
                         userAnswer: '',
                         recording: { base64: null, duration: 0, sentence: item.ko }
@@ -358,8 +360,8 @@
                         <input type="text" id="answer-${item.id}" class="flex-grow p-2 border rounded-md focus:ring-2 focus:ring-yellow-400 focus:outline-none" placeholder="Écrivez en coréen ici...">
                     </div>
                     <div class="mt-3 flex gap-2 flex-wrap">
-                        <button onclick="showHint('hint-initial-${item.id}')" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 1 (초성)</button>
-                        <button onclick="showHint('hint-word-${item.id}')" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 2 (Mot-clé)</button>
+                        <button onclick="showHint('hint-initial-${item.id}', ${item.id}, 1)" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 1 (초성)</button>
+                        <button onclick="showHint('hint-word-${item.id}', ${item.id}, 2)" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 2 (Mot-clé)</button>
                         <button id="record-btn-${item.id}" onclick="toggleRecording(${item.id})" class="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">🎤 Enregistrer</button>
                         <p id="record-status-${item.id}" class="text-sm text-slate-600 self-center"></p>
                     </div>
@@ -510,8 +512,20 @@
         }
 
 
-        function showHint(hintId) {
-            document.getElementById(hintId).classList.toggle('hidden');
+        function showHint(elementId, questionId, hintType) {
+            const hintElement = document.getElementById(elementId);
+            const wasHidden = hintElement.classList.contains('hidden');
+
+            if (wasHidden) {
+                hintElement.classList.remove('hidden');
+                if (hintType === 1) {
+                    trackingData.dictationDetails[questionId].hint1Clicks++;
+                } else if (hintType === 2) {
+                    trackingData.dictationDetails[questionId].hint2Clicks++;
+                }
+            } else {
+                hintElement.classList.add('hidden');
+            }
         }
 
         // --- 결과 처리 로직 ---
@@ -538,7 +552,7 @@
                     <li class="${detail.isCorrect ? 'text-green-700' : 'text-red-700'}">
                         <strong>${item.fr}</strong><br>
                         ${detail.isCorrect ? `✔️ Votre réponse : ${userAnswer || "<i>(vide)</i>"}` : `❌ Votre réponse : <span class="line-through">${userAnswer || "<i>(vide)</i>"}</span><br>Réponse correcte : <strong class="text-black">${item.ko}</strong>`}<br>
-                        <small class="text-slate-500">Écouté ${detail.plays} fois</small>
+                        <small class="text-slate-500">Écouté ${detail.plays} fois, Indice 1: ${detail.hint1Clicks} fois, Indice 2: ${detail.hint2Clicks} fois</small>
                     </li>`;
             });
             detailedResultsHTML += '</ul>';
@@ -547,7 +561,7 @@
             const resultMessage = document.getElementById('result-message');
             let messageHTML = '';
             if (percentage === 100) {
-                messageHTML = `<div class="bg-green-100 border-l-4 border-green-500 p-4"><p class="icon">�🎉👍</p><h3 class="text-2xl font-bold text-green-800">완벽해요!! (Parfait !!)</h3></div>`;
+                messageHTML = `<div class="bg-green-100 border-l-4 border-green-500 p-4"><p class="icon">👑🎉👍</p><h3 class="text-2xl font-bold text-green-800">완벽해요!! (Parfait !!)</h3></div>`;
                 confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
             } else if (percentage >= 80) {
                 messageHTML = `<div class="bg-blue-100 border-l-4 border-blue-500 p-4"><p class="icon">🎉👍</p><h3 class="text-2xl font-bold text-blue-800">잘했어요!! (Bien joué !!)</h3></div>`;
@@ -563,26 +577,32 @@
         }
 
         // --- 이메일 및 인쇄 기능 ---
-   async function sendResultsByEmail() {
+        async function sendResultsByEmail() {
             const btn = document.getElementById('send-email-btn');
             btn.disabled = true;
             btn.textContent = 'Envoi en cours...';
             
-            // **FIX**: 서버가 예상하는 'questions' 키로 데이터를 재구성하여 전송합니다.
             const emailPayload = {
                 studentName: trackingData.studentName,
                 startTime: trackingData.startTime,
                 endTime: trackingData.endTime,
                 totalTimeSeconds: trackingData.totalTimeSeconds,
-                // 서버가 'details' 대신 'questions' 배열을 예상하므로 키 이름을 변경합니다.
-                questions: Object.values(trackingData.dictationDetails) 
+                questions: Object.values(trackingData.dictationDetails).map(detail => ({
+                    questionText: detail.question,
+                    userAnswer: detail.userAnswer,
+                    isCorrect: detail.isCorrect,
+                    listenCount: detail.plays,
+                    hint1Count: detail.hint1Clicks,
+                    hint2Count: detail.hint2Clicks,
+                    recording: detail.recording
+                }))
             };
 
             try {
                 const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(emailPayload) // 수정된 데이터를 전송합니다.
+                    body: JSON.stringify(emailPayload)
                 });
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -598,7 +618,6 @@
                 btn.textContent = '📧 Envoyer les résultats par e-mail';
             }
         }
-
 
         function printQuiz() {
             const printableArea = document.getElementById('printable-area');
@@ -640,4 +659,3 @@
     </script>
 </body>
 </html>
-�
