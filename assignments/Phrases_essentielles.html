@@ -563,26 +563,26 @@
         }
 
         // --- 이메일 및 인쇄 기능 ---
-        async function sendResultsByEmail() {
+   async function sendResultsByEmail() {
             const btn = document.getElementById('send-email-btn');
             btn.disabled = true;
             btn.textContent = 'Envoi en cours...';
             
-            // **FIX**: Create a clean payload with an array for details
-            // This makes it easier for the server to process.
+            // **FIX**: 서버가 예상하는 'questions' 키로 데이터를 재구성하여 전송합니다.
             const emailPayload = {
                 studentName: trackingData.studentName,
                 startTime: trackingData.startTime,
                 endTime: trackingData.endTime,
                 totalTimeSeconds: trackingData.totalTimeSeconds,
-                details: Object.values(trackingData.dictationDetails) // Convert object to array
+                // 서버가 'details' 대신 'questions' 배열을 예상하므로 키 이름을 변경합니다.
+                questions: Object.values(trackingData.dictationDetails) 
             };
 
             try {
                 const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(emailPayload) // Send the new payload
+                    body: JSON.stringify(emailPayload) // 수정된 데이터를 전송합니다.
                 });
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -598,6 +598,7 @@
                 btn.textContent = '📧 Envoyer les résultats par e-mail';
             }
         }
+
 
         function printQuiz() {
             const printableArea = document.getElementById('printable-area');
