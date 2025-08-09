@@ -660,27 +660,7 @@ function showResults() {
   switchSection('results-screen');
 }
 
-            detailedResultsHTML += '</ul>';
-
-            const percentage = Math.round((score / dictationData.length) * 100);
-            const resultMessage = document.getElementById('result-message');
-            let messageHTML = '';
-            if (percentage === 100) {
-                messageHTML = `<div class="bg-green-100 border-l-4 border-green-500 p-4"><p class="icon">👑🎉👍</p><h3 class="text-2xl font-bold text-green-800">완벽해요!! (Parfait !!)</h3></div>`;
-                confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
-            } else if (percentage >= 80) {
-                messageHTML = `<div class="bg-blue-100 border-l-4 border-blue-500 p-4"><p class="icon">🎉👍</p><h3 class="text-2xl font-bold text-blue-800">잘했어요!! (Bien joué !!)</h3></div>`;
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            } else if (percentage >= 60) {
-                messageHTML = `<div class="bg-yellow-100 border-l-4 border-yellow-500 p-4"><p class="icon">👍</p><h3 class="text-2xl font-bold text-yellow-800">이해 할 수 있어요. 꽤 잘했어요. (C'est compréhensible. Assez bien.)</h3></div>`;
-            } else {
-                messageHTML = `<div class="bg-red-100 border-l-4 border-red-500 p-4"><p class="icon">😭</p><h3 class="text-2xl font-bold text-red-800">땡!! 틀렸어요!! (Bip !! Incorrect !!)</h3></div>`;
-            }
-            resultMessage.innerHTML = messageHTML;
-            document.getElementById('detailed-results').innerHTML = detailedResultsHTML;
-            switchSection('results-screen');
-        }
-
+  
         // --- 이메일 및 인쇄 기능 ---
             // 결과 전송 payload (핵심 필드 추가)
             async function sendResultsByEmail() {
