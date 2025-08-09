@@ -68,6 +68,10 @@
             }
             #printable-area {
                 display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
             }
         }
     </style>
@@ -177,44 +181,11 @@
 
     <script>
         // --- 데이터 설정 ---
-        // 1단계: 단어 짝 맞추기용 데이터
         const matchingData = [
-            { id: 1, fr: "Entendre", ko: "들리다" },
-            { id: 2, fr: "Voir", ko: "보이다" },
-            { id: 3, fr: "Oui", ko: "네" },
-            { id: 4, fr: "Non", ko: "아니요" },
-            { id: 5, fr: "Comprendre", ko: "이해하다" },
-            { id: 6, fr: "Se souvenir", ko: "기억나다" },
-            { id: 7, fr: "Semaine", ko: "주" },
-            { id: 8, fr: "Prochain(e)", ko: "다음" },
-            { id: 9, fr: "Comment", ko: "어떻게" },
-            { id: 10, fr: "Coréen", ko: "한국어" },
-            { id: 11, fr: "Français", ko: "프랑스어" },
-            { id: 12, fr: "Bon travail", ko: "수고했어요" },
-            { id: 13, fr: "Au revoir (l'autre reste)", ko: "안녕히 계세요" },
-            { id: 14, fr: "Au revoir (l'autre part)", ko: "안녕히 가세요" },
+            { id: 1, fr: "Entendre", ko: "들리다" }, { id: 2, fr: "Voir", ko: "보이다" }, { id: 3, fr: "Oui", ko: "네" }, { id: 4, fr: "Non", ko: "아니요" }, { id: 5, fr: "Comprendre", ko: "이해하다" }, { id: 6, fr: "Se souvenir", ko: "기억나다" }, { id: 7, fr: "Semaine", ko: "주" }, { id: 8, fr: "Prochain(e)", ko: "다음" }, { id: 9, fr: "Comment", ko: "어떻게" }, { id: 10, fr: "Coréen", ko: "한국어" }, { id: 11, fr: "Français", ko: "프랑스어" }, { id: 12, fr: "Bon travail", ko: "수고했어요" }, { id: 13, fr: "Au revoir (l'autre reste)", ko: "안녕히 계세요" }, { id: 14, fr: "Au revoir (l'autre part)", ko: "안녕히 가세요" },
         ];
-
-        // 2단계: 받아쓰기용 데이터 (전체 문장)
         const dictationData = [
-            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", initial: "ㅈ ㄷㄹㅇ?", hint: "entendre: 들리다", voice: "FEMALE" },
-            { id: 2, fr: "Tu me vois bien ?", ko: "잘 보여요?", initial: "ㅈ ㅂㅇㅇ?", hint: "voir: 보이다", voice: "MALE" },
-            { id: 3, fr: "Oui, je t’entends bien.", ko: "네, 잘 들려요.", initial: "ㄴ, ㅈ ㄷㄹㅇ.", hint: "oui: 네", voice: "FEMALE" },
-            { id: 4, fr: "Oui, je te vois bien.", ko: "네, 잘 보여요.", initial: "ㄴ, ㅈ ㅂㅇㅇ.", hint: "oui: 네", voice: "MALE" },
-            { id: 5, fr: "Non, je ne t’entends pas.", ko: "아니요, 안 들려요.", initial: "ㅇㄴㅇ, ㅇ ㄷㄹㅇ.", hint: "non: 아니요", voice: "FEMALE" },
-            { id: 6, fr: "Non, je ne te vois pas.", ko: "아니요, 안 보여요.", initial: "ㅇㄴㅇ, ㅇ ㅂㅇㅇ.", hint: "non: 아니요", voice: "MALE" },
-            { id: 7, fr: "J'ai compris.", ko: "이해했어요.", initial: "ㅇㅎㅎㅇㅇ.", hint: "comprendre: 이해하다", voice: "FEMALE" },
-            { id: 8, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", initial: "ㅇㅎ ㅁㅎㅇㅇ.", hint: "ne pas pouvoir: 못하다", voice: "MALE" },
-            { id: 9, fr: "Tu peux répéter, s'il te plaît ?", ko: "한번 더 말해주세요.", initial: "ㅎㅂ ㄷ ㅁㅎㅈㅅㅇ.", hint: "une fois de plus: 한번 더", voice: "FEMALE" },
-            { id: 10, fr: "Je me souviens.", ko: "기억나요.", initial: "ㄱㅇㄴㅇ.", hint: "se souvenir: 기억나다", voice: "MALE" },
-            { id: 11, fr: "Je ne me souviens pas.", ko: "기억 안나요.", initial: "ㄱㅇ ㅇㄴㅇ.", hint: "ne pas se souvenir: 기억 안나다", voice: "FEMALE" },
-            { id: 12, fr: "Comment dit-on ça en coréen ?", ko: "한국어로 어떻게 말해요?", initial: "ㅎㄱㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "comment: 어떻게", voice: "MALE" },
-            { id: 13, fr: "Comment dit-on ça en français ?", ko: "프랑스어로 어떻게 말해요?", initial: "ㅍㄹㅅㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "français: 프랑스어", voice: "FEMALE" },
-            { id: 14, fr: "Passe une bonne semaine.", ko: "좋은 한 주 보내세요.", initial: "ㅈㅇ ㅎ ㅈ ㅂㄴㅅㅇ.", hint: "semaine: 주", voice: "MALE" },
-            { id: 15, fr: "On se voit la semaine prochaine !", ko: "다음 주에 봐요!", initial: "ㄷㅇ ㅈㅇ ㅂㅇ!", hint: "prochaine: 다음", voice: "FEMALE" },
-            { id: 16, fr: "Au revoir (quand l'autre reste)", ko: "안녕히 계세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "rester: 계시다", voice: "MALE" },
-            { id: 17, fr: "Au revoir (quand l'autre part)", ko: "안녕히 가세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "partir: 가시다", voice: "FEMALE" },
-            { id: 18, fr: "Vous avez bien travaillé / Bon travail !", ko: "수고하셨어요!", initial: "ㅅㄱㅎㅅㅇㅇ!", hint: "travailler dur: 수고하다", voice: "MALE" }
+            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", initial: "ㅈ ㄷㄹㅇ?", hint: "entendre: 들리다", voice: "FEMALE" }, { id: 2, fr: "Tu me vois bien ?", ko: "잘 보여요?", initial: "ㅈ ㅂㅇㅇ?", hint: "voir: 보이다", voice: "MALE" }, { id: 3, fr: "Oui, je t’entends bien.", ko: "네, 잘 들려요.", initial: "ㄴ, ㅈ ㄷㄹㅇ.", hint: "oui: 네", voice: "FEMALE" }, { id: 4, fr: "Oui, je te vois bien.", ko: "네, 잘 보여요.", initial: "ㄴ, ㅈ ㅂㅇㅇ.", hint: "oui: 네", voice: "MALE" }, { id: 5, fr: "Non, je ne t’entends pas.", ko: "아니요, 안 들려요.", initial: "ㅇㄴㅇ, ㅇ ㄷㄹㅇ.", hint: "non: 아니요", voice: "FEMALE" }, { id: 6, fr: "Non, je ne te vois pas.", ko: "아니요, 안 보여요.", initial: "ㅇㄴㅇ, ㅇ ㅂㅇㅇ.", hint: "non: 아니요", voice: "MALE" }, { id: 7, fr: "J'ai compris.", ko: "이해했어요.", initial: "ㅇㅎㅎㅇㅇ.", hint: "comprendre: 이해하다", voice: "FEMALE" }, { id: 8, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", initial: "ㅇㅎ ㅁㅎㅇㅇ.", hint: "ne pas pouvoir: 못하다", voice: "MALE" }, { id: 9, fr: "Tu peux répéter, s'il te plaît ?", ko: "한번 더 말해주세요.", initial: "ㅎㅂ ㄷ ㅁㅎㅈㅅㅇ.", hint: "une fois de plus: 한번 더", voice: "FEMALE" }, { id: 10, fr: "Je me souviens.", ko: "기억나요.", initial: "ㄱㅇㄴㅇ.", hint: "se souvenir: 기억나다", voice: "MALE" }, { id: 11, fr: "Je ne me souviens pas.", ko: "기억 안나요.", initial: "ㄱㅇ ㅇㄴㅇ.", hint: "ne pas se souvenir: 기억 안나다", voice: "FEMALE" }, { id: 12, fr: "Comment dit-on ça en coréen ?", ko: "한국어로 어떻게 말해요?", initial: "ㅎㄱㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "comment: 어떻게", voice: "MALE" }, { id: 13, fr: "Comment dit-on ça en français ?", ko: "프랑스어로 어떻게 말해요?", initial: "ㅍㄹㅅㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "français: 프랑스어", voice: "FEMALE" }, { id: 14, fr: "Passe une bonne semaine.", ko: "좋은 한 주 보내세요.", initial: "ㅈㅇ ㅎ ㅈ ㅂㄴㅅㅇ.", hint: "semaine: 주", voice: "MALE" }, { id: 15, fr: "On se voit la semaine prochaine !", ko: "다음 주에 봐요!", initial: "ㄷㅇ ㅈㅇ ㅂㅇ!", hint: "prochaine: 다음", voice: "FEMALE" }, { id: 16, fr: "Au revoir (quand l'autre reste)", ko: "안녕히 계세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "rester: 계시다", voice: "MALE" }, { id: 17, fr: "Au revoir (quand l'autre part)", ko: "안녕히 가세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "partir: 가시다", voice: "FEMALE" }, { id: 18, fr: "Vous avez bien travaillé / Bon travail !", ko: "수고하셨어요!", initial: "ㅅㄱㅎㅅㅇㅇ!", hint: "travailler dur: 수고하다", voice: "MALE" }
         ];
 
         // --- 상태 관리 변수 ---
@@ -225,10 +196,7 @@
         let correctMatches = 0;
         let userAnswers = {};
         let trackingData = {
-            startTime: null,
-            endTime: null,
-            totalTimeSeconds: 0,
-            dictationDetails: {}
+            startTime: null, endTime: null, totalTimeSeconds: 0, dictationDetails: {}
         };
 
         // --- DOM 요소 ---
@@ -267,8 +235,7 @@
                         <p class="font-semibold text-slate-800">${index + 1}. ${item.fr}</p>
                         <p class="text-lg text-blue-700">${item.ko}</p>
                         <p class="text-sm text-slate-500 mt-1">Vocabulaire: ${item.hint}</p>
-                    </div>
-                `;
+                    </div>`;
             });
             listContainer.innerHTML = contentHTML;
         }
@@ -277,17 +244,14 @@
             const printableArea = document.getElementById('printable-area');
             let html = `<h1 style="font-family: sans-serif; color: #0033a0; text-align: center;">Fiche de Préparation pour ${studentName}</h1>`;
             html += `<div style="font-family: sans-serif; margin-top: 20px;">`;
-            
             dictationData.forEach((item, index) => {
                 html += `
                     <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
                         <p style="font-size: 16px;"><strong>${index + 1}. ${item.fr}</strong></p>
                         <p style="font-size: 18px; color: #0033a0;">${item.ko}</p>
                         <p style="font-size: 14px; color: #555;"><em>Vocabulaire:</em> ${item.hint}</p>
-                    </div>
-                `;
+                    </div>`;
             });
-
             html += `</div>`;
             printableArea.innerHTML = html;
             window.print();
@@ -302,23 +266,19 @@
             correctMatches = 0;
             selectedFrench = null;
             selectedKorean = null;
-
             const shuffledFrench = [...matchingData].sort(() => Math.random() - 0.5);
             const shuffledKorean = [...matchingData].sort(() => Math.random() - 0.5);
-
             shuffledFrench.forEach(item => {
                 const frCard = createCard(item.fr, 'fr', item.id);
                 frCard.addEventListener('click', () => selectCard(frCard, 'fr', item.id));
                 frenchList.appendChild(frCard);
             });
-
             shuffledKorean.forEach(item => {
                 const koCard = createCard(item.ko, 'ko', item.id);
                 koCard.addEventListener('click', () => selectCard(koCard, 'ko', item.id));
                 koreanList.appendChild(koCard);
             });
         }
-        
         function createCard(text, type, id) {
             const card = document.createElement('div');
             card.className = 'card p-4 border-2 theme-border-primary rounded-lg bg-white text-lg';
@@ -327,10 +287,8 @@
             card.dataset.id = id;
             return card;
         }
-
         function selectCard(card, type, id) {
             if (card.classList.contains('correct-match')) return;
-
             if (type === 'fr') {
                 if (selectedFrench) selectedFrench.classList.remove('selected');
                 selectedFrench = card;
@@ -340,15 +298,10 @@
                 selectedKorean = card;
                 card.classList.add('selected');
             }
-
-            if (selectedFrench && selectedKorean) {
-                checkMatch();
-            }
+            if (selectedFrench && selectedKorean) checkMatch();
         }
-
         function checkMatch() {
             const isMatch = selectedFrench.dataset.id === selectedKorean.dataset.id;
-            
             if (isMatch) {
                 selectedFrench.classList.add('correct-match');
                 selectedKorean.classList.add('correct-match');
@@ -365,7 +318,6 @@
             }
             selectedFrench = null;
             selectedKorean = null;
-
             if (correctMatches === matchingData.length) {
                 setTimeout(() => alert('Bravo ! Vous avez trouvé tous les mots ! On passe à la dictée.'), 300);
             }
@@ -376,25 +328,19 @@
             initDictationGame();
             switchSection('dictation-game');
         }
-        
         function initDictationGame() {
             const container = document.getElementById('dictation-container');
             container.innerHTML = '';
             dictationData.forEach((item, index) => {
                 if (!trackingData.dictationDetails[item.id]) {
-                    trackingData.dictationDetails[item.id] = {
-                        question: item.ko, plays: 0, attempts: 0, correct: false
-                    };
+                    trackingData.dictationDetails[item.id] = { question: item.ko, plays: 0, attempts: 0, correct: false };
                 }
-                
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'p-5 border-2 theme-border-primary rounded-lg bg-slate-50';
                 questionDiv.innerHTML = `
                     <p class="text-lg font-semibold mb-3 text-slate-700">${index + 1}. ${item.fr}</p>
                     <div class="flex items-center gap-4 flex-wrap">
-                        <button onclick="playAudio('${item.ko}', ${item.id}, '${item.voice}')" class="theme-bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">
-                            � Écouter
-                        </button>
+                        <button onclick="playAudio('${item.ko}', ${item.id}, '${item.voice}')" class="theme-bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">🔊 Écouter</button>
                         <input type="text" id="answer-${item.id}" placeholder="Écrivez en coréen ici..." class="flex-grow p-2 border rounded-md focus:ring-2 focus:ring-yellow-400 focus:outline-none">
                     </div>
                     <div class="mt-3 flex gap-2">
@@ -402,10 +348,45 @@
                         <button onclick="showHint('hint-word-${item.id}')" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 2 (Mot-clé)</button>
                     </div>
                     <p id="hint-initial-${item.id}" class="hidden mt-2 text-blue-600">${item.initial}</p>
-                    <p id="hint-word-${item.id}" class="hidden mt-2 text-blue-600">${item.hint}</p>
-                `;
+                    <p id="hint-word-${item.id}" class="hidden mt-2 text-blue-600">${item.hint}</p>`;
                 container.appendChild(questionDiv);
             });
+        }
+
+        // --- 오디오 재생 관련 함수들 (수정됨) ---
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const pcm16 = new Int16Array(pcmData);
+            const header = new ArrayBuffer(44);
+            const view = new DataView(header);
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcm16.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcm16.length * 2, true);
+            return new Blob([view, pcm16], { type: 'audio/wav' });
         }
 
         async function playAudio(text, id, voice) {
@@ -417,20 +398,32 @@
                 const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text, voice: voice }) // voice 파라미터 추가
+                    body: JSON.stringify({ text: text, voice: voice })
                 });
-                if (!response.ok) throw new Error(`Erreur réseau: ${response.statusText}`);
                 
                 const data = await response.json();
-                if (data.audioContent) {
-                    const audio = new Audio("data:audio/wav;base64," + data.audioContent);
+
+                if (!response.ok) {
+                     throw new Error(`Erreur du serveur (${response.status}): ${data.error || 'Erreur inconnue'}`);
+                }
+
+                if (data && data.audioContent) {
+                    // API가 raw PCM 데이터를 반환하므로 WAV로 변환
+                    const sampleRate = 24000; // API가 24kHz를 반환한다고 가정
+                    const pcmData = base64ToArrayBuffer(data.audioContent);
+                    const wavBlob = pcmToWav(pcmData, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    const audio = new Audio(audioUrl);
                     audio.play();
+                    audio.onended = () => URL.revokeObjectURL(audioUrl);
+
                 } else {
-                    throw new Error("Aucun contenu audio reçu.");
+                    throw new Error("Les données audio n'ont pas été trouvées dans la réponse.");
                 }
             } catch (error) {
                 console.error("Erreur de lecture audio:", error);
-                alert("Désolé, impossible de jouer l'audio. Veuillez réessayer.");
+                alert("Désolé, impossible de jouer l'audio. " + error.message);
             } finally {
                 button.disabled = false;
                 button.textContent = '🔊 Écouter';
@@ -445,27 +438,19 @@
         function showResults() {
             trackingData.endTime = new Date();
             trackingData.totalTimeSeconds = Math.round((trackingData.endTime - trackingData.startTime) / 1000);
-            
             let score = 0;
             let detailedResultsHTML = '<h3 class="text-xl font-bold mb-3 theme-text-primary">Correction détaillée de la dictée</h3><ul class="space-y-3">';
-            
             dictationData.forEach(item => {
                 const userAnswer = document.getElementById(`answer-${item.id}`).value.trim().replace(/[.,!?]/g, '');
                 const correctAnswer = item.ko.replace(/[.,!?]/g, '');
                 userAnswers[item.id] = userAnswer;
                 trackingData.dictationDetails[item.id].attempts++;
-
                 if (userAnswer === correctAnswer) {
                     score++;
                     trackingData.dictationDetails[item.id].correct = true;
-                    detailedResultsHTML += `
-                        <li class="text-green-700">✔️ <strong>${item.fr}</strong><br>
-                        Votre réponse : ${userAnswer || "<i>(vide)</i>"} (Correct)</li>`;
+                    detailedResultsHTML += `<li class="text-green-700">✔️ <strong>${item.fr}</strong><br>Votre réponse : ${userAnswer || "<i>(vide)</i>"} (Correct)</li>`;
                 } else {
-                    detailedResultsHTML += `
-                        <li class="text-red-700">❌ <strong>${item.fr}</strong><br>
-                        Votre réponse : <span class="line-through">${userAnswer || "<i>(vide)</i>"}</span><br>
-                        Réponse correcte : <strong class="text-black">${item.ko}</strong></li>`;
+                    detailedResultsHTML += `<li class="text-red-700">❌ <strong>${item.fr}</strong><br>Votre réponse : <span class="line-through">${userAnswer || "<i>(vide)</i>"}</span><br>Réponse correcte : <strong class="text-black">${item.ko}</strong></li>`;
                 }
             });
             detailedResultsHTML += '</ul>';
@@ -473,7 +458,6 @@
             const percentage = Math.round((score / dictationData.length) * 100);
             const resultMessage = document.getElementById('result-message');
             let messageHTML = '';
-
             if (percentage === 100) {
                 messageHTML = `<div class="bg-green-100 border-l-4 border-green-500 p-4"><p class="icon">👑🎉👍</p><h3 class="text-2xl font-bold text-green-800">완벽해요!! (Parfait !!)</h3></div>`;
                 confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
@@ -485,10 +469,8 @@
             } else {
                 messageHTML = `<div class="bg-red-100 border-l-4 border-red-500 p-4"><p class="icon">😭</p><h3 class="text-2xl font-bold text-red-800">땡!! 틀렸어요!! (Bip !! Incorrect !!)</h3></div>`;
             }
-            
             resultMessage.innerHTML = messageHTML;
             document.getElementById('detailed-results').innerHTML = detailedResultsHTML;
-            
             switchSection('results-screen');
         }
 
@@ -497,9 +479,9 @@
             const btn = document.getElementById('send-email-btn');
             btn.disabled = true;
             btn.textContent = 'Envoi en cours...';
-
             try {
-                const response = await fetch('/.netlify/functions/send-email', {
+                // Netlify Function 엔드포인트 수정: send-email -> send-results
+                const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -511,18 +493,16 @@
                         quizData: dictationData.map(q => ({id: q.id, fr: q.fr, ko: q.ko}))
                     })
                 });
-
                 if (!response.ok) {
-                    throw new Error('La réponse du serveur n\'était pas OK');
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Une erreur est survenue.');
                 }
-                
                 const result = await response.json();
                 alert(result.message || 'Résultats envoyés avec succès !');
                 btn.textContent = '✅ Envoyé !';
-
             } catch (error) {
                 console.error("Erreur lors de l'envoi de l'e-mail:", error);
-                alert("Une erreur s'est produite lors de l'envoi des résultats. Veuillez réessayer.");
+                alert("Une erreur s'est produite lors de l'envoi des résultats. " + error.message);
                 btn.disabled = false;
                 btn.textContent = '📧 Envoyer les résultats par e-mail';
             }
@@ -531,8 +511,6 @@
         function printQuiz() {
             const printableArea = document.getElementById('printable-area');
             let html = `<h1 style="font-family: sans-serif; color: #0033a0; text-align: center;">Exercices de Coréen pour ${studentName}</h1>`;
-
-            // Section 1: Full sentences list
             html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px;">Fiche de Révision - Phrases Complètes</h2>`;
             html += `<div style="font-family: sans-serif; margin-top: 10px;">`;
             dictationData.forEach((item, index) => {
@@ -540,20 +518,15 @@
                     <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
                         <p style="font-size: 16px;"><strong>${index + 1}. ${item.fr}</strong></p>
                         <p style="font-size: 18px; color: #0033a0;">${item.ko}</p>
-                    </div>
-                `;
+                    </div>`;
             });
             html += `</div>`;
-
-            // Section 2: Vocabulary list
             html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px; page-break-before: always;">Vocabulaire</h2>`;
             html += `<table style="width: 100%; border-collapse: collapse; font-family: sans-serif;"><thead><tr style="background-color: #f0f4f8;"><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Français</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Coréen</th></tr></thead><tbody>`;
             matchingData.forEach(item => {
                 html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${item.fr}</td><td style="padding: 8px; border: 1px solid #ddd;">${item.ko}</td></tr>`;
             });
             html += `</tbody></table>`;
-
-            // Section 3: Dictation results (if available)
             if (Object.keys(userAnswers).length > 0) {
                 html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px; page-break-before: always;">Résultats de la Dictée</h2>`;
                 html += `<div style="font-family: sans-serif; margin-top: 10px;">`;
@@ -564,15 +537,11 @@
                         <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: ${isCorrect ? '#f0fff0' : '#fff0f0'};">
                             <p><strong>Question ${index + 1}:</strong> ${item.fr}</p>
                             <p><strong>Réponse correcte:</strong> ${item.ko}</p>
-                            <p style="color: ${isCorrect ? 'green' : 'red'};">
-                                <strong>Votre réponse:</strong> ${userAnswer}
-                            </p>
-                        </div>
-                    `;
+                            <p style="color: ${isCorrect ? 'green' : 'red'};"><strong>Votre réponse:</strong> ${userAnswer}</p>
+                        </div>`;
                 });
                 html += `</div>`;
             }
-
             printableArea.innerHTML = html;
             window.print();
         }
@@ -580,4 +549,3 @@
     </script>
 </body>
 </html>
-�
