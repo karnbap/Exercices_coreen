@@ -198,6 +198,7 @@
         let trackingData = {
             startTime: null, endTime: null, totalTimeSeconds: 0, dictationDetails: {}
         };
+        const audioCache = {};
 
         // --- DOM 요소 ---
         const nameForm = document.getElementById('name-form');
@@ -374,7 +375,7 @@
                 }
             }
             writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + pcm16.length * 2, true);
+            view.setUint32(4, 36 + pcm16.byteLength, true);
             writeString(view, 8, 'WAVE');
             writeString(view, 12, 'fmt ');
             view.setUint32(16, 16, true);
@@ -385,7 +386,7 @@
             view.setUint16(32, 2, true);
             view.setUint16(34, 16, true);
             writeString(view, 36, 'data');
-            view.setUint32(40, pcm16.length * 2, true);
+            view.setUint32(40, pcm16.byteLength, true);
             return new Blob([view, pcm16], { type: 'audio/wav' });
         }
 
@@ -394,32 +395,48 @@
             const button = event.target;
             button.disabled = true;
             button.textContent = '🔊 Chargement...';
+
+            if (audioCache[text]) {
+                const audio = new Audio(audioCache[text]);
+                audio.play();
+                audio.onended = () => {
+                    button.disabled = false;
+                    button.textContent = '🔊 Écouter';
+                };
+                return;
+            }
+
             try {
                 const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text, voice: voice })
                 });
-                
-                const data = await response.json();
 
                 if (!response.ok) {
-                     throw new Error(`Erreur du serveur (${response.status}): ${data.error || 'Erreur inconnue'}`);
+                    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+                    throw new Error(`Erreur du serveur (${response.status}): ${errorData.error || 'Erreur inconnue'}`);
                 }
+                
+                const result = await response.json();
+                const audioData = result?.audioData;
+                const mimeType = result?.mimeType;
 
-                if (data && data.audioContent) {
-                    // API가 raw PCM 데이터를 반환하므로 WAV로 변환
-                    const sampleRate = 24000; // API가 24kHz를 반환한다고 가정
-                    const pcmData = base64ToArrayBuffer(data.audioContent);
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+
+                    const pcmData = base64ToArrayBuffer(audioData);
                     const wavBlob = pcmToWav(pcmData, sampleRate);
                     const audioUrl = URL.createObjectURL(wavBlob);
                     
+                    audioCache[text] = audioUrl;
+
                     const audio = new Audio(audioUrl);
                     audio.play();
-                    audio.onended = () => URL.revokeObjectURL(audioUrl);
-
                 } else {
-                    throw new Error("Les données audio n'ont pas été trouvées dans la réponse.");
+                    console.error("Réponse invalide du serveur:", result);
+                    throw new Error("Les données audio (audioData) ou le type MIME (mimeType) n'ont pas été trouvés dans la réponse.");
                 }
             } catch (error) {
                 console.error("Erreur de lecture audio:", error);
@@ -480,7 +497,6 @@
             btn.disabled = true;
             btn.textContent = 'Envoi en cours...';
             try {
-                // Netlify Function 엔드포인트 수정: send-email -> send-results
                 const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
