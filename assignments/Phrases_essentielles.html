@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        .wrong-block { background:#fff0f0; border-left:4px solid #ef4444; }
+
         body {
             font-family: 'Noto Sans KR', sans-serif;
             background-color: #f0f4f8;
@@ -538,32 +540,126 @@
         }
 
         // --- 결과 처리 로직 ---
-        function showResults() {
-            trackingData.endTime = new Date();
-            trackingData.totalTimeSeconds = Math.round((trackingData.endTime - trackingData.startTime) / 1000);
-            let score = 0;
-            let detailedResultsHTML = '<h3 class="text-xl font-bold mb-3 theme-text-primary">Correction détaillée de la dictée</h3><ul class="space-y-3">';
-            
-            dictationData.forEach(item => {
-                const userAnswer = document.getElementById(`answer-${item.id}`).value.trim();
-                const cleanUserAnswer = userAnswer.replace(/[.,!?]/g, '');
-                const cleanCorrectAnswer = item.ko.replace(/[.,!?]/g, '');
-                
-                const detail = trackingData.dictationDetails[item.id];
-                detail.userAnswer = userAnswer;
-                detail.isCorrect = cleanUserAnswer === cleanCorrectAnswer;
+        // 간단한 🎺 팬파레 (Web Audio API)
+function playFanfare() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const t0 = now + i * 0.12;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+      osc.start(t0);
+      osc.stop(t0 + 0.26);
+    });
+  } catch (e) {
+    /* 사운드 못써도 무시 */
+  }
+}
 
-                if (detail.isCorrect) {
-                    score++;
-                }
+function showResults() {
+  trackingData.endTime = new Date();
+  trackingData.totalTimeSeconds = Math.round((trackingData.endTime - trackingData.startTime) / 1000);
 
-                detailedResultsHTML += `
-                    <li class="${detail.isCorrect ? 'text-green-700' : 'text-red-700'}">
-                        <strong>${item.fr}</strong><br>
-                        ${detail.isCorrect ? `✔️ Votre réponse : ${userAnswer || "<i>(vide)</i>"}` : `❌ Votre réponse : <span class="line-through">${userAnswer || "<i>(vide)</i>"}</span><br>Réponse correcte : <strong class="text-black">${item.ko}</strong>`}<br>
-                        <small class="text-slate-500">Écouté ${detail.plays} fois, Indice 1: ${detail.hint1Clicks} fois, Indice 2: ${detail.hint2Clicks} fois</small>
-                    </li>`;
-            });
+  let correctCount = 0;
+  const results = []; // 문항별 결과 저장(오답 하이라이트/이메일용)
+
+  // 문항별 정오 판정 + 통계 업데이트
+  dictationData.forEach((item) => {
+    const userAnswer = (document.getElementById(`answer-${item.id}`)?.value || '').trim();
+    const cleanUser = userAnswer.replace(/[.,!?]/g, '');
+    const cleanCorrect = item.ko.replace(/[.,!?]/g, '');
+
+    const detail = trackingData.dictationDetails[item.id];
+    detail.userAnswer = userAnswer;
+    detail.isCorrect = cleanUser === cleanCorrect;
+
+    if (detail.isCorrect) correctCount++;
+
+    results.push({
+      id: item.id,
+      fr: item.fr,
+      ko: item.ko,
+      userAnswer,
+      isCorrect: detail.isCorrect,
+      plays: detail.plays || 0,
+      hint1: detail.hint1Clicks || 0,
+      hint2: detail.hint2Clicks || 0,
+    });
+  });
+
+  const total = dictationData.length;
+  const pct = Math.round((correctCount / total) * 100);
+
+  // 상단 총평 영역: 점수 + 조건별 멘트/이모지
+  const resultMessage = document.getElementById('result-message');
+  let topHTML = `<div class="p-4 rounded-lg border">
+    <div class="text-3xl font-extrabold mb-2">${pct}%</div>`;
+
+  if (pct === 100) {
+    topHTML += `<div class="text-green-700 text-2xl font-bold">완벽해요!! 👑🎺👍</div>`;
+    // 축하 이펙트
+    confetti({ particleCount: 220, spread: 90, origin: { y: 0.6 } });
+    playFanfare();
+  } else if (pct >= 80) {
+    topHTML += `<div class="text-blue-700 text-2xl font-bold">잘했어요!! 🎺👍</div>`;
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+  } else if (pct >= 60) {
+    topHTML += `<div class="text-yellow-700 text-xl font-bold">이해할 수 있어요. 꽤 잘했어요 (이해 못할 수도 있어요ㅋㅋ) 👍</div>`;
+  } else {
+    topHTML += `<div class="text-red-700 text-xl font-bold">땡!! 틀렸어요!!</div>`;
+  }
+  topHTML += `<div class="text-slate-600 mt-1">점수: ${correctCount}/${total}</div></div>`;
+  resultMessage.innerHTML = topHTML;
+
+  // 상세 영역: 모든 문장 리스트 + 오답 하이라이트 + 정답 표시
+  const wrongItems = results.filter(r => !r.isCorrect);
+  let detailHTML = `
+    <h3 class="text-xl font-bold mb-3 theme-text-primary">문장별 결과</h3>
+    <ul class="space-y-3">`;
+
+  results.forEach(r => {
+    if (r.isCorrect) {
+      detailHTML += `
+        <li class="p-3 rounded-lg border border-emerald-200 bg-emerald-50">
+          <div class="font-semibold text-emerald-700">✔️ ${r.id}. ${r.fr}</div>
+          <div class="mt-1">내 답: ${r.userAnswer || '<i>(빈칸)</i>'}</div>
+        </li>`;
+    } else {
+      detailHTML += `
+        <li class="p-3 rounded-lg border border-red-200 wrong-block">
+          <div class="font-semibold text-red-700">❌ ${r.id}. ${r.fr}</div>
+          <div class="mt-1"><span class="line-through">${r.userAnswer || '<i>(빈칸)</i>'}</span></div>
+          <div class="mt-1"><b>정답:</b> ${r.ko}</div>
+          <div class="mt-1 text-sm text-slate-600">듣기: ${r.plays}회 · Indice 1: ${r.hint1}회 · Indice 2: ${r.hint2}회</div>
+        </li>`;
+    }
+  });
+  detailHTML += `</ul>`;
+
+  // 100%가 아니면 맨 위에 오답 요약 박스 추가
+  if (pct < 100 && wrongItems.length) {
+    detailHTML =
+      `<div class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50">
+         <div class="font-bold text-red-700">❗오답(${wrongItems.length}개): ${wrongItems.map(w => w.id).join(', ')}</div>
+         <div class="text-sm text-slate-700 mt-1">아래 리스트에서 <b>정답</b>을 확인하세요.</div>
+       </div>` + detailHTML;
+  }
+
+  document.getElementById('detailed-results').innerHTML = detailHTML;
+
+  // 이메일/인쇄 등에 쓰일 통계는 기존 구조 유지
+  switchSection('results-screen');
+}
+
             detailedResultsHTML += '</ul>';
 
             const percentage = Math.round((score / dictationData.length) * 100);
