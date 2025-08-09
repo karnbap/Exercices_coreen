@@ -547,7 +547,7 @@
             const resultMessage = document.getElementById('result-message');
             let messageHTML = '';
             if (percentage === 100) {
-                messageHTML = `<div class="bg-green-100 border-l-4 border-green-500 p-4"><p class="icon">👑🎉👍</p><h3 class="text-2xl font-bold text-green-800">완벽해요!! (Parfait !!)</h3></div>`;
+                messageHTML = `<div class="bg-green-100 border-l-4 border-green-500 p-4"><p class="icon">�🎉👍</p><h3 class="text-2xl font-bold text-green-800">완벽해요!! (Parfait !!)</h3></div>`;
                 confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
             } else if (percentage >= 80) {
                 messageHTML = `<div class="bg-blue-100 border-l-4 border-blue-500 p-4"><p class="icon">🎉👍</p><h3 class="text-2xl font-bold text-blue-800">잘했어요!! (Bien joué !!)</h3></div>`;
@@ -567,11 +567,22 @@
             const btn = document.getElementById('send-email-btn');
             btn.disabled = true;
             btn.textContent = 'Envoi en cours...';
+            
+            // **FIX**: Create a clean payload with an array for details
+            // This makes it easier for the server to process.
+            const emailPayload = {
+                studentName: trackingData.studentName,
+                startTime: trackingData.startTime,
+                endTime: trackingData.endTime,
+                totalTimeSeconds: trackingData.totalTimeSeconds,
+                details: Object.values(trackingData.dictationDetails) // Convert object to array
+            };
+
             try {
                 const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(trackingData)
+                    body: JSON.stringify(emailPayload) // Send the new payload
                 });
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -628,3 +639,4 @@
     </script>
 </body>
 </html>
+�
