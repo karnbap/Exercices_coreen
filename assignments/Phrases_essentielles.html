@@ -194,7 +194,6 @@
         let selectedFrench = null;
         let selectedKorean = null;
         let correctMatches = 0;
-        let userAnswers = {};
         let trackingData = {
             studentName: '',
             startTime: null, 
@@ -206,8 +205,6 @@
         let mediaRecorder;
         let audioChunks = [];
         let recordingStartTime;
-        let currentRecordingId = null;
-
 
         // --- DOM 요소 ---
         const nameForm = document.getElementById('name-form');
@@ -347,7 +344,8 @@
                     trackingData.dictationDetails[item.id] = { 
                         question: item.ko, 
                         plays: 0, 
-                        mistakeCount: 0, 
+                        isCorrect: null,
+                        userAnswer: '',
                         recording: { base64: null, duration: 0, sentence: item.ko }
                     };
                 }
@@ -368,15 +366,6 @@
                     <p id="hint-initial-${item.id}" class="hidden mt-2 text-blue-600">${item.initial}</p>
                     <p id="hint-word-${item.id}" class="hidden mt-2 text-blue-600">${item.hint}</p>`;
                 
-                const input = questionDiv.querySelector(`#answer-${item.id}`);
-                input.addEventListener('change', () => {
-                    const userAnswer = input.value.trim().replace(/[.,!?]/g, '');
-                    const correctAnswer = item.ko.replace(/[.,!?]/g, '');
-                    if (userAnswer && userAnswer !== correctAnswer) {
-                        trackingData.dictationDetails[item.id].mistakeCount++;
-                    }
-                });
-
                 container.appendChild(questionDiv);
             });
         }
@@ -488,7 +477,6 @@
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     audioChunks = [];
                     mediaRecorder = new MediaRecorder(stream);
-                    currentRecordingId = id;
 
                     mediaRecorder.ondataavailable = event => {
                         audioChunks.push(event.data);
@@ -505,7 +493,7 @@
                             trackingData.dictationDetails[id].recording.duration = duration;
                             statusEl.textContent = `Enregistré (${duration}s) 👍`;
                         };
-                        stream.getTracks().forEach(track => track.stop()); // Stop microphone access
+                        stream.getTracks().forEach(track => track.stop());
                     };
                     
                     recordingStartTime = new Date();
@@ -534,20 +522,23 @@
             let detailedResultsHTML = '<h3 class="text-xl font-bold mb-3 theme-text-primary">Correction détaillée de la dictée</h3><ul class="space-y-3">';
             
             dictationData.forEach(item => {
-                const userAnswer = document.getElementById(`answer-${item.id}`).value.trim().replace(/[.,!?]/g, '');
-                const correctAnswer = item.ko.replace(/[.,!?]/g, '');
-                userAnswers[item.id] = userAnswer;
+                const userAnswer = document.getElementById(`answer-${item.id}`).value.trim();
+                const cleanUserAnswer = userAnswer.replace(/[.,!?]/g, '');
+                const cleanCorrectAnswer = item.ko.replace(/[.,!?]/g, '');
                 
-                const isCorrect = userAnswer === correctAnswer;
-                if (isCorrect) {
+                const detail = trackingData.dictationDetails[item.id];
+                detail.userAnswer = userAnswer;
+                detail.isCorrect = cleanUserAnswer === cleanCorrectAnswer;
+
+                if (detail.isCorrect) {
                     score++;
                 }
 
                 detailedResultsHTML += `
-                    <li class="${isCorrect ? 'text-green-700' : 'text-red-700'}">
+                    <li class="${detail.isCorrect ? 'text-green-700' : 'text-red-700'}">
                         <strong>${item.fr}</strong><br>
-                        ${isCorrect ? `✔️ Votre réponse : ${userAnswer || "<i>(vide)</i>"}` : `❌ Votre réponse : <span class="line-through">${userAnswer || "<i>(vide)</i>"}</span><br>Réponse correcte : <strong class="text-black">${item.ko}</strong>`}<br>
-                        <small class="text-slate-500">Écouté ${trackingData.dictationDetails[item.id].plays} fois, ${trackingData.dictationDetails[item.id].mistakeCount} erreur(s)</small>
+                        ${detail.isCorrect ? `✔️ Votre réponse : ${userAnswer || "<i>(vide)</i>"}` : `❌ Votre réponse : <span class="line-through">${userAnswer || "<i>(vide)</i>"}</span><br>Réponse correcte : <strong class="text-black">${item.ko}</strong>`}<br>
+                        <small class="text-slate-500">Écouté ${detail.plays} fois</small>
                     </li>`;
             });
             detailedResultsHTML += '</ul>';
@@ -577,7 +568,6 @@
             btn.disabled = true;
             btn.textContent = 'Envoi en cours...';
             try {
-                // trackingData 객체 전체를 전송
                 const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -617,17 +607,16 @@
                 html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${item.fr}</td><td style="padding: 8px; border: 1px solid #ddd;">${item.ko}</td></tr>`;
             });
             html += `</tbody></table>`;
-            if (Object.keys(userAnswers).length > 0) {
+            if (Object.keys(trackingData.dictationDetails).some(k => trackingData.dictationDetails[k].userAnswer !== '')) {
                 html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px; page-break-before: always;">Résultats de la Dictée</h2>`;
                 html += `<div style="font-family: sans-serif; margin-top: 10px;">`;
                 dictationData.forEach((item, index) => {
-                    const userAnswer = userAnswers[item.id] || "<i>(Pas de réponse)</i>";
-                    const isCorrect = userAnswer.replace(/[.,!?]/g, '') === item.ko.replace(/[.,!?]/g, '');
+                    const detail = trackingData.dictationDetails[item.id];
                     html += `
-                        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: ${isCorrect ? '#f0fff0' : '#fff0f0'};">
+                        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: ${detail.isCorrect ? '#f0fff0' : '#fff0f0'};">
                             <p><strong>Question ${index + 1}:</strong> ${item.fr}</p>
                             <p><strong>Réponse correcte:</strong> ${item.ko}</p>
-                            <p style="color: ${isCorrect ? 'green' : 'red'};"><strong>Votre réponse:</strong> ${userAnswer}</p>
+                            <p style="color: ${detail.isCorrect ? 'green' : 'red'};"><strong>Votre réponse:</strong> ${detail.userAnswer || "<i>(Pas de réponse)</i>"}</p>
                         </div>`;
                 });
                 html += `</div>`;
