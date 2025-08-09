@@ -485,17 +485,26 @@
                     };
 
                     mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.readAsDataURL(audioBlob);
-                        reader.onloadend = () => {
-                            const base64String = reader.result.split(',')[1];
-                            const duration = Math.round((new Date() - recordingStartTime) / 1000);
-                            trackingData.dictationDetails[id].recording.base64 = base64String;
-                            trackingData.dictationDetails[id].recording.duration = duration;
-                            statusEl.textContent = `Enregistré (${duration}s) 👍`;
+                      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // webm가 용량/호환성 무난
+                      const reader = new FileReader();
+                      reader.readAsDataURL(audioBlob);
+                      reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        const duration = Math.round((new Date() - recordingStartTime) / 1000);
+                        const fname = `rec_q${id}_${Date.now()}.webm`;
+                    
+                        trackingData.dictationDetails[id].recording = {
+                          base64: base64String,
+                          duration,
+                          mimeType: 'audio/webm',
+                          filename: fname,
+                          sentenceKo: dictationData.find(x=>x.id===id).ko,
+                          sentenceFr: dictationData.find(x=>x.id===id).fr,
+                          number: id
                         };
-                        stream.getTracks().forEach(track => track.stop());
+                        statusEl.textContent = `Enregistré (${duration}s) 👍`;
+                      };
+                      stream.getTracks().forEach(t=>t.stop());
                     };
                     
                     recordingStartTime = new Date();
@@ -577,47 +586,60 @@
         }
 
         // --- 이메일 및 인쇄 기능 ---
-        async function sendResultsByEmail() {
-            const btn = document.getElementById('send-email-btn');
-            btn.disabled = true;
-            btn.textContent = 'Envoi en cours...';
+            // 결과 전송 payload (핵심 필드 추가)
+            async function sendResultsByEmail() {
+              const btn = document.getElementById('send-email-btn');
+              btn.disabled = true; btn.textContent = 'Envoi en cours...';
             
-            const emailPayload = {
-                studentName: trackingData.studentName,
+              // 최신 값 갱신
+              Object.values(trackingData.dictationDetails).forEach(d=>{
+                if (d && typeof d.userAnswer !== 'string') d.userAnswer = '';
+              });
+            
+              const questions = dictationData.map(item=>{
+                const d = trackingData.dictationDetails[item.id] || {};
+                return {
+                  number: item.id,
+                  fr: item.fr,
+                  ko: item.ko,
+                  userAnswer: d.userAnswer || '',
+                  isCorrect: !!d.isCorrect,
+                  listenCount: d.plays || 0,
+                  hint1Count: d.hint1Clicks || 0,
+                  hint2Count: d.hint2Clicks || 0,
+                  recording: d.recording && d.recording.base64 ? {
+                    filename: d.recording.filename || `rec_q${item.id}.webm`,
+                    mimeType: d.recording.mimeType || 'audio/webm',
+                    base64: d.recording.base64,
+                    duration: d.recording.duration || 0
+                  } : null
+                };
+              });
+            
+              const emailPayload = {
+                studentName: trackingData.studentName || studentName,
                 startTime: trackingData.startTime,
-                endTime: trackingData.endTime,
-                totalTimeSeconds: trackingData.totalTimeSeconds,
-                questions: Object.values(trackingData.dictationDetails).map(detail => ({
-                    questionText: detail.question,
-                    userAnswer: detail.userAnswer,
-                    isCorrect: detail.isCorrect,
-                    listenCount: detail.plays,
-                    hint1Count: detail.hint1Clicks,
-                    hint2Count: detail.hint2Clicks,
-                    recording: detail.recording
-                }))
-            };
-
-            try {
-                const response = await fetch('/.netlify/functions/send-results', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(emailPayload)
+                endTime: new Date(),
+                totalTimeSeconds: Math.round((new Date() - trackingData.startTime)/1000),
+                questions
+              };
+            
+              try {
+                const res = await fetch('/.netlify/functions/send-results', {
+                  method:'POST',
+                  headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify(emailPayload)
                 });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Une erreur est survenue.');
-                }
-                const result = await response.json();
-                alert(result.message || 'Résultats envoyés avec succès !');
+                if(!res.ok) throw new Error(await res.text());
+                alert('✅ Résultats envoyés avec succès !');
                 btn.textContent = '✅ Envoyé !';
-            } catch (error) {
-                console.error("Erreur lors de l'envoi de l'e-mail:", error);
-                alert("Une erreur s'est produite lors de l'envoi des résultats. " + error.message);
+              } catch(e){
+                console.error(e);
+                alert('메일 전송 오류: ' + e.message);
                 btn.disabled = false;
                 btn.textContent = '📧 Envoyer les résultats par e-mail';
+              }
             }
-        }
 
         function printQuiz() {
             const printableArea = document.getElementById('printable-area');
