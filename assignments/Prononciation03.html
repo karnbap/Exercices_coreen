@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연습문제 - Phrases Essentielles V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .bg-royal-blue { background-color: #0033A0; }
+        .text-royal-blue { color: #0033A0; }
+        .border-royal-blue { border-color: #0033A0; }
+        .bg-gold { background-color: #FFD700; }
+        .text-gold { color: #FFD700; }
+        .bg-dark-charcoal { background-color: #333333; }
+        .text-dark-charcoal { color: #333333; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0033A0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 플래시카드 타이머 애니메이션 */
+        .timer-bar {
+            height: 8px;
+            background-color: #4CAF50;
+            width: 100%;
+            transition: width 10s linear;
+        }
+        .flashcard {
+            transition: opacity 1s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-4xl mx-auto">
+        
+        <!-- 이름 입력 화면 -->
+        <div id="name-screen" class="bg-white p-8 rounded-xl shadow-lg text-center">
+            <h1 class="text-3xl font-bold text-royal-blue mb-4">Phrases Essentielles 종합 연습</h1>
+            <p class="text-slate-600 mb-6">3가지 유형의 총 30문제가 준비되었습니다.</p>
+            <input type="text" id="student-name-input" placeholder="이름을 입력하세요 (ex: Cédou)" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg focus:border-royal-blue focus:ring-royal-blue">
+            <button id="start-btn" class="mt-6 w-full max-w-sm mx-auto bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition-colors duration-300">
+                시작하기
+            </button>
+        </div>
+
+        <!-- 연습문제 화면 -->
+        <div id="exercise-screen" class="hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+            <!-- 헤더 -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-royal-blue">문제 <span id="question-counter">1</span> / 30</h2>
+                    <p id="student-name-display" class="text-slate-500"></p>
+                </div>
+                <div class="flex items-center space-x-2">
+                     <a href="/assignments/" class="text-sm text-slate-500 hover:text-royal-blue">이전 목록</a>
+                     <button onclick="window.print()" class="text-sm text-slate-500 hover:text-royal-blue">인쇄</button>
+                </div>
+            </div>
+
+            <!-- 문제 유형 제목 -->
+            <h3 id="part-title" class="text-xl text-center font-bold text-dark-charcoal mb-4"></h3>
+
+            <!-- 문제 영역 -->
+            <div id="question-area" class="min-h-[300px]">
+                <!-- Part 1: 단어 듣고 뜻 맞추기 -->
+                <div id="part1-matching" class="hidden space-y-6">
+                    <p class="text-lg text-center text-dark-charcoal font-semibold">단어를 듣고 알맞은 뜻을 고르세요.</p>
+                    <div class="text-center">
+                        <button id="part1-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
+                        </button>
+                        <div id="part1-audio-loader" class="hidden loader mx-auto mt-2"></div>
+                    </div>
+                    <div id="part1-options" class="grid grid-cols-2 gap-4 max-w-md mx-auto"></div>
+                </div>
+
+                <!-- Part 2: 초성 플래시 카드 -->
+                <div id="part2-flashcard" class="hidden space-y-4 text-center">
+                    <p class="text-lg text-dark-charcoal font-semibold">10초 안에 단어의 초성을 입력하세요!</p>
+                    <div id="flashcard-timer-container" class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                        <div id="flashcard-timer-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-200 ease-linear"></div>
+                    </div>
+                    <div id="flashcard" class="p-8 bg-blue-50 rounded-lg shadow-inner">
+                        <p id="flashcard-word" class="text-4xl font-bold text-royal-blue"></p>
+                        <p id="flashcard-hint" class="text-lg text-slate-600 mt-2"></p>
+                    </div>
+                    <input type="text" id="flashcard-input" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg text-center text-2xl focus:border-royal-blue focus:ring-royal-blue" placeholder="초성 입력 (예: ㅅㄹ)">
+                </div>
+
+                <!-- Part 3: 문장 받아쓰기 -->
+                <div id="part3-dictation" class="hidden space-y-6">
+                    <p class="text-lg text-center text-dark-charcoal font-semibold">문장을 듣고 아래에 적어보세요.</p>
+                    <div class="text-center">
+                        <button id="part3-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
+                        </button>
+                        <div id="part3-audio-loader" class="hidden loader mx-auto mt-2"></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button id="hint1-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">힌트 1: 초성</button>
+                        <button id="hint2-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">힌트 2: 단어 뜻</button>
+                    </div>
+                    <div id="hint1-content" class="hidden text-center p-3 bg-blue-50 text-royal-blue rounded-lg"></div>
+                    <div id="hint2-content" class="hidden text-center p-3 bg-yellow-50 text-yellow-800 rounded-lg"></div>
+                    <div class="space-y-4">
+                        <input type="text" id="korean-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" placeholder="들은 문장을 한국어로 입력하세요.">
+                        <input type="text" id="french-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" placeholder="문장을 프랑스어로 번역해 보세요.">
+                    </div>
+                    <div class="text-center p-4 border-t border-slate-200 mt-4">
+                         <h3 class="text-md font-semibold text-dark-charcoal mb-2">발음 연습하기</h3>
+                         <button id="record-btn" class="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600 transition">녹음 시작</button>
+                         <p id="recording-status" class="text-sm text-slate-500 mt-2 h-5"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 버튼 -->
+            <div class="mt-8 text-center">
+                <button id="check-btn" class="w-full md:w-auto bg-royal-blue text-white font-bold py-3 px-12 rounded-lg hover:bg-blue-800 transition">정답 확인</button>
+                <button id="next-btn" class="hidden w-full md:w-auto bg-dark-charcoal text-white font-bold py-3 px-12 rounded-lg hover:bg-black transition">다음 문제</button>
+                <button id="finish-btn" class="hidden w-full md:w-auto bg-gold text-dark-charcoal font-bold py-3 px-12 rounded-lg hover:bg-yellow-400 transition">끝내기</button>
+            </div>
+        </div>
+        
+        <!-- 결과 화면 -->
+        <div id="results-screen" class="hidden bg-white p-8 rounded-xl shadow-lg text-center">
+             <div id="results-content"></div>
+             <div id="results-loader" class="hidden loader mx-auto my-8"></div>
+             <p id="email-status" class="text-slate-500 mt-4"></p>
+             <div class="mt-8 flex justify-center gap-4">
+                <a href="/assignments/phrases_essentielles_v2.html" class="bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition">다시하기</a>
+                <a href="/assignments/" class="bg-dark-charcoal text-white font-bold py-3 px-6 rounded-lg hover:bg-black transition">목록으로</a>
+             </div>
+        </div>
+        
+        <!-- 피드백 모달 -->
+        <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+                <h3 id="feedback-title" class="text-2xl font-bold mb-4"></h3>
+                <div id="feedback-details" class="text-left space-y-3 mb-6"></div>
+                <button id="feedback-close-btn" class="bg-royal-blue text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-800 transition">확인</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+    // 데이터
+    const wordData = [
+        { korean: "전화", french: "appel téléphonique", initial: "ㅈㅎ" },
+        { korean: "신혼", french: "mariage récent", initial: "ㅅㅎ" },
+        { korean: "친구", french: "ami", initial: "ㅊㄱ" },
+        { korean: "근황", french: "nouvelles récentes", initial: "ㄱㅎ" },
+        { korean: "전하다", french: "transmettre", initial: "ㅈㅎㄷ" },
+        { korean: "공연", french: "spectacle", initial: "ㄱㅇ" },
+        { korean: "시작", french: "début", initial: "ㅅㅈ" },
+        { korean: "신호", french: "signal", initial: "ㅅㅎ" },
+        { korean: "놓치다", french: "manquer", initial: "ㄴㅊㄷ" },
+        { korean: "문화", french: "culture", initial: "ㅁㅎ" }
+    ];
+
+    const sentenceData = [
+        { korean: "신혼 부부가 제주도에 갔어요.", french: "Un couple de jeunes mariés est allé sur l'île de Jeju.", keywords: [{ word: "신혼", hint: "mariage récent, lune de miel", initial: "ㅅㅎ" }, { word: "부부", hint: "couple marié", initial: "ㅂㅂ" }, { word: "제주도", hint: "île de Jeju", initial: "ㅈㅈㄷ" }] },
+        { korean: "저는 문화 수업에 갔어요.", french: "Je suis allé(e) à un cours de culture.", keywords: [{ word: "문화", hint: "culture", initial: "ㅁㅎ" }, { word: "수업", hint: "cours", initial: "ㅅㅇ" }] },
+        { korean: "지금 전화해도 돼요?", french: "Est-ce que je peux téléphoner maintenant ?", keywords: [{ word: "전화", hint: "appel téléphonique", initial: "ㅈㅎ" }, { word: "지금", hint: "maintenant", initial: "ㅈㄱ" }, { word: "돼요", hint: "c’est possible?", initial: "ㄷㅇ" }] },
+        { korean: "친구 근황을 들었어요.", french: "J'ai eu des nouvelles de mon ami(e).", keywords: [{ word: "친구", hint: "ami", initial: "ㅊㄱ" }, { word: "근황", hint: "nouvelles récentes", initial: "ㄱㅎ" }] },
+        { korean: "신호가 빨간색이에요.", french: "Le feu (de circulation) est rouge.", keywords: [{ word: "신호", hint: "signal, feu de circulation", initial: "ㅅㅎ" }, { word: "빨간색", hint: "rouge", initial: "ㅃㄱㅅ" }] },
+        { korean: "신혼 부부가 문화 공연을 봤어요.", french: "Le couple de jeunes mariés a vu un spectacle culturel.", keywords: [{ word: "신혼", hint: "mariage récent", initial: "ㅅㅎ" }, { word: "부부", hint: "couple marié", initial: "ㅂㅂ" }, { word: "문화", hint: "culture", initial: "ㅁㅎ" }, { word: "공연", hint: "spectacle", initial: "ㄱㅇ" }] },
+        { korean: "전화로 친구 근황을 물었어요.", french: "J'ai demandé des nouvelles de mon ami(e) par téléphone.", keywords: [{ word: "전화", hint: "appel téléphonique", initial: "ㅈㅎ" }, { word: "친구", hint: "ami", initial: "ㅊㄱ" }, { word: "근황", hint: "nouvelles récentes", initial: "ㄱㅎ" }] },
+        { korean: "문화 거리에서 신호를 기다렸어요.", french: "J'ai attendu au feu dans la rue de la culture.", keywords: [{ word: "문화", hint: "culture", initial: "ㅁㅎ" }, { word: "거리", hint: "rue", initial: "ㄱㄹ" }, { word: "신호", hint: "signal", initial: "ㅅㅎ" }] },
+        { korean: "전화를 받았는데 전혀 모르는 번호였어요.", french: "J'ai répondu au téléphone, mais c'était un numéro que je ne connaissais pas du tout.", keywords: [{ word: "전화", hint: "appel téléphonique", initial: "ㅈㅎ" }, { word: "전혀", hint: "pas du tout", initial: "ㅈㅎ" }, { word: "번호", hint: "numéro", initial: "ㅂㅎ" }] },
+        { korean: "친구 근황을 듣고 문화 행사에 갔어요.", french: "Après avoir pris des nouvelles de mon ami(e), je suis allé(e) à un événement culturel.", keywords: [{ word: "근황", hint: "nouvelles récentes", initial: "ㄱㅎ" }, { word: "문화", hint: "culture", initial: "ㅁㅎ" }, { word: "행사", hint: "événement", initial: "ㅎㅅ" }] }
+    ];
+
+    const allQuestions = [
+        ...wordData.map(w => ({ ...w, type: 'matching' })),
+        ...wordData.map(w => ({ ...w, type: 'flashcard' })),
+        ...sentenceData.map(s => ({ ...s, type: 'dictation' }))
+    ];
+
+    // 상태 관리
+    let currentQuestionIndex = 0;
+    let studentName = "";
+    let score = 0;
+    let startTime;
+    let exerciseData = [];
+    let flashcardTimer;
+
+    // 녹음 관련
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // DOM 요소
+    const nameScreen = document.getElementById('name-screen');
+    const exerciseScreen = document.getElementById('exercise-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    const startBtn = document.getElementById('start-btn');
+    const studentNameInput = document.getElementById('student-name-input');
+    const studentNameDisplay = document.getElementById('student-name-display');
+    const questionCounter = document.getElementById('question-counter');
+    const partTitle = document.getElementById('part-title');
+    
+    // Part 1
+    const part1Container = document.getElementById('part1-matching');
+    const part1AudioBtn = document.getElementById('part1-audio-btn');
+    const part1AudioLoader = document.getElementById('part1-audio-loader');
+    const part1Options = document.getElementById('part1-options');
+
+    // Part 2
+    const part2Container = document.getElementById('part2-flashcard');
+    const flashcard = document.getElementById('flashcard');
+    const flashcardTimerBar = document.getElementById('flashcard-timer-bar');
+    const flashcardWord = document.getElementById('flashcard-word');
+    const flashcardHint = document.getElementById('flashcard-hint');
+    const flashcardInput = document.getElementById('flashcard-input');
+
+    // Part 3
+    const part3Container = document.getElementById('part3-dictation');
+    const part3AudioBtn = document.getElementById('part3-audio-btn');
+    const part3AudioLoader = document.getElementById('part3-audio-loader');
+    const hint1Btn = document.getElementById('hint1-btn');
+    const hint2Btn = document.getElementById('hint2-btn');
+    const hint1Content = document.getElementById('hint1-content');
+    const hint2Content = document.getElementById('hint2-content');
+    const koreanInput = document.getElementById('korean-input');
+    const frenchInput = document.getElementById('french-input');
+    const recordBtn = document.getElementById('record-btn');
+    const recordingStatus = document.getElementById('recording-status');
+
+    // 공통 버튼 및 모달
+    const checkBtn = document.getElementById('check-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const finishBtn = document.getElementById('finish-btn');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackDetails = document.getElementById('feedback-details');
+    const feedbackCloseBtn = document.getElementById('feedback-close-btn');
+
+    // 이벤트 리스너
+    startBtn.addEventListener('click', startExercise);
+    checkBtn.addEventListener('click', checkAnswer);
+    nextBtn.addEventListener('click', nextQuestion);
+    finishBtn.addEventListener('click', showResults);
+    feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
+
+    // 함수
+    function startExercise() {
+        studentName = studentNameInput.value.trim();
+        if (!studentName) { alert('이름을 입력해주세요!'); return; }
+        nameScreen.classList.add('hidden');
+        exerciseScreen.classList.remove('hidden');
+        studentNameDisplay.textContent = `학생: ${studentName}`;
+        startTime = new Date();
+        initExerciseData();
+        displayQuestion();
+    }
+
+    function initExerciseData() {
+        exerciseData = allQuestions.map(q => ({
+            question: q.korean,
+            type: q.type,
+            userAnswer: '',
+            isCorrect: false,
+            attempts: 0,
+            details: {}
+        }));
+    }
+
+    function displayQuestion() {
+        if (currentQuestionIndex >= allQuestions.length) return;
+
+        const question = allQuestions[currentQuestionIndex];
+        questionCounter.textContent = `${currentQuestionIndex + 1}`;
+
+        // 모든 파트 숨기기
+        part1Container.classList.add('hidden');
+        part2Container.classList.add('hidden');
+        part3Container.classList.add('hidden');
+        
+        checkBtn.classList.remove('hidden');
+        nextBtn.classList.add('hidden');
+        finishBtn.classList.add('hidden');
+
+        if (question.type === 'matching') {
+            displayMatchingQuestion(question);
+        } else if (question.type === 'flashcard') {
+            displayFlashcardQuestion(question);
+        } else if (question.type === 'dictation') {
+            displayDictationQuestion(question);
+        }
+    }
+    
+    // --- Part 1: 단어 듣고 뜻 맞추기 ---
+    function displayMatchingQuestion(question) {
+        partTitle.textContent = "Part 1: 단어 듣고 뜻 맞추기";
+        part1Container.classList.remove('hidden');
+        part1AudioBtn.onclick = () => playWordAudio(question.korean, part1AudioBtn, part1AudioLoader);
+        
+        // 선택지 만들기 (정답 1 + 오답 3)
+        const correctAnswer = question.french;
+        let options = [correctAnswer];
+        let wrongAnswers = wordData.filter(w => w.french !== correctAnswer);
+        // Fisher-Yates shuffle
+        for (let i = wrongAnswers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [wrongAnswers[i], wrongAnswers[j]] = [wrongAnswers[j], wrongAnswers[i]];
+        }
+        options.push(...wrongAnswers.slice(0, 3).map(w => w.french));
+        
+        // 선택지 섞기
+        options.sort(() => Math.random() - 0.5);
+
+        part1Options.innerHTML = '';
+        options.forEach(opt => {
+            const button = document.createElement('button');
+            button.textContent = opt;
+            button.className = "w-full p-4 border-2 border-slate-300 rounded-lg hover:bg-blue-50 hover:border-royal-blue transition";
+            button.onclick = () => {
+                // 선택된 버튼 스타일 변경
+                document.querySelectorAll('#part1-options button').forEach(btn => btn.classList.remove('bg-gold', 'border-royal-blue'));
+                button.classList.add('bg-gold', 'border-royal-blue');
+                exerciseData[currentQuestionIndex].userAnswer = opt;
+            };
+            part1Options.appendChild(button);
+        });
+    }
+
+    // --- Part 2: 초성 플래시 카드 ---
+    function displayFlashcardQuestion(question) {
+        partTitle.textContent = "Part 2: 스피드 초성 퀴즈";
+        part2Container.classList.remove('hidden');
+        flashcardWord.textContent = question.korean;
+        flashcardHint.textContent = question.french;
+        flashcardInput.value = '';
+        flashcardInput.disabled = false;
+        flashcardInput.focus();
+
+        // 타이머 및 애니메이션 리셋
+        clearTimeout(flashcardTimer);
+        flashcard.style.opacity = 1;
+        flashcardTimerBar.style.transition = 'none';
+        flashcardTimerBar.style.width = '100%';
+        
+        setTimeout(() => {
+            flashcardTimerBar.style.transition = 'width 10s linear';
+            flashcardTimerBar.style.width = '0%';
+        }, 100);
+
+        flashcardTimer = setTimeout(() => {
+            flashcard.style.opacity = 0;
+            checkAnswer(); // 시간이 다 되면 자동 확인
+        }, 10000);
+    }
+    
+    // --- Part 3: 문장 받아쓰기 ---
+    function displayDictationQuestion(question) {
+        partTitle.textContent = "Part 3: 문장 받아쓰기";
+        part3Container.classList.remove('hidden');
+        
+        koreanInput.value = '';
+        frenchInput.value = '';
+        koreanInput.disabled = false;
+        frenchInput.disabled = false;
+        
+        hint1Content.classList.add('hidden');
+        hint2Content.classList.add('hidden');
+        hint1Btn.disabled = false;
+        hint2Btn.disabled = false;
+
+        part3AudioBtn.onclick = () => playWordAudio(question.korean, part3AudioBtn, part3AudioLoader);
+        hint1Btn.onclick = () => {
+            hint1Content.textContent = question.keywords.map(k => k.initial).join(' ');
+            hint1Content.classList.remove('hidden');
+            exerciseData[currentQuestionIndex].details.hint1Used = true;
+            hint1Btn.disabled = true;
+        };
+        hint2Btn.onclick = () => {
+            hint2Content.textContent = question.keywords.map(k => `${k.word}: ${k.hint}`).join(' / ');
+            hint2Content.classList.remove('hidden');
+            exerciseData[currentQuestionIndex].details.hint2Used = true;
+            hint2Btn.disabled = true;
+        };
+        
+        recordBtn.onclick = toggleRecording;
+        recordBtn.disabled = false;
+        recordBtn.textContent = '녹음 시작';
+        recordingStatus.textContent = '';
+    }
+
+    async function playWordAudio(text, button, loader) {
+        const data = exerciseData[currentQuestionIndex];
+        if (data.details.audioPlays) data.details.audioPlays++; else data.details.audioPlays = 1;
+
+        loader.classList.remove('hidden');
+        button.disabled = true;
+        try {
+            const response = await fetch('/.netlify/functions/generate-audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text, voice: currentQuestionIndex % 2 === 0 ? 'woman' : 'man' })
+            });
+            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+            const audioData = await response.json();
+            if (audioData.audioData) {
+                new Audio("data:audio/mp3;base64," + audioData.audioData).play();
+            } else { throw new Error('No audio data received'); }
+        } catch (error) {
+            console.error('Audio playback error:', error);
+            alert('오디오 재생 중 오류가 발생했습니다.');
+        } finally {
+            loader.classList.add('hidden');
+            button.disabled = false;
+        }
+    }
+
+    function checkAnswer() {
+        const question = allQuestions[currentQuestionIndex];
+        const data = exerciseData[currentQuestionIndex];
+        data.attempts++;
+        
+        let isCorrect = false;
+        let title, details;
+
+        if (question.type === 'matching') {
+            isCorrect = data.userAnswer === question.french;
+            details = `<p><strong>선택한 답:</strong> ${data.userAnswer || '(선택 안함)'}</p>
+                       <p><strong>정답:</strong> ${question.korean} = ${question.french}</p>`;
+        } else if (question.type === 'flashcard') {
+            clearTimeout(flashcardTimer);
+            data.userAnswer = flashcardInput.value.trim().replace(/\s/g, '');
+            isCorrect = data.userAnswer === question.initial.replace(/\s/g, '');
+            flashcardInput.disabled = true;
+            details = `<p><strong>입력한 답:</strong> ${data.userAnswer || '(입력 안함)'}</p>
+                       <p><strong>정답:</strong> ${question.initial}</p>`;
+        } else if (question.type === 'dictation') {
+            data.userAnswer = koreanInput.value;
+            data.details.frenchAnswer = frenchInput.value;
+            const userAnswerClean = data.userAnswer.trim().replace(/\s/g, '');
+            const correctAnswerClean = question.korean.trim().replace(/\s/g, '');
+            isCorrect = userAnswerClean === correctAnswerClean;
+            koreanInput.disabled = true;
+            frenchInput.disabled = true;
+            details = `<p><strong class="${isCorrect ? 'text-green-600' : 'text-red-600'}">입력한 답:</strong> ${data.userAnswer || '(입력 안함)'}</p>
+                       <p><strong>정답:</strong> ${question.korean}</p>`;
+        }
+        
+        data.isCorrect = isCorrect;
+        if (isCorrect) {
+            score++;
+            title = "정답입니다! (Correct !)";
+            details = `<p class="text-green-600 font-semibold text-lg">🎉 잘했어요!</p>` + details;
+        } else {
+            title = "틀렸어요. (Incorrect)";
+        }
+        
+        showFeedbackModal(title, details);
+    }
+
+    function showFeedbackModal(title, details) {
+        feedbackTitle.innerHTML = title;
+        feedbackDetails.innerHTML = details;
+        feedbackModal.classList.remove('hidden');
+        checkBtn.classList.add('hidden');
+    }
+    
+    function closeFeedbackModal() {
+        feedbackModal.classList.add('hidden');
+        if (currentQuestionIndex >= allQuestions.length - 1) {
+            finishBtn.classList.remove('hidden');
+        } else {
+            nextBtn.classList.remove('hidden');
+        }
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        displayQuestion();
+    }
+    
+    async function toggleRecording() {
+        // Part 3 녹음 기능 (이전과 동일)
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            recordBtn.textContent = '녹음 시작';
+            recordingStatus.textContent = '녹음 완료!';
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
+                mediaRecorder.addEventListener('stop', () => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
+                    reader.onloadend = () => { exerciseData[currentQuestionIndex].details.recordedAudio = reader.result; };
+                });
+                mediaRecorder.start();
+                recordBtn.textContent = '녹음 중...';
+                recordingStatus.textContent = '말씀하세요...';
+            } catch (err) {
+                alert("마이크를 사용할 수 없습니다.");
+            }
+        }
+    }
+
+    async function showResults() {
+        exerciseScreen.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+        const resultsContent = document.getElementById('results-content');
+        const totalTime = Math.round((new Date() - startTime) / 1000);
+        const finalScorePercent = Math.round((score / allQuestions.length) * 100);
+
+        let title, message, icon;
+        if (finalScorePercent === 100) { title = "완벽해요!!"; message = "모든 문제를 맞혔어요!"; icon = "👑🎉👍"; confetti(); }
+        else if (finalScorePercent >= 80) { title = "잘했어요!!"; message = "훌륭한 점수예요!"; icon = "🎉👍"; }
+        else if (finalScorePercent >= 60) { title = "꽤 잘했어요."; message = "계속 노력하면 더 좋아질 거예요."; icon = "👍"; }
+        else { title = "땡!! 틀렸어요!!"; message = "괜찮아요. 다시 도전해봐요!"; icon = "💪"; }
+
+        let detailsHtml = `<h1 class="text-3xl font-bold text-royal-blue mb-2">${icon} ${title}</h1>
+            <p class="text-slate-600 mb-4">${message}</p>
+            <div class="my-6 p-4 bg-slate-50 rounded-lg text-left">
+                <p><strong>점수:</strong> ${score} / ${allQuestions.length} (${finalScorePercent}%)</p>
+                <p><strong>총 걸린 시간:</strong> ${totalTime} 초</p>
+            </div>
+            <h3 class="text-xl font-semibold text-dark-charcoal mt-8 mb-4 text-left">결과 상세보기</h3>
+            <div class="space-y-4 text-left text-sm">`;
+
+        allQuestions.forEach((q, index) => {
+            const data = exerciseData[index];
+            const resultIcon = data.isCorrect ? '<span class="text-green-500">✔</span>' : '<span class="text-red-500">✖</span>';
+            detailsHtml += `<div class="p-3 rounded-lg ${data.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
+                <p><strong>문제 ${index + 1} (${q.type}):</strong> ${q.korean} ${resultIcon}</p>
+                ${!data.isCorrect ? `<p class="text-red-700"><strong>내 답:</strong> ${data.userAnswer || '(입력 안함)'}</p>` : ''}
+            </div>`;
+        });
+        detailsHtml += `</div>`;
+        resultsContent.innerHTML = detailsHtml;
+
+        // 결과 이메일 전송
+        document.getElementById('results-loader').classList.remove('hidden');
+        document.getElementById('email-status').textContent = '결과를 전송하는 중입니다...';
+        try {
+            const response = await fetch('/.netlify/functions/send-results', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentName, score, totalQuestions: allQuestions.length, totalTime, submissionDate: new Date().toISOString(), details: exerciseData })
+            });
+            if (response.ok) {
+                document.getElementById('email-status').textContent = '결과가 성공적으로 전송되었습니다!';
+            } else { throw new Error('Server response not OK'); }
+        } catch (error) {
+            console.error('Result submission error:', error);
+            document.getElementById('email-status').textContent = '결과 전송에 실패했습니다.';
+        } finally {
+            document.getElementById('results-loader').classList.add('hidden');
+        }
+    }
+    </script>
+</body>
+</html>
