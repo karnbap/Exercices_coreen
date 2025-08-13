@@ -426,9 +426,13 @@
                 throw new Error(`Erreur de l'API audio: ${response.status} ${response.statusText}. Détails: ${errorBody}`);
             }
             const result = await response.json();
-            if (result.audioData) {
-                new Audio("data:audio/mp3;base64," + result.audioData).play();
-            } else { throw new Error('Aucune donnée audio reçue.'); }
+           if (result.audioData) {
+                const type = result.mimeType || 'audio/mp3';
+                new Audio(`data:${type};base64,${result.audioData}`).play();
+            } else { 
+                throw new Error('Aucune donnée audio reçue.'); 
+            }
+
         } catch (error) {
             console.error('Erreur de lecture audio:', error);
             alert("Une erreur s'est produite lors de la lecture de l'audio. Veuillez vérifier la console pour plus de détails.");
