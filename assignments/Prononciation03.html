@@ -4,163 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exercice - Phrases Essentielles V2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Poppins', 'Noto Sans KR', sans-serif; }
-        .bg-royal-blue { background-color: #0033A0; }
-        .text-royal-blue { color: #0033A0; }
-        .border-royal-blue { border-color: #0033A0; }
-        .bg-gold { background-color: #FFD700; }
-        .text-gold { color: #FFD700; }
-        .bg-dark-charcoal { background-color: #333333; }
-        .text-dark-charcoal { color: #333333; }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #0033A0;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .timer-bar-container {
-            height: 8px;
-            background-color: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .timer-bar {
-            height: 100%;
-            background-color: #4CAF50;
-            width: 100%;
-            transition: width 10s linear;
-        }
-        .timed-input-area {
-            transition: opacity 1s ease-out;
-        }
-    </style>
-</head>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
-
-    <div id="app-container" class="w-full max-w-4xl mx-auto">
-        
-        <div id="name-screen" class="bg-white p-8 rounded-xl shadow-lg text-center">
-            <h1 class="text-3xl font-bold text-royal-blue mb-4">Exercice Complet de Coréen</h1>
-            <p class="text-slate-600 mb-6">30 questions de 3 types différents vous attendent.</p>
-            <input type="text" id="student-name-input" placeholder="Entrez votre nom (ex: Cédou)" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg focus:border-royal-blue focus:ring-royal-blue">
-            <button id="start-btn" class="mt-6 w-full max-w-sm mx-auto bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition-colors duration-300">
-                Commencer
-            </button>
-        </div>
-
-        <div id="exercise-screen" class="hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h2 class="text-2xl font-bold text-royal-blue">Question <span id="question-counter">1</span> / 30</h2>
-                    <p id="student-name-display" class="text-slate-500"></p>
-                </div>
-                <div class="flex items-center space-x-2">
-                     <a href="/assignments/" class="text-sm text-slate-500 hover:text-royal-blue">Retour à la liste</a>
-                     <button onclick="window.print()" class="text-sm text-slate-500 hover:text-royal-blue">Imprimer</button>
-                </div>
-            </div>
-
-            <h3 id="part-title" class="text-xl text-center font-bold text-dark-charcoal mb-4"></h3>
-
-            <div id="question-area" class="min-h-[350px]">
-                <!-- Part 1: 단어 듣고 뜻 맞추기 -->
-                <div id="part1-matching" class="hidden space-y-6">
-                    <p class="text-lg text-center text-dark-charcoal font-semibold">Écoutez le mot et choisissez la bonne signification.</p>
-                    <div class="text-center">
-                        <button id="part1-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
-                        </button>
-                        <div id="part1-audio-loader" class="hidden loader mx-auto mt-2"></div>
-                    </div>
-                    <div id="part1-options" class="grid grid-cols-2 gap-4 max-w-md mx-auto"></div>
-                </div>
-
-                <!-- Part 2: 단어 듣고 받아쓰기 (10초) -->
-                <div id="part2-dictation" class="hidden space-y-4 text-center">
-                    <p class="text-lg text-dark-charcoal font-semibold">Écoutez et écrivez le mot en 10 secondes !</p>
-                    <div id="timed-input-area">
-                        <div class="timer-bar-container w-full max-w-sm mx-auto"><div id="timer-bar" class="timer-bar"></div></div>
-                        <div class="text-center my-4">
-                            <button id="part2-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
-                            </button>
-                            <div id="part2-audio-loader" class="hidden loader mx-auto mt-2"></div>
-                        </div>
-                        <div class="flex justify-center gap-4 mb-4">
-                            <button id="part2-hint1-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 1: Consonnes</button>
-                            <button id="part2-hint2-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 2: Sens</button>
-                        </div>
-                        <div id="part2-hint1-content" class="hidden text-center p-3 bg-blue-50 text-royal-blue rounded-lg mb-2"></div>
-                        <div id="part2-hint2-content" class="hidden text-center p-3 bg-yellow-50 text-yellow-800 rounded-lg mb-4"></div>
-                        <input type="text" id="part2-input" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg text-center text-2xl focus:border-royal-blue focus:ring-royal-blue" placeholder="Écrivez le mot coréen">
-                    </div>
-                </div>
-
-                <!-- Part 3: 문장 받아쓰기 -->
-                <div id="part3-sentence-dictation" class="hidden space-y-6">
-                    <p class="text-lg text-center text-dark-charcoal font-semibold">Écoutez la phrase et écrivez-la ci-dessous.</p>
-                    <div class="text-center">
-                        <button id="part3-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
-                        </button>
-                        <div id="part3-audio-loader" class="hidden loader mx-auto mt-2"></div>
-                    </div>
-                    <div class="flex justify-center gap-4">
-                        <button id="part3-hint1-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 1: Consonnes</button>
-                        <button id="part3-hint2-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 2: Mots-clés</button>
-                    </div>
-                    <div id="part3-hint1-content" class="hidden text-center p-3 bg-blue-50 text-royal-blue rounded-lg"></div>
-                    <div id="part3-hint2-content" class="hidden text-center p-3 bg-yellow-50 text-yellow-800 rounded-lg"></div>
-                    <div class="space-y-4">
-                        <input type="text" id="korean-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" placeholder="Écrivez la phrase en coréen.">
-                        <input type="text" id="french-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" placeholder="Traduisez la phrase en français.">
-                    </div>
-                    <div class="text-center p-4 border-t border-slate-200 mt-4">
-                         <h3 class="text-md font-semibold text-dark-charcoal mb-2">Pratiquez votre prononciation</h3>
-                         <button id="record-btn" class="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600 transition">Enregistrer</button>
-                         <p id="recording-status" class="text-sm text-slate-500 mt-2 h-5"></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-8 text-center">
-                <button id="check-btn" class="w-full md:w-auto bg-royal-blue text-white font-bold py-3 px-12 rounded-lg hover:bg-blue-800 transition">Vérifier</button>
-                <button id="next-btn" class="hidden w-full md:w-auto bg-dark-charcoal text-white font-bold py-3 px-12 rounded-lg hover:bg-black transition">Suivant</button>
-                <button id="finish-btn" class="hidden w-full md:w-auto bg-gold text-dark-charcoal font-bold py-3 px-12 rounded-lg hover:bg-yellow-400 transition">Terminer</button>
-            </div>
-        </div>
-        
-        <div id="results-screen" class="hidden bg-white p-8 rounded-xl shadow-lg text-center">
-             <div id="results-content"></div>
-             <div id="results-loader" class="hidden loader mx-auto my-8"></div>
-             <p id="email-status" class="text-slate-500 mt-4"></p>
-             <div class="mt-8 flex justify-center gap-4">
-                <a href="/assignments/phrases_essentielles_v2.html" class="bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition">Recommencer</a>
-                <a href="/assignments/" class="bg-dark-charcoal text-white font-bold py-3 px-6 rounded-lg hover:bg-black transition">Retour à la liste</a>
-             </div>
-        </div>
-        
-        <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
-                <h3 id="feedback-title" class="text-2xl font-bold mb-4"></h3>
-                <div id="feedback-details" class="text-left space-y-3 mb-6"></div>
-                <div class="flex justify-center gap-4">
-                    <button id="retry-btn" class="bg-slate-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-slate-600 transition">Réessayer</button>
-                    <button id="feedback-close-btn" class="bg-royal-blue text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-800 transition">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script>
+<script>
     // --- DATA ---
     const wordData = [
         { korean: "전화", french: "appel téléphonique", initial: "ㅈㅎ" },
@@ -201,9 +46,9 @@
     let startTime;
     let exerciseData = [];
     let timedDictationTimer;
-
     let mediaRecorder;
     let audioChunks = [];
+    const audioCache = {};
 
     // --- DOM ELEMENTS ---
     const nameScreen = document.getElementById('name-screen');
@@ -214,12 +59,10 @@
     const studentNameDisplay = document.getElementById('student-name-display');
     const questionCounter = document.getElementById('question-counter');
     const partTitle = document.getElementById('part-title');
-    
     const part1Container = document.getElementById('part1-matching');
     const part1AudioBtn = document.getElementById('part1-audio-btn');
     const part1AudioLoader = document.getElementById('part1-audio-loader');
     const part1Options = document.getElementById('part1-options');
-
     const part2Container = document.getElementById('part2-dictation');
     const timedInputArea = document.getElementById('timed-input-area');
     const timerBar = document.getElementById('timer-bar');
@@ -230,7 +73,6 @@
     const part2Hint1Content = document.getElementById('part2-hint1-content');
     const part2Hint2Content = document.getElementById('part2-hint2-content');
     const part2Input = document.getElementById('part2-input');
-
     const part3Container = document.getElementById('part3-sentence-dictation');
     const part3AudioBtn = document.getElementById('part3-audio-btn');
     const part3AudioLoader = document.getElementById('part3-audio-loader');
@@ -242,7 +84,6 @@
     const frenchInput = document.getElementById('french-input');
     const recordBtn = document.getElementById('record-btn');
     const recordingStatus = document.getElementById('recording-status');
-
     const checkBtn = document.getElementById('check-btn');
     const nextBtn = document.getElementById('next-btn');
     const finishBtn = document.getElementById('finish-btn');
@@ -260,7 +101,44 @@
     retryBtn.addEventListener('click', retryQuestion);
     feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
 
-    // --- FUNCTIONS ---
+    // --- AUDIO HELPER FUNCTIONS (FROM WORKING FILE) ---
+    function pcmToWav(pcmData, sampleRate) {
+        const pcm16 = new Int16Array(pcmData);
+        const header = new ArrayBuffer(44);
+        const view = new DataView(header);
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + pcm16.byteLength, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, pcm16.byteLength, true);
+        return new Blob([header, pcm16], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    // --- CORE FUNCTIONS ---
     function startExercise() {
         studentName = studentNameInput.value.trim();
         if (!studentName) { alert('Veuillez entrer votre nom !'); return; }
@@ -285,18 +163,14 @@
 
     function displayQuestion() {
         if (currentQuestionIndex >= allQuestions.length) return;
-
         const question = allQuestions[currentQuestionIndex];
         questionCounter.textContent = `${currentQuestionIndex + 1}`;
-
         part1Container.classList.add('hidden');
         part2Container.classList.add('hidden');
         part3Container.classList.add('hidden');
-        
         checkBtn.classList.remove('hidden');
         nextBtn.classList.add('hidden');
         finishBtn.classList.add('hidden');
-
         if (question.type === 'matching') {
             displayMatchingQuestion(question);
         } else if (question.type === 'word_dictation') {
@@ -310,14 +184,12 @@
         partTitle.textContent = "Partie 1: Association Mot-Signification";
         part1Container.classList.remove('hidden');
         part1AudioBtn.onclick = () => playAudio(question.korean, part1AudioBtn, part1AudioLoader);
-        
         const correctAnswer = question.french;
         let options = [correctAnswer];
         let wrongAnswers = wordData.filter(w => w.french !== correctAnswer);
         wrongAnswers.sort(() => 0.5 - Math.random());
         options.push(...wrongAnswers.slice(0, 3).map(w => w.french));
         options.sort(() => 0.5 - Math.random());
-
         part1Options.innerHTML = '';
         options.forEach(opt => {
             const button = document.createElement('button');
@@ -335,16 +207,13 @@
     function displayWordDictationQuestion(question) {
         partTitle.textContent = "Partie 2: Dictée de Mots (Rapide)";
         part2Container.classList.remove('hidden');
-        
         part2Input.value = '';
         part2Input.disabled = false;
         part2Input.focus();
-        
         part2Hint1Content.classList.add('hidden');
         part2Hint2Content.classList.add('hidden');
         part2Hint1Btn.disabled = false;
         part2Hint2Btn.disabled = false;
-
         part2AudioBtn.onclick = () => playAudio(question.korean, part2AudioBtn, part2AudioLoader);
         part2Hint1Btn.onclick = () => {
             part2Hint1Content.textContent = `Consonnes: ${question.initial}`;
@@ -358,17 +227,14 @@
             exerciseData[currentQuestionIndex].details.hint2Used = true;
             part2Hint2Btn.disabled = true;
         };
-
         clearTimeout(timedDictationTimer);
         timedInputArea.style.opacity = 1;
         timerBar.style.transition = 'none';
         timerBar.style.width = '100%';
-        
         setTimeout(() => {
             timerBar.style.transition = 'width 10s linear';
             timerBar.style.width = '0%';
         }, 100);
-
         timedDictationTimer = setTimeout(() => {
             timedInputArea.style.opacity = 0.3;
             part2Input.disabled = true;
@@ -379,17 +245,14 @@
     function displaySentenceDictationQuestion(question) {
         partTitle.textContent = "Partie 3: Dictée de Phrases";
         part3Container.classList.remove('hidden');
-        
         koreanInput.value = '';
         frenchInput.value = '';
         koreanInput.disabled = false;
         frenchInput.disabled = false;
-        
         part3Hint1Content.classList.add('hidden');
         part3Hint2Content.classList.add('hidden');
         part3Hint1Btn.disabled = false;
         part3Hint2Btn.disabled = false;
-        
         part3AudioBtn.onclick = () => playAudio(question.korean, part3AudioBtn, part3AudioLoader);
         part3Hint1Btn.onclick = () => {
             part3Hint1Content.textContent = `Consonnes: ${question.keywords.map(k => k.initial).join(' ')}`;
@@ -403,34 +266,51 @@
             exerciseData[currentQuestionIndex].details.hint2Used = true;
             part3Hint2Btn.disabled = true;
         };
-        
         recordBtn.onclick = toggleRecording;
         recordBtn.disabled = false;
         recordBtn.textContent = 'Enregistrer';
         recordingStatus.textContent = '';
     }
 
-    // Audio Playback Function using Netlify API
+    // UPDATED Audio Playback Function
     async function playAudio(text, button, loader) {
         exerciseData[currentQuestionIndex].details.audioPlays++;
+        
+        if (audioCache[text]) {
+            new Audio(audioCache[text]).play();
+            return;
+        }
+
         loader.classList.remove('hidden');
         button.disabled = true;
+
         try {
             const response = await fetch('/.netlify/functions/generate-audio', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text, voice: currentQuestionIndex % 2 === 0 ? 'woman' : 'man' })
             });
+
             if (!response.ok) {
                 const errorBody = await response.text();
                 throw new Error(`Erreur de l'API audio: ${response.status} ${response.statusText}. Détails: ${errorBody}`);
             }
+
             const result = await response.json();
-           if (result.audioData) {
-                const type = result.mimeType || 'audio/mp3';
-                new Audio(`data:${type};base64,${result.audioData}`).play();
-            } else { 
-                throw new Error('Aucune donnée audio reçue.'); 
+            const audioData = result?.audioData;
+            const mimeType = result?.mimeType;
+
+            if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000; // Default sample rate
+                const pcmData = base64ToArrayBuffer(audioData);
+                const wavBlob = pcmToWav(pcmData, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                
+                audioCache[text] = audioUrl; // Cache the generated URL
+                new Audio(audioUrl).play();
+            } else {
+                throw new Error('Aucune donnée audio valide reçue.');
             }
 
         } catch (error) {
@@ -504,7 +384,17 @@
 
     function retryQuestion() {
         feedbackModal.classList.add('hidden');
-        displayQuestion();
+        const question = allQuestions[currentQuestionIndex];
+        if (question.type === 'word_dictation') {
+             displayWordDictationQuestion(question);
+        } else if (question.type === 'sentence_dictation') {
+            koreanInput.disabled = false;
+            frenchInput.disabled = false;
+            displaySentenceDictationQuestion(question);
+        } else {
+             displayMatchingQuestion(question);
+        }
+        checkBtn.classList.remove('hidden');
     }
 
     function nextQuestion() {
@@ -543,13 +433,13 @@
         resultsScreen.classList.remove('hidden');
         const resultsContent = document.getElementById('results-content');
         const totalTime = Math.round((new Date() - startTime) / 1000);
-        const finalScorePercent = Math.round((score / allQuestions.length) * 100);
+        const finalScorePercent = allQuestions.length > 0 ? Math.round((score / allQuestions.length) * 100) : 0;
 
         let title, message, icon;
-        if (finalScorePercent === 100) { title = "Parfait !!"; message = "Vous avez tout bon ! Impressionnant !"; icon = "👑🎉👍"; confetti(); }
-        else if (finalScorePercent >= 80) { title = "Très bien !!"; message = "Excellent score ! Continuez comme ça."; icon = "🎉👍"; }
-        else if (finalScorePercent >= 60) { title = "Assez bien."; message = "Vous progressez bien ! Encore un effort."; icon = "�"; }
-        else { title = "Oups !"; message = "Ce n'est pas grave, réessayez !"; icon = "💪"; }
+        if (finalScorePercent === 100) { title = "완벽해요!!"; message = "Vous avez tout bon ! Impressionnant !"; icon = "👑🎉👍"; confetti(); }
+        else if (finalScorePercent >= 80) { title = "잘했어요!!"; message = "Excellent score ! Continuez comme ça."; icon = "🎉👍"; }
+        else if (finalScorePercent >= 60) { title = "이해 할 수 있어요. 꽤 잘했어요"; message = "Vous progressez bien ! Encore un effort."; icon = "👍"; }
+        else { title = "땡!! 틀렸어요!!"; message = "Ce n'est pas grave, réessayez !"; icon = "💪"; }
 
         let detailsHtml = `<h1 class="text-3xl font-bold text-royal-blue mb-2">${icon} ${title}</h1>
             <p class="text-slate-600 mb-4">${message}</p>
@@ -565,7 +455,7 @@
             const resultIcon = data.isCorrect ? '<span class="text-green-500">✔</span>' : '<span class="text-red-500">✖</span>';
             detailsHtml += `<div class="p-3 rounded-lg ${data.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
                 <p><strong>Q${index + 1} (${q.type.replace('_', ' ')}):</strong> ${q.korean} ${resultIcon}</p>
-                ${!data.isCorrect ? `<p class="text-red-700"><strong>Votre réponse :</strong> ${data.userAnswer || '(vide)'}</p>` : ''}
+                ${!data.isCorrect ? `<p class="text-red-700"><strong>Votre réponse :</strong> ${data.userAnswer || '(vide)'} | <strong>Bonne réponse: ${q.korean}</strong></p>` : ''}
                 <p class="text-xs text-slate-500">Tentatives: ${data.attempts}, Écoutes: ${data.details.audioPlays}, Indices: ${data.details.hint1Used || data.details.hint2Used ? 'Oui' : 'Non'}</p>
             </div>`;
         });
@@ -590,7 +480,7 @@
             document.getElementById('results-loader').classList.add('hidden');
         }
     }
-    </script>
+</script>
 </body>
 </html>
 �
