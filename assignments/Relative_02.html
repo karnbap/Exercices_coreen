@@ -217,6 +217,10 @@
         }
 
         function normalizeAnswer(str) {
+            // Check if str is not undefined or null before calling replace
+            if (typeof str !== 'string') {
+                return '';
+            }
             return str.replace(/\s+/g, '').replace(/[.?!~,]/g, '').toLowerCase();
         }
         
@@ -277,7 +281,7 @@
             let message = '', bgColor = '', textColor = '', resultHTML = '';
 
             if (percentage === 100) { message = "완벽해요!! 🎉👑👍 (Parfait !!)"; bgColor = 'bg-green-100'; textColor = 'text-green-800'; }
-            else if (percentage >= 75) { message = "잘했어요!! 🎉👍 (Bien joué !!)"; bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; }
+            else if (percentage >= 75) { message = "잘했어요!! 🎉� (Bien joué !!)"; bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; }
             else { message = "조금 더 연습해봐요! 💪 (Encore un peu d'entraînement !)"; bgColor = 'bg-yellow-100'; textColor = 'text-yellow-800'; }
 
             resultHTML = `<div id="result-message" class="p-5 rounded-xl ${bgColor} ${textColor}">${message}</div>`;
@@ -286,9 +290,13 @@
                 resultHTML += `<div class="mt-4 p-4 card"><h3 class="font-bold text-lg mb-2">Corrections :</h3><ul class="list-disc list-inside space-y-4">`;
                 incorrectDetails.forEach(item => {
                     resultHTML += `<li><strong class="text-gray-700">"${item.question}"</strong>`;
-                    for(const part in item.correctAnswers) {
-                        if ((part.startsWith('ko_') || part.startsWith('fr_')) && normalizeAnswer(item.userAnswers[part]) !== normalizeAnswer(item.correctAnswers[part])) {
-                             resultHTML += `<br><span class="text-xs font-mono text-gray-500">${part}:</span> <span class="text-red-600">${item.userAnswers[part] || '(vide)'}</span> → <span class="text-green-600">${item.correctAnswers[part]}</span>`;
+                    // Loop over the keys of userAnswers to avoid keys like 'vocab' or 'hint'
+                    for(const part in item.userAnswers) { 
+                        // Ensure the property exists in correctAnswers and is a string before comparing
+                        if (item.correctAnswers.hasOwnProperty(part) && typeof item.correctAnswers[part] === 'string') {
+                            if (normalizeAnswer(item.userAnswers[part]) !== normalizeAnswer(item.correctAnswers[part])) {
+                                 resultHTML += `<br><span class="text-xs font-mono text-gray-500">${part}:</span> <span class="text-red-600">${item.userAnswers[part] || '(vide)'}</span> → <span class="text-green-600">${item.correctAnswers[part]}</span>`;
+                            }
                         }
                     }
                     resultHTML += `</li>`;
@@ -371,3 +379,4 @@
     </script>
 </body>
 </html>
+�
