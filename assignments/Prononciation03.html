@@ -4,6 +4,158 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exercice - Phrases Essentielles V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', 'Noto Sans KR', sans-serif; }
+        .bg-royal-blue { background-color: #0033A0; }
+        .text-royal-blue { color: #0033A0; }
+        .border-royal-blue { border-color: #0033A0; }
+        .bg-gold { background-color: #FFD700; }
+        .text-gold { color: #FFD700; }
+        .bg-dark-charcoal { background-color: #333333; }
+        .text-dark-charcoal { color: #333333; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0033A0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .timer-bar-container {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 100%;
+            transition: width 10s linear;
+        }
+        .timed-input-area {
+            transition: opacity 1s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-4xl mx-auto">
+        
+        <div id="name-screen" class="bg-white p-8 rounded-xl shadow-lg text-center">
+            <h1 class="text-3xl font-bold text-royal-blue mb-4">Exercice Complet de Coréen</h1>
+            <p class="text-slate-600 mb-6">30 questions de 3 types différents vous attendent.</p>
+            <input type="text" id="student-name-input" placeholder="Entrez votre nom (ex: Cédou)" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg focus:border-royal-blue focus:ring-royal-blue">
+            <button id="start-btn" class="mt-6 w-full max-w-sm mx-auto bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition-colors duration-300">
+                Commencer
+            </button>
+        </div>
+
+        <div id="exercise-screen" class="hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-royal-blue">Question <span id="question-counter">1</span> / 30</h2>
+                    <p id="student-name-display" class="text-slate-500"></p>
+                </div>
+                <div class="flex items-center space-x-2">
+                     <a href="/assignments/" class="text-sm text-slate-500 hover:text-royal-blue">Retour à la liste</a>
+                     <button onclick="window.print()" class="text-sm text-slate-500 hover:text-royal-blue">Imprimer</button>
+                </div>
+            </div>
+
+            <h3 id="part-title" class="text-xl text-center font-bold text-dark-charcoal mb-4"></h3>
+
+            <div id="question-area" class="min-h-[350px]">
+                <div id="part1-matching" class="hidden space-y-6">
+                    <p class="text-lg text-center text-dark-charcoal font-semibold">Écoutez le mot et choisissez la bonne signification.</p>
+                    <div class="text-center">
+                        <button id="part1-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
+                        </button>
+                        <div id="part1-audio-loader" class="hidden loader mx-auto mt-2"></div>
+                    </div>
+                    <div id="part1-options" class="grid grid-cols-2 gap-4 max-w-md mx-auto"></div>
+                </div>
+
+                <div id="part2-dictation" class="hidden space-y-4 text-center">
+                    <p class="text-lg text-dark-charcoal font-semibold">Écoutez et écrivez le mot en 10 secondes !</p>
+                    <div id="timed-input-area">
+                        <div class="timer-bar-container w-full max-w-sm mx-auto"><div id="timer-bar" class="timer-bar"></div></div>
+                        <div class="text-center my-4">
+                            <button id="part2-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
+                            </button>
+                            <div id="part2-audio-loader" class="hidden loader mx-auto mt-2"></div>
+                        </div>
+                        <div class="flex justify-center gap-4 mb-4">
+                            <button id="part2-hint1-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 1: Consonnes</button>
+                            <button id="part2-hint2-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 2: Sens</button>
+                        </div>
+                        <div id="part2-hint1-content" class="hidden text-center p-3 bg-blue-50 text-royal-blue rounded-lg mb-2"></div>
+                        <div id="part2-hint2-content" class="hidden text-center p-3 bg-yellow-50 text-yellow-800 rounded-lg mb-4"></div>
+                        <input type="text" id="part2-input" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg text-center text-2xl focus:border-royal-blue focus:ring-royal-blue" placeholder="Écrivez le mot coréen">
+                    </div>
+                </div>
+
+                <div id="part3-sentence-dictation" class="hidden space-y-6">
+                    <p class="text-lg text-center text-dark-charcoal font-semibold">Écoutez la phrase et écrivez-la ci-dessous.</p>
+                    <div class="text-center">
+                        <button id="part3-audio-btn" class="bg-gold text-dark-charcoal p-4 rounded-full shadow-md hover:bg-yellow-400 transition">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
+                        </button>
+                        <div id="part3-audio-loader" class="hidden loader mx-auto mt-2"></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button id="part3-hint1-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 1: Consonnes</button>
+                        <button id="part3-hint2-btn" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300">Indice 2: Mots-clés</button>
+                    </div>
+                    <div id="part3-hint1-content" class="hidden text-center p-3 bg-blue-50 text-royal-blue rounded-lg"></div>
+                    <div id="part3-hint2-content" class="hidden text-center p-3 bg-yellow-50 text-yellow-800 rounded-lg"></div>
+                    <div class="space-y-4">
+                        <input type="text" id="korean-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" placeholder="Écrivez la phrase en coréen.">
+                        <input type="text" id="french-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" placeholder="Traduisez la phrase en français.">
+                    </div>
+                    <div class="text-center p-4 border-t border-slate-200 mt-4">
+                         <h3 class="text-md font-semibold text-dark-charcoal mb-2">Pratiquez votre prononciation</h3>
+                         <button id="record-btn" class="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-600 transition">Enregistrer</button>
+                         <p id="recording-status" class="text-sm text-slate-500 mt-2 h-5"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <button id="check-btn" class="w-full md:w-auto bg-royal-blue text-white font-bold py-3 px-12 rounded-lg hover:bg-blue-800 transition">Vérifier</button>
+                <button id="next-btn" class="hidden w-full md:w-auto bg-dark-charcoal text-white font-bold py-3 px-12 rounded-lg hover:bg-black transition">Suivant</button>
+                <button id="finish-btn" class="hidden w-full md:w-auto bg-gold text-dark-charcoal font-bold py-3 px-12 rounded-lg hover:bg-yellow-400 transition">Terminer</button>
+            </div>
+        </div>
+        
+        <div id="results-screen" class="hidden bg-white p-8 rounded-xl shadow-lg text-center">
+             <div id="results-content"></div>
+             <div id="results-loader" class="hidden loader mx-auto my-8"></div>
+             <p id="email-status" class="text-slate-500 mt-4"></p>
+             <div class="mt-8 flex justify-center gap-4">
+                 <a href="/assignments/phrases_essentielles_v2.html" class="bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition">Recommencer</a>
+                 <a href="/assignments/" class="bg-dark-charcoal text-white font-bold py-3 px-6 rounded-lg hover:bg-black transition">Retour à la liste</a>
+             </div>
+        </div>
+        
+        <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+                <h3 id="feedback-title" class="text-2xl font-bold mb-4"></h3>
+                <div id="feedback-details" class="text-left space-y-3 mb-6"></div>
+                <div class="flex justify-center gap-4">
+                    <button id="retry-btn" class="bg-slate-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-slate-600 transition">Réessayer</button>
+                    <button id="feedback-close-btn" class="bg-royal-blue text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-800 transition">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 <script>
     // --- DATA ---
@@ -95,12 +247,21 @@
     const feedbackCloseBtn = document.getElementById('feedback-close-btn');
 
     // --- EVENT LISTENERS (unchanged) ---
-    startBtn.addEventListener('click', startExercise);
-    checkBtn.addEventListener('click', checkAnswer);
-    nextBtn.addEventListener('click', nextQuestion);
-    finishBtn.addEventListener('click', showResults);
-    retryBtn.addEventListener('click', retryQuestion);
-    feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
+    document.addEventListener('DOMContentLoaded', () => {
+        const startBtn = document.getElementById('start-btn');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const feedbackCloseBtn = document.getElementById('feedback-close-btn');
+
+        startBtn.addEventListener('click', startExercise);
+        checkBtn.addEventListener('click', checkAnswer);
+        nextBtn.addEventListener('click', nextQuestion);
+        finishBtn.addEventListener('click', showResults);
+        retryBtn.addEventListener('click', retryQuestion);
+        feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
+    });
 
     // --- AUDIO HELPER FUNCTIONS (unchanged, correct) ---
     function pcmToWav(pcmData, sampleRate) {
@@ -115,11 +276,11 @@
 
     // --- CORE FUNCTIONS ---
     function startExercise() {
-        studentName = studentNameInput.value.trim();
+        studentName = document.getElementById('student-name-input').value.trim();
         if (!studentName) { alert('Veuillez entrer votre nom !'); return; }
-        nameScreen.classList.add('hidden');
-        exerciseScreen.classList.remove('hidden');
-        studentNameDisplay.textContent = `Étudiant: ${studentName}`;
+        document.getElementById('name-screen').classList.add('hidden');
+        document.getElementById('exercise-screen').classList.remove('hidden');
+        document.getElementById('student-name-display').textContent = `Étudiant: ${studentName}`;
         startTime = new Date();
         initExerciseData();
         displayQuestion();
@@ -148,9 +309,13 @@
     // Display Question functions are mostly the same, but now update new data structure
     function displayQuestion() {
         if (currentQuestionIndex >= allQuestions.length) return;
-        questionCounter.textContent = `${currentQuestionIndex + 1}`;
-        part1Container.classList.add('hidden'); part2Container.classList.add('hidden'); part3Container.classList.add('hidden');
-        checkBtn.classList.remove('hidden'); nextBtn.classList.add('hidden'); finishBtn.classList.add('hidden');
+        document.getElementById('question-counter').textContent = `${currentQuestionIndex + 1}`;
+        document.getElementById('part1-matching').classList.add('hidden'); 
+        document.getElementById('part2-dictation').classList.add('hidden'); 
+        document.getElementById('part3-sentence-dictation').classList.add('hidden');
+        document.getElementById('check-btn').classList.remove('hidden'); 
+        document.getElementById('next-btn').classList.add('hidden'); 
+        document.getElementById('finish-btn').classList.add('hidden');
         
         const question = exerciseData[currentQuestionIndex]; // 이제 exerciseData를 직접 사용
         if (question.type === 'matching') displayMatchingQuestion(question);
@@ -159,15 +324,17 @@
     }
     
     function displayMatchingQuestion(question) {
-        partTitle.textContent = "Partie 1: Association Mot-Signification";
+        document.getElementById('part-title').textContent = "Partie 1: Association Mot-Signification";
+        const part1Container = document.getElementById('part1-matching');
         part1Container.classList.remove('hidden');
-        part1AudioBtn.onclick = () => playAudio(question.ko, part1AudioBtn, part1AudioLoader);
+        document.getElementById('part1-audio-btn').onclick = () => playAudio(question.ko, document.getElementById('part1-audio-btn'), document.getElementById('part1-audio-loader'));
         const correctAnswer = question.fr;
         let options = [correctAnswer];
         let wrongAnswers = wordData.filter(w => w.french !== correctAnswer);
         wrongAnswers.sort(() => 0.5 - Math.random());
         options.push(...wrongAnswers.slice(0, 3).map(w => w.french));
         options.sort(() => 0.5 - Math.random());
+        const part1Options = document.getElementById('part1-options');
         part1Options.innerHTML = '';
         options.forEach(opt => {
             const button = document.createElement('button');
@@ -183,54 +350,73 @@
     }
 
     function displayWordDictationQuestion(question) {
-        partTitle.textContent = "Partie 2: Dictée de Mots (Rapide)";
-        part2Container.classList.remove('hidden'); part2Input.value = ''; part2Input.disabled = false; part2Input.focus();
-        part2Hint1Content.classList.add('hidden'); part2Hint2Content.classList.add('hidden');
-        part2Hint1Btn.disabled = false; part2Hint2Btn.disabled = false;
-        part2AudioBtn.onclick = () => playAudio(question.ko, part2AudioBtn, part2AudioLoader);
+        document.getElementById('part-title').textContent = "Partie 2: Dictée de Mots (Rapide)";
+        const part2Container = document.getElementById('part2-dictation');
+        part2Container.classList.remove('hidden');
+        const part2Input = document.getElementById('part2-input');
+        part2Input.value = ''; part2Input.disabled = false; part2Input.focus();
+        document.getElementById('part2-hint1-content').classList.add('hidden'); 
+        document.getElementById('part2-hint2-content').classList.add('hidden');
+        const part2Hint1Btn = document.getElementById('part2-hint1-btn');
+        part2Hint1Btn.disabled = false;
+        const part2Hint2Btn = document.getElementById('part2-hint2-btn');
+        part2Hint2Btn.disabled = false;
+        document.getElementById('part2-audio-btn').onclick = () => playAudio(question.ko, document.getElementById('part2-audio-btn'), document.getElementById('part2-audio-loader'));
         part2Hint1Btn.onclick = () => {
-            part2Hint1Content.textContent = `Consonnes: ${question.initial}`;
-            part2Hint1Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].hint1Count++; // *** 수정됨 ***: boolean 대신 count 증가
+            document.getElementById('part2-hint1-content').textContent = `Consonnes: ${question.initial}`;
+            document.getElementById('part2-hint1-content').classList.remove('hidden');
+            exerciseData[currentQuestionIndex].hint1Count++; 
             part2Hint1Btn.disabled = true;
         };
         part2Hint2Btn.onclick = () => {
-            part2Hint2Content.textContent = `Sens: ${question.fr}`;
-            part2Hint2Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].hint2Count++; // *** 수정됨 ***: boolean 대신 count 증가
+            document.getElementById('part2-hint2-content').textContent = `Sens: ${question.fr}`;
+            document.getElementById('part2-hint2-content').classList.remove('hidden');
+            exerciseData[currentQuestionIndex].hint2Count++; 
             part2Hint2Btn.disabled = true;
         };
         clearTimeout(timedDictationTimer);
+        const timedInputArea = document.getElementById('timed-input-area');
+        const timerBar = document.getElementById('timer-bar');
         timedInputArea.style.opacity = 1; timerBar.style.transition = 'none'; timerBar.style.width = '100%';
         setTimeout(() => { timerBar.style.transition = 'width 10s linear'; timerBar.style.width = '0%'; }, 100);
         timedDictationTimer = setTimeout(() => { timedInputArea.style.opacity = 0.3; part2Input.disabled = true; checkAnswer(); }, 10000);
     }
     
     function displaySentenceDictationQuestion(question) {
-        partTitle.textContent = "Partie 3: Dictée de Phrases";
+        document.getElementById('part-title').textContent = "Partie 3: Dictée de Phrases";
+        const part3Container = document.getElementById('part3-sentence-dictation');
         part3Container.classList.remove('hidden');
-        koreanInput.value = ''; frenchInput.value = ''; koreanInput.disabled = false; frenchInput.disabled = false;
-        part3Hint1Content.classList.add('hidden'); part3Hint2Content.classList.add('hidden');
-        part3Hint1Btn.disabled = false; part3Hint2Btn.disabled = false;
-        part3AudioBtn.onclick = () => playAudio(question.ko, part3AudioBtn, part3AudioLoader);
+        document.getElementById('korean-input').value = ''; 
+        document.getElementById('french-input').value = ''; 
+        document.getElementById('korean-input').disabled = false; 
+        document.getElementById('french-input').disabled = false;
+        document.getElementById('part3-hint1-content').classList.add('hidden'); 
+        document.getElementById('part3-hint2-content').classList.add('hidden');
+        const part3Hint1Btn = document.getElementById('part3-hint1-btn');
+        part3Hint1Btn.disabled = false;
+        const part3Hint2Btn = document.getElementById('part3-hint2-btn');
+        part3Hint2Btn.disabled = false;
+        document.getElementById('part3-audio-btn').onclick = () => playAudio(question.ko, document.getElementById('part3-audio-btn'), document.getElementById('part3-audio-loader'));
         part3Hint1Btn.onclick = () => {
-            part3Hint1Content.textContent = `Consonnes: ${question.keywords.map(k => k.initial).join(' ')}`;
-            part3Hint1Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].hint1Count++; // *** 수정됨 ***: boolean 대신 count 증가
+            document.getElementById('part3-hint1-content').textContent = `Consonnes: ${question.keywords.map(k => k.initial).join(' ')}`;
+            document.getElementById('part3-hint1-content').classList.remove('hidden');
+            exerciseData[currentQuestionIndex].hint1Count++; 
             part3Hint1Btn.disabled = true;
         };
         part3Hint2Btn.onclick = () => {
-            part3Hint2Content.textContent = `Mots-clés: ${question.keywords.map(k => `${k.word} (${k.hint})`).join(' / ')}`;
-            part3Hint2Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].hint2Count++; // *** 수정됨 ***: boolean 대신 count 증가
+            document.getElementById('part3-hint2-content').textContent = `Mots-clés: ${question.keywords.map(k => `${k.word} (${k.hint})`).join(' / ')}`;
+            document.getElementById('part3-hint2-content').classList.remove('hidden');
+            exerciseData[currentQuestionIndex].hint2Count++;
             part3Hint2Btn.disabled = true;
         };
+        const recordBtn = document.getElementById('record-btn');
         recordBtn.onclick = toggleRecording; recordBtn.disabled = false;
-        recordBtn.textContent = 'Enregistrer'; recordingStatus.textContent = '';
+        recordBtn.textContent = 'Enregistrer'; 
+        document.getElementById('recording-status').textContent = '';
     }
 
     async function playAudio(text, button, loader) {
-        exerciseData[currentQuestionIndex].listenCount++; // *** 수정됨 ***: boolean 대신 count 증가
+        exerciseData[currentQuestionIndex].listenCount++; 
         if (audioCache[text]) { new Audio(audioCache[text]).play(); return; }
         loader.classList.remove('hidden'); button.disabled = true;
         try {
@@ -254,20 +440,22 @@
     }
 
     function checkAnswer() {
-        const data = exerciseData[currentQuestionIndex]; // 직접 사용
+        const data = exerciseData[currentQuestionIndex];
         if (!data.isCorrect) { data.attempts++; }
         let isCorrect = false, title, details;
         if (data.type === 'matching') {
             isCorrect = data.userAnswer === data.fr;
             details = `<p><strong>Votre choix :</strong> ${data.userAnswer || '(non sélectionné)'}</p><p><strong>Réponse :</strong> ${data.ko} = ${data.fr}</p>`;
         } else if (data.type === 'word_dictation') {
+            const part2Input = document.getElementById('part2-input');
             clearTimeout(timedDictationTimer); data.userAnswer = part2Input.value.trim();
             isCorrect = data.userAnswer.replace(/\s/g, '') === data.ko.replace(/\s/g, '');
             part2Input.disabled = true;
             details = `<p><strong>Votre réponse :</strong> ${data.userAnswer || '(non saisi)'}</p><p><strong>Réponse :</strong> ${data.ko}</p>`;
         } else if (data.type === 'sentence_dictation') {
+            const koreanInput = document.getElementById('korean-input');
+            const frenchInput = document.getElementById('french-input');
             data.userAnswer = koreanInput.value;
-            // frenchInput 값은 채점 대상이 아니므로 저장만 함
             isCorrect = data.userAnswer.trim().replace(/\s/g, '') === data.ko.trim().replace(/\s/g, '');
             koreanInput.disabled = true; frenchInput.disabled = true;
             details = `<p><strong>Votre réponse :</strong> ${data.userAnswer || '(non saisi)'}</p><p><strong>Réponse :</strong> ${data.ko}</p>`;
@@ -280,30 +468,38 @@
     }
 
     function showFeedbackModal(titleText, detailsHtml, isCorrect) {
-        feedbackTitle.textContent = titleText; feedbackDetails.innerHTML = detailsHtml;
-        retryBtn.classList.toggle('hidden', isCorrect);
-        feedbackModal.classList.remove('hidden'); checkBtn.classList.add('hidden');
+        document.getElementById('feedback-title').textContent = titleText; 
+        document.getElementById('feedback-details').innerHTML = detailsHtml;
+        document.getElementById('retry-btn').classList.toggle('hidden', isCorrect);
+        document.getElementById('feedback-modal').classList.remove('hidden'); 
+        document.getElementById('check-btn').classList.add('hidden');
     }
     
     function closeFeedbackModal() {
-        feedbackModal.classList.add('hidden');
-        if (currentQuestionIndex >= allQuestions.length - 1) { finishBtn.classList.remove('hidden'); } 
-        else { nextBtn.classList.remove('hidden'); }
+        document.getElementById('feedback-modal').classList.add('hidden');
+        if (currentQuestionIndex >= allQuestions.length - 1) { document.getElementById('finish-btn').classList.remove('hidden'); } 
+        else { document.getElementById('next-btn').classList.remove('hidden'); }
     }
 
     function retryQuestion() {
-        feedbackModal.classList.add('hidden');
+        document.getElementById('feedback-modal').classList.add('hidden');
         const question = exerciseData[currentQuestionIndex];
         if (question.type === 'word_dictation') displayWordDictationQuestion(question);
-        else if (question.type === 'sentence_dictation') { koreanInput.disabled = false; frenchInput.disabled = false; displaySentenceDictationQuestion(question); } 
+        else if (question.type === 'sentence_dictation') { 
+            document.getElementById('korean-input').disabled = false; 
+            document.getElementById('french-input').disabled = false; 
+            displaySentenceDictationQuestion(question); 
+        } 
         else displayMatchingQuestion(question);
-        checkBtn.classList.remove('hidden');
+        document.getElementById('check-btn').classList.remove('hidden');
     }
 
     function nextQuestion() { currentQuestionIndex++; displayQuestion(); }
     
     // *** 수정됨 (2) ***: 녹음 완료 시 백엔드가 요구하는 객체 형식으로 저장
     async function toggleRecording() {
+        const recordBtn = document.getElementById('record-btn');
+        const recordingStatus = document.getElementById('recording-status');
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
             recordBtn.textContent = 'Enregistrer';
@@ -321,7 +517,6 @@
                     reader.readAsDataURL(audioBlob);
                     reader.onloadend = () => {
                         const base64String = reader.result.split(',')[1];
-                        // 백엔드가 요구하는 객체 구조로 저장
                         exerciseData[currentQuestionIndex].recording = {
                             base64: base64String,
                             filename: `rec_q${currentQuestionIndex + 1}_${studentName.replace(/\s/g, '_')}.webm`,
@@ -340,7 +535,8 @@
 
     // *** 수정됨 (3) ***: 백엔드에 보낼 payload 구조 변경
     async function showResults() {
-        exerciseScreen.classList.add('hidden');
+        document.getElementById('exercise-screen').classList.add('hidden');
+        const resultsScreen = document.getElementById('results-screen');
         resultsScreen.classList.remove('hidden');
         const resultsContent = document.getElementById('results-content');
         const totalTimeSeconds = Math.round((new Date() - startTime) / 1000);
@@ -364,7 +560,7 @@
         exerciseData.forEach((data, index) => {
             const resultIcon = data.isCorrect ? '<span class="text-green-500">✔</span>' : '<span class="text-red-500">✖</span>';
             detailsHtml += `<div class="p-3 rounded-lg ${data.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
-                <p><strong>Q${index + 1} (${data.type.replace('_', ' ')}):</strong> ${data.ko} ${resultIcon}</p>
+                <p><strong>Q${index + 1} (${data.type.replace(/_/g, ' ')}):</strong> ${data.ko} ${resultIcon}</p>
                 ${!data.isCorrect ? `<p class="text-red-700"><strong>Votre réponse :</strong> ${data.userAnswer || '(vide)'}</p>` : ''}
                 <p class="text-xs text-slate-500">Tentatives: ${data.attempts}, Écoutes: ${data.listenCount}, Indices: ${data.hint1Count + data.hint2Count}</p>
             </div>`;
@@ -372,16 +568,17 @@
         detailsHtml += `</div>`;
         resultsContent.innerHTML = detailsHtml;
         
-        document.getElementById('results-loader').classList.remove('hidden');
-        document.getElementById('email-status').textContent = 'Envoi des résultats en cours...';
+        const resultsLoader = document.getElementById('results-loader');
+        const emailStatus = document.getElementById('email-status');
+        resultsLoader.classList.remove('hidden');
+        emailStatus.textContent = 'Envoi des résultats en cours...';
 
-        // 백엔드로 보낼 최종 데이터
         const payload = {
             studentName: studentName,
             startTime: startTime.toISOString(),
             endTime: new Date().toISOString(),
             totalTimeSeconds: totalTimeSeconds,
-            questions: exerciseData.map(d => ({ // 프런트엔드 전용 키는 제외하고 보냄
+            questions: exerciseData.map(d => ({ 
                 number: d.number,
                 ko: d.ko,
                 fr: d.fr,
@@ -398,19 +595,18 @@
             const response = await fetch('/.netlify/functions/send-results', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) // 수정된 payload 전송
+                body: JSON.stringify(payload)
             });
             if (response.ok) {
-                document.getElementById('email-status').textContent = 'Résultats envoyés avec succès !';
+                emailStatus.textContent = 'Résultats envoyés avec succès !';
             } else { throw new Error('Server response was not OK'); }
         } catch (error) {
             console.error('Failed to send results:', error);
-            document.getElementById('email-status').textContent = 'Échec de l\'envoi des résultats.';
+            emailStatus.textContent = 'Échec de l\'envoi des résultats.';
         } finally {
-            document.getElementById('results-loader').classList.add('hidden');
+            resultsLoader.classList.add('hidden');
         }
     }
 </script>
 </body>
 </html>
-�
