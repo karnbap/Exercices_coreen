@@ -127,7 +127,7 @@
                 </div>
             </div>
 
-            <!-- *** 수정됨: 내비게이션 버튼 영역 *** -->
+            <!-- Navigation Buttons -->
             <div class="mt-8 flex justify-between items-center">
                 <button id="prev-btn" class="bg-slate-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-slate-600 transition">
                     &larr; Précédent (이전)
@@ -151,7 +151,6 @@
              <div id="results-loader" class="hidden loader mx-auto my-8"></div>
              <p id="email-status" class="text-slate-500 mt-4"></p>
              <div class="mt-8 flex justify-center gap-4">
-                 <!-- *** 수정됨: 버튼 텍스트 변경 *** -->
                  <a href="/assignments/phrases_essentielles_v2.html" class="bg-royal-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-800 transition">Recommencer (처음으로 가기)</a>
              </div>
         </div>
@@ -162,7 +161,6 @@
                 <div id="feedback-details" class="text-left space-y-3 mb-6"></div>
                 <div class="flex justify-center gap-4">
                     <button id="retry-btn" class="bg-slate-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-slate-600 transition">Réessayer</button>
-                    <!-- 이 버튼은 이제 이전/다음 버튼으로 대체됨 -->
                     <button id="feedback-close-btn" class="bg-royal-blue text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-800 transition">OK</button>
                 </div>
             </div>
@@ -197,7 +195,7 @@
     let currentQuestionIndex = 0; let studentName = ""; let score = 0; let startTime; let exerciseData = [];
     let timedDictationTimer; let mediaRecorder; let audioChunks = []; let recordingStartTime; const audioCache = {};
 
-    // --- DOM ELEMENTS (unchanged) ---
+    // --- DOM ELEMENTS ---
     const nameScreen = document.getElementById('name-screen'); const exerciseScreen = document.getElementById('exercise-screen');
     const resultsScreen = document.getElementById('results-screen'); const startBtn = document.getElementById('start-btn');
     const studentNameInput = document.getElementById('student-name-input'); const studentNameDisplay = document.getElementById('student-name-display');
@@ -216,8 +214,8 @@
     const frenchInput = document.getElementById('french-input'); const recordBtn = document.getElementById('record-btn');
     const recordingStatus = document.getElementById('recording-status');
     const checkBtn = document.getElementById('check-btn');
-    const prevBtn = document.getElementById('prev-btn'); // *** 추가됨 ***
-    const nextBtn = document.getElementById('next-btn'); // *** 추가됨 ***
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
     const finishBtn = document.getElementById('finish-btn');
     const feedbackModal = document.getElementById('feedback-modal'); const feedbackTitle = document.getElementById('feedback-title');
     const feedbackDetails = document.getElementById('feedback-details'); const retryBtn = document.getElementById('retry-btn');
@@ -227,14 +225,14 @@
     document.addEventListener('DOMContentLoaded', () => {
         startBtn.addEventListener('click', startExercise);
         checkBtn.addEventListener('click', checkAnswer);
-        prevBtn.addEventListener('click', prevQuestion); // *** 추가됨 ***
-        nextBtn.addEventListener('click', nextQuestion); // *** 추가됨 ***
+        prevBtn.addEventListener('click', prevQuestion);
+        nextBtn.addEventListener('click', nextQuestion);
         finishBtn.addEventListener('click', showResults);
         retryBtn.addEventListener('click', retryQuestion);
         feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
     });
 
-    // --- AUDIO HELPER FUNCTIONS (unchanged) ---
+    // --- AUDIO HELPER FUNCTIONS ---
     function pcmToWav(pcmData, sampleRate) { const pcm16 = new Int16Array(pcmData); const header = new ArrayBuffer(44); const view = new DataView(header); writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcm16.byteLength, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeString(view, 36, 'data'); view.setUint32(40, pcm16.byteLength, true); return new Blob([header, pcm16], { type: 'audio/wav' }); }
     function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } }
     function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes.buffer; }
@@ -263,7 +261,6 @@
         questionCounter.textContent = `${currentQuestionIndex + 1}`;
         part1Container.classList.add('hidden'); part2Container.classList.add('hidden'); part3Container.classList.add('hidden');
         
-        // *** 수정됨: 이전/다음/종료 버튼 상태 관리 ***
         prevBtn.disabled = (currentQuestionIndex === 0);
         prevBtn.classList.toggle('btn-disabled', currentQuestionIndex === 0);
 
@@ -328,21 +325,63 @@
         recordBtn.textContent = 'Enregistrer (녹음 시작)'; recordingStatus.textContent = '';
     }
 
+    // *** MODIFIED: This function now repeats audio 3 times for questions 1-20 ***
     async function playAudio(text, button, loader) {
-        exerciseData[currentQuestionIndex].listenCount++; 
-        if (audioCache[text]) { new Audio(audioCache[text]).play(); return; }
-        loader.classList.remove('hidden'); button.disabled = true;
+        exerciseData[currentQuestionIndex].listenCount++;
+        const isRepeatQuestion = currentQuestionIndex < 20; // Questions 1-20 are word-based
+        const repeatCount = 3;
+
+        button.disabled = true;
+        loader.classList.remove('hidden');
+
         try {
-            const response = await fetch('/.netlify/functions/generate-audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, voice: currentQuestionIndex % 2 === 0 ? 'woman' : 'man' }) });
-            if (!response.ok) { const errorBody = await response.text(); throw new Error(`API Error: ${response.status} ${response.statusText}. Details: ${errorBody}`); }
-            const result = await response.json(); const audioData = result?.audioData, mimeType = result?.mimeType;
-            if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                const sampleRateMatch = mimeType.match(/rate=(\d+)/); const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
-                const pcmData = base64ToArrayBuffer(audioData); const wavBlob = pcmToWav(pcmData, sampleRate);
-                const audioUrl = URL.createObjectURL(wavBlob); audioCache[text] = audioUrl; new Audio(audioUrl).play();
-            } else { throw new Error('Invalid audio data received.'); }
-        } catch (error) { console.error('Audio playback error:', error); alert("Error playing audio."); } 
-        finally { loader.classList.add('hidden'); button.disabled = false; }
+            let audioUrl;
+            if (audioCache[text]) {
+                audioUrl = audioCache[text];
+            } else {
+                const response = await fetch('/.netlify/functions/generate-audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, voice: currentQuestionIndex % 2 === 0 ? 'woman' : 'man' }) });
+                if (!response.ok) { const errorBody = await response.text(); throw new Error(`API Error: ${response.status} ${response.statusText}. Details: ${errorBody}`); }
+                const result = await response.json();
+                const audioData = result?.audioData, mimeType = result?.mimeType;
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const wavBlob = pcmToWav(pcmData, sampleRate);
+                    audioUrl = URL.createObjectURL(wavBlob);
+                    audioCache[text] = audioUrl;
+                } else {
+                    throw new Error('Invalid audio data received.');
+                }
+            }
+
+            const audio = new Audio(audioUrl);
+            let playCount = 0;
+
+            const playHandler = () => {
+                // This function is called when audio finishes playing
+                if (isRepeatQuestion && playCount < repeatCount) {
+                    // If it's a word question and we haven't played 3 times yet
+                    setTimeout(() => audio.play(), 700); // Play again after a 0.7s pause
+                } else {
+                    // If it's a sentence question or repetitions are done
+                    button.disabled = false;
+                    loader.classList.add('hidden');
+                }
+            };
+
+            audio.onended = playHandler;
+            
+            // Start the first play
+            playCount++;
+            audio.play();
+
+        } catch (error) {
+            console.error('Audio playback error:', error);
+            alert("Error playing audio.");
+            button.disabled = false;
+            loader.classList.add('hidden');
+        }
     }
 
     function checkAnswer() {
@@ -364,7 +403,6 @@
         feedbackModal.classList.remove('hidden');
     }
     
-    // *** 수정됨: 모달 닫을 때 버튼 상태 변경 로직 제거 ***
     function closeFeedbackModal() {
         feedbackModal.classList.add('hidden');
     }
@@ -377,7 +415,6 @@
         else displayMatchingQuestion(question);
     }
 
-    // *** 추가됨: 이전/다음 문제 이동 함수 ***
     function prevQuestion() {
         if (currentQuestionIndex > 0) {
             currentQuestionIndex--;
@@ -391,7 +428,6 @@
         }
     }
     
-    // *** 수정됨: 녹음 버튼 텍스트 및 상태 변경 로직 ***
     async function toggleRecording() {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
@@ -437,7 +473,7 @@
         if (finalScorePercent === 100) { title = "완벽해요!!"; message = "Vous avez tout bon ! Impressionnant !"; icon = "👑🎉👍"; confetti(); }
         else if (finalScorePercent >= 80) { title = "잘했어요!!"; message = "Excellent score ! Continuez comme ça."; icon = "🎉👍"; }
         else if (finalScorePercent >= 60) { title = "이해 할 수 있어요. 꽤 잘했어요"; message = "Vous progressez bien ! Encore un effort."; icon = "👍"; }
-        else { title = "땡!! 틀렸어요!!"; message = "Ce n'est pas grave, réessayez !"; icon = "�"; }
+        else { title = "땡!! 틀렸어요!!"; message = "Ce n'est pas grave, réessayez !"; icon = "🤔"; }
 
         let detailsHtml = `<h1 class="text-3xl font-bold text-royal-blue mb-2">${icon} ${title}</h1>
             <p class="text-slate-600 mb-4">${message}</p>
@@ -482,4 +518,3 @@
 </script>
 </body>
 </html>
-�
