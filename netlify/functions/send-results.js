@@ -1,122 +1,154 @@
-// 이 파일은 Netlify 서버에서 실행되는 백엔드 코드입니다.
-// 학생의 시험 결과를 이메일로 전송하는 역할을 합니다.
+// netlify/functions/send-results.js
 const nodemailer = require('nodemailer');
 
-exports.handler = async (event, context) => {
-  // HTTP 메소드가 POST가 아니면 에러를 반환합니다.
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
+exports.handler = async (event) => {
   try {
-    const data = JSON.parse(event.body);
-    
-    // 이메일 전송을 위한 transporter 설정 (Gmail 예시)
-    // Netlify 환경 변수에서 이메일 계정 정보를 가져옵니다.
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
+    if (event.httpMethod !== 'POST') {
+      return { statusCode: 405, body: 'Method Not Allowed' };
+    }
+
+    // === 1) 환경변수 (Gmail) ===
+    const GMAIL_USER = process.env.GMAIL_USER;               // 예: your@gmail.com
+    const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD; // 구글 '앱 비밀번호'
+    const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL;     // 선생님 수신 메일
+
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: 'Missing env: GMAIL_USER / GMAIL_APP_PASSWORD / RECIPIENT_EMAIL' }),
+      };
+    }
+
+    // === 2) 프런트에서 보낸 payload ===
+    const payload = JSON.parse(event.body || '{}');
+    const {
+      studentName = 'Élève',
+      startTime,
+      endTime,
+      totalTimeSeconds = 0,
+      questions = [],
+    } = payload;
+
+    // === 3) 첨부파일(녹음) 구성 (용량 보호) ===
+    const PER_FILE_LIMIT_BYTES = 3 * 1024 * 1024; // 3MB
+    const TOTAL_LIMIT_BYTES = 18 * 1024 * 1024;   // 전체 18MB 정도로 제한(메일서버 한도 고려)
+    let totalBytes = 0;
+
+    const attachments = [];
+    questions.forEach((q) => {
+      if (q?.recording?.base64) {
+        const filename = q.recording.filename || `rec_q${q.number || 'X'}.webm`;
+        const mimeType = q.recording.mimeType || 'audio/webm';
+        const buf = Buffer.from(q.recording.base64, 'base64');
+
+        if (buf.length <= PER_FILE_LIMIT_BYTES && totalBytes + buf.length <= TOTAL_LIMIT_BYTES) {
+          totalBytes += buf.length;
+          attachments.push({
+            filename,
+            content: buf,
+            contentType: mimeType,
+            cid: `recq${q.number}@inline`, // 본문 <audio src="cid:..."> 시도용
+          });
+        }
+      }
     });
 
-    // --- 이메일 본문(HTML) 생성 ---
-    
-    // 상세 결과 테이블의 각 행(row)을 생성합니다.
-    // 이 부분이 기존 코드에서 누락되었을 가능성이 높습니다.
-    const resultsRows = data.details.map((item, index) => `
-      <tr style="background-color: ${index % 2 === 0 ? '#f9f9f9' : '#ffffff'};">
-        <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.type.replace('_', ' ')}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.question}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.userAnswer || '(vide)'}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.isCorrect ? '✔' : '✖'}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.attempts}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.details.audioPlays}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.details.hint1Used ? 'Oui' : 'Non'}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${item.details.hint2Used ? 'Oui' : 'Non'}</td>
-      </tr>
-    `).join('');
+    // === 4) 메일 본문(HTML) 만들기 ===
+    const mins = Math.floor(totalTimeSeconds / 60);
+    const secs = totalTimeSeconds % 60;
 
-    // 녹음 파일이 있는 경우, 첨부 파일 목록을 생성합니다.
-    const attachments = data.details
-      .map((item, index) => {
-        if (item.details.recordedAudio) {
-          // Base64 데이터 URI에서 실제 데이터 부분만 추출합니다.
-          const base64Data = item.details.recordedAudio.split(';base64,').pop();
-          return {
-            filename: `enregistrement_Q${index + 1}_${data.studentName}.webm`,
-            content: base64Data,
-            encoding: 'base64',
-          };
-        }
-        return null;
-      })
-      .filter(Boolean); // null 값을 제거합니다.
+    const rowHtml = questions.map((q) => {
+      const answered = q.userAnswer ? escapeHtml(q.userAnswer) : '<i>(vide)</i>';
+      const ok = q.isCorrect ? '✔️' : '—';
+      const audioHtml = q?.recording?.base64
+        ? `
+          <div style="margin-top:6px">
+            <b>Enregistrement élève:</b><br/>
+            <!-- 일부 클라이언트에서만 재생됨 -->
+            <audio controls src="cid:recq${q.number}@inline"></audio>
+            <div style="font-size:12px;color:#666">
+              * Si l'audio ne s'affiche pas, ouvrez la pièce jointe: ${escapeHtml(q.recording.filename || '')}
+              (${q.recording.duration ? q.recording.duration + 's' : ''})
+            </div>
+          </div>
+        `
+        : `<div style="font-size:12px;color:#666">Aucun enregistrement</div>`;
 
-    // 전체 이메일 HTML 구조
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: sans-serif; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { text-align: left; padding: 8px; border: 1px solid #ddd; }
-          th { background-color: #f2f2f2; }
-        </style>
-      </head>
-      <body>
-        <h1>Résultats du test de coréen</h1>
-        <p><strong>Élève:</strong> ${data.studentName}</p>
-        <p><strong>Date:</strong> ${new Date(data.submissionDate).toLocaleString('fr-FR')}</p>
-        <p><strong>Temps total:</strong> ${Math.floor(data.totalTime / 60)}m ${data.totalTime % 60}s</p>
-        <p><strong>Score:</strong> ${data.score} / ${data.totalQuestions}</p>
-        <hr>
-        <h2>Détails des réponses</h2>
-        <table>
+      return `
+        <tr>
+          <td style="border:1px solid #eee;padding:6px;text-align:center">${q.number ?? ''}</td>
+          <td style="border:1px solid #eee;padding:6px">${escapeHtml(q.fr || '')}</td>
+          <td style="border:1px solid #eee;padding:6px">${escapeHtml(q.ko || '')}</td>
+          <td style="border:1px solid #eee;padding:6px">${answered}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:center">${ok}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:center">${q.listenCount || 0}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint1Count || 0}</td>
+          <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint2Count || 0}</td>
+        </tr>
+        <tr>
+          <td colspan="8" style="border:1px solid #eee;padding:6px;background:#fafafa">${audioHtml}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <div style="font-family:Arial, sans-serif">
+        <h2>Résultats du test de coréen</h2>
+        <p><b>Élève:</b> ${escapeHtml(studentName)}</p>
+        <p><b>Début:</b> ${escapeHtml(String(startTime || ''))}<br/>
+           <b>Fin:</b> ${escapeHtml(String(endTime || ''))}<br/>
+           <b>Temps total:</b> ${mins}m ${secs}s
+        </p>
+
+        <table style="border-collapse:collapse;width:100%;font-size:14px">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Type</th>
-              <th>Question</th>
-              <th>Réponse élève</th>
-              <th>OK?</th>
-              <th>Tentatives</th>
-              <th>Écoutes</th>
-              <th>Indice 1</th>
-              <th>Indice 2</th>
+            <tr style="background:#f0f4f8">
+              <th style="border:1px solid #eee;padding:6px">#</th>
+              <th style="border:1px solid #eee;padding:6px">Français (문장 원문)</th>
+              <th style="border:1px solid #eee;padding:6px">Coréen (문장 원문)</th>
+              <th style="border:1px solid #eee;padding:6px">Réponse élève</th>
+              <th style="border:1px solid #eee;padding:6px">OK?</th>
+              <th style="border:1px solid #eee;padding:6px">Écoutes</th>
+              <th style="border:1px solid #eee;padding:6px">Indice 1</th>
+              <th style="border:1px solid #eee;padding:6px">Indice 2</th>
             </tr>
           </thead>
-          <tbody>
-            ${resultsRows}
-          </tbody>
+          <tbody>${rowHtml}</tbody>
         </table>
-        <hr>
-        <p>* Certains clients e-mail ne permettent pas la lecture audio intégrée. Les fichiers sont joints en pièces jointes.</p>
-      </body>
-      </html>
+
+        <p style="color:#666;font-size:12px;margin-top:10px">
+          * Certains clients e-mail ne permettent pas la lecture audio intégrée. Les fichiers sont joints en pièces jointes.
+        </p>
+      </div>
     `;
 
-    // 이메일 옵션 설정
-    await transporter.sendMail({
-      from: `"Résultats d'exercice" <${process.env.GMAIL_USER}>`,
-      to: process.env.RECIPIENT_EMAIL,
-      subject: `Nouveau résultat de test de ${data.studentName}`,
-      html: emailHtml,
-      attachments: attachments, // 녹음 파일 첨부
+    // === 5) Gmail SMTP 트랜스포트 ===
+    // Gmail: SSL 포트 465 고정(가장 안정적). 앱 비밀번호 필수!
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // SSL
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Résultats envoyés avec succès' }),
-    };
-  } catch (error) {
-    console.error("Erreur lors de l'envoi de l'e-mail:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Échec de l'envoi de l'e-mail." }),
-    };
+    await transporter.sendMail({
+      from: GMAIL_USER,
+      to: RECIPIENT_EMAIL,
+      subject: `Résultats – ${studentName} – ${new Date().toLocaleString('fr-FR')}`,
+      html,
+      attachments,
+    });
+
+    return { statusCode: 200, body: JSON.stringify({ message: 'OK' }) };
+  } catch (err) {
+    console.error(err);
+    return { statusCode: 500, body: JSON.stringify({ message: err.message }) };
   }
 };
+
+// 안전한 HTML 이스케이프
+function escapeHtml(str = '') {
+  return str.replace(/[&<>"']/g, (s) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[s]));
+}
