@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice Avancé : Architecte de Phrases Coréennes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        body {
+            font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .royal-blue { background-color: #0033a0; }
+        .gold-text { color: #ffbf00; }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-hint {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            border: 1px solid #d1d5db;
+        }
+        .btn-hint:hover { background-color: #d1d5db; }
+        .btn-gold { background-color: #ffbf00; color: #0033a0; border: 2px solid #e6ac00; }
+        .btn-gold:hover { background-color: #e6ac00; }
+        .btn-green { background-color: #16a34a; border: 2px solid #15803d; }
+        .btn-green:hover { background-color: #15803d; }
+        .btn-secondary { background-color: #6c757d; border: 2px solid #5a6268; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        input[type="text"] {
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus { outline: none; border-color: #0033a0; }
+        .correct { border-color: #22c55e !important; background-color: #f0fff4; }
+        .incorrect { border-color: #ef4444 !important; background-color: #fff1f2; }
+        #result-container { scroll-margin-top: 20px; }
+        .step-number {
+            background-color: #0033a0;
+            color: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .hidden { display: none; }
+        .hint-content {
+            background-color: #f3f4f6;
+            border: 1px dashed #d1d5db;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8 p-6 royal-blue rounded-xl shadow-lg">
+            <h1 class="text-3xl md:text-4xl font-bold gold-text">Exercice Avancé : Architecte de Phrases 🇰🇷</h1>
+            <p class="text-white mt-2">Maîtrisez la construction des phrases complexes.</p>
+        </header>
+
+        <div class="card p-6 mb-8">
+            <label for="student-name" class="block text-lg font-bold text-gray-700 mb-2">Entrez votre nom :</label>
+            <input type="text" id="student-name" placeholder="Ex: Cédric" class="text-lg">
+        </div>
+
+        <!-- Explication de la méthode -->
+        <div class="card p-6 mb-12 bg-blue-50 border border-blue-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 La Méthode de l'Architecte</h2>
+            <p class="text-gray-700 mb-4">Pour construire une phrase complexe, on ne traduit pas mot à mot. On assemble des blocs dans le bon ordre ! Suivez les étapes pour chaque exercice.</p>
+            <p class="text-sm text-gray-600 mt-2"><strong>Rappel important :</strong> Le sujet principal de la phrase est <span class="font-mono bg-gray-200 px-1 rounded">저는</span>. Le sujet à l'intérieur d'une description (phrase relative) devient <span class="font-mono bg-gray-200 px-1 rounded">제가</span>.</p>
+        </div>
+
+        <!-- Conteneur des questions -->
+        <div id="questions-container" class="space-y-8">
+            <!-- Les questions seront générées par JS ici -->
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-4 mt-8">
+            <button id="retry-button" class="btn btn-green"><i class="fas fa-redo mr-2"></i>Recommencer</button>
+            <button id="finish-button" class="btn btn-gold"><i class="fas fa-paper-plane mr-2"></i>Terminer & Envoyer</button>
+        </div>
+
+        <div id="result-container" class="mt-8"></div>
+        
+        <div class="flex justify-between items-center mt-8 border-t pt-6">
+            <button onclick="window.history.back();" class="btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i>Précédent</button>
+            <button onclick="window.print();" class="btn btn-secondary"><i class="fas fa-print mr-2"></i>Imprimer</button>
+        </div>
+    </div>
+
+    <script>
+        const allQuestions = [
+            { id: 'q1', fr_sentence: "J'ai mangé le gâteau que j'aime.", fr_main: "J'ai mangé le gâteau", fr_relative: "que j'aime", ko_main_subject: "저는", ko_relative_subject: "제가", ko_relative_complements: "", ko_relative_verb: "좋아하는", ko_qualified_noun: "케이크를", ko_main_phrase_rest: "", ko_main_verb: "먹었어요", ko_final: "저는 제가 좋아하는 케이크를 먹었어요.", vocab: [{ko:"저",fr:"je"}, {ko:"좋아하다",fr:"aimer"}, {ko:"케이크",fr:"gâteau"}, {ko:"먹다",fr:"manger"}], hint: "Le sujet principal est '저는'. Le sujet de la description 'que j'aime' devient '제가'." },
+            { id: 'q2', fr_sentence: "L'ami que je rencontre aujourd'hui est français.", fr_main: "L'ami est français", fr_relative: "que je rencontre aujourd'hui", ko_main_subject: "", ko_relative_subject: "제가", ko_relative_complements: "오늘", ko_relative_verb: "만나는", ko_qualified_noun: "친구는", ko_main_phrase_rest: "", ko_main_verb: "프랑스 사람이에요", ko_final: "제가 오늘 만나는 친구는 프랑스 사람이에요.", vocab: [{ko:"오늘",fr:"aujourd'hui"}, {ko:"만나다",fr:"rencontrer"}, {ko:"친구",fr:"ami"}, {ko:"프랑스 사람",fr:"personne française"}], hint: "Ici, 'L'ami que je rencontre aujourd'hui' est le sujet principal. On commence donc par la description." },
+            { id: 'q3', fr_sentence: "J'ai réussi l'examen grâce à l'ami que je connais.", fr_main: "J'ai réussi l'examen grâce à l'ami", fr_relative: "que je connais", ko_main_subject: "저는", ko_relative_subject: "제가", ko_relative_complements: "", ko_relative_verb: "아는", ko_qualified_noun: "친구", ko_main_phrase_rest: "덕분에 시험에", ko_main_verb: "통과했어요", ko_final: "저는 제가 아는 친구 덕분에 시험에 통과했어요.", vocab: [{ko:"저",fr:"je"}, {ko:"알다",fr:"connaître"}, {ko:"친구",fr:"ami"}, {ko:"덕분에",fr:"grâce à"}, {ko:"시험",fr:"examen"}, {ko:"통과하다",fr:"réussir/passer"}], hint: "La structure 'grâce à [NOM]' se traduit par '[NOM] 덕분에'." },
+            { id: 'q4', fr_sentence: "Le livre que l'étudiant a acheté est difficile.", fr_main: "Le livre est difficile", fr_relative: "que l'étudiant a acheté", ko_main_subject: "", ko_relative_subject: "그 학생이", ko_relative_complements: "", ko_relative_verb: "산", ko_qualified_noun: "책은", ko_main_phrase_rest: "", ko_main_verb: "어려워요", ko_final: "그 학생이 산 책은 어려워요.", vocab: [{ko:"학생",fr:"étudiant"}, {ko:"사다",fr:"acheter"}, {ko:"책",fr:"livre"}, {ko:"어렵다",fr:"être difficile"}], hint: "Le sujet de la description est 'l'étudiant' (그 학생이). Le sujet principal est 'Le livre' (책은)." },
+        ];
+
+        let currentQuestions = [];
+        const studentData = { name: '', startTime: null, endTime: null, questionStats: {} };
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function generateQuestions() {
+            studentData.startTime = new Date();
+            studentData.questionStats = {};
+            shuffleArray(allQuestions);
+            currentQuestions = allQuestions;
+
+            const container = document.getElementById('questions-container');
+            let html = '';
+            currentQuestions.forEach((q, index) => {
+                studentData.questionStats[q.id] = { hint1Count: 0, hint2Count: 0 };
+                html += `
+                <div class="card p-6" id="${q.id}">
+                    <p class="text-xl font-bold mb-2 text-gray-800">Exercice ${index + 1}: <span class="font-normal">"${q.fr_sentence}"</span></p>
+                    
+                    <div class="mt-4 flex gap-2">
+                        <button data-hint-type="1" data-question-id="${q.id}" class="btn btn-hint"><i class="fas fa-book-open mr-2"></i>Indice 1 (Vocabulaire)</button>
+                        <button data-hint-type="2" data-question-id="${q.id}" class="btn btn-hint"><i class="fas fa-lightbulb mr-2"></i>Indice 2 (Aide)</button>
+                    </div>
+                    <div id="hint-1-${q.id}" class="hint-content hidden"></div>
+                    <div id="hint-2-${q.id}" class="hint-content hidden"></div>
+
+                    <div class="space-y-6 mt-6">
+                        <!-- Step 1: French Analysis -->
+                        <div class="p-4 border-l-4 border-gray-300 bg-gray-50 rounded-r-lg">
+                            <label class="font-semibold block mb-2 flex items-center"><span class="step-number" style="background-color:#9ca3af;">A</span>Analysez en français</label>
+                            <div class="space-y-2 pl-10">
+                                <input type="text" data-part="fr_main" placeholder="1. Phrase principale...">
+                                <input type="text" data-part="fr_relative" placeholder="2. Phrase qui décrit...">
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Korean Construction -->
+                        <div class="p-4 border-l-4 border-blue-300 bg-blue-50 rounded-r-lg">
+                            <label class="font-semibold block mb-2 flex items-center"><span class="step-number" style="background-color:#60a5fa;">B</span>Construisez en coréen (morceau par morceau)</label>
+                            <div class="space-y-2 pl-10">
+                                <input type="text" data-part="ko_main_subject" placeholder="1. Sujet principal (Ex: 저는 ou vide)">
+                                <input type="text" data-part="ko_relative_subject" placeholder="2. Sujet de la description (Ex: 제가)">
+                                <input type="text" data-part="ko_relative_complements" placeholder="3. Compléments de la description (Ex: 오늘)">
+                                <input type="text" data-part="ko_relative_verb" placeholder="4. Verbe de la description + 는/은 (Ex: 만나는)">
+                                <input type="text" data-part="ko_qualified_noun" placeholder="5. Nom décrit + particule (Ex: 친구는)">
+                                <input type="text" data-part="ko_main_phrase_rest" placeholder="6. Reste des compléments (Ex: 덕분에 시험에)">
+                                <input type="text" data-part="ko_main_verb" placeholder="7. Verbe principal (Ex: 통과했어요)">
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Final Assembly -->
+                        <div class="p-4 border-l-4 border-yellow-300 bg-yellow-50 rounded-r-lg">
+                            <label class="font-semibold block mb-2 flex items-center"><span class="step-number" style="background-color:#facc15;">C</span>Assemblez la phrase finale</label>
+                            <input type="text" data-part="ko_final" class="ml-10" placeholder="Phrase coréenne complète...">
+                        </div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            document.getElementById('result-container').innerHTML = '';
+            addHintListeners();
+        }
+
+        function addHintListeners() {
+            document.querySelectorAll('.btn-hint').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const qId = e.currentTarget.dataset.questionId;
+                    const hintType = e.currentTarget.dataset.hintType;
+                    const hintContainer = document.getElementById(`hint-${hintType}-${qId}`);
+                    
+                    if (hintContainer.innerHTML === '') {
+                        const question = currentQuestions.find(q => q.id === qId);
+                        if (hintType === '1') {
+                            studentData.questionStats[qId].hint1Count++;
+                            let vocabHtml = '<ul>';
+                            question.vocab.forEach(v => {
+                                vocabHtml += `<li><strong>${v.ko}</strong>: ${v.fr}</li>`;
+                            });
+                            vocabHtml += '</ul>';
+                            hintContainer.innerHTML = vocabHtml;
+                        } else {
+                            studentData.questionStats[qId].hint2Count++;
+                            hintContainer.innerHTML = `<p>${question.hint}</p>`;
+                        }
+                    }
+                    hintContainer.classList.toggle('hidden');
+                });
+            });
+        }
+
+        function normalizeAnswer(str) {
+            return str.replace(/\s+/g, '').replace(/[.?!~,]/g, '').toLowerCase();
+        }
+        
+        function checkAnswersAndDisplay() {
+            let totalCorrect = 0;
+            let incorrectDetails = [];
+
+            currentQuestions.forEach(q => {
+                const questionDiv = document.getElementById(q.id);
+                if (!questionDiv) return;
+
+                const inputs = {
+                    fr_main: questionDiv.querySelector('input[data-part="fr_main"]'),
+                    fr_relative: questionDiv.querySelector('input[data-part="fr_relative"]'),
+                    ko_main_subject: questionDiv.querySelector('input[data-part="ko_main_subject"]'),
+                    ko_relative_subject: questionDiv.querySelector('input[data-part="ko_relative_subject"]'),
+                    ko_relative_complements: questionDiv.querySelector('input[data-part="ko_relative_complements"]'),
+                    ko_relative_verb: questionDiv.querySelector('input[data-part="ko_relative_verb"]'),
+                    ko_qualified_noun: questionDiv.querySelector('input[data-part="ko_qualified_noun"]'),
+                    ko_main_phrase_rest: questionDiv.querySelector('input[data-part="ko_main_phrase_rest"]'),
+                    ko_main_verb: questionDiv.querySelector('input[data-part="ko_main_verb"]'),
+                    ko_final: questionDiv.querySelector('input[data-part="ko_final"]')
+                };
+
+                const isCorrect = {
+                    fr_main: normalizeAnswer(inputs.fr_main.value) === normalizeAnswer(q.fr_main),
+                    fr_relative: normalizeAnswer(inputs.fr_relative.value) === normalizeAnswer(q.fr_relative),
+                    ko_main_subject: normalizeAnswer(inputs.ko_main_subject.value) === normalizeAnswer(q.ko_main_subject),
+                    ko_relative_subject: normalizeAnswer(inputs.ko_relative_subject.value) === normalizeAnswer(q.ko_relative_subject),
+                    ko_relative_complements: normalizeAnswer(inputs.ko_relative_complements.value) === normalizeAnswer(q.ko_relative_complements),
+                    ko_relative_verb: normalizeAnswer(inputs.ko_relative_verb.value) === normalizeAnswer(q.ko_relative_verb),
+                    ko_qualified_noun: normalizeAnswer(inputs.ko_qualified_noun.value) === normalizeAnswer(q.ko_qualified_noun),
+                    ko_main_phrase_rest: normalizeAnswer(inputs.ko_main_phrase_rest.value) === normalizeAnswer(q.ko_main_phrase_rest),
+                    ko_main_verb: normalizeAnswer(inputs.ko_main_verb.value) === normalizeAnswer(q.ko_main_verb),
+                    ko_final: normalizeAnswer(inputs.ko_final.value) === normalizeAnswer(q.ko_final)
+                };
+
+                let allPartsCorrect = true;
+                for (const part in inputs) {
+                    inputs[part].classList.toggle('correct', isCorrect[part]);
+                    inputs[part].classList.toggle('incorrect', !isCorrect[part]);
+                    if (!isCorrect[part]) allPartsCorrect = false;
+                }
+
+                if (allPartsCorrect) {
+                    totalCorrect++;
+                } else {
+                    incorrectDetails.push({
+                        question: q.fr_sentence,
+                        userAnswers: { ...Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, v.value])) },
+                        correctAnswers: { ...q }
+                    });
+                }
+            });
+
+            const resultContainer = document.getElementById('result-container');
+            const percentage = currentQuestions.length > 0 ? (totalCorrect / currentQuestions.length) * 100 : 0;
+            let message = '', bgColor = '', textColor = '', resultHTML = '';
+
+            if (percentage === 100) { message = "완벽해요!! 🎉👑👍 (Parfait !!)"; bgColor = 'bg-green-100'; textColor = 'text-green-800'; }
+            else if (percentage >= 75) { message = "잘했어요!! 🎉👍 (Bien joué !!)"; bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; }
+            else { message = "조금 더 연습해봐요! 💪 (Encore un peu d'entraînement !)"; bgColor = 'bg-yellow-100'; textColor = 'text-yellow-800'; }
+
+            resultHTML = `<div id="result-message" class="p-5 rounded-xl ${bgColor} ${textColor}">${message}</div>`;
+
+            if (incorrectDetails.length > 0) {
+                resultHTML += `<div class="mt-4 p-4 card"><h3 class="font-bold text-lg mb-2">Corrections :</h3><ul class="list-disc list-inside space-y-4">`;
+                incorrectDetails.forEach(item => {
+                    resultHTML += `<li><strong class="text-gray-700">"${item.question}"</strong>`;
+                    for(const part in item.correctAnswers) {
+                        if ((part.startsWith('ko_') || part.startsWith('fr_')) && normalizeAnswer(item.userAnswers[part]) !== normalizeAnswer(item.correctAnswers[part])) {
+                             resultHTML += `<br><span class="text-xs font-mono text-gray-500">${part}:</span> <span class="text-red-600">${item.userAnswers[part] || '(vide)'}</span> → <span class="text-green-600">${item.correctAnswers[part]}</span>`;
+                        }
+                    }
+                    resultHTML += `</li>`;
+                });
+                resultHTML += `</ul></div>`;
+            }
+
+            resultContainer.innerHTML = resultHTML;
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        document.addEventListener('DOMContentLoaded', generateQuestions);
+
+        document.getElementById('retry-button').addEventListener('click', () => {
+            generateQuestions();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        document.getElementById('finish-button').addEventListener('click', () => {
+            if (!document.getElementById('student-name').value) {
+                alert("Veuillez entrer votre nom avant de terminer.");
+                return;
+            }
+            checkAnswersAndDisplay(); 
+            studentData.endTime = new Date();
+            sendResults();
+        });
+
+        async function sendResults() {
+            const timeTaken = studentData.endTime && studentData.startTime ? (studentData.endTime - studentData.startTime) / 1000 : 0;
+            
+            const questionsDetail = currentQuestions.map((q, index) => {
+                const questionDiv = document.getElementById(q.id);
+                const userAnswer = `Analyse FR: [${questionDiv.querySelector('[data-part=fr_main]').value}] + [${questionDiv.querySelector('[data-part=fr_relative]').value}] | KO: [${questionDiv.querySelector('[data-part=ko_main_subject]').value}] [${questionDiv.querySelector('[data-part=ko_relative_subject]').value}] [${questionDiv.querySelector('[data-part=ko_relative_complements]').value}] [${questionDiv.querySelector('[data-part=ko_relative_verb]').value}] [${questionDiv.querySelector('[data-part=ko_qualified_noun]').value}] [${questionDiv.querySelector('[data-part=ko_main_phrase_rest]').value}] [${questionDiv.querySelector('[data-part=ko_main_verb]').value}] | Final: ${questionDiv.querySelector('[data-part=ko_final]').value}`;
+                const isCorrect = questionDiv.querySelector('[data-part=ko_final]').classList.contains('correct');
+                const stats = studentData.questionStats[q.id] || { hint1Count: 0, hint2Count: 0 };
+
+                return {
+                    number: index + 1,
+                    fr: q.fr_sentence,
+                    ko: q.ko_final,
+                    userAnswer: userAnswer,
+                    isCorrect: isCorrect,
+                    listenCount: 0, 
+                    hint1Count: stats.hint1Count, 
+                    hint2Count: stats.hint2Count, 
+                    recording: null
+                };
+            });
+
+            const payload = {
+                studentName: document.getElementById('student-name').value,
+                startTime: studentData.startTime.toISOString(),
+                endTime: studentData.endTime.toISOString(),
+                totalTimeSeconds: Math.round(timeTaken),
+                questions: questionsDetail,
+            };
+            
+            console.log("Sending results:", JSON.stringify(payload, null, 2));
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    alert("Résultats envoyés avec succès ! Merci !");
+                    document.getElementById('finish-button').disabled = true;
+                    document.getElementById('finish-button').innerText = "Envoyé !";
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Erreur du serveur: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Failed to send results:', error);
+                alert("Une erreur est survenue lors de l'envoi des résultats. Les détails ont été enregistrés dans la console.");
+            }
+        }
+    </script>
+</body>
+</html>
