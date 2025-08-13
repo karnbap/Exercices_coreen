@@ -204,6 +204,7 @@
 
     let mediaRecorder;
     let audioChunks = [];
+    let koreanVoices = [];
 
     // --- DOM ELEMENTS ---
     const nameScreen = document.getElementById('name-screen');
@@ -261,6 +262,23 @@
     feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
 
     // --- FUNCTIONS ---
+    
+    // Initialisation de la synthèse vocale du navigateur
+    function setupSpeechSynthesis() {
+        if ('speechSynthesis' in window) {
+            koreanVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko'));
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                     koreanVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko'));
+                };
+            }
+        } else {
+            console.warn("L'API Web Speech n'est pas prise en charge par ce navigateur.");
+        }
+    }
+    
+    setupSpeechSynthesis();
+
     function startExercise() {
         studentName = studentNameInput.value.trim();
         if (!studentName) { alert('Veuillez entrer votre nom !'); return; }
@@ -410,40 +428,47 @@
         recordingStatus.textContent = '';
     }
 
-    async function playAudio(text, button, loader) {
+    // Audio Playback Function using Web Speech API
+    function playAudio(text, button, loader) {
         exerciseData[currentQuestionIndex].details.audioPlays++;
+        
+        if (!('speechSynthesis' in window)) {
+            alert("Désolé, votre navigateur ne prend pas en charge la synthèse vocale.");
+            return;
+        }
+
         loader.classList.remove('hidden');
         button.disabled = true;
-        try {
-            // Utilise l'API Netlify pour générer l'audio.
-            // La voix alterne entre homme et femme pour chaque question.
-            const response = await fetch('/.netlify/functions/generate-audio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text, voice: currentQuestionIndex % 2 === 0 ? 'woman' : 'man' })
-            });
-            if (!response.ok) {
-                // Si l'API renvoie une erreur (ex: 500), une alerte est affichée.
-                const errorBody = await response.text();
-                throw new Error(`Erreur de l'API audio: ${response.status} ${response.statusText}. Détails: ${errorBody}`);
-            }
-            const result = await response.json();
-            if (result.audioData) {
-                new Audio("data:audio/mp3;base64," + result.audioData).play();
-            } else { throw new Error('Aucune donnée audio reçue.'); }
-        } catch (error) {
-            console.error('Erreur de lecture audio:', error);
-            alert("Une erreur s'est produite lors de la lecture de l'audio. Veuillez vérifier la console pour plus de détails.");
-        } finally {
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR';
+
+        // Alterner entre les voix coréennes disponibles
+        if (koreanVoices.length > 0) {
+            const voiceIndex = (exerciseData[currentQuestionIndex].details.audioPlays - 1) % koreanVoices.length;
+            utterance.voice = koreanVoices[voiceIndex];
+        }
+        
+        utterance.onend = () => {
             loader.classList.add('hidden');
             button.disabled = false;
-        }
+        };
+        
+        utterance.onerror = (event) => {
+            console.error('SpeechSynthesisUtterance.onerror', event);
+            alert("Une erreur s'est produite lors de la synthèse vocale.");
+            loader.classList.add('hidden');
+            button.disabled = false;
+        };
+
+        window.speechSynthesis.speak(utterance);
     }
+
 
     function checkAnswer() {
         const question = allQuestions[currentQuestionIndex];
         const data = exerciseData[currentQuestionIndex];
-        if (!data.isCorrect) { // Ne compte les tentatives que si la réponse n'a pas encore été marquée comme correcte.
+        if (!data.isCorrect) {
             data.attempts++;
         }
         
@@ -485,7 +510,7 @@
     function showFeedbackModal(titleText, detailsHtml, isCorrect) {
         feedbackTitle.textContent = titleText;
         feedbackDetails.innerHTML = detailsHtml;
-        retryBtn.classList.toggle('hidden', isCorrect); // Cache le bouton "Réessayer" si la réponse est correcte.
+        retryBtn.classList.toggle('hidden', isCorrect);
         feedbackModal.classList.remove('hidden');
         checkBtn.classList.add('hidden');
     }
@@ -501,7 +526,7 @@
 
     function retryQuestion() {
         feedbackModal.classList.add('hidden');
-        displayQuestion(); // Réaffiche la même question
+        displayQuestion();
     }
 
     function nextQuestion() {
@@ -544,7 +569,7 @@
 
         let title, message, icon;
         if (finalScorePercent === 100) { title = "Parfait !!"; message = "Vous avez tout bon ! Impressionnant !"; icon = "👑🎉👍"; confetti(); }
-        else if (finalScorePercent >= 80) { title = "Très bien !!"; message = "Excellent score ! Continuez comme ça."; icon = "🎉👍"; }
+        else if (finalScorePercent >= 80) { title = "Très bien !!"; message = "Excellent score ! Continuez comme ça."; icon = "�👍"; }
         else if (finalScorePercent >= 60) { title = "Assez bien."; message = "Vous progressez bien ! Encore un effort."; icon = "👍"; }
         else { title = "Oups !"; message = "Ce n'est pas grave, réessayez !"; icon = "💪"; }
 
@@ -569,9 +594,6 @@
         detailsHtml += `</div>`;
         resultsContent.innerHTML = detailsHtml;
         
-        // La fonction Netlify 'send-results' doit être configurée sur votre compte
-        // avec les variables d'environnement (GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL)
-        // pour que l'envoi d'e-mail fonctionne.
         document.getElementById('results-loader').classList.remove('hidden');
         document.getElementById('email-status').textContent = 'Envoi des résultats en cours...';
         try {
@@ -593,3 +615,4 @@
     </script>
 </body>
 </html>
+�
