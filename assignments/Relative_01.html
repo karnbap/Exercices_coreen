@@ -121,7 +121,6 @@
         </div>
 
         <div class="flex flex-wrap justify-center gap-4 mt-8">
-            <button id="check-button" class="btn btn-primary"><i class="fas fa-check-circle mr-2"></i>Vérifier</button>
             <button id="retry-button" class="btn btn-green"><i class="fas fa-redo mr-2"></i>Recommencer</button>
             <button id="finish-button" class="btn btn-gold"><i class="fas fa-paper-plane mr-2"></i>Terminer & Envoyer</button>
         </div>
@@ -253,16 +252,13 @@
                 const userPart2 = userPart2Input.value.trim();
 
                 let isPart1Correct, isPart2Correct;
-                let correctAnswerText = '';
-
+                
                 if (q.type === 'fr') {
                     isPart1Correct = normalizeAnswer(userPart1) === normalizeAnswer(q.part1);
                     isPart2Correct = normalizeAnswer(userPart2) === normalizeAnswer(q.part2);
-                    correctAnswerText = `1: ${q.part1}, 2: ${q.part2}`;
                 } else { // type 'ko'
                     isPart1Correct = normalizeKoreanAnswer(userPart1) === normalizeKoreanAnswer(q.part1);
                     isPart2Correct = normalizeKoreanAnswer(userPart2) === normalizeKoreanAnswer(q.part2);
-                    correctAnswerText = `1: ${q.part1}, 2: ${q.part2}`;
                 }
 
                 userPart1Input.classList.remove('correct', 'incorrect');
@@ -272,13 +268,6 @@
 
                 if (isPart1Correct && isPart2Correct) {
                     correctCount++;
-                } else {
-                     studentData.incorrectAnswers.push({
-                        questionId: q.id,
-                        questionText: q.type === 'fr' ? q.sentence : q.ko,
-                        userAnswer: `1: ${userPart1}, 2: ${userPart2}`,
-                        correctAnswer: correctAnswerText
-                    });
                 }
             });
 
@@ -297,17 +286,31 @@
             else { message = "땡!! 틀렸어요!! 😭 (Incorrect !!)"; bgColor = 'bg-red-100'; textColor = 'text-red-800'; }
 
             resultHTML = `<div id="result-message" class="${bgColor} ${textColor}">${message}</div>`;
-            if (percentage < 100) {
+            
+            const incorrectInputs = document.querySelectorAll('input.incorrect');
+            if (incorrectInputs.length > 0) {
                 resultHTML += `<div class="mt-4 p-4 card"><h3 class="font-bold text-lg mb-2">Corrections :</h3><ul class="list-disc list-inside space-y-2">`;
-                studentData.incorrectAnswers.forEach(item => {
-                    resultHTML += `<li>
-                        <strong class="text-gray-700">${item.questionText}</strong><br>
-                        <span class="text-red-600">Votre réponse : ${item.userAnswer}</span><br>
-                        <span class="text-green-600">Réponse correcte : ${item.correctAnswer}</span>
-                    </li>`;
+                
+                currentQuestions.forEach(q => {
+                    const questionDiv = document.getElementById(q.id);
+                    const userPart1Input = questionDiv.querySelector('input[data-part="1"]');
+                    if (userPart1Input.classList.contains('incorrect')) {
+                        const userPart1 = userPart1Input.value.trim();
+                        const userPart2 = questionDiv.querySelector('input[data-part="2"]').value.trim();
+                        const correctAnswer = `1: ${q.part1}, 2: ${q.part2}`;
+                        const questionText = q.type === 'fr' ? q.sentence : q.ko;
+                        
+                        resultHTML += `<li>
+                            <strong class="text-gray-700">${questionText}</strong><br>
+                            <span class="text-red-600">Votre réponse : 1: ${userPart1}, 2: ${userPart2}</span><br>
+                            <span class="text-green-600">Réponse correcte : ${correctAnswer}</span>
+                        </li>`;
+                    }
                 });
+
                 resultHTML += `</ul></div>`;
             }
+
             resultContainer.innerHTML = resultHTML;
             resultContainer.scrollIntoView({ behavior: 'smooth' });
         }
@@ -316,16 +319,9 @@
 
         document.getElementById('student-name').addEventListener('change', (e) => {
             studentData.name = e.target.value;
-            studentData.actions.push({ time: new Date(), action: 'entered_name', value: e.target.value });
-        });
-
-        document.getElementById('check-button').addEventListener('click', () => {
-            studentData.actions.push({ time: new Date(), action: 'click_check_answers' });
-            checkAnswers();
         });
 
         document.getElementById('retry-button').addEventListener('click', () => {
-            studentData.actions.push({ time: new Date(), action: 'click_retry' });
             generateQuestions();
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
@@ -336,25 +332,53 @@
                 alert("Veuillez entrer votre nom avant de terminer.");
                 return;
             }
-            checkAnswers(); // Final check before sending
+            checkAnswers(); 
             studentData.endTime = new Date();
             sendResults();
         });
 
         async function sendResults() {
             const timeTaken = studentData.endTime && studentData.startTime ? (studentData.endTime - studentData.startTime) / 1000 : 0;
+            
+            const questionsDetail = currentQuestions.map((q, index) => {
+                const questionDiv = document.getElementById(q.id);
+                const userPart1 = questionDiv.querySelector('input[data-part="1"]').value.trim();
+                const userPart2 = questionDiv.querySelector('input[data-part="2"]').value.trim();
+                const userAnswer = `1: ${userPart1}, 2: ${userPart2}`;
+
+                let isCorrect;
+                if (q.type === 'fr') {
+                    const isPart1Correct = normalizeAnswer(userPart1) === normalizeAnswer(q.part1);
+                    const isPart2Correct = normalizeAnswer(userPart2) === normalizeAnswer(q.part2);
+                    isCorrect = isPart1Correct && isPart2Correct;
+                } else {
+                    const isPart1Correct = normalizeKoreanAnswer(userPart1) === normalizeKoreanAnswer(q.part1);
+                    const isPart2Correct = normalizeKoreanAnswer(userPart2) === normalizeKoreanAnswer(q.part2);
+                    isCorrect = isPart1Correct && isPart2Correct;
+                }
+
+                return {
+                    number: index + 1,
+                    fr: q.type === 'fr' ? q.sentence : q.fr,
+                    ko: q.type === 'ko' ? q.ko : '',
+                    userAnswer: userAnswer,
+                    isCorrect: isCorrect,
+                    listenCount: 0,
+                    hint1Count: 0,
+                    hint2Count: 0,
+                    recording: null
+                };
+            });
+
             const payload = {
                 studentName: studentData.name,
-                exercise: "Structure de Phrase (FR/KO)",
-                score: studentData.score,
-                total: currentQuestions.length,
-                timeTaken: Math.round(timeTaken),
-                incorrectAnswers: studentData.incorrectAnswers,
-                actions: studentData.actions
+                startTime: studentData.startTime.toISOString(),
+                endTime: studentData.endTime.toISOString(),
+                totalTimeSeconds: Math.round(timeTaken),
+                questions: questionsDetail,
             };
             
-            studentData.actions.push({ time: new Date(), action: 'click_finish_send' });
-            console.log("Sending results:", payload);
+            console.log("Sending results:", JSON.stringify(payload, null, 2));
 
             try {
                 const response = await fetch('/.netlify/functions/send-results', {
@@ -367,11 +391,12 @@
                     document.getElementById('finish-button').disabled = true;
                     document.getElementById('finish-button').innerText = "Envoyé !";
                 } else {
-                    throw new Error(`Erreur du serveur: ${await response.text()}`);
+                    const errorText = await response.text();
+                    throw new Error(`Erreur du serveur: ${errorText}`);
                 }
             } catch (error) {
                 console.error('Failed to send results:', error);
-                alert("Une erreur est survenue lors de l'envoi des résultats.");
+                alert("Une erreur est survenue lors de l'envoi des résultats. Les détails de l'erreur ont été enregistrés dans la console.");
             }
         }
     </script>
