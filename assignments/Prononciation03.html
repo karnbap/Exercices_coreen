@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exercice - Phrases Essentielles V2</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 <script>
     // --- DATA ---
     const wordData = [
@@ -48,9 +48,10 @@
     let timedDictationTimer;
     let mediaRecorder;
     let audioChunks = [];
+    let recordingStartTime;
     const audioCache = {};
 
-    // --- DOM ELEMENTS ---
+    // --- DOM ELEMENTS (unchanged) ---
     const nameScreen = document.getElementById('name-screen');
     const exerciseScreen = document.getElementById('exercise-screen');
     const resultsScreen = document.getElementById('results-screen');
@@ -93,7 +94,7 @@
     const retryBtn = document.getElementById('retry-btn');
     const feedbackCloseBtn = document.getElementById('feedback-close-btn');
 
-    // --- EVENT LISTENERS ---
+    // --- EVENT LISTENERS (unchanged) ---
     startBtn.addEventListener('click', startExercise);
     checkBtn.addEventListener('click', checkAnswer);
     nextBtn.addEventListener('click', nextQuestion);
@@ -101,42 +102,16 @@
     retryBtn.addEventListener('click', retryQuestion);
     feedbackCloseBtn.addEventListener('click', closeFeedbackModal);
 
-    // --- AUDIO HELPER FUNCTIONS (FROM WORKING FILE) ---
+    // --- AUDIO HELPER FUNCTIONS (unchanged, correct) ---
     function pcmToWav(pcmData, sampleRate) {
         const pcm16 = new Int16Array(pcmData);
         const header = new ArrayBuffer(44);
         const view = new DataView(header);
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + pcm16.byteLength, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, 1, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, pcm16.byteLength, true);
+        writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcm16.byteLength, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeString(view, 36, 'data'); view.setUint32(40, pcm16.byteLength, true);
         return new Blob([header, pcm16], { type: 'audio/wav' });
     }
-
-    function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
-        }
-    }
-
-    function base64ToArrayBuffer(base64) {
-        const binaryString = window.atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
-    }
+    function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } }
+    function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes.buffer; }
 
     // --- CORE FUNCTIONS ---
     function startExercise() {
@@ -150,41 +125,44 @@
         displayQuestion();
     }
 
+    // *** 수정됨 (1) ***: 백엔드에 맞게 데이터 구조 변경
     function initExerciseData() {
-        exerciseData = allQuestions.map(q => ({
-            question: q.korean,
-            type: q.type,
+        exerciseData = allQuestions.map((q, index) => ({
+            number: index + 1,
+            ko: q.korean, // 'ko' 키 사용
+            fr: q.french,  // 'fr' 키 사용
             userAnswer: '',
             isCorrect: false,
             attempts: 0,
-            details: { audioPlays: 0, hint1Used: false, hint2Used: false, frenchAnswer: '', recordedAudio: null }
+            listenCount: 0,  // 이름 및 타입 변경
+            hint1Count: 0,   // 이름 및 타입 변경
+            hint2Count: 0,   // 이름 및 타입 변경
+            recording: null, // 녹음 정보를 담을 객체
+            // 아래는 프런트엔드에서만 사용하는 정보
+            type: q.type, 
+            keywords: q.keywords,
+            initial: q.initial
         }));
     }
 
+    // Display Question functions are mostly the same, but now update new data structure
     function displayQuestion() {
         if (currentQuestionIndex >= allQuestions.length) return;
-        const question = allQuestions[currentQuestionIndex];
         questionCounter.textContent = `${currentQuestionIndex + 1}`;
-        part1Container.classList.add('hidden');
-        part2Container.classList.add('hidden');
-        part3Container.classList.add('hidden');
-        checkBtn.classList.remove('hidden');
-        nextBtn.classList.add('hidden');
-        finishBtn.classList.add('hidden');
-        if (question.type === 'matching') {
-            displayMatchingQuestion(question);
-        } else if (question.type === 'word_dictation') {
-            displayWordDictationQuestion(question);
-        } else if (question.type === 'sentence_dictation') {
-            displaySentenceDictationQuestion(question);
-        }
+        part1Container.classList.add('hidden'); part2Container.classList.add('hidden'); part3Container.classList.add('hidden');
+        checkBtn.classList.remove('hidden'); nextBtn.classList.add('hidden'); finishBtn.classList.add('hidden');
+        
+        const question = exerciseData[currentQuestionIndex]; // 이제 exerciseData를 직접 사용
+        if (question.type === 'matching') displayMatchingQuestion(question);
+        else if (question.type === 'word_dictation') displayWordDictationQuestion(question);
+        else if (question.type === 'sentence_dictation') displaySentenceDictationQuestion(question);
     }
     
     function displayMatchingQuestion(question) {
         partTitle.textContent = "Partie 1: Association Mot-Signification";
         part1Container.classList.remove('hidden');
-        part1AudioBtn.onclick = () => playAudio(question.korean, part1AudioBtn, part1AudioLoader);
-        const correctAnswer = question.french;
+        part1AudioBtn.onclick = () => playAudio(question.ko, part1AudioBtn, part1AudioLoader);
+        const correctAnswer = question.fr;
         let options = [correctAnswer];
         let wrongAnswers = wordData.filter(w => w.french !== correctAnswer);
         wrongAnswers.sort(() => 0.5 - Math.random());
@@ -206,202 +184,125 @@
 
     function displayWordDictationQuestion(question) {
         partTitle.textContent = "Partie 2: Dictée de Mots (Rapide)";
-        part2Container.classList.remove('hidden');
-        part2Input.value = '';
-        part2Input.disabled = false;
-        part2Input.focus();
-        part2Hint1Content.classList.add('hidden');
-        part2Hint2Content.classList.add('hidden');
-        part2Hint1Btn.disabled = false;
-        part2Hint2Btn.disabled = false;
-        part2AudioBtn.onclick = () => playAudio(question.korean, part2AudioBtn, part2AudioLoader);
+        part2Container.classList.remove('hidden'); part2Input.value = ''; part2Input.disabled = false; part2Input.focus();
+        part2Hint1Content.classList.add('hidden'); part2Hint2Content.classList.add('hidden');
+        part2Hint1Btn.disabled = false; part2Hint2Btn.disabled = false;
+        part2AudioBtn.onclick = () => playAudio(question.ko, part2AudioBtn, part2AudioLoader);
         part2Hint1Btn.onclick = () => {
             part2Hint1Content.textContent = `Consonnes: ${question.initial}`;
             part2Hint1Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].details.hint1Used = true;
+            exerciseData[currentQuestionIndex].hint1Count++; // *** 수정됨 ***: boolean 대신 count 증가
             part2Hint1Btn.disabled = true;
         };
         part2Hint2Btn.onclick = () => {
-            part2Hint2Content.textContent = `Sens: ${question.french}`;
+            part2Hint2Content.textContent = `Sens: ${question.fr}`;
             part2Hint2Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].details.hint2Used = true;
+            exerciseData[currentQuestionIndex].hint2Count++; // *** 수정됨 ***: boolean 대신 count 증가
             part2Hint2Btn.disabled = true;
         };
         clearTimeout(timedDictationTimer);
-        timedInputArea.style.opacity = 1;
-        timerBar.style.transition = 'none';
-        timerBar.style.width = '100%';
-        setTimeout(() => {
-            timerBar.style.transition = 'width 10s linear';
-            timerBar.style.width = '0%';
-        }, 100);
-        timedDictationTimer = setTimeout(() => {
-            timedInputArea.style.opacity = 0.3;
-            part2Input.disabled = true;
-            checkAnswer();
-        }, 10000);
+        timedInputArea.style.opacity = 1; timerBar.style.transition = 'none'; timerBar.style.width = '100%';
+        setTimeout(() => { timerBar.style.transition = 'width 10s linear'; timerBar.style.width = '0%'; }, 100);
+        timedDictationTimer = setTimeout(() => { timedInputArea.style.opacity = 0.3; part2Input.disabled = true; checkAnswer(); }, 10000);
     }
     
     function displaySentenceDictationQuestion(question) {
         partTitle.textContent = "Partie 3: Dictée de Phrases";
         part3Container.classList.remove('hidden');
-        koreanInput.value = '';
-        frenchInput.value = '';
-        koreanInput.disabled = false;
-        frenchInput.disabled = false;
-        part3Hint1Content.classList.add('hidden');
-        part3Hint2Content.classList.add('hidden');
-        part3Hint1Btn.disabled = false;
-        part3Hint2Btn.disabled = false;
-        part3AudioBtn.onclick = () => playAudio(question.korean, part3AudioBtn, part3AudioLoader);
+        koreanInput.value = ''; frenchInput.value = ''; koreanInput.disabled = false; frenchInput.disabled = false;
+        part3Hint1Content.classList.add('hidden'); part3Hint2Content.classList.add('hidden');
+        part3Hint1Btn.disabled = false; part3Hint2Btn.disabled = false;
+        part3AudioBtn.onclick = () => playAudio(question.ko, part3AudioBtn, part3AudioLoader);
         part3Hint1Btn.onclick = () => {
             part3Hint1Content.textContent = `Consonnes: ${question.keywords.map(k => k.initial).join(' ')}`;
             part3Hint1Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].details.hint1Used = true;
+            exerciseData[currentQuestionIndex].hint1Count++; // *** 수정됨 ***: boolean 대신 count 증가
             part3Hint1Btn.disabled = true;
         };
         part3Hint2Btn.onclick = () => {
             part3Hint2Content.textContent = `Mots-clés: ${question.keywords.map(k => `${k.word} (${k.hint})`).join(' / ')}`;
             part3Hint2Content.classList.remove('hidden');
-            exerciseData[currentQuestionIndex].details.hint2Used = true;
+            exerciseData[currentQuestionIndex].hint2Count++; // *** 수정됨 ***: boolean 대신 count 증가
             part3Hint2Btn.disabled = true;
         };
-        recordBtn.onclick = toggleRecording;
-        recordBtn.disabled = false;
-        recordBtn.textContent = 'Enregistrer';
-        recordingStatus.textContent = '';
+        recordBtn.onclick = toggleRecording; recordBtn.disabled = false;
+        recordBtn.textContent = 'Enregistrer'; recordingStatus.textContent = '';
     }
 
-    // UPDATED Audio Playback Function
     async function playAudio(text, button, loader) {
-        exerciseData[currentQuestionIndex].details.audioPlays++;
-        
-        if (audioCache[text]) {
-            new Audio(audioCache[text]).play();
-            return;
-        }
-
-        loader.classList.remove('hidden');
-        button.disabled = true;
-
+        exerciseData[currentQuestionIndex].listenCount++; // *** 수정됨 ***: boolean 대신 count 증가
+        if (audioCache[text]) { new Audio(audioCache[text]).play(); return; }
+        loader.classList.remove('hidden'); button.disabled = true;
         try {
             const response = await fetch('/.netlify/functions/generate-audio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text, voice: currentQuestionIndex % 2 === 0 ? 'woman' : 'man' })
             });
-
-            if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(`Erreur de l'API audio: ${response.status} ${response.statusText}. Détails: ${errorBody}`);
-            }
-
+            if (!response.ok) { const errorBody = await response.text(); throw new Error(`API Error: ${response.status} ${response.statusText}. Details: ${errorBody}`); }
             const result = await response.json();
-            const audioData = result?.audioData;
-            const mimeType = result?.mimeType;
-
+            const audioData = result?.audioData, mimeType = result?.mimeType;
             if (audioData && mimeType && mimeType.startsWith("audio/")) {
                 const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000; // Default sample rate
+                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
                 const pcmData = base64ToArrayBuffer(audioData);
                 const wavBlob = pcmToWav(pcmData, sampleRate);
                 const audioUrl = URL.createObjectURL(wavBlob);
-                
-                audioCache[text] = audioUrl; // Cache the generated URL
-                new Audio(audioUrl).play();
-            } else {
-                throw new Error('Aucune donnée audio valide reçue.');
-            }
-
-        } catch (error) {
-            console.error('Erreur de lecture audio:', error);
-            alert("Une erreur s'est produite lors de la lecture de l'audio. Veuillez vérifier la console pour plus de détails.");
-        } finally {
-            loader.classList.add('hidden');
-            button.disabled = false;
-        }
+                audioCache[text] = audioUrl; new Audio(audioUrl).play();
+            } else { throw new Error('Invalid audio data received.'); }
+        } catch (error) { console.error('Audio playback error:', error); alert("Error playing audio."); } 
+        finally { loader.classList.add('hidden'); button.disabled = false; }
     }
 
-
     function checkAnswer() {
-        const question = allQuestions[currentQuestionIndex];
-        const data = exerciseData[currentQuestionIndex];
-        if (!data.isCorrect) {
-            data.attempts++;
-        }
-        
-        let isCorrect = false;
-        let title, details;
-
-        if (question.type === 'matching') {
-            isCorrect = data.userAnswer === question.french;
-            details = `<p><strong>Votre choix :</strong> ${data.userAnswer || '(non sélectionné)'}</p>
-                       <p><strong>Réponse :</strong> ${question.korean} = ${question.french}</p>`;
-        } else if (question.type === 'word_dictation') {
-            clearTimeout(timedDictationTimer);
-            data.userAnswer = part2Input.value.trim();
-            isCorrect = data.userAnswer.replace(/\s/g, '') === question.korean.replace(/\s/g, '');
+        const data = exerciseData[currentQuestionIndex]; // 직접 사용
+        if (!data.isCorrect) { data.attempts++; }
+        let isCorrect = false, title, details;
+        if (data.type === 'matching') {
+            isCorrect = data.userAnswer === data.fr;
+            details = `<p><strong>Votre choix :</strong> ${data.userAnswer || '(non sélectionné)'}</p><p><strong>Réponse :</strong> ${data.ko} = ${data.fr}</p>`;
+        } else if (data.type === 'word_dictation') {
+            clearTimeout(timedDictationTimer); data.userAnswer = part2Input.value.trim();
+            isCorrect = data.userAnswer.replace(/\s/g, '') === data.ko.replace(/\s/g, '');
             part2Input.disabled = true;
-            details = `<p><strong>Votre réponse :</strong> ${data.userAnswer || '(non saisi)'}</p>
-                       <p><strong>Réponse :</strong> ${question.korean}</p>`;
-        } else if (question.type === 'sentence_dictation') {
+            details = `<p><strong>Votre réponse :</strong> ${data.userAnswer || '(non saisi)'}</p><p><strong>Réponse :</strong> ${data.ko}</p>`;
+        } else if (data.type === 'sentence_dictation') {
             data.userAnswer = koreanInput.value;
-            data.details.frenchAnswer = frenchInput.value;
-            isCorrect = data.userAnswer.trim().replace(/\s/g, '') === question.korean.trim().replace(/\s/g, '');
-            koreanInput.disabled = true;
-            frenchInput.disabled = true;
-            details = `<p><strong>Votre réponse :</strong> ${data.userAnswer || '(non saisi)'}</p>
-                       <p><strong>Réponse :</strong> ${question.korean}</p>`;
+            // frenchInput 값은 채점 대상이 아니므로 저장만 함
+            isCorrect = data.userAnswer.trim().replace(/\s/g, '') === data.ko.trim().replace(/\s/g, '');
+            koreanInput.disabled = true; frenchInput.disabled = true;
+            details = `<p><strong>Votre réponse :</strong> ${data.userAnswer || '(non saisi)'}</p><p><strong>Réponse :</strong> ${data.ko}</p>`;
         }
-        
-        if (isCorrect && data.attempts === 1) {
-            score++;
-        }
+        if (isCorrect && data.attempts === 1) { score++; }
         data.isCorrect = isCorrect;
-        
         title = isCorrect ? "Correct !" : "Incorrect...";
         details = `<div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100' : 'bg-red-100'}">${details}</div>`;
-        
         showFeedbackModal(title, details, isCorrect);
     }
 
     function showFeedbackModal(titleText, detailsHtml, isCorrect) {
-        feedbackTitle.textContent = titleText;
-        feedbackDetails.innerHTML = detailsHtml;
+        feedbackTitle.textContent = titleText; feedbackDetails.innerHTML = detailsHtml;
         retryBtn.classList.toggle('hidden', isCorrect);
-        feedbackModal.classList.remove('hidden');
-        checkBtn.classList.add('hidden');
+        feedbackModal.classList.remove('hidden'); checkBtn.classList.add('hidden');
     }
     
     function closeFeedbackModal() {
         feedbackModal.classList.add('hidden');
-        if (currentQuestionIndex >= allQuestions.length - 1) {
-            finishBtn.classList.remove('hidden');
-        } else {
-            nextBtn.classList.remove('hidden');
-        }
+        if (currentQuestionIndex >= allQuestions.length - 1) { finishBtn.classList.remove('hidden'); } 
+        else { nextBtn.classList.remove('hidden'); }
     }
 
     function retryQuestion() {
         feedbackModal.classList.add('hidden');
-        const question = allQuestions[currentQuestionIndex];
-        if (question.type === 'word_dictation') {
-             displayWordDictationQuestion(question);
-        } else if (question.type === 'sentence_dictation') {
-            koreanInput.disabled = false;
-            frenchInput.disabled = false;
-            displaySentenceDictationQuestion(question);
-        } else {
-             displayMatchingQuestion(question);
-        }
+        const question = exerciseData[currentQuestionIndex];
+        if (question.type === 'word_dictation') displayWordDictationQuestion(question);
+        else if (question.type === 'sentence_dictation') { koreanInput.disabled = false; frenchInput.disabled = false; displaySentenceDictationQuestion(question); } 
+        else displayMatchingQuestion(question);
         checkBtn.classList.remove('hidden');
     }
 
-    function nextQuestion() {
-        currentQuestionIndex++;
-        displayQuestion();
-    }
+    function nextQuestion() { currentQuestionIndex++; displayQuestion(); }
     
+    // *** 수정됨 (2) ***: 녹음 완료 시 백엔드가 요구하는 객체 형식으로 저장
     async function toggleRecording() {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
@@ -414,25 +315,35 @@
                 audioChunks = [];
                 mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
                 mediaRecorder.addEventListener('stop', () => {
+                    const recordingDuration = Math.round((new Date() - recordingStartTime) / 1000);
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     const reader = new FileReader();
-                    reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
-                    reader.onloadend = () => { exerciseData[currentQuestionIndex].details.recordedAudio = reader.result; };
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        // 백엔드가 요구하는 객체 구조로 저장
+                        exerciseData[currentQuestionIndex].recording = {
+                            base64: base64String,
+                            filename: `rec_q${currentQuestionIndex + 1}_${studentName.replace(/\s/g, '_')}.webm`,
+                            mimeType: 'audio/webm',
+                            duration: recordingDuration
+                        };
+                    };
                 });
+                recordingStartTime = new Date();
                 mediaRecorder.start();
                 recordBtn.textContent = 'Enregistrement...';
                 recordingStatus.textContent = 'Parlez maintenant...';
-            } catch (err) {
-                console.error("Erreur d'accès au microphone :", err);
-                alert("Impossible d'accéder au microphone. Veuillez vérifier les autorisations de votre navigateur.");
-            }
+            } catch (err) { console.error("Mic access error:", err); alert("Mic access denied."); }
         }
     }
 
+    // *** 수정됨 (3) ***: 백엔드에 보낼 payload 구조 변경
     async function showResults() {
         exerciseScreen.classList.add('hidden');
         resultsScreen.classList.remove('hidden');
         const resultsContent = document.getElementById('results-content');
-        const totalTime = Math.round((new Date() - startTime) / 1000);
+        const totalTimeSeconds = Math.round((new Date() - startTime) / 1000);
         const finalScorePercent = allQuestions.length > 0 ? Math.round((score / allQuestions.length) * 100) : 0;
 
         let title, message, icon;
@@ -445,18 +356,17 @@
             <p class="text-slate-600 mb-4">${message}</p>
             <div class="my-6 p-4 bg-slate-50 rounded-lg text-left">
                 <p><strong>Score :</strong> ${score} / ${allQuestions.length} (${finalScorePercent}%)</p>
-                <p><strong>Temps total :</strong> ${totalTime} secondes</p>
+                <p><strong>Temps total :</strong> ${totalTimeSeconds} secondes</p>
             </div>
             <h3 class="text-xl font-semibold text-dark-charcoal mt-8 mb-4 text-left">Détails des réponses</h3>
             <div class="space-y-4 text-left text-sm">`;
 
-        allQuestions.forEach((q, index) => {
-            const data = exerciseData[index];
+        exerciseData.forEach((data, index) => {
             const resultIcon = data.isCorrect ? '<span class="text-green-500">✔</span>' : '<span class="text-red-500">✖</span>';
             detailsHtml += `<div class="p-3 rounded-lg ${data.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
-                <p><strong>Q${index + 1} (${q.type.replace('_', ' ')}):</strong> ${q.korean} ${resultIcon}</p>
-                ${!data.isCorrect ? `<p class="text-red-700"><strong>Votre réponse :</strong> ${data.userAnswer || '(vide)'} | <strong>Bonne réponse: ${q.korean}</strong></p>` : ''}
-                <p class="text-xs text-slate-500">Tentatives: ${data.attempts}, Écoutes: ${data.details.audioPlays}, Indices: ${data.details.hint1Used || data.details.hint2Used ? 'Oui' : 'Non'}</p>
+                <p><strong>Q${index + 1} (${data.type.replace('_', ' ')}):</strong> ${data.ko} ${resultIcon}</p>
+                ${!data.isCorrect ? `<p class="text-red-700"><strong>Votre réponse :</strong> ${data.userAnswer || '(vide)'}</p>` : ''}
+                <p class="text-xs text-slate-500">Tentatives: ${data.attempts}, Écoutes: ${data.listenCount}, Indices: ${data.hint1Count + data.hint2Count}</p>
             </div>`;
         });
         detailsHtml += `</div>`;
@@ -464,17 +374,37 @@
         
         document.getElementById('results-loader').classList.remove('hidden');
         document.getElementById('email-status').textContent = 'Envoi des résultats en cours...';
+
+        // 백엔드로 보낼 최종 데이터
+        const payload = {
+            studentName: studentName,
+            startTime: startTime.toISOString(),
+            endTime: new Date().toISOString(),
+            totalTimeSeconds: totalTimeSeconds,
+            questions: exerciseData.map(d => ({ // 프런트엔드 전용 키는 제외하고 보냄
+                number: d.number,
+                ko: d.ko,
+                fr: d.fr,
+                userAnswer: d.userAnswer,
+                isCorrect: d.isCorrect,
+                listenCount: d.listenCount,
+                hint1Count: d.hint1Count,
+                hint2Count: d.hint2Count,
+                recording: d.recording,
+            }))
+        };
+        
         try {
             const response = await fetch('/.netlify/functions/send-results', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentName, score, totalQuestions: allQuestions.length, totalTime, submissionDate: new Date().toISOString(), details: exerciseData })
+                body: JSON.stringify(payload) // 수정된 payload 전송
             });
             if (response.ok) {
                 document.getElementById('email-status').textContent = 'Résultats envoyés avec succès !';
-            } else { throw new Error('La réponse du serveur n\'est pas OK'); }
+            } else { throw new Error('Server response was not OK'); }
         } catch (error) {
-            console.error('Erreur lors de l\'envoi des résultats:', error);
+            console.error('Failed to send results:', error);
             document.getElementById('email-status').textContent = 'Échec de l\'envoi des résultats.';
         } finally {
             document.getElementById('results-loader').classList.add('hidden');
