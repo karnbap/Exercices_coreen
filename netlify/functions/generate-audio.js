@@ -12,12 +12,12 @@ exports.handler = async function(event) {
       return { statusCode: 400, body: JSON.stringify({ error: "Le texte à synthétiser est manquant." }) };
     }
 
-    // 보이스 매핑 (필요시 실제 보이스명으로 교체)
+    // 보이스 매핑 (원하시는 보이스명으로 교체 가능)
     const voiceName = voice === 'man' ? 'Kore' : 'Kore';
 
-    // 기존 payload 유지 (이 형태로 잘 받아오셨다 해서)
+    // ✅ (1) role 추가
     const payload = {
-      contents: [{ parts: [{ text }] }], // role 없이도 동작하지만, 문제 있으면 role:'user' 추가해 보세요.
+      contents: [{ role: 'user', parts: [{ text }] }],
       generationConfig: {
         responseModalities: ["AUDIO"],
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
@@ -41,15 +41,16 @@ exports.handler = async function(event) {
 
     const result = await response.json();
 
-    // ✅ inlineData가 있는 파트를 전체에서 탐색 (고정 인덱스 X)
+    // ✅ (2) inlineData가 있는 파트를 탐색
     const parts = result?.candidates?.[0]?.content?.parts || [];
     const inline = parts.find(p => p?.inlineData?.data);
     const audioData = inline?.inlineData?.data;     // Base64
-    const mimeType = inline?.inlineData?.mimeType;  // 예: "audio/pcm;rate=24000" 또는 "audio/mp3"
+    const mimeType = inline?.inlineData?.mimeType;  // ex) "audio/pcm;rate=24000" or "audio/mp3"
 
     if (!audioData || !mimeType) {
-      // 디버깅을 위해 결과 일부를 그대로 넘겨서 콘솔에서 확인할 수 있게 함
-      console.error("No inlineData in parts. Full result (truncated):", JSON.stringify(result).slice(0, 1000));
+      // ✅ (3) 디버그 정보 더 풍부하게 반환
+      const candidate0 = result?.candidates?.[0] || null;
+      console.error("No inlineData. candidate0:", JSON.stringify(candidate0).slice(0, 1200));
       return {
         statusCode: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -58,6 +59,9 @@ exports.handler = async function(event) {
           debug: {
             hasCandidates: !!result?.candidates,
             partsCount: parts.length,
+            safetyRatings: candidate0?.safetyRatings || null,
+            finishReason: candidate0?.finishReason || null,
+            groundingMetadata: candidate0?.groundingMetadata || null,
             promptFeedback: result?.promptFeedback || null
           }
         })
