@@ -194,6 +194,8 @@
     // --- STATE MANAGEMENT ---
     let currentQuestionIndex = 0; let studentName = ""; let score = 0; let startTime; let exerciseData = [];
     let timedDictationTimer; let mediaRecorder; let audioChunks = []; let recordingStartTime; const audioCache = {};
+    let currentAudio = null; // *** 추가됨: 현재 재생 중인 오디오 객체 ***
+    let audioTimeoutId = null; // *** 추가됨: 오디오 반복을 위한 타임아웃 ID ***
 
     // --- DOM ELEMENTS ---
     const nameScreen = document.getElementById('name-screen'); const exerciseScreen = document.getElementById('exercise-screen');
@@ -236,6 +238,27 @@
     function pcmToWav(pcmData, sampleRate) { const pcm16 = new Int16Array(pcmData); const header = new ArrayBuffer(44); const view = new DataView(header); writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcm16.byteLength, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeString(view, 36, 'data'); view.setUint32(40, pcm16.byteLength, true); return new Blob([header, pcm16], { type: 'audio/wav' }); }
     function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } }
     function base64ToArrayBuffer(base64) { const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); } return bytes.buffer; }
+
+    // *** 추가됨: 현재 재생 중인 모든 오디오를 중지하는 함수 ***
+    function stopCurrentAudio() {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.src = ''; // 소스 분리
+            currentAudio.onended = null; // 이벤트 리스너 제거
+            currentAudio = null;
+        }
+        if (audioTimeoutId) {
+            clearTimeout(audioTimeoutId);
+            audioTimeoutId = null;
+        }
+        // 모든 오디오 버튼과 로더를 초기 상태로 되돌림
+        part1AudioBtn.disabled = false;
+        part2AudioBtn.disabled = false;
+        part3AudioBtn.disabled = false;
+        part1AudioLoader.classList.add('hidden');
+        part2AudioLoader.classList.add('hidden');
+        part3AudioLoader.classList.add('hidden');
+    }
 
     // --- CORE FUNCTIONS ---
     function startExercise() {
@@ -325,10 +348,12 @@
         recordBtn.textContent = 'Enregistrer (녹음 시작)'; recordingStatus.textContent = '';
     }
 
-    // *** MODIFIED: This function now repeats audio 3 times for questions 1-20 ***
+    // *** 수정됨: 오디오 재생 로직 개선 ***
     async function playAudio(text, button, loader) {
+        stopCurrentAudio(); // 이전 오디오가 있다면 중지
+
         exerciseData[currentQuestionIndex].listenCount++;
-        const isRepeatQuestion = currentQuestionIndex < 20; // Questions 1-20 are word-based
+        const isRepeatQuestion = currentQuestionIndex < 20;
         const repeatCount = 3;
 
         button.disabled = true;
@@ -356,35 +381,34 @@
             }
 
             const audio = new Audio(audioUrl);
-            let playCount = 0;
+            currentAudio = audio; // 현재 오디오 객체 추적
+            let playCount = 1;
 
             const playHandler = () => {
-                // This function is called when audio finishes playing
                 if (isRepeatQuestion && playCount < repeatCount) {
-                    // If it's a word question and we haven't played 3 times yet
-                    setTimeout(() => audio.play(), 700); // Play again after a 0.7s pause
+                    playCount++;
+                    audioTimeoutId = setTimeout(() => {
+                        if (currentAudio) currentAudio.play();
+                    }, 700);
                 } else {
-                    // If it's a sentence question or repetitions are done
                     button.disabled = false;
                     loader.classList.add('hidden');
+                    stopCurrentAudio(); // 재생 완료 후 정리
                 }
             };
 
             audio.onended = playHandler;
-            
-            // Start the first play
-            playCount++;
             audio.play();
 
         } catch (error) {
             console.error('Audio playback error:', error);
             alert("Error playing audio.");
-            button.disabled = false;
-            loader.classList.add('hidden');
+            stopCurrentAudio(); // 에러 발생 시 정리
         }
     }
 
     function checkAnswer() {
+        stopCurrentAudio(); // 정답 확인 시 오디오 중지
         const data = exerciseData[currentQuestionIndex];
         if (!data.isCorrect) { data.attempts++; }
         let isCorrect = false, title, details;
@@ -416,12 +440,14 @@
     }
 
     function prevQuestion() {
+        stopCurrentAudio(); // 이전 문제로 갈 때 오디오 중지
         if (currentQuestionIndex > 0) {
             currentQuestionIndex--;
             displayQuestion();
         }
     }
     function nextQuestion() {
+        stopCurrentAudio(); // 다음 문제로 갈 때 오디오 중지
         if (currentQuestionIndex < allQuestions.length - 1) {
             currentQuestionIndex++;
             displayQuestion();
@@ -463,6 +489,7 @@
     }
 
     async function showResults() {
+        stopCurrentAudio(); // 결과 화면으로 갈 때 오디오 중지
         exerciseScreen.classList.add('hidden');
         resultsScreen.classList.remove('hidden');
         const resultsContent = document.getElementById('results-content');
