@@ -33,6 +33,16 @@
         .button:disabled:hover {
             transform: none;
         }
+        .hint-box {
+            background-color: #f0f8ff;
+            border-left: 4px solid var(--royal-blue);
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -68,10 +78,10 @@
                 <div id="step-2-questions" class="space-y-8"></div>
             </section>
 
-            <!-- 단계 3: 듣고 녹음하기 -->
+            <!-- 단계 3: 듣고, 힌트 보고, 녹음하기 -->
             <section id="step-3" class="step-section bg-white p-8 rounded-xl shadow-lg mb-8">
-                <h2 class="text-2xl font-semibold text-royal-blue mb-1">Étape 3 : Écouter et enregistrer 🎤 (5 questions)</h2>
-                <p class="text-slate-500 mb-6">Écoutez la phrase, puis enregistrez votre prononciation.</p>
+                <h2 class="text-2xl font-semibold text-royal-blue mb-1">Étape 3 : Écouter, indice et enregistrement 🎤 (5 questions)</h2>
+                <p class="text-slate-500 mb-6">Écoutez la phrase, utilisez les indices si besoin, puis enregistrez-vous.</p>
                 <div id="step-3-questions" class="space-y-8"></div>
             </section>
 
@@ -120,13 +130,13 @@
                 { fr: "C'est une pomme, pas une orange.", ko_template: "이건 ______ 아니라 ______예요.", words: ["사과", "오렌지"], answer: ["오렌지가", "사과"] }
             ],
             record: [
-                { fr: "Ce n'est pas un film, c'est un drama.", ko: "이건 영화가 아니라 드라마예요." },
-                { fr: "Je ne suis pas chinois, je suis français.", ko: "저는 중국 사람이 아니라 프랑스 사람이에요." },
-                { fr: "Je n'aime pas la bière, j'aime le soju.", ko: "저는 맥주가 아니라 소주를 좋아해요." },
-                { fr: "Ce n'est pas aujourd'hui, c'est demain.", ko: "오늘이 아니라 내일이에요." },
-                { fr: "N'achetez pas ça, achetez ceci.", ko: "저거 말고 이거 사세요." },
-                { fr: "Ce n'est pas une question, c'est une réponse.", ko: "이건 질문이 아니라 대답이에요." },
-                { fr: "Je ne vais pas au travail, je vais à l'école.", ko: "저는 회사가 아니라 학교에 가요." }
+                { fr: "Ce n'est pas un film, c'est un drama.", ko: "이건 영화가 아니라 드라마예요.", hints: [{ fr: "film", ko: "영화" }, { fr: "drama", ko: "드라마" }] },
+                { fr: "Je ne suis pas chinois, je suis français.", ko: "저는 중국 사람이 아니라 프랑스 사람이에요.", hints: [{ fr: "chinois", ko: "중국 사람" }, { fr: "français", ko: "프랑스 사람" }] },
+                { fr: "Je n'aime pas la bière, j'aime le soju.", ko: "저는 맥주가 아니라 소주를 좋아해요.", hints: [{ fr: "bière", ko: "맥주" }, { fr: "soju", ko: "소주" }] },
+                { fr: "Ce n'est pas aujourd'hui, c'est demain.", ko: "오늘이 아니라 내일이에요.", hints: [{ fr: "aujourd'hui", ko: "오늘" }, { fr: "demain", ko: "내일" }] },
+                { fr: "N'achetez pas ça, achetez ceci.", ko: "저거 말고 이거 사세요.", hints: [{ fr: "ça (là-bas)", ko: "저거" }, { fr: "ceci", ko: "이거" }] },
+                { fr: "Ce n'est pas une question, c'est une réponse.", ko: "이건 질문이 아니라 대답이에요.", hints: [{ fr: "question", ko: "질문" }, { fr: "réponse", ko: "대답" }] },
+                { fr: "Je ne vais pas au travail, je vais à l'école.", ko: "저는 회사가 아니라 학교에 가요.", hints: [{ fr: "travail (entreprise)", ko: "회사" }, { fr: "école", ko: "학교" }] }
             ]
         };
         
@@ -144,8 +154,25 @@
 
         let mediaRecorder;
         let audioChunks = [];
+        let recordingStartTime;
         
         // --- 함수 ---
+
+        // grading-criteria.js 파일의 함수를 여기에 포함
+        function getGradingMessage(score) {
+            let result;
+            if (score === 100) result = gradingMessages.perfect;
+            else if (score >= 80) result = gradingMessages.excellent;
+            else if (score >= 60) result = gradingMessages.good;
+            else result = gradingMessages.effort;
+            
+            return {
+                message: result.ko,
+                frMessage: result.fr,
+                emoji: score === 100 ? '👑' : (score >= 80 ? '👍' : (score >= 60 ? '😎' : '💪'))
+            };
+        }
+
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -168,8 +195,22 @@
             
             shuffleArray(questionBank.record);
             for(let i = 0; i < 5; i++) {
-                state.questions.push({ number: i + 11, type: 'record', ...questionBank.record[i], recording: null, listenCount: 0 });
+                state.questions.push({ number: i + 11, type: 'record', ...questionBank.record[i], recording: null, hintLevel: 0, hint1Count: 0, hint2Count: 0, listenCount: 0 });
             }
+        }
+        
+        function getChosung(str) {
+            const chosung = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+            let result = "";
+            for (let i = 0; i < str.length; i++) {
+                let code = str.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    result += chosung[Math.floor(code / 588)];
+                } else {
+                    result += str.charAt(i);
+                }
+            }
+            return result;
         }
 
         function renderStep(stepIndex) {
@@ -210,10 +251,12 @@
                                 <button onclick="playAudio(${questionIndex})" class="button button-primary p-3 rounded-full play-audio-btn">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
                                 </button>
-                                <p class="text-sm text-slate-500">버튼을 클릭해서 들어보세요.<br>(Cliquez pour écouter)</p>
+                                <p class="text-sm text-slate-500">문장 듣기<br>(Écouter)</p>
+                                <button onclick="handleHintRequest(${questionIndex})" class="button button-secondary p-3 rounded-full hint-btn" id="hint-btn-${questionIndex}">💡</button>
+                                <p class="text-sm text-slate-500">힌트 보기<br>(Indice)</p>
                             </div>
-                            <p id="q-sentence-${questionIndex}" class="text-lg font-bold text-slate-700 hidden">${q.ko}</p>
-                            <div class="flex justify-center items-center gap-4">
+                            <div id="hint-display-${questionIndex}" class="w-full text-center"></div>
+                            <div class="flex justify-center items-center gap-4 mt-4">
                                 <button onclick="startRecording(${questionIndex})" class="button button-secondary" id="record-btn-${questionIndex}">🔴 Enregistrer</button>
                                 <button onclick="stopRecording(${questionIndex})" class="button button-secondary" id="stop-btn-${questionIndex}" disabled>⏹️ Arrêter</button>
                             </div>
@@ -276,7 +319,7 @@
                 }
             });
         }
-
+        
         async function playAudio(questionIndex) {
             const question = state.questions[questionIndex];
             question.listenCount++;
@@ -291,15 +334,37 @@
                     body: JSON.stringify({ text: textToSpeak, voice: 'woman' })
                 });
                 if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+                
+                // 서버 응답(audioData, mimeType)에 맞게 수정
                 const data = await response.json();
-                const audio = new Audio("data:audio/mp3;base64," + data.audioContent);
+                if (!data.audioData || !data.mimeType) {
+                    throw new Error("Invalid audio data received from server.");
+                }
+                const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
                 audio.play();
-                document.getElementById(`q-sentence-${questionIndex}`).classList.remove('hidden');
                 audio.onended = () => { btn.disabled = false; };
             } catch (error) {
                 console.error('Error playing audio:', error);
-                document.getElementById(`recording-status-${questionIndex}`).textContent = "오디오 재생 실패.";
+                alert("오디오 재생에 실패했습니다. (Échec de la lecture audio.)");
                 btn.disabled = false;
+            }
+        }
+
+
+        function handleHintRequest(questionIndex) {
+            const question = state.questions[questionIndex];
+            const hintDisplay = document.getElementById(`hint-display-${questionIndex}`);
+            question.hintLevel++;
+
+            if (question.hintLevel === 1) {
+                question.hint1Count++;
+                const chosungHint = getChosung(question.ko);
+                hintDisplay.innerHTML = `<div class="hint-box"><strong>Indice 1 (초성):</strong> ${chosungHint}</div>`;
+            } else if (question.hintLevel === 2) {
+                question.hint2Count++;
+                const vocabHint = question.hints.map(h => `${h.fr}: ${h.ko}`).join(', ');
+                hintDisplay.innerHTML += `<div class="hint-box mt-2"><strong>Indice 2 (단어):</strong> ${vocabHint}</div>`;
+                document.getElementById(`hint-btn-${questionIndex}`).disabled = true;
             }
         }
         
@@ -312,6 +377,7 @@
                 mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
 
                 mediaRecorder.onstop = () => {
+                    const duration = (new Date() - recordingStartTime) / 1000;
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const playbackEl = document.getElementById(`audio-playback-${questionIndex}`);
@@ -324,11 +390,13 @@
                         state.questions[questionIndex].recording = {
                             base64: reader.result.split(',')[1],
                             filename: `recording_q${questionIndex}_${state.studentName.replace(/\s/g, '_')}.webm`,
-                            mimeType: 'audio/webm'
+                            mimeType: 'audio/webm',
+                            duration: duration.toFixed(2)
                         };
                     };
                 };
-
+                
+                recordingStartTime = new Date();
                 mediaRecorder.start();
                 document.getElementById(`recording-status-${questionIndex}`).textContent = "녹음 중...";
                 document.getElementById(`record-btn-${questionIndex}`).disabled = true;
@@ -355,18 +423,21 @@
                 studentName: state.studentName,
                 startTime: state.startTime,
                 endTime: state.endTime,
-                totalTimeSeconds: (new Date(state.endTime) - new Date(state.startTime)) / 1000,
+                totalTimeSeconds: Math.round((new Date(state.endTime) - new Date(state.startTime)) / 1000),
                 questions: state.questions
             };
 
             displayResults(payload);
 
             try {
-                await fetch('/.netlify/functions/send-results', {
+                const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                 if (!response.ok) {
+                    console.error('Failed to send results:', await response.text());
+                }
             } catch (error) { console.error("Error sending results:", error); }
         }
 
@@ -376,7 +447,7 @@
 
             const correctCount = payload.questions.filter(q => q.isCorrect).length;
             const totalGraded = payload.questions.filter(q => q.type !== 'record').length;
-            const score = totalGraded > 0 ? (correctCount / totalGraded) * 100 : 100;
+            const score = totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 100;
             const { message, frMessage, emoji } = getGradingMessage(score);
 
             let resultHTML = `
@@ -389,7 +460,7 @@
                 resultHTML += `<div class="mb-4 pb-4 border-b">
                     <p class="font-semibold text-lg">Question ${q.number}: ${q.fr}</p>`;
                 if (q.isCorrect) {
-                    resultHTML += `<p class="text-green-600">✔️ 정답 (Correct) : ${Array.isArray(q.answer) ? q.answer.join(', ') : q.answer}</p>`;
+                    resultHTML += `<p class="text-green-600">✔️ 제출 답안 (Votre réponse) : ${q.userAnswer.split(', ').join(', ')}</p>`;
                 } else {
                      const userAnswers = q.userAnswer.split(', ');
                      const correctAnswers = Array.isArray(q.answer) ? q.answer : [q.answer];
@@ -401,15 +472,22 @@
                     resultHTML += `
                         <p class="text-red-600">❌ 제출 답안 (Votre réponse) : ${comparisonHTML}</p>
                         <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko_template.replace('______', correctAnswers[0]).replace('______', correctAnswers[1] || '')}</p>
-                        <p class="mt-1 text-sm text-orange-500">여기는 살짝 삐끗 😅 → 이렇게 하면 완벽!</p>`;
+                        <p class="mt-1 text-sm text-orange-500">${comparisonMessage.ko}</p>`;
                 }
                 resultHTML += `</div>`;
+            });
+            
+            payload.questions.filter(q => q.type === 'record').forEach(q => {
+                 resultHTML += `<div class="mb-4 pb-4 border-b">
+                    <p class="font-semibold text-lg">Question ${q.number}: ${q.fr}</p>
+                    <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko}</p>
+                 </div>`;
             });
 
             resultHTML += `</div>
                 <div class="mt-8 flex justify-center gap-4">
                     <a href="/" class="button button-secondary">홈으로 (Accueil)</a>
-                    <button onclick="window.print()" class="button button-secondary">결과 인쇄 (Imprimer)</button>
+                    <button onclick="location.reload()" class="button button-primary">다시하기 (Recommencer)</button>
                 </div>`;
             resultSection.innerHTML = resultHTML;
         }
