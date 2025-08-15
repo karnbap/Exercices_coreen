@@ -18,10 +18,11 @@
         .step-section.active { 
             display: block; 
         }
+        /* 수정됨: 선택된 버튼 색상을 로얄블루로 변경하여 구별이 쉽도록 함 */
         .choice-btn.selected {
-            background-color: var(--gold-leaf);
+            background-color: var(--royal-blue);
             color: white;
-            border-color: var(--royal-blue);
+            border-color: var(--gold-leaf);
         }
         /* 기본 버튼 스타일과 비활성화 스타일 */
         .button:disabled {
@@ -158,7 +159,17 @@
         
         // --- 함수 ---
 
-        // grading-criteria.js 파일의 함수를 여기에 포함
+        // grading-criteria.js 파일의 내용을 여기에 포함 (오류 방지)
+        const gradingMessages = {
+            perfect: { ko: "완벽 그 자체! 👑� 천재 인증!", fr: "Parfait absolu ! 👑🎉 Génie confirmé !" },
+            excellent: { ko: "아주 잘했어요! 👍 이 정도면 거의 마스터!", fr: "Très bien joué ! 👍 Presque un maître !" },
+            good: { ko: "꽤 잘했어요! 😎 조금만 더 가면 최고!", fr: "Pas mal du tout ! 😎 Encore un petit effort et c’est le top !" },
+            effort: { ko: "자, 커피 한 잔 하고 다시 가자! ☕💪", fr: "Allez, un petit café et on repart ! ☕💪🇰🇷" }
+        };
+        const comparisonMessage = {
+            ko: "여기는 살짝 삐끗 😅 → 이렇게 하면 완벽!",
+            fr: "Oups, petit couac 😅 → comme ça, c’est parfait !"
+        };
         function getGradingMessage(score) {
             let result;
             if (score === 100) result = gradingMessages.perfect;
@@ -335,7 +346,6 @@
                 });
                 if (!response.ok) throw new Error(`API error: ${response.statusText}`);
                 
-                // 서버 응답(audioData, mimeType)에 맞게 수정
                 const data = await response.json();
                 if (!data.audioData || !data.mimeType) {
                     throw new Error("Invalid audio data received from server.");
@@ -452,7 +462,7 @@
 
             let resultHTML = `
                 <h2 class="text-3xl font-bold text-royal-blue mb-2">${state.studentName}, 수고했어요!</h2>
-                <p class="text-2xl mb-4">${emoji} ${message}</p>
+                <p class="text-2xl mb-2">${emoji} ${message}</p>
                 <p class="text-lg text-slate-600 mb-6">${frMessage}</p>
                 <div class="text-left bg-slate-50 p-6 rounded-lg max-h-96 overflow-y-auto">`;
 
@@ -472,7 +482,8 @@
                     resultHTML += `
                         <p class="text-red-600">❌ 제출 답안 (Votre réponse) : ${comparisonHTML}</p>
                         <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko_template.replace('______', correctAnswers[0]).replace('______', correctAnswers[1] || '')}</p>
-                        <p class="mt-1 text-sm text-orange-500">${comparisonMessage.ko}</p>`;
+                        <p class="mt-1 text-sm text-orange-500">${comparisonMessage.ko}</p>
+                        <p class="mt-1 text-sm text-orange-400">${comparisonMessage.fr}</p>`;
                 }
                 resultHTML += `</div>`;
             });
@@ -503,3 +514,4 @@
     </script>
 </body>
 </html>
+�
