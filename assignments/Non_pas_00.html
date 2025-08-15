@@ -18,7 +18,7 @@
         .step-section.active { 
             display: block; 
         }
-        /* 수정됨: 선택된 버튼 색상을 로얄블루로 변경하여 구별이 쉽도록 함 */
+        /* 선택된 버튼 색상을 로얄블루로 변경하여 구별이 쉽도록 함 */
         .choice-btn.selected {
             background-color: var(--royal-blue);
             color: white;
@@ -159,30 +159,8 @@
         
         // --- 함수 ---
 
-        // grading-criteria.js 파일의 내용을 여기에 포함 (오류 방지)
-        const gradingMessages = {
-            perfect: { ko: "완벽 그 자체! 👑� 천재 인증!", fr: "Parfait absolu ! 👑🎉 Génie confirmé !" },
-            excellent: { ko: "아주 잘했어요! 👍 이 정도면 거의 마스터!", fr: "Très bien joué ! 👍 Presque un maître !" },
-            good: { ko: "꽤 잘했어요! 😎 조금만 더 가면 최고!", fr: "Pas mal du tout ! 😎 Encore un petit effort et c’est le top !" },
-            effort: { ko: "자, 커피 한 잔 하고 다시 가자! ☕💪", fr: "Allez, un petit café et on repart ! ☕💪🇰🇷" }
-        };
-        const comparisonMessage = {
-            ko: "여기는 살짝 삐끗 😅 → 이렇게 하면 완벽!",
-            fr: "Oups, petit couac 😅 → comme ça, c’est parfait !"
-        };
-        function getGradingMessage(score) {
-            let result;
-            if (score === 100) result = gradingMessages.perfect;
-            else if (score >= 80) result = gradingMessages.excellent;
-            else if (score >= 60) result = gradingMessages.good;
-            else result = gradingMessages.effort;
-            
-            return {
-                message: result.ko,
-                frMessage: result.fr,
-                emoji: score === 100 ? '👑' : (score >= 80 ? '👍' : (score >= 60 ? '😎' : '💪'))
-            };
-        }
+        // ✅ 수정됨: 중복 선언을 막기 위해 grading-criteria.js에서 로드된 함수를 사용하도록 내부 복사본 제거
+        // getGradingMessage 함수는 grading-criteria.js 파일에 이미 정의되어 있습니다.
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -514,4 +492,3 @@
     </script>
 </body>
 </html>
-�
