@@ -223,6 +223,7 @@
         let startTime, endTime;
         let mediaRecorder;
         let audioChunks = [];
+        let isAudioLoading = false;
 
         // --- Functions ---
         
@@ -485,7 +486,7 @@
                 feedbackHTML = `<div class="feedback correct"><strong>Parfait !</strong> C'est exactement ça.</div>`;
             } else {
                 feedbackHTML = `<div class="feedback incorrect">
-                    <p class="font-bold">Oups, petit couac 😅 → comme ça, c’est parfait !</p>
+                    <p class="font-bold">Oups, petit couac � → comme ça, c’est parfait !</p>
                     <ul class="list-disc pl-5 mt-2 space-y-1">
                         <li><strong>Qui parle :</strong> ${compareText(userAnswer.speaker, question.answer.speaker)}</li>
                         <li><strong>Où :</strong> ${compareText(userAnswer.location, question.answer.location)}</li>
@@ -547,12 +548,15 @@
         }
 
         async function playAudio() {
+            if (isAudioLoading) return;
             const question = questions[currentQuestionIndex];
             if (question.type !== 'listening') return;
             userAnswers[currentQuestionIndex].listenCount++;
             const playAudioBtn = document.getElementById('play-audio-btn');
             playAudioBtn.disabled = true;
             playAudioBtn.textContent = "Chargement...";
+            isAudioLoading = true;
+
             try {
                 const voice = currentQuestionIndex % 2 === 0 ? 'Kore' : 'Charon';
                 const response = await fetch(`/.netlify/functions/generate-audio`, {
@@ -571,10 +575,11 @@
                 const data = await response.json();
                 if (data.audioData && data.mimeType) {
                     const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
-                    audio.play();
+                    await audio.play();
                     audio.onended = () => {
                         playAudioBtn.disabled = false;
                         playAudioBtn.textContent = "Écouter la phrase (문장 듣기)";
+                        isAudioLoading = false;
                     };
                 } else {
                     throw new Error("No audio content in API response.");
@@ -584,6 +589,7 @@
                 alert(`Désolé, la lecture audio a échoué. Veuillez réessayer.\n${error.message}`);
                 playAudioBtn.disabled = false;
                 playAudioBtn.textContent = "Écouter la phrase (문장 듣기)";
+                isAudioLoading = false;
             }
         }
 
@@ -682,6 +688,7 @@
                 endTime: endTime.toISOString(),
                 totalTimeSeconds: totalTimeSeconds,
                 questions: userAnswers.map((answer, index) => {
+                    if (!answer) return null;
                     const questionData = questions[index];
                     const { userAnswer, isCorrect, listenCount, hint1Count, hint2Count, recording } = answer;
                     let fr_text = '';
@@ -700,7 +707,7 @@
                         hint2Count: hint2Count || 0,
                         recording: recording || null
                     };
-                })
+                }).filter(Boolean)
             };
 
             try {
@@ -734,3 +741,4 @@
 </body>
 
 </html>
+�
