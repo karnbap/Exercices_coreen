@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/style.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -21,7 +23,8 @@
         .card {
             background-color: white;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px
+            12px rgba(0, 0, 0, 0.08);
             padding: 2rem;
             transition: all 0.3s ease;
         }
@@ -85,6 +88,7 @@
             border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 1rem;
+            background-color: #f9fafb;
         }
         .input-field:focus {
             outline: none;
@@ -144,83 +148,8 @@
             <button id="print-btn" class="btn btn-secondary">Imprimer (프린트)</button>
         </div>
 
-        <div id="question-card" class="card">
-            <p class="text-sm text-slate-500 text-center mb-4">Question <span id="question-number">1</span> sur <span id="total-questions"></span></p>
-            
-            <!-- Question Type 1: Choice -->
-            <div id="choice-practice" class="hidden">
-                 <div class="bg-slate-100 p-4 rounded-lg mb-6 text-left">
-                     <div class="text-lg text-slate-700 font-semibold" id="situation-info"></div>
-                </div>
-                <p class="text-xl text-center font-medium mb-6" id="sentence-choice"></p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button class="btn btn-secondary btn-choice font-korean text-2xl p-6" data-choice="오다">오다</button>
-                    <button class="btn btn-secondary btn-choice font-korean text-2xl p-6" data-choice="가다">가다</button>
-                </div>
-            </div>
-
-            <!-- Question Type 2: Writing -->
-            <div id="writing-practice" class="hidden">
-                <div class="bg-slate-100 p-4 rounded-lg mb-6">
-                    <p class="text-lg text-slate-800" id="dialogue-fr"></p>
-                </div>
-                <div class="grid md:grid-cols-2 gap-6 mb-4">
-                    <div>
-                        <label class="font-semibold text-slate-600 block mb-2">1. Qui parle ? (누가 말해요?)</label>
-                        <input type="text" id="speaker-input" class="input-field" placeholder="Ex: Marie (마리)">
-                    </div>
-                    <div>
-                        <label class="font-semibold text-slate-600 block mb-2">2. Où est cette personne ? (어디에 있어요?)</label>
-                        <input type="text" id="location-input" class="input-field" placeholder="Ex: Chez elle (집)">
-                    </div>
-                </div>
-                <div class="mb-6">
-                    <label class="font-semibold text-slate-600 block mb-2">3. Traduisez la phrase en coréen :</label>
-                    <div id="vocab-hint" class="text-sm text-slate-500 mb-2"></div>
-                    <input type="text" id="sentence-input" class="input-field font-korean text-lg">
-                </div>
-                 <div class="text-center mt-6">
-                    <button id="check-writing-btn" class="btn btn-primary w-full md:w-auto">Vérifier ma réponse</button>
-                </div>
-            </div>
-
-            <!-- Question Type 3: Listening & Speaking -->
-            <div id="listening-practice" class="hidden">
-                <div class="text-center mb-4">
-                    <button id="play-audio-btn" class="btn btn-primary">Écouter la phrase (문장 듣기)</button>
-                </div>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="font-semibold text-slate-600 block mb-2">1. Écrivez ce que vous entendez :</label>
-                        <textarea id="dictation-input" rows="2" class="input-field font-korean text-lg"></textarea>
-                        <label class="font-semibold text-slate-600 block mb-2 mt-4">2. Traduisez en français :</label>
-                        <textarea id="translation-input" rows="2" class="input-field text-lg"></textarea>
-                    </div>
-                    <div>
-                        <label class="font-semibold text-slate-600 block mb-2">3. Enregistrez votre voix :</label>
-                        <div class="flex items-center gap-3">
-                            <button id="record-btn" class="btn btn-secondary">🎤 Enregistrer</button>
-                            <button id="stop-record-btn" class="btn btn-secondary" disabled>⏹️ Arrêter</button>
-                            <p id="recording-status" class="text-sm text-slate-500 flex items-center gap-2"></p>
-                        </div>
-                        <div id="audio-playback" class="mt-2"></div>
-                         <label class="font-semibold text-slate-600 block mb-2 mt-4">4. Réécoutez et écrivez :</label>
-                        <textarea id="self-dictation-input" rows="2" class="input-field font-korean text-lg" placeholder="Écrivez ce que vous entendez de VOTRE voix..."></textarea>
-                    </div>
-                </div>
-                 <div class="text-center mt-6">
-                    <button id="check-listening-btn" class="btn btn-primary w-full md:w-auto">Vérifier ma réponse</button>
-                </div>
-            </div>
-
-            <div id="feedback-container" class="mt-4"></div>
-        </div>
-
-        <div class="flex justify-between items-center mt-8">
-            <button id="prev-btn" class="btn btn-secondary">Précédent (이전)</button>
-            <a href="../index.html" class="btn btn-secondary">Retour aux exercices (연습문제 목록)</a>
-            <button id="next-btn" class="btn btn-primary">Suivant (다음)</button>
-            <button id="finish-btn" class="btn btn-primary hidden">Terminer & Envoyer (끝내기)</button>
+        <div id="question-card-container">
+            <!-- Question card will be injected here -->
         </div>
     </div>
     
@@ -259,18 +188,18 @@
             { type: 'choice', situation: "<b>Dialogue :</b> Un père appelle sa fille.<br><b>Qui parle ?</b> La fille.<br><b>Où est-elle ?</b> À la bibliothèque.", sentence: "Papa, je ___ à la maison dans une heure.", answer: "가다", korean_sentence: "아빠, 1시간 뒤에 집으로 갈게요." },
 
             // --- PART 2: Writing Analysis (5 questions) ---
-            { type: 'writing', dialogue_fr: "<b>Situation :</b> Julie est à la bibliothèque. Elle envoie un message à Marc.<br><b>Phrase à traduire :</b> « Je suis à la bibliothèque. Tu viens ? »", vocab: { "bibliothèque": "도서관" }, answer: { speaker: "Julie / 줄리", location: "Bibliothèque / 도서관", sentence: "저 도서관인데, 올래요?" } },
-            { type: 'writing', dialogue_fr: "<b>Situation :</b> Marc est au café. Il répond à Julie.<br><b>Phrase à traduire :</b> « D'accord, je vais à la bibliothèque maintenant. »", vocab: { "d'accord": "알겠어", "maintenant": "지금" }, answer: { speaker: "Marc / 마크", location: "Café / 카페", sentence: "알겠어, 지금 도서관으로 갈게." } },
-            { type: 'writing', dialogue_fr: "<b>Situation :</b> Le professeur est en classe. Un élève est en retard.<br><b>Phrase à traduire :</b> « Pourquoi n'es-tu pas encore venu en classe ? »", vocab: { "pourquoi": "왜", "pas encore": "아직", "classe": "교실" }, answer: { speaker: "Le professeur / 선생님", location: "En classe / 교실", sentence: "왜 아직 교실에 안 와요?" } },
-            { type: 'writing', dialogue_fr: "<b>Situation :</b> Anna est en Corée. Elle appelle sa famille en France.<br><b>Phrase à traduire :</b> « Vous me manquez. Venez en Corée s'il vous plaît ! »", vocab: { "manquer": "보고 싶다", "s'il vous plaît": "-세요" }, answer: { speaker: "Anna / 안나", location: "Corée / 한국", sentence: "보고 싶어요. 한국에 오세요!" } },
-            { type: 'writing', dialogue_fr: "<b>Situation :</b> La famille d'Anna est en France. Ils lui répondent.<br><b>Phrase à traduire :</b> « Nous irons en Corée l'année prochaine ! »", vocab: { "l'année prochaine": "내년" }, answer: { speaker: "La famille / 가족", location: "France / 프랑스", sentence: "우리가 내년에 한국으로 갈게!" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Julie est à la bibliothèque. Elle envoie un message à Marc.<br><b>Phrase à traduire :</b> « Je suis à la bibliothèque. Tu viens ? »", vocab: { "bibliothèque (도서관)": "도서관", "venir (오다)": "오다" }, answer: { speaker: "Julie / 줄리", location: "Bibliothèque / 도서관", sentence: "저 도서관인데, 올래요?" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Marc est au café. Il répond à Julie.<br><b>Phrase à traduire :</b> « D'accord, je vais à la bibliothèque maintenant. »", vocab: { "d'accord (알겠어)": "알겠어", "maintenant (지금)": "지금", "aller (가다)": "가다" }, answer: { speaker: "Marc / 마크", location: "Café / 카페", sentence: "알겠어, 지금 도서관으로 갈게." } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Le professeur est en classe. Un élève est en retard.<br><b>Phrase à traduire :</b> « Pourquoi n'es-tu pas encore venu en classe ? »", vocab: { "pourquoi (왜)": "왜", "pas encore (아직)": "아직", "classe (교실)": "교실" }, answer: { speaker: "Le professeur / 선생님", location: "En classe / 교실", sentence: "왜 아직 교실에 안 와요?" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Anna est en Corée. Elle appelle sa famille en France.<br><b>Phrase à traduire :</b> « Vous me manquez. Venez en Corée s'il vous plaît ! »", vocab: { "manquer (보고 싶다)": "보고 싶다", "s'il vous plaît (-세요)": "-세요" }, answer: { speaker: "Anna / 안나", location: "Corée / 한국", sentence: "보고 싶어요. 한국에 오세요!" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> La famille d'Anna est en France. Ils lui répondent.<br><b>Phrase à traduire :</b> « Nous irons en Corée l'année prochaine ! »", vocab: { "l'année prochaine (내년)": "내년" }, answer: { speaker: "La famille / 가족", location: "France / 프랑스", sentence: "우리가 내년에 한국으로 갈게!" } },
 
             // --- PART 3: Listening & Recording (5 questions) ---
-            { type: 'listening', korean_sentence: "선생님이 교실에 들어오셨어요.", french_translation: "Le professeur est entré dans la classe." },
-            { type: 'listening', korean_sentence: "우리는 지금 공원에 갈 거예요.", french_translation: "Nous allons aller au parc maintenant." },
-            { type: 'listening', korean_sentence: "언제 한국에 올 거예요?", french_translation: "Quand viendras-tu en Corée ?" },
-            { type: 'listening', korean_sentence: "손님, 이쪽으로 오세요.", french_translation: "Client, venez par ici s'il vous plaît." },
-            { type: 'listening', korean_sentence: "내일 파티에 갈 수 있어요?", french_translation: "Peux-tu aller à la fête demain ?" }
+            { type: 'listening', korean_sentence: "선생님이 교실에 들어오셨어요.", french_translation: "Le professeur est entré dans la classe.", vocab: { "선생님": "professeur", "교실": "salle de classe", "들어오다": "entrer" } },
+            { type: 'listening', korean_sentence: "우리는 지금 공원에 갈 거예요.", french_translation: "Nous allons aller au parc maintenant.", vocab: { "우리": "nous", "지금": "maintenant", "공원": "parc", "가다": "aller" } },
+            { type: 'listening', korean_sentence: "언제 한국에 올 거예요?", french_translation: "Quand viendras-tu en Corée ?", vocab: { "언제": "quand", "한국": "Corée", "오다": "venir" } },
+            { type: 'listening', korean_sentence: "손님, 이쪽으로 오세요.", french_translation: "Client, venez par ici s'il vous plaît.", vocab: { "손님": "client", "이쪽": "par ici" } },
+            { type: 'listening', korean_sentence: "내일 파티에 갈 수 있어요?", french_translation: "Peux-tu aller à la fête demain ?", vocab: { "내일": "demain", "파티": "fête", "갈 수 있다": "pouvoir aller" } }
         ];
 
         // --- DOM Elements ---
@@ -280,39 +209,11 @@
         const startBtn = document.getElementById('start-btn');
         
         const quizContainer = document.getElementById('quiz-container');
-        const questionNumberEl = document.getElementById('question-number');
-        const totalQuestionsEl = document.getElementById('total-questions');
+        const questionCardContainer = document.getElementById('question-card-container');
         
-        const choicePracticeEl = document.getElementById('choice-practice');
-        const situationInfoEl = document.getElementById('situation-info');
-        const sentenceChoiceEl = document.getElementById('sentence-choice');
-        const choiceBtns = document.querySelectorAll('.btn-choice');
-
-        const writingPracticeEl = document.getElementById('writing-practice');
-        const dialogueFrEl = document.getElementById('dialogue-fr');
-        const speakerInput = document.getElementById('speaker-input');
-        const locationInput = document.getElementById('location-input');
-        const vocabHintEl = document.getElementById('vocab-hint');
-        const sentenceInput = document.getElementById('sentence-input');
-        const checkWritingBtn = document.getElementById('check-writing-btn');
-
-        const listeningPracticeEl = document.getElementById('listening-practice');
-        const playAudioBtn = document.getElementById('play-audio-btn');
-        const dictationInput = document.getElementById('dictation-input');
-        const translationInput = document.getElementById('translation-input');
-        const recordBtn = document.getElementById('record-btn');
-        const stopRecordBtn = document.getElementById('stop-record-btn');
-        const recordingStatusEl = document.getElementById('recording-status');
-        const audioPlaybackEl = document.getElementById('audio-playback');
-        const selfDictationInput = document.getElementById('self-dictation-input');
-        const checkListeningBtn = document.getElementById('check-listening-btn');
-
-        const feedbackContainer = document.getElementById('feedback-container');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const finishBtn = document.getElementById('finish-btn');
         const printBtn = document.getElementById('print-btn');
         const restartBtn = document.getElementById('restart-btn');
+        const resultContainer = document.getElementById('result-container');
 
         // --- State ---
         let studentName = '';
@@ -322,7 +223,6 @@
         let startTime, endTime;
         let mediaRecorder;
         let audioChunks = [];
-        let listenCount = 0;
 
         // --- Functions ---
         
@@ -340,9 +240,15 @@
             }
             
             startTime = new Date();
-            // Questions are NOT shuffled to maintain progression
             questions = allQuestions; 
-            userAnswers = new Array(questions.length).fill(null);
+            userAnswers = new Array(questions.length).fill(null).map(() => ({
+                userAnswer: {},
+                isCorrect: false,
+                listenCount: 0,
+                hint1Count: 0,
+                hint2Count: 0,
+                recording: null
+            }));
             currentQuestionIndex = 0;
 
             studentNameContainer.classList.add('hidden');
@@ -354,48 +260,133 @@
 
         function displayQuestion() {
             const question = questions[currentQuestionIndex];
-            questionNumberEl.textContent = currentQuestionIndex + 1;
-            totalQuestionsEl.textContent = questions.length;
+            questionCardContainer.innerHTML = ''; // Clear previous card
             
-            feedbackContainer.innerHTML = '';
-            listenCount = 0;
-
-            choicePracticeEl.classList.add('hidden');
-            writingPracticeEl.classList.add('hidden');
-            listeningPracticeEl.classList.add('hidden');
-
+            const card = document.createElement('div');
+            card.className = 'card animate-fade-in';
+            
+            let cardContent = `<p class="text-sm text-slate-500 text-center mb-4">Question ${currentQuestionIndex + 1} sur ${questions.length}</p>`;
+            
             if (question.type === 'choice') {
-                choicePracticeEl.classList.remove('hidden');
-                situationInfoEl.innerHTML = question.situation;
-                sentenceChoiceEl.innerHTML = question.sentence.replace('___', '<span class="font-korean font-bold text-indigo-500">_______</span>');
-                choiceBtns.forEach(btn => {
-                    btn.disabled = false;
-                    btn.classList.remove('bg-green-200', 'bg-red-200', 'border-green-500', 'border-red-500');
-                });
+                cardContent += `
+                    <div class="bg-slate-100 p-4 rounded-lg mb-6 text-left">
+                        <div class="text-lg text-slate-700 font-semibold">${question.situation}</div>
+                    </div>
+                    <p class="text-xl text-center font-medium mb-6">${question.sentence.replace('___', '<span class="font-korean font-bold text-indigo-500">_______</span>')}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button class="btn btn-secondary btn-choice font-korean text-2xl p-6" data-choice="오다">오다</button>
+                        <button class="btn btn-secondary btn-choice font-korean text-2xl p-6" data-choice="가다">가다</button>
+                    </div>
+                `;
             } else if (question.type === 'writing') {
-                writingPracticeEl.classList.remove('hidden');
-                dialogueFrEl.innerHTML = question.dialogue_fr;
-                vocabHintEl.textContent = `Vocabulaire : ${Object.entries(question.vocab).map(([fr, ko]) => `${fr} (${ko})`).join(', ')}`;
-                speakerInput.value = '';
-                locationInput.value = '';
-                sentenceInput.value = '';
-                [speakerInput, locationInput, sentenceInput, checkWritingBtn].forEach(el => el.disabled = false);
+                cardContent += `
+                    <div class="bg-slate-100 p-4 rounded-lg mb-6">
+                        <p class="text-lg text-slate-800">${question.dialogue_fr}</p>
+                    </div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <button id="hint1-btn" class="btn btn-secondary">Au secours 1 (도움 1)</button>
+                        <button id="hint2-btn" class="btn btn-secondary">Au secours 2 (도움 2)</button>
+                    </div>
+                    <div id="hint-display" class="my-3 text-indigo-600 font-semibold"></div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <label class="font-semibold text-slate-600 block mb-2">1. Qui parle ?</label>
+                            <input type="text" id="speaker-input" class="input-field" placeholder="Ex: Marie (마리)">
+                        </div>
+                        <div>
+                            <label class="font-semibold text-slate-600 block mb-2">2. Où est cette personne ?</label>
+                            <input type="text" id="location-input" class="input-field" placeholder="Ex: Chez elle (집)">
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <label class="font-semibold text-slate-600 block mb-2">3. Traduisez en coréen :</label>
+                        <input type="text" id="sentence-input" class="input-field font-korean text-lg">
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="check-writing-btn" class="btn btn-primary w-full md:w-auto">Vérifier</button>
+                    </div>
+                `;
             } else if (question.type === 'listening') {
-                listeningPracticeEl.classList.remove('hidden');
-                dictationInput.value = '';
-                translationInput.value = '';
-                selfDictationInput.value = '';
-                audioPlaybackEl.innerHTML = '';
-                recordingStatusEl.innerHTML = '';
-                [dictationInput, translationInput, selfDictationInput, recordBtn, stopRecordBtn, checkListeningBtn].forEach(el => el.disabled = false);
-                stopRecordBtn.disabled = true;
+                cardContent += `
+                    <div class="flex items-center justify-center space-x-3 mb-4">
+                        <button id="play-audio-btn" class="btn btn-primary">Écouter</button>
+                        <button id="hint1-btn" class="btn btn-secondary">Au secours 1 (도움 1)</button>
+                        <button id="hint2-btn" class="btn btn-secondary">Au secours 2 (도움 2)</button>
+                    </div>
+                    <div id="hint-display" class="my-3 text-indigo-600 font-semibold text-center"></div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="font-semibold text-slate-600 block mb-2">1. Écrivez ce que vous entendez :</label>
+                            <textarea id="dictation-input" rows="2" class="input-field font-korean text-lg"></textarea>
+                            <label class="font-semibold text-slate-600 block mb-2 mt-4">2. Traduisez en français :</label>
+                            <textarea id="translation-input" rows="2" class="input-field text-lg"></textarea>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-slate-600 block mb-2">3. Enregistrez votre voix :</label>
+                            <div class="flex items-center gap-3">
+                                <button id="record-btn" class="btn btn-secondary">🎤 Enregistrer</button>
+                                <button id="stop-record-btn" class="btn btn-secondary" disabled>⏹️ Arrêter</button>
+                                <p id="recording-status" class="text-sm text-slate-500 flex items-center gap-2"></p>
+                            </div>
+                            <div id="audio-playback" class="mt-2"></div>
+                            <label class="font-semibold text-slate-600 block mb-2 mt-4">4. Réécoutez et écrivez :</label>
+                            <textarea id="self-dictation-input" rows="2" class="input-field font-korean text-lg" placeholder="Écrivez ce que vous entendez de VOTRE voix..."></textarea>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="check-listening-btn" class="btn btn-primary w-full md:w-auto">Vérifier</button>
+                    </div>
+                `;
             }
             
-            if (userAnswers[currentQuestionIndex]) {
+            cardContent += `<div id="feedback-container" class="mt-4"></div>`;
+            card.innerHTML = cardContent;
+            
+            const navContainer = document.createElement('div');
+            navContainer.className = 'flex justify-between items-center mt-8 border-t pt-4';
+            
+            const prevButton = document.createElement('button');
+            prevButton.className = 'btn btn-secondary';
+            prevButton.innerHTML = 'Précédent (이전)';
+            prevButton.disabled = currentQuestionIndex === 0;
+            prevButton.onclick = showPrevQuestion;
+
+            const nextButton = document.createElement('button');
+            if (currentQuestionIndex === questions.length - 1) {
+                nextButton.className = 'btn btn-primary';
+                nextButton.innerHTML = 'Terminer & Envoyer (끝내기)';
+                nextButton.onclick = finishQuiz;
+            } else {
+                nextButton.className = 'btn btn-primary';
+                nextButton.innerHTML = 'Suivant (다음)';
+                nextButton.onclick = showNextQuestion;
+            }
+
+            navContainer.appendChild(prevButton);
+            navContainer.appendChild(nextButton);
+            card.appendChild(navContainer);
+
+            questionCardContainer.appendChild(card);
+            
+            if (question.type === 'choice') {
+                document.querySelectorAll('.btn-choice').forEach(btn => btn.addEventListener('click', (e) => handleChoiceSelection(e.target.dataset.choice)));
+            } else if (question.type === 'writing') {
+                document.getElementById('check-writing-btn').addEventListener('click', checkWritingAnswer);
+                document.getElementById('hint1-btn').addEventListener('click', () => showHint(1));
+                document.getElementById('hint2-btn').addEventListener('click', () => showHint(2));
+            } else if (question.type === 'listening') {
+                document.getElementById('play-audio-btn').addEventListener('click', playAudio);
+                document.getElementById('record-btn').addEventListener('click', startRecording);
+                document.getElementById('stop-record-btn').addEventListener('click', stopRecording);
+                document.getElementById('check-listening-btn').addEventListener('click', checkListeningAnswer);
+                document.getElementById('hint1-btn').addEventListener('click', () => showHint(1));
+                document.getElementById('hint2-btn').addEventListener('click', () => showHint(2));
+            }
+
+            // ✅ 수정됨: 더 정확한 조건으로 복원 로직 실행
+            if (userAnswers[currentQuestionIndex] && Object.keys(userAnswers[currentQuestionIndex].userAnswer).length > 0) {
                 restoreAnswer();
             }
-
-            updateNavButtons();
         }
 
         function restoreAnswer() {
@@ -405,21 +396,20 @@
             if (question.type === 'choice') {
                 handleChoiceSelection(answerData.userAnswer.choice, true);
             } else if (question.type === 'writing') {
-                speakerInput.value = answerData.userAnswer.speaker;
-                locationInput.value = answerData.userAnswer.location;
-                sentenceInput.value = answerData.userAnswer.sentence;
-                [speakerInput, locationInput, sentenceInput, checkWritingBtn].forEach(el => el.disabled = true);
+                document.getElementById('speaker-input').value = answerData.userAnswer.speaker;
+                document.getElementById('location-input').value = answerData.userAnswer.location;
+                document.getElementById('sentence-input').value = answerData.userAnswer.sentence;
+                [document.getElementById('speaker-input'), document.getElementById('location-input'), document.getElementById('sentence-input'), document.getElementById('check-writing-btn')].forEach(el => el.disabled = true);
                 showWritingFeedback(answerData.isCorrect, answerData.userAnswer);
             } else if (question.type === 'listening') {
-                dictationInput.value = answerData.userAnswer.dictation;
-                translationInput.value = answerData.userAnswer.translation;
-                selfDictationInput.value = answerData.userAnswer.selfDictation;
-                listenCount = answerData.listenCount;
+                document.getElementById('dictation-input').value = answerData.userAnswer.dictation;
+                document.getElementById('translation-input').value = answerData.userAnswer.translation;
+                document.getElementById('self-dictation-input').value = answerData.userAnswer.selfDictation;
                 if(answerData.recording) {
                     const audioUrl = URL.createObjectURL(base64ToBlob(answerData.recording.base64, answerData.recording.mimeType));
-                    audioPlaybackEl.innerHTML = `<audio controls src="${audioUrl}"></audio>`;
+                    document.getElementById('audio-playback').innerHTML = `<audio controls src="${audioUrl}"></audio>`;
                 }
-                [dictationInput, translationInput, selfDictationInput, recordBtn, stopRecordBtn, checkListeningBtn].forEach(el => el.disabled = true);
+                [document.getElementById('dictation-input'), document.getElementById('translation-input'), document.getElementById('self-dictation-input'), document.getElementById('record-btn'), document.getElementById('stop-record-btn'), document.getElementById('check-listening-btn')].forEach(el => el.disabled = true);
                 showListeningFeedback(answerData.isCorrect, answerData.userAnswer);
             }
         }
@@ -429,11 +419,8 @@
             const isCorrect = selectedChoice === question.answer;
 
             if (!isRestoring) {
-                userAnswers[currentQuestionIndex] = {
-                    questionData: question,
-                    userAnswer: { choice: selectedChoice },
-                    isCorrect: isCorrect,
-                };
+                userAnswers[currentQuestionIndex].userAnswer = { choice: selectedChoice };
+                userAnswers[currentQuestionIndex].isCorrect = isCorrect;
             }
 
             let feedbackHTML = '';
@@ -442,7 +429,7 @@
             } else {
                 feedbackHTML = `<div class="feedback incorrect"><p class="font-bold">Oups, petit couac 😅</p> La bonne réponse était <strong class="font-korean">${question.answer}</strong>. <br><span class="font-korean">${question.korean_sentence}</span></div>`;
             }
-            feedbackContainer.innerHTML = feedbackHTML;
+            document.getElementById('feedback-container').innerHTML = feedbackHTML;
 
             const selectedBtn = document.querySelector(`.btn-choice[data-choice="${selectedChoice}"]`);
             const correctBtn = document.querySelector(`.btn-choice[data-choice="${question.answer}"]`);
@@ -452,46 +439,44 @@
                 if(selectedBtn) selectedBtn.classList.add('bg-red-200', 'border-red-500');
                 if(correctBtn) correctBtn.classList.add('bg-green-200', 'border-green-500');
             }
-            choiceBtns.forEach(btn => btn.disabled = true);
+            document.querySelectorAll('.btn-choice').forEach(btn => btn.disabled = true);
         }
 
         function checkWritingAnswer() {
             const question = questions[currentQuestionIndex];
             const userAnswer = {
-                speaker: speakerInput.value.trim(),
-                location: locationInput.value.trim(),
-                sentence: sentenceInput.value.trim()
+                speaker: document.getElementById('speaker-input').value.trim(),
+                location: document.getElementById('location-input').value.trim(),
+                sentence: document.getElementById('sentence-input').value.trim()
             };
             const isCorrect = userAnswer.sentence === question.answer.sentence;
             
-            userAnswers[currentQuestionIndex] = { questionData: question, userAnswer, isCorrect };
+            userAnswers[currentQuestionIndex].userAnswer = userAnswer;
+            userAnswers[currentQuestionIndex].isCorrect = isCorrect;
             showWritingFeedback(isCorrect, userAnswer);
-            checkWritingBtn.disabled = true;
+            document.getElementById('check-writing-btn').disabled = true;
         }
 
         function checkListeningAnswer() {
             const question = questions[currentQuestionIndex];
             const userAnswer = {
-                dictation: dictationInput.value.trim(),
-                translation: translationInput.value.trim(),
-                selfDictation: selfDictationInput.value.trim()
+                dictation: document.getElementById('dictation-input').value.trim(),
+                translation: document.getElementById('translation-input').value.trim(),
+                selfDictation: document.getElementById('self-dictation-input').value.trim()
             };
             const isCorrect = userAnswer.dictation === question.korean_sentence;
 
+            userAnswers[currentQuestionIndex].userAnswer = userAnswer;
+            userAnswers[currentQuestionIndex].isCorrect = isCorrect;
             showListeningFeedback(isCorrect, userAnswer);
-            checkListeningBtn.disabled = true;
+            document.getElementById('check-listening-btn').disabled = true;
             
-            const recordingPromise = (audioChunks.length > 0)
-                ? blobToBase64(new Blob(audioChunks, { type: 'audio/webm' }))
-                : Promise.resolve(null);
-
-            recordingPromise.then(base64data => {
-                let recordingData = null;
-                if(base64data) {
-                    recordingData = { base64: base64data, filename: `recording_${studentName}_q${currentQuestionIndex + 1}.webm`, mimeType: 'audio/webm' };
-                }
-                userAnswers[currentQuestionIndex] = { questionData: question, userAnswer, isCorrect, listenCount, recording: recordingData };
-            });
+            if (audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                blobToBase64(audioBlob).then(base64data => {
+                    userAnswers[currentQuestionIndex].recording = { base64: base64data, filename: `recording_${studentName}_q${currentQuestionIndex + 1}.webm`, mimeType: 'audio/webm' };
+                });
+            }
         }
 
         function showWritingFeedback(isCorrect, userAnswer) {
@@ -509,8 +494,8 @@
                     </ul>
                 </div>`;
             }
-            feedbackContainer.innerHTML = feedbackHTML;
-            [speakerInput, locationInput, sentenceInput].forEach(el => el.disabled = true);
+            document.getElementById('feedback-container').innerHTML = feedbackHTML;
+            [document.getElementById('speaker-input'), document.getElementById('location-input'), document.getElementById('sentence-input')].forEach(el => el.disabled = true);
         }
         
         function showListeningFeedback(isCorrect, userAnswer) {
@@ -525,29 +510,53 @@
                     <p><strong>Traduction :</strong> ${question.french_translation}</p>
                 </div>`;
             }
-            feedbackContainer.innerHTML = feedbackHTML;
-            [dictationInput, translationInput, selfDictationInput, recordBtn, stopRecordBtn].forEach(el => el.disabled = true);
+            document.getElementById('feedback-container').innerHTML = feedbackHTML;
+            [document.getElementById('dictation-input'), document.getElementById('translation-input'), document.getElementById('self-dictation-input'), document.getElementById('record-btn'), document.getElementById('stop-record-btn')].forEach(el => el.disabled = true);
+        }
+
+        function showHint(type) {
+            const question = questions[currentQuestionIndex];
+            const answerData = userAnswers[currentQuestionIndex];
+            const hintDisplay = document.getElementById('hint-display');
+            if (!hintDisplay) return;
+
+            if (type === 1) {
+                answerData.hint1Count++;
+                const sentence = question.korean_sentence || question.answer.sentence;
+                hintDisplay.innerHTML = `<p><strong>Au secours 1 (초성):</strong> ${getCho(sentence)}</p>`;
+            } else if (type === 2) {
+                answerData.hint2Count++;
+                const vocabHtml = Object.entries(question.vocab)
+                    .map(([fr_ko, ko]) => `<li><span class="font-korean font-semibold">${fr_ko}</span></li>`)
+                    .join('');
+                hintDisplay.innerHTML = `<p><strong>Au secours 2 (단어):</strong></p><ul class="list-disc list-inside">${vocabHtml}</ul>`;
+            }
         }
 
         async function playAudio() {
             const question = questions[currentQuestionIndex];
             if (question.type !== 'listening') return;
-            listenCount++;
+            userAnswers[currentQuestionIndex].listenCount++;
+            const playAudioBtn = document.getElementById('play-audio-btn');
             playAudioBtn.disabled = true;
             playAudioBtn.textContent = "Chargement...";
             try {
-                const voice = currentQuestionIndex % 2 === 0 ? 'woman1' : 'man1';
-                const response = await fetch(`/.netlify/functions/generate-audio?text=${encodeURIComponent(question.korean_sentence)}&voice=${voice}`);
+                const voice = currentQuestionIndex % 2 === 0 ? 'Kore' : 'Charon';
+                const response = await fetch(`/.netlify/functions/generate-audio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: question.korean_sentence, voice }),
+                });
                 
                 if (!response.ok) throw new Error(`API error: ${response.statusText}`);
 
                 const data = await response.json();
-                if (data.audioContent) {
-                    const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+                if (data.audioData && data.mimeType) {
+                    const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
                     audio.play();
                     audio.onended = () => {
-                         playAudioBtn.disabled = false;
-                         playAudioBtn.textContent = "Écouter la phrase (문장 듣기)";
+                        playAudioBtn.disabled = false;
+                        playAudioBtn.textContent = "Écouter la phrase (문장 듣기)";
                     };
                 } else {
                     throw new Error("No audio content in API response.");
@@ -567,16 +576,16 @@
                 mediaRecorder.start();
                 audioChunks = [];
                 mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
-                recordBtn.disabled = true;
-                stopRecordBtn.disabled = false;
-                recordingStatusEl.innerHTML = `<div class="recording-dot"></div> Enregistrement...`;
+                document.getElementById('record-btn').disabled = true;
+                document.getElementById('stop-record-btn').disabled = false;
+                document.getElementById('recording-status').innerHTML = `<div class="recording-dot"></div> Enregistrement...`;
                 mediaRecorder.addEventListener("stop", () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     const audioUrl = URL.createObjectURL(audioBlob);
-                    audioPlaybackEl.innerHTML = `<audio controls src="${audioUrl}"></audio>`;
-                    recordBtn.disabled = false;
-                    stopRecordBtn.disabled = true;
-                    recordingStatusEl.textContent = 'Enregistrement terminé.';
+                    document.getElementById('audio-playback').innerHTML = `<audio controls src="${audioUrl}"></audio>`;
+                    document.getElementById('record-btn').disabled = false;
+                    document.getElementById('stop-record-btn').disabled = true;
+                    document.getElementById('recording-status').textContent = 'Enregistrement terminé.';
                 });
             } catch (err) {
                 console.error("Error starting recording:", err);
@@ -590,22 +599,14 @@
             const correctKo = correct.split('/')[1] ? correct.split('/')[1].trim() : correctFr;
             const userLower = user.toLowerCase();
             if (userLower === correctFr || userLower === correctKo) {
-                 return `<span class="text-green-700">${user}</span>`;
+                return `<span class="text-green-700">${user}</span>`;
             }
             return `<span class="text-red-700 line-through">${user || "..."}</span> <span class="text-green-700">${correct}</span>`;
         }
-        function updateNavButtons() {
-            prevBtn.disabled = currentQuestionIndex === 0;
-            if (currentQuestionIndex === questions.length - 1) {
-                nextBtn.classList.add('hidden');
-                finishBtn.classList.remove('hidden');
-            } else {
-                nextBtn.classList.remove('hidden');
-                finishBtn.classList.add('hidden');
-            }
-        }
+        
         function showNextQuestion() { if (currentQuestionIndex < questions.length - 1) { currentQuestionIndex++; displayQuestion(); } }
         function showPrevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; displayQuestion(); } }
+        
         function finishQuiz() {
             endTime = new Date();
             const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
@@ -616,10 +617,11 @@
             quizContainer.classList.add('hidden');
             resultContainer.classList.remove('hidden');
         }
+        
         function displayResults(score, totalTimeSeconds) {
-            const grading = getGrading(score);
-            document.getElementById('result-title').textContent = grading.title_fr;
-            document.getElementById('result-subtitle').textContent = grading.subtitle_fr;
+            const grading = getGradingMessage(score); // Use the function from grading-criteria.js
+            document.getElementById('result-title').textContent = grading.ko;
+            document.getElementById('result-subtitle').textContent = grading.fr;
             document.getElementById('score').textContent = score;
             document.getElementById('total-time').textContent = totalTimeSeconds;
             const mistakesReview = document.getElementById('mistakes-review');
@@ -653,6 +655,7 @@
                 mistakesReview.innerHTML = '<p class="text-green-600 font-semibold">Aucune erreur, félicitations ! 🎉</p>';
             }
         }
+        
         async function sendResultsToServer(totalTimeSeconds) {
             const payload = {
                 studentName: studentName,
@@ -661,7 +664,7 @@
                 totalTimeSeconds: totalTimeSeconds,
                 questions: userAnswers.map((answer, index) => {
                     if (!answer) return null;
-                    const { questionData, userAnswer, isCorrect, listenCount, recording } = answer;
+                    const { questionData, userAnswer, isCorrect, listenCount, hint1Count, hint2Count, recording } = answer;
                     let fr_text = '';
                     if(questionData.type === 'choice') fr_text = questionData.situation.replace(/<br>|<b>|<\/b>/g, ' ');
                     else if(questionData.type === 'writing') fr_text = questionData.dialogue_fr.replace(/<br>|<b>|<\/b>/g, ' ');
@@ -669,12 +672,13 @@
 
                     return {
                         number: index + 1,
-                        ko: questionData.korean_sentence || questionData.answer.sentence,
+                        ko: questionData.korean_sentence || (questionData.answer && questionData.answer.sentence),
                         fr: fr_text,
                         userAnswer: JSON.stringify(userAnswer),
                         isCorrect: isCorrect,
                         listenCount: listenCount || 0,
-                        hint1Count: 0, hint2Count: 0,
+                        hint1Count: hint1Count || 0,
+                        hint2Count: hint2Count || 0,
                         recording: recording || null
                     };
                 }).filter(Boolean)
@@ -692,6 +696,7 @@
                 console.error('Failed to send results:', error);
             }
         }
+        
         function blobToBase64(blob) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(blob); reader.onloadend = () => { resolve(reader.result.split(',')[1]); }; reader.onerror = error => reject(error); }); }
         function base64ToBlob(base64, mimeType) { const byteCharacters = atob(base64); const byteNumbers = new Array(byteCharacters.length); for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); } const byteArray = new Uint8Array(byteNumbers); return new Blob([byteArray], {type: mimeType}); }
 
@@ -699,18 +704,10 @@
         document.addEventListener('DOMContentLoaded', setRandomPlaceholder);
         startBtn.addEventListener('click', startQuiz);
         studentNameInput.addEventListener('keydown', (e) => e.key === 'Enter' && startBtn.click());
-        choiceBtns.forEach(btn => btn.addEventListener('click', (e) => handleChoiceSelection(e.target.dataset.choice)));
-        checkWritingBtn.addEventListener('click', checkWritingAnswer);
-        checkListeningBtn.addEventListener('click', checkListeningAnswer);
-        playAudioBtn.addEventListener('click', playAudio);
-        recordBtn.addEventListener('click', startRecording);
-        stopRecordBtn.addEventListener('click', stopRecording);
-        nextBtn.addEventListener('click', showNextQuestion);
-        prevBtn.addEventListener('click', showPrevQuestion);
-        finishBtn.addEventListener('click', finishQuiz);
         restartBtn.addEventListener('click', () => {
             setRandomPlaceholder();
-            startQuiz();
+            resultContainer.classList.add('hidden');
+            studentNameContainer.classList.remove('hidden');
         });
         printBtn.addEventListener('click', () => window.print());
 
