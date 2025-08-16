@@ -159,6 +159,27 @@
         
         // --- 함수 ---
 
+        // ✅ 수정됨: 누락되었던 getGradingMessage 함수를 여기에 추가하여 오류 해결
+        function getGradingMessage(score) {
+            // 이 함수는 grading-criteria.js 파일에 있는 gradingMessages 변수를 사용합니다.
+            // 해당 파일이 정상적으로 로드되었다고 가정합니다.
+            if (typeof gradingMessages === 'undefined') {
+                console.error("grading-criteria.js is not loaded correctly.");
+                return { message: "채점 기준을 불러올 수 없습니다.", frMessage: "Impossible de charger les critères.", emoji: "❓" };
+            }
+            let result;
+            if (score === 100) result = gradingMessages.perfect;
+            else if (score >= 80) result = gradingMessages.excellent;
+            else if (score >= 60) result = gradingMessages.good;
+            else result = gradingMessages.effort;
+            
+            return {
+                message: result.ko,
+                frMessage: result.fr,
+                emoji: score === 100 ? '👑' : (score >= 80 ? '👍' : (score >= 60 ? '😎' : '💪'))
+            };
+        }
+
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -306,24 +327,6 @@
             });
         }
         
-        // ✅ 수정됨: 더 안정적인 Blob 변환 함수로 교체
-        function base64ToBlob(base64, contentType = '', sliceSize = 512) {
-            const byteCharacters = atob(base64);
-            const byteArrays = [];
-
-            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-                const slice = byteCharacters.slice(offset, offset + sliceSize);
-                const byteNumbers = new Array(slice.length);
-                for (let i = 0; i < slice.length; i++) {
-                    byteNumbers[i] = slice.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                byteArrays.push(byteArray);
-            }
-
-            return new Blob(byteArrays, {type: contentType});
-        }
-
         async function playAudio(questionIndex) {
             const question = state.questions[questionIndex];
             question.listenCount++;
@@ -331,7 +334,7 @@
             const btn = document.querySelector(`.play-audio-btn[onclick="playAudio(${questionIndex})"]`);
             btn.disabled = true;
 
-            let audioUrl = null; // To hold the object URL for cleanup
+            let audioUrl = null;
 
             try {
                 const response = await fetch('/.netlify/functions/generate-audio', {
@@ -354,14 +357,15 @@
                     throw new Error("Invalid audio data received from server.");
                 }
 
-                // Convert base64 to Blob and create an Object URL
-                const audioBlob = base64ToBlob(data.audioData, data.mimeType);
+                const blobResponse = await fetch(`data:${data.mimeType};base64,${data.audioData}`);
+                const audioBlob = await blobResponse.blob();
+
                 audioUrl = URL.createObjectURL(audioBlob);
                 const audio = new Audio(audioUrl);
                 
                 audio.onended = () => { 
                     btn.disabled = false; 
-                    URL.revokeObjectURL(audioUrl); // Clean up
+                    URL.revokeObjectURL(audioUrl);
                 };
                 
                 audio.onerror = (e) => {
@@ -375,7 +379,7 @@
                 console.error('Error fetching or playing audio:', error);
                 alert(`오디오 재생에 실패했습니다:\n(Échec de la lecture audio:)\n\n${error.message}`);
                 if (audioUrl) {
-                    URL.revokeObjectURL(audioUrl); // Clean up on error too
+                    URL.revokeObjectURL(audioUrl);
                 }
                 btn.disabled = false;
             }
@@ -512,7 +516,7 @@
             payload.questions.filter(q => q.type === 'record').forEach(q => {
                  resultHTML += `<div class="mb-4 pb-4 border-b">
                     <p class="font-semibold text-lg">Question ${q.number}: ${q.fr}</p>
-                    <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko}</p>
+                    <p class="text-blue-600">� 정답 (Réponse correcte) : ${q.ko}</p>
                  </div>`;
             });
 
@@ -535,3 +539,4 @@
     </script>
 </body>
 </html>
+�
