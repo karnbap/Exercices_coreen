@@ -14,6 +14,14 @@
             overflow: hidden;
             transition: max-height 0.5s ease-out;
         }
+        /* Custom animation for fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
     </style>
 </head>
 
@@ -231,6 +239,7 @@
                     ko: ko,
                     vocab: item.vocab,
                     userAnswer: '',
+                    userDictation: '', // Add field for dictation
                     isCorrect: false,
                     listenCount: 0,
                     hint1Count: 0,
@@ -270,11 +279,25 @@
                             <span id="record-status" class="text-sm text-slate-500"></span>
                         </div>
                     </div>
+
+                    <!-- Recording Playback & Dictation Section -->
+                    <div id="recording-playback-section" class="hidden mt-4 p-4 bg-slate-100 rounded-lg">
+                        <label class="block text-sm font-medium text-slate-600 mb-2">녹음 다시 듣기 | Réécouter votre enregistrement :</label>
+                        <audio id="audio-playback" controls class="w-full"></audio>
+                        <div class="mt-4">
+                            <label for="dictation-input" class="block text-sm font-medium text-slate-600 mb-1">들은 내용 받아쓰기 | Dictée de ce que vous avez entendu :</label>
+                            <input type="text" id="dictation-input" class="form-input" value="${q.userDictation || ''}" placeholder="녹음을 듣고 여기에 입력하세요...">
+                        </div>
+                    </div>
                 </div>
             `;
             
             document.getElementById('korean-answer').addEventListener('input', (e) => {
                 userAnswers[index] = e.target.value;
+            });
+            
+            document.getElementById('dictation-input').addEventListener('input', (e) => {
+                questions[index].userDictation = e.target.value;
             });
 
             document.getElementById('play-audio-btn').addEventListener('click', () => {
@@ -308,6 +331,7 @@
             finishBtn.classList.toggle('hidden', index !== questions.length - 1);
         }
 
+        // ✅ 수정됨: 서버 응답에 맞게 데이터 처리 방식 변경
         async function playAudio(text, voice) {
             const button = document.getElementById('play-audio-btn');
             if(!button) return;
@@ -323,8 +347,14 @@
                     body: JSON.stringify({ text, voice }),
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const { audioContent } = await response.json();
-                const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                
+                // 서버는 { audioData, mimeType }을 반환합니다.
+                const { audioData, mimeType } = await response.json();
+                if (!audioData) {
+                    throw new Error("No audio data received from server.");
+                }
+
+                const audio = new Audio(`data:${mimeType};base64,${audioData}`);
                 audio.play();
                 audio.onended = () => {
                     icon.classList.remove('fa-spinner', 'fa-spin');
@@ -368,6 +398,17 @@
 
                         mediaRecorder.addEventListener("stop", () => {
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            
+                            // For playback
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const playbackSection = document.getElementById('recording-playback-section');
+                            const audioPlayer = document.getElementById('audio-playback');
+                            if (playbackSection && audioPlayer) {
+                                audioPlayer.src = audioUrl;
+                                playbackSection.classList.remove('hidden');
+                            }
+
+                            // For sending results
                             const reader = new FileReader();
                             reader.readAsDataURL(audioBlob);
                             reader.onloadend = function() {
@@ -380,6 +421,9 @@
                             };
                             stream.getTracks().forEach(track => track.stop());
                         });
+                    }).catch(err => {
+                        console.error("Error accessing microphone:", err);
+                        recordStatus.textContent = "마이크 접근 오류";
                     });
             }
         }
@@ -418,6 +462,10 @@
                             당신의 답: ${q.userAnswer || "답변 없음"}
                         </p>
                         ${!q.isCorrect ? `<p class="text-sm text-blue-700"><span class="font-bold">여기는 살짝 삐끗 😅 → 이렇게 하면 완벽!</span><br>${q.ko}</p>` : ''}
+                        <p class="text-sm text-slate-500 mt-1 border-t pt-1">
+                            <i class="fas fa-keyboard"></i>
+                            받아쓰기: ${q.userDictation || "입력 없음"}
+                        </p>
                     </div>
                 `;
             });
@@ -483,7 +531,14 @@
             studentName = '';
         }
 
-        // --- Event Listeners ---
+        // --- Event Listeners & Initializers ---
+        
+        // Open explanation section by default on page load
+        window.addEventListener('load', () => {
+            explanationContent.style.maxHeight = explanationContent.scrollHeight + "px";
+            explanationIcon.classList.add('rotate-180');
+        });
+
         startQuizBtn.addEventListener('click', () => {
             studentName = studentNameInput.value.trim();
             if (studentName) {
