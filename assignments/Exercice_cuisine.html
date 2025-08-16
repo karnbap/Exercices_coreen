@@ -247,11 +247,9 @@
         });
 
         // --- EVENT HANDLING / 이벤트 처리 ---
-       - questionsContainer.addEventListener('click', (e) => {
-+ questionsContainer.addEventListener('click', async (e) => {
-
-            const target = e.target.closest('button');
-            if (!target) return;
+questionsContainer.addEventListener('click', async (e) => {
+    const target = e.target.closest('button');
+    if (!target) return;
             
             const card = target.closest('.question-card');
             if (!card) return;
@@ -299,6 +297,7 @@
     </script>
 </body>
 </html>
+
 
 
 
