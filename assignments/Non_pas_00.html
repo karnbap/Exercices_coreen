@@ -306,50 +306,58 @@
             });
         }
         
+               // ✅ 변경된 playAudio(): Blob URL로 재생 (브라우저 호환성↑, data:URL 미사용)
         async function playAudio(questionIndex) {
-            const question = state.questions[questionIndex];
-            question.listenCount++;
-            const textToSpeak = question.ko;
-            const btn = document.querySelector(`.play-audio-btn[onclick="playAudio(${questionIndex})"]`);
-            btn.disabled = true;
-
-            try {
-                const response = await fetch('/.netlify/functions/generate-audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: textToSpeak, voice: 'woman' })
-                });
-                
-                if (!response.ok) {
-                    let errorInfo = `API error: ${response.status} ${response.statusText}`;
-                    try {
-                        const errorData = await response.json();
-                        errorInfo += `\nServer message: ${errorData.error || JSON.stringify(errorData.debug)}`;
-                    } catch (e) { /* Ignore if response body is not JSON */ }
-                    throw new Error(errorInfo);
-                }
-                
-                const data = await response.json();
-                if (!data.audioData || !data.mimeType) {
-                    throw new Error("Invalid audio data received from server.");
-                }
-                const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
-                
-                audio.onended = () => { 
-                    btn.disabled = false; 
-                };
-                
-                // Explicitly handle the promise returned by play()
-                await audio.play();
-
-            } catch (error) {
-                console.error('Error fetching or playing audio:', error);
-                alert(`오디오 재생에 실패했습니다:\n(Échec de la lecture audio:)\n\n${error.message}`);
-                // Ensure button is re-enabled on any error
-                btn.disabled = false;
+          const question = state.questions[questionIndex];
+          question.listenCount++;
+          const textToSpeak = question.ko;
+          const btn = document.querySelector(`.play-audio-btn[onclick="playAudio(${questionIndex})"]`);
+          btn.disabled = true;
+        
+          let objectUrl = null;
+        
+          try {
+            const response = await fetch('/.netlify/functions/generate-audio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: textToSpeak, voice: 'woman' })
+            });
+        
+            if (!response.ok) {
+              let errorInfo = `API error: ${response.status} ${response.statusText}`;
+              try {
+                const errorData = await response.json();
+                errorInfo += `\nServer message: ${errorData.error || JSON.stringify(errorData.debug)}`;
+              } catch (_) {}
+              throw new Error(errorInfo);
             }
+        
+            const data = await response.json();
+            if (!data.audioData || !data.mimeType) {
+              throw new Error("Invalid audio data received from server.");
+            }
+        
+            // 🔄 Base64 → Blob → Object URL
+            const binary = atob(data.audioData);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const blob = new Blob([bytes], { type: data.mimeType || 'audio/wav' });
+            objectUrl = URL.createObjectURL(blob);
+        
+            const audio = new Audio(objectUrl);
+            audio.onended = () => {
+              if (objectUrl) URL.revokeObjectURL(objectUrl);
+              btn.disabled = false;
+            };
+        
+            await audio.play();
+          } catch (error) {
+            console.error('Error fetching or playing audio:', error);
+            alert(`오디오 재생에 실패했습니다:\n(Échec de la lecture audio:)\n\n${error.message}`);
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            btn.disabled = false;
+          }
         }
-
 
         function handleHintRequest(questionIndex) {
             const question = state.questions[questionIndex];
