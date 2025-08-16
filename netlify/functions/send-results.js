@@ -8,9 +8,9 @@ exports.handler = async (event) => {
     }
 
     // === 1) 환경변수 (Gmail) ===
-    const GMAIL_USER = process.env.GMAIL_USER;               // 예: your@gmail.com
-    const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD; // 구글 '앱 비밀번호'
-    const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL;     // 선생님 수신 메일
+    const GMAIL_USER = process.env.GMAIL_USER;
+    const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+    const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL;
 
     if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
       return {
@@ -29,50 +29,37 @@ exports.handler = async (event) => {
       questions = [],
     } = payload;
 
-    // === 3) 첨부파일(녹음) 구성 (용량 보호) ===
-    const PER_FILE_LIMIT_BYTES = 3 * 1024 * 1024; // 3MB
-    const TOTAL_LIMIT_BYTES = 18 * 1024 * 1024;   // 전체 18MB 정도로 제한(메일서버 한도 고려)
-    let totalBytes = 0;
-
+    // === 3) 첨부파일(녹음) 구성 ===
     const attachments = [];
     questions.forEach((q) => {
       if (q?.recording?.base64) {
         const filename = q.recording.filename || `rec_q${q.number || 'X'}.webm`;
         const mimeType = q.recording.mimeType || 'audio/webm';
         const buf = Buffer.from(q.recording.base64, 'base64');
-
-        if (buf.length <= PER_FILE_LIMIT_BYTES && totalBytes + buf.length <= TOTAL_LIMIT_BYTES) {
-          totalBytes += buf.length;
-          attachments.push({
-            filename,
-            content: buf,
-            contentType: mimeType,
-            cid: `recq${q.number}@inline`, // 본문 <audio src="cid:..."> 시도용
-          });
-        }
+        attachments.push({
+          filename,
+          content: buf,
+          contentType: mimeType,
+          cid: `recq${q.number}@inline`,
+        });
       }
     });
 
     // === 4) 메일 본문(HTML) 만들기 ===
     const mins = Math.floor(totalTimeSeconds / 60);
-    const secs = totalTimeSeconds % 60;
+    const secs = Math.round(totalTimeSeconds % 60);
+
+    // ✅ 수정됨: 서버에서 직접 점수 계산
+    const correctCount = questions.filter(q => q.isCorrect).length;
+    const totalGraded = questions.length;
+    const score = totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 0;
 
     const rowHtml = questions.map((q) => {
       const answered = q.userAnswer ? escapeHtml(q.userAnswer) : '<i>(vide)</i>';
-      const ok = q.isCorrect ? '✔️' : '—';
+      const ok = q.isCorrect ? '✔️' : '❌';
       const audioHtml = q?.recording?.base64
-        ? `
-          <div style="margin-top:6px">
-            <b>Enregistrement élève:</b><br/>
-            <!-- 일부 클라이언트에서만 재생됨 -->
-            <audio controls src="cid:recq${q.number}@inline"></audio>
-            <div style="font-size:12px;color:#666">
-              * Si l'audio ne s'affiche pas, ouvrez la pièce jointe: ${escapeHtml(q.recording.filename || '')}
-              (${q.recording.duration ? q.recording.duration + 's' : ''})
-            </div>
-          </div>
-        `
-        : `<div style="font-size:12px;color:#666">Aucun enregistrement</div>`;
+        ? `<div style="margin-top:6px"><b>Enregistrement élève:</b><br/><div style="font-size:12px;color:#666">* Ouvrez la pièce jointe: ${escapeHtml(q.recording.filename || '')} (${q.recording.duration ? q.recording.duration + 's' : ''})</div></div>`
+        : '';
 
       return `
         <tr>
@@ -85,9 +72,7 @@ exports.handler = async (event) => {
           <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint1Count || 0}</td>
           <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint2Count || 0}</td>
         </tr>
-        <tr>
-          <td colspan="8" style="border:1px solid #eee;padding:6px;background:#fafafa">${audioHtml}</td>
-        </tr>
+        ${audioHtml ? `<tr><td colspan="8" style="border:1px solid #eee;padding:6px;background:#fafafa">${audioHtml}</td></tr>` : ''}
       `;
     }).join('');
 
@@ -95,6 +80,13 @@ exports.handler = async (event) => {
       <div style="font-family:Arial, sans-serif">
         <h2>Résultats du test de coréen</h2>
         <p><b>Élève:</b> ${escapeHtml(studentName)}</p>
+        
+        <!-- ✅ 수정됨: 총점 표시 섹션 추가 -->
+        <div style="background:#f0f4f8; padding:15px; border-radius:8px; margin:15px 0; text-align:center;">
+            <h3 style="margin:0; font-size:24px;">Score Final: ${score} / 100</h3>
+            <p style="margin:5px 0 0; font-size:16px; color:#333;">(${correctCount} / ${totalGraded} bonnes réponses)</p>
+        </div>
+
         <p><b>Début:</b> ${escapeHtml(String(startTime || ''))}<br/>
            <b>Fin:</b> ${escapeHtml(String(endTime || ''))}<br/>
            <b>Temps total:</b> ${mins}m ${secs}s
@@ -104,8 +96,8 @@ exports.handler = async (event) => {
           <thead>
             <tr style="background:#f0f4f8">
               <th style="border:1px solid #eee;padding:6px">#</th>
-              <th style="border:1px solid #eee;padding:6px">Français (문장 원문)</th>
-              <th style="border:1px solid #eee;padding:6px">Coréen (문장 원문)</th>
+              <th style="border:1px solid #eee;padding:6px">Français</th>
+              <th style="border:1px solid #eee;padding:6px">Coréen</th>
               <th style="border:1px solid #eee;padding:6px">Réponse élève</th>
               <th style="border:1px solid #eee;padding:6px">OK?</th>
               <th style="border:1px solid #eee;padding:6px">Écoutes</th>
@@ -115,26 +107,21 @@ exports.handler = async (event) => {
           </thead>
           <tbody>${rowHtml}</tbody>
         </table>
-
-        <p style="color:#666;font-size:12px;margin-top:10px">
-          * Certains clients e-mail ne permettent pas la lecture audio intégrée. Les fichiers sont joints en pièces jointes.
-        </p>
       </div>
     `;
 
     // === 5) Gmail SMTP 트랜스포트 ===
-    // Gmail: SSL 포트 465 고정(가장 안정적). 앱 비밀번호 필수!
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
-      secure: true, // SSL
+      secure: true,
       auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
     });
 
     await transporter.sendMail({
-      from: GMAIL_USER,
+      from: `Korean Pondant <${GMAIL_USER}>`,
       to: RECIPIENT_EMAIL,
-      subject: `Résultats – ${studentName} – ${new Date().toLocaleString('fr-FR')}`,
+      subject: `Résultats – ${studentName} – Score: ${score}/100`,
       html,
       attachments,
     });
