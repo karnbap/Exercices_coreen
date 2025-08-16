@@ -1,152 +1,67 @@
 // netlify/functions/generate-audio.js
 
-// ✅ fetch 폴리필 (Node18이면 글로벌 fetch 사용, 아니면 node-fetch 동적 임포트)
-let _fetch = globalThis.fetch;
-async function ensureFetch() {
-  if (typeof _fetch === "function") return;
-  try {
-    const mod = await import("node-fetch");
-    _fetch = mod.default;
-  } catch (e) {
-    console.error("❌ node-fetch not installed and global fetch not available.", e);
-    throw new Error(
-      "Server fetch is unavailable. Set NODE_VERSION=18 or add node-fetch dependency."
-    );
-  }
-}
+// 1. Google Cloud Text-to-Speech 클라이언트 라이브러리를 가져옵니다.
+const textToSpeech = require('@google-cloud/text-to-speech');
+
+// 2. API 클라이언트를 생성합니다.
+//    이 클라이언트는 자동으로 인증 정보를 찾아서 사용합니다.
+const client = new textToSpeech.TextToSpeechClient();
 
 exports.handler = async function (event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+  // POST 요청만 허용합니다.
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    await ensureFetch();
+    const { text, voice } = JSON.parse(event.body || '{}');
 
-    const { text, voice } = JSON.parse(event.body || "{}");
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "GOOGLE_API_KEY is not configured." }),
-      };
-    }
     if (!text) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Le texte à synthétiser est manquant." }),
+        body: JSON.stringify({ error: 'Le texte à synthétiser est manquant.' }),
       };
     }
 
-    // 원하는 프리빌트 보이스명으로 바꾸세요.
-    const voiceName = voice === "man" ? "Kore" : "Kore";
-
-    const payload = {
-      contents: [{ role: "user", parts: [{ text }] }],
-      generationConfig: {
-        responseModalities: ["AUDIO"],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
+    // 3. API에 보낼 요청 객체를 구성합니다.
+    const request = {
+      // 음성으로 변환할 텍스트
+      input: { text: text },
+      // 목소리 설정
+      voice: {
+        languageCode: 'ko-KR', // 언어는 한국어
+        // WaveNet 음성은 매우 자연스러운 고품질 음성입니다.
+        // 남성: D, 여성: B 또는 C를 추천합니다.
+        name: voice === 'man' ? 'ko-KR-Wavenet-D' : 'ko-KR-Wavenet-B',
       },
-      model: "gemini-2.5-flash-preview-tts",
+      // 오디오 파일 형식 설정
+      audioConfig: {
+        audioEncoding: 'MP3', // 가장 널리 호환되는 MP3 형식으로 설정
+      },
     };
 
-    const apiUrl =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=" +
-      apiKey;
+    // 4. API를 호출하여 음성을 합성합니다.
+    const [response] = await client.synthesizeSpeech(request);
+    
+    // 5. 응답으로 받은 오디오 데이터를 Base64 문자열로 변환합니다.
+    //    라이브러리가 이미 Buffer 형태로 주기 때문에 바로 변환 가능합니다.
+    const audioData = response.audioContent.toString('base64');
 
-    const response = await _fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "(no body)");
-      console.error("Google API error:", errorBody);
-      return {
-        statusCode: response.status,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          error: "L'API Google a retourné une erreur.",
-          errorBody,
-        }),
-      };
-    }
-
-    const result = await response.json();
-
-    // ✅ inlineData가 있는 part를 탐색
-    const candidate0 = result?.candidates?.[0] || null;
-    const parts = candidate0?.content?.parts || [];
-    const inline = parts.find((p) => p?.inlineData?.data || p?.inlineData?.mimeType);
-
-    const audioData = inline?.inlineData?.data || null; // Base64 (PCM/MP3/WAV 등)
-    let mimeType = inline?.inlineData?.mimeType || "";  // ex) audio/pcm;rate=24000, audio/linear16, audio/mp3
-
-    if (!audioData) {
-      console.error("No inlineData. candidate0:", JSON.stringify(candidate0).slice(0, 1500));
-      return {
-        statusCode: 500,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          error: "Aucune donnée audio reçue de l'API Google.",
-          debug: {
-            rawMimeType: mimeType,
-            hasCandidates: Array.isArray(result?.candidates),
-            partsCount: parts.length,
-            finishReason: candidate0?.finishReason || null,
-            safetyRatings: candidate0?.safetyRatings || null,
-            promptFeedback: result?.promptFeedback || null,
-          },
-        }),
-      };
-    }
-
-    // ✅ PCM/Linear16/Wave 계열은 전부 WAV로 감싸서 브라우저 호환 보장
-    const isPcmLike = /pcm|linear16|l16|x-wav|wave/i.test(mimeType);
-    const rateMatch = mimeType.match(/rate=(\d+)/);
-    const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
-
-    if (isPcmLike || !/^audio\//.test(mimeType)) {
-      const wavBase64 = pcm16ToWavBase64(audioData, sampleRate);
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioData: wavBase64, mimeType: "audio/wav" }),
-      };
-    }
-
-    // mp3/wav 등은 그대로 전달
+    // 6. Base64로 인코딩된 오디오 데이터와 MIME 타입을 클라이언트에 반환합니다.
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ audioData, mimeType }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audioData: audioData,
+        mimeType: 'audio/mpeg', // MP3 파일의 MIME 타입
+      }),
     };
+
   } catch (error) {
-    console.error("Server function error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    console.error('ERROR:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Failed to synthesize speech.' }),
+    };
   }
 };
-
-// PCM(16bit mono) Base64 → WAV Base64
-function pcm16ToWavBase64(pcmBase64, sampleRate = 24000) {
-  const pcmBuffer = Buffer.from(pcmBase64, "base64");
-  const header = Buffer.alloc(44);
-
-  header.write("RIFF", 0);
-  header.writeUInt32LE(36 + pcmBuffer.length, 4);
-  header.write("WAVE", 8);
-  header.write("fmt ", 12);
-  header.writeUInt32LE(16, 16);
-  header.writeUInt16LE(1, 20); // PCM
-  header.writeUInt16LE(1, 22); // mono
-  header.writeUInt32LE(sampleRate, 24);
-  header.writeUInt32LE(sampleRate * 2, 28); // byte rate
-  header.writeUInt16LE(2, 32);              // block align
-  header.writeUInt16LE(16, 34);             // bits per sample
-  header.write("data", 36);
-  header.writeUInt32LE(pcmBuffer.length, 40);
-
-  const wavBuffer = Buffer.concat([header, pcmBuffer]);
-  return wavBuffer.toString("base64");
-}
