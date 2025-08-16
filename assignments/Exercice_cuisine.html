@@ -122,58 +122,77 @@
         // --- SPEECH SYNTHESIS (Netlify API) / 음성 합성 (Netlify API) ---
         const audioCache = {}; // Cache for generated audio
 
-        async function speak(text, buttonElement) {
-            const originalText = buttonElement.innerHTML;
-            buttonElement.disabled = true;
-            buttonElement.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading... / 로딩 중...`;
+    async function speak(text, buttonElement) {
+    const originalText = buttonElement.innerHTML;
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Loading... / 로딩 중...`;
 
-            try {
-                if (audioCache[text]) {
-                    const audio = new Audio(audioCache[text]);
-                    await audio.play();
-                    return;
-                }
-                
-                // Netlify API 호출
-                const response = await fetch(NETLIFY_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text }) // API가 받을 데이터 형식
-                });
-
-                if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
-
-                const result = await response.json();
-                // API 응답 형식에 맞춰 audioData와 mimeType을 추출해야 합니다.
-                // 아래는 예시이며, 실제 API 응답 구조에 따라 수정이 필요할 수 있습니다.
-                const audioData = result.audioData; // e.g., result.audioContent, result.data 등
-                const mimeType = result.mimeType;   // e.g., "audio/L16;rate=24000"
-
-                if (audioData && mimeType?.startsWith("audio/")) {
-                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
-                    const pcmData = base64ToArrayBuffer(audioData);
-                    const wavBlob = pcmToWav(pcmData, sampleRate);
-                    const audioUrl = URL.createObjectURL(wavBlob);
-                    
-                    audioCache[text] = audioUrl;
-                    const audio = new Audio(audioUrl);
-                    await audio.play();
-                } else {
-                    throw new Error("Audio data not found in API response.");
-                }
-            } catch (error) {
-                console.error("Error generating speech:", error);
-                alert("음성 생성 중 오류가 발생했습니다. Netlify API 주소와 응답 형식을 확인해주세요.");
-            } finally {
-                buttonElement.disabled = false;
-                buttonElement.innerHTML = originalText;
-            }
+    try {
+        if (audioCache[text]) {
+            const audio = new Audio(audioCache[text]);
+            await audio.play();
+            return;
         }
+
+        const response = await fetch(NETLIFY_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        });
+
+        if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+
+        const result = await response.json();
+        const audioData = result.audioData;
+        const mimeType = result.mimeType;
+
+        if (!audioData || !mimeType?.startsWith("audio/")) {
+            throw new Error("Invalid audio response format");
+        }
+
+        let audioUrl;
+
+        if (mimeType === "audio/wav" || mimeType === "audio/mp3") {
+            // WAV 또는 MP3는 바로 Blob 생성
+            const binary = atob(audioData);
+            const byteArray = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                byteArray[i] = binary.charCodeAt(i);
+            }
+            const blob = new Blob([byteArray], { type: mimeType });
+            audioUrl = URL.createObjectURL(blob);
+        } else if (mimeType.includes("rate=")) {
+            // PCM 등은 WAV로 감싸기
+            const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10) || 24000;
+            const pcmBuffer = Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer;
+            const wavBlob = pcmToWav(pcmBuffer, sampleRate);
+            audioUrl = URL.createObjectURL(wavBlob);
+        } else {
+            throw new Error("Unsupported audio MIME type.");
+        }
+
+        audioCache[text] = audioUrl;
+        const audio = new Audio(audioUrl);
+        await audio.play();
+
+        // 메모리 해제
+        audio.addEventListener('ended', () => {
+            URL.revokeObjectURL(audioUrl);
+        });
+    } catch (error) {
+        console.error("🎧 오류:", error);
+        alert("오디오를 불러오는 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
+    } finally {
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalText;
+    }
+}
+
 
         // --- HINT GENERATION / 힌트 생성 ---
         function getChosung(text) {
@@ -278,4 +297,5 @@
     </script>
 </body>
 </html>
+
 
