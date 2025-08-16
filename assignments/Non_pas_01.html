@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연습: 부정 표현 | Exercice : Négation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        .explanation-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">부정 표현 연습 🇰🇷</h1>
+                <p class="text-slate-500">Exercice sur les expressions de négation</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="printButton" class="control-button" title="프린트 | Imprimer">
+                    <i class="fas fa-print"></i>
+                </button>
+                <a href="/index.html" class="control-button" title="이전 연습문제 | Exercices précédents">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Explanation Section -->
+        <div class="bg-white p-5 rounded-xl shadow-md mb-6">
+            <button id="toggle-explanation" class="w-full text-left flex justify-between items-center">
+                <h2 class="text-2xl font-semibold text-sky-700">오늘의 문법! | La grammaire du jour ! 📘</h2>
+                <i id="explanation-icon" class="fas fa-chevron-down transition-transform"></i>
+            </button>
+            <div id="explanation-content" class="explanation-content mt-4 border-t pt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Part 1 -->
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-700">1. “mais pas” → <span class="text-blue-600">~지만 ~아니에요</span></h3>
+                        <p class="text-sm text-slate-500 mt-1">A는 좋아하지만, B는 아니다'처럼 단순한 대조를 나타낼 때 사용해요.</p>
+                        <p class="text-sm text-slate-500 mt-1 fr">Utilisé pour une opposition simple, comme "J'aime A, mais pas B."</p>
+                        <div class="mt-3 bg-slate-100 p-3 rounded-lg">
+                            <p class="font-mono">커피는 좋아하지만 차는 아니에요.</p>
+                            <p class="text-sm text-slate-600 fr">→ J’aime le café, mais pas le thé.</p>
+                            <p class="font-mono mt-2">그는 자주 오지만 오늘은 아니에요.</p>
+                            <p class="text-sm text-slate-600 fr">→ Il vient souvent, mais pas aujourd’hui.</p>
+                        </div>
+                    </div>
+                    <!-- Part 2 -->
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-700">2. “Ce n’est pas A mais B” → <span class="text-green-600">~이/가 아니에요, ~는 것이 아니에요</span></h3>
+                        <p class="text-sm text-slate-500 mt-1">'A가 아니라 B다'처럼 잘못된 정보를 바로잡거나 강조할 때 써요.</p>
+                        <p class="text-sm text-slate-500 mt-1 fr">Utilisé pour corriger une idée ou insister sur une précision : "Ce n'est pas A, mais B."</p>
+                        <div class="mt-3 bg-slate-100 p-3 rounded-lg">
+                            <p class="font-mono">커피가 아니라 차를 좋아해요.</p>
+                            <p class="text-sm text-slate-600 fr">→ Ce n’est pas le café, mais le thé que j’aime.</p>
+                            <p class="font-mono mt-2">쉬는 게 아니에요, 일하는 중이에요.</p>
+                            <p class="text-sm text-slate-600 fr">→ Ce n’est pas que je me repose, je suis en train de travailler.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Name Input -->
+        <div id="student-name-section" class="bg-white p-6 rounded-xl shadow-md text-center">
+            <label for="studentName" class="text-lg font-medium text-slate-700">이름을 입력하세요 | Entrez votre nom :</label>
+            <input type="text" id="studentName" class="mt-2 w-full max-w-sm mx-auto form-input" placeholder="학생 이름 | Nom de l'étudiant">
+            <button id="start-quiz-btn" class="main-button mt-4">퀴즈 시작! | Commencer !</button>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="hidden">
+            <!-- Quiz content will be injected here -->
+        </div>
+
+        <!-- Navigation -->
+        <div id="navigation-controls" class="hidden justify-between items-center mt-6">
+            <button id="prev-btn" class="nav-button"><i class="fas fa-arrow-left mr-2"></i> 이전 | Précédent</button>
+            <div id="progress-indicator" class="text-slate-600 font-medium"></div>
+            <button id="next-btn" class="nav-button">다음 | Suivant <i class="fas fa-arrow-right ml-2"></i></button>
+            <button id="finish-btn" class="main-button hidden">끝내기 | Terminer</button>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4">
+        <div id="results-content" class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl text-center transform scale-95 transition-transform duration-300">
+            <!-- Results will be injected here -->
+        </div>
+    </div>
+
+    <script type="module">
+        // --- DOM Elements ---
+        const studentNameSection = document.getElementById('student-name-section');
+        const studentNameInput = document.getElementById('studentName');
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const quizContainer = document.getElementById('quiz-container');
+        const navigationControls = document.getElementById('navigation-controls');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const printButton = document.getElementById('printButton');
+        const resultsModal = document.getElementById('results-modal');
+        const resultsContent = document.getElementById('results-content');
+        const toggleExplanationBtn = document.getElementById('toggle-explanation');
+        const explanationContent = document.getElementById('explanation-content');
+        const explanationIcon = document.getElementById('explanation-icon');
+
+        // --- State Management ---
+        let studentName = '';
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];
+        let startTime, endTime;
+        let mediaRecorder;
+        let audioChunks = [];
+        
+        // --- Helper Functions (Previously Imported) ---
+        function getCho(str) {
+            const cho = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+            let result = "";
+            for (let i = 0; i < str.length; i++) {
+                const code = str.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    result += cho[Math.floor(code / 588)];
+                } else {
+                    result += str.charAt(i);
+                }
+            }
+            return result;
+        }
+
+        function gradingCriteria(score) {
+            if (score >= 90) {
+                return {
+                    title: { ko: "정말 대단해요!", fr: "Excellent travail !" },
+                    color: "text-green-600"
+                };
+            } else if (score >= 70) {
+                return {
+                    title: { ko: "아주 잘했어요!", fr: "Très bien !" },
+                    color: "text-blue-600"
+                };
+            } else if (score >= 50) {
+                return {
+                    title: { ko: "좋아요, 조금만 더!", fr: "Bien, encore un effort !" },
+                    color: "text-yellow-600"
+                };
+            } else {
+                return {
+                    title: { ko: "다시 한번 해볼까요?", fr: "On essaie encore ?" },
+                    color: "text-red-600"
+                };
+            }
+        }
+
+
+        // --- Question Data Pool ---
+        const questionPool = [
+            {
+                type: '지만_아니에요',
+                fr_prompt_template: "J'aime [FR_A], mais pas [FR_B].",
+                ko_pattern_template: "[KO_A] 좋아하지만 [KO_B] 아니에요.",
+                pool: [
+                    { KO_A: '커피는', KO_B: '차는', FR_A: 'le café', FR_B: 'le thé', vocab: { '커피': 'café', '차': 'thé', '좋아하다': 'aimer' } },
+                    { KO_A: '여름은', KO_B: '겨울은', FR_A: "l'été", FR_B: "l'hiver", vocab: { '여름': 'été', '겨울': 'hiver' } },
+                    { KO_A: '강아지는', KO_B: '고양이는', FR_A: 'les chiens', FR_B: 'les chats', vocab: { '강아지': 'chien', '고양이': 'chat' } },
+                ]
+            },
+            {
+                type: '이/가_아니라',
+                fr_prompt_template: "Ce n’est pas [FR_A], mais [FR_B] que je veux.",
+                ko_pattern_template: "[KO_A] 아니라 [KO_B] 원해요.",
+                pool: [
+                    { KO_A: '사과가', KO_B: '오렌지를', FR_A: 'une pomme', FR_B: 'une orange', vocab: { '사과': 'pomme', '오렌지': 'orange', '원하다': 'vouloir' } },
+                    { KO_A: '책이', KO_B: '공책을', FR_A: 'un livre', FR_B: 'un cahier', vocab: { '책': 'livre', '공책': 'cahier' } },
+                    { KO_A: '물이', KO_B: '주스를', FR_A: "de l'eau", FR_B: 'du jus', vocab: { '물': 'eau', '주스': 'jus' } }
+                ]
+            },
+            {
+                type: '는_것이_아니에요',
+                fr_prompt_template: "Ce n’est pas que je [FR_A], je suis en train de [FR_B].",
+                ko_pattern_template: "[KO_A] 게 아니에요, [KO_B] 중이에요.",
+                pool: [
+                    { KO_A: '쉬는', KO_B: '일하는', FR_A: 'me repose', FR_B: 'travailler', vocab: { '쉬다': 'se reposer', '일하다': 'travailler' } },
+                    { KO_A: '노는', KO_B: '공부하는', FR_A: "m'amuse", FR_B: 'étudier', vocab: { '놀다': 's\'amuser', '공부하다': 'étudier' } },
+                    { KO_A: '자는', KO_B: '생각하는', FR_A: 'dors', FR_B: 'réfléchir', vocab: { '자다': 'dormir', '생각하다': 'penser' } }
+                ]
+            },
+            {
+                type: '지만_아니에요',
+                fr_prompt_template: "Il/Elle vient [FR_A], mais pas [FR_B].",
+                ko_pattern_template: "[KO_A] 오지만 [KO_B] 아니에요.",
+                pool: [
+                    { KO_A: '자주는', KO_B: '오늘은', FR_A: 'souvent', FR_B: "aujourd'hui", vocab: { '자주': 'souvent', '오늘': "aujourd'hui", '오다': 'venir' } },
+                    { KO_A: '어제는', KO_B: '오늘은', FR_A: 'hier', FR_B: "aujourd'hui", vocab: { '어제': 'hier', '오늘': "aujourd'hui" } },
+                ]
+            }
+        ];
+
+        // --- Functions ---
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function generateQuestions() {
+            questions = questionPool.map((q, index) => {
+                shuffleArray(q.pool);
+                const item = q.pool[0];
+                const fr = q.fr_prompt_template.replace('[FR_A]', item.FR_A).replace('[FR_B]', item.FR_B);
+                const ko = q.ko_pattern_template.replace('[KO_A]', item.KO_A).replace('[KO_B]', item.KO_B);
+                return {
+                    number: index + 1,
+                    fr: fr,
+                    ko: ko,
+                    vocab: item.vocab,
+                    userAnswer: '',
+                    isCorrect: false,
+                    listenCount: 0,
+                    hint1Count: 0,
+                    hint2Count: 0,
+                    recording: null
+                };
+            });
+            userAnswers = new Array(questions.length).fill('');
+        }
+
+        function renderQuestion(index) {
+            const q = questions[index];
+            quizContainer.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md animate-fade-in">
+                    <div class="mb-4">
+                        <p class="text-sm text-slate-500">Question ${q.number} / ${questions.length}</p>
+                        <p class="text-lg font-medium text-slate-800 mt-1" lang="fr">${q.fr}</p>
+                    </div>
+
+                    <div class="flex items-center space-x-3 mb-4">
+                        <button class="control-button" id="play-audio-btn" title="Écouter"><i class="fas fa-volume-up"></i> 듣기</button>
+                        <button class="control-button" id="hint1-btn" title="Indice 1: Consonnes initiales"><i class="fas fa-lightbulb"></i> 힌트 1</button>
+                        <button class="control-button" id="hint2-btn" title="Indice 2: Vocabulaire"><i class="fas fa-book"></i> 힌트 2</button>
+                    </div>
+                    
+                    <div id="hint-display" class="my-3 text-blue-600 font-semibold"></div>
+
+                    <div class="mt-4">
+                        <label for="korean-answer" class="block text-sm font-medium text-slate-600 mb-1">한국어 답안 | Réponse en coréen :</label>
+                        <input type="text" id="korean-answer" class="form-input" value="${userAnswers[index] || ''}" placeholder="여기에 한국어 문장을 입력하세요...">
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-slate-600 mb-1">발음 녹음 | Enregistrer la prononciation :</label>
+                        <div class="flex items-center space-x-2">
+                            <button id="record-btn" class="control-button record-button"><i class="fas fa-microphone"></i> 녹음 시작</button>
+                            <span id="record-status" class="text-sm text-slate-500"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('korean-answer').addEventListener('input', (e) => {
+                userAnswers[index] = e.target.value;
+            });
+
+            document.getElementById('play-audio-btn').addEventListener('click', () => {
+                playAudio(q.ko, 'woman');
+                q.listenCount++;
+            });
+
+            document.getElementById('hint1-btn').addEventListener('click', () => {
+                document.getElementById('hint-display').textContent = getCho(q.ko);
+                q.hint1Count++;
+            });
+
+            document.getElementById('hint2-btn').addEventListener('click', () => {
+                const vocabHtml = Object.entries(q.vocab)
+                    .map(([k, v]) => `<li><span class="font-semibold">${k}</span>: ${v}</li>`)
+                    .join('');
+                document.getElementById('hint-display').innerHTML = `<ul class="list-disc list-inside">${vocabHtml}</ul>`;
+                q.hint2Count++;
+            });
+
+            document.getElementById('record-btn').addEventListener('click', toggleRecording);
+
+            updateNavigation(index);
+        }
+
+        function updateNavigation(index) {
+            progressIndicator.textContent = `${index + 1} / ${questions.length}`;
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === questions.length - 1;
+            nextBtn.classList.toggle('hidden', index === questions.length - 1);
+            finishBtn.classList.toggle('hidden', index !== questions.length - 1);
+        }
+
+        async function playAudio(text, voice) {
+            const button = document.getElementById('play-audio-btn');
+            if(!button) return;
+            const icon = button.querySelector('i');
+            icon.classList.remove('fa-volume-up');
+            icon.classList.add('fa-spinner', 'fa-spin');
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice }),
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const { audioContent } = await response.json();
+                const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                audio.play();
+                audio.onended = () => {
+                    icon.classList.remove('fa-spinner', 'fa-spin');
+                    icon.classList.add('fa-volume-up');
+                    button.disabled = false;
+                };
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                icon.classList.remove('fa-spinner', 'fa-spin');
+                icon.classList.add('fa-volume-up');
+                button.disabled = false;
+            }
+        }
+        
+        function toggleRecording() {
+            const recordBtn = document.getElementById('record-btn');
+            const recordStatus = document.getElementById('record-status');
+            const icon = recordBtn.querySelector('i');
+
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+                icon.classList.remove('fa-stop-circle');
+                icon.classList.add('fa-microphone');
+                recordBtn.innerHTML = `<i class="fas fa-microphone"></i> 녹음 시작`;
+                recordStatus.textContent = '녹음 완료! | Enregistrement terminé !';
+            } else {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                        mediaRecorder.start();
+                        audioChunks = [];
+                        
+                        icon.classList.remove('fa-microphone');
+                        icon.classList.add('fa-stop-circle');
+                        recordBtn.innerHTML = `<i class="fas fa-stop-circle"></i> 녹음 중지`;
+                        recordStatus.textContent = '녹음 중... | Enregistrement...';
+
+                        mediaRecorder.addEventListener("dataavailable", event => {
+                            audioChunks.push(event.data);
+                        });
+
+                        mediaRecorder.addEventListener("stop", () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            const reader = new FileReader();
+                            reader.readAsDataURL(audioBlob);
+                            reader.onloadend = function() {
+                                const base64String = reader.result.split(',')[1];
+                                questions[currentQuestionIndex].recording = {
+                                    base64: base64String,
+                                    filename: `recording_${studentName.replace(/\s/g, '_')}_q${currentQuestionIndex + 1}.webm`,
+                                    mimeType: 'audio/webm',
+                                };
+                            };
+                            stream.getTracks().forEach(track => track.stop());
+                        });
+                    });
+            }
+        }
+
+        function showResults() {
+            endTime = new Date();
+            const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
+            let correctCount = 0;
+
+            questions.forEach((q, i) => {
+                const cleanedUserAnswer = userAnswers[i].replace(/[.,\s]/g, '');
+                const cleanedCorrectAnswer = q.ko.replace(/[.,\s]/g, '');
+                if (cleanedUserAnswer === cleanedCorrectAnswer) {
+                    q.isCorrect = true;
+                    correctCount++;
+                }
+                q.userAnswer = userAnswers[i];
+            });
+
+            const score = (correctCount / questions.length) * 100;
+            const feedback = gradingCriteria(score);
+
+            let resultsHtml = `
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">${feedback.title.ko}</h2>
+                <p class="text-lg text-slate-600 mb-4">${feedback.title.fr}</p>
+                <p class="text-2xl font-semibold ${feedback.color} mb-6">${correctCount} / ${questions.length} (${score.toFixed(0)}%)</p>
+                <div class="text-left max-h-60 overflow-y-auto pr-2">
+            `;
+
+            questions.forEach((q, i) => {
+                resultsHtml += `
+                    <div class="p-3 rounded-lg mb-3 ${q.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
+                        <p class="font-semibold text-slate-700">Q${i + 1}: ${q.fr}</p>
+                        <p class="text-sm ${q.isCorrect ? 'text-green-700' : 'text-red-700'}">
+                            <i class="fas ${q.isCorrect ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                            당신의 답: ${q.userAnswer || "답변 없음"}
+                        </p>
+                        ${!q.isCorrect ? `<p class="text-sm text-blue-700"><span class="font-bold">여기는 살짝 삐끗 😅 → 이렇게 하면 완벽!</span><br>${q.ko}</p>` : ''}
+                    </div>
+                `;
+            });
+
+            resultsHtml += `
+                </div>
+                <div class="mt-6 flex justify-center space-x-4">
+                    <button id="retry-btn" class="main-button">다시하기 | Recommencer</button>
+                    <button id="close-results-btn" class="nav-button">닫기 | Fermer</button>
+                </div>
+            `;
+
+            resultsContent.innerHTML = resultsHtml;
+            resultsModal.classList.remove('hidden');
+            resultsModal.classList.add('flex');
+            setTimeout(() => resultsContent.classList.add('scale-100'), 10);
+
+            document.getElementById('retry-btn').addEventListener('click', () => {
+                resultsModal.classList.add('hidden');
+                resultsModal.classList.remove('flex');
+                resultsContent.classList.remove('scale-100');
+                resetQuiz();
+            });
+            document.getElementById('close-results-btn').addEventListener('click', () => {
+                resultsModal.classList.add('hidden');
+                resultsModal.classList.remove('flex');
+                resultsContent.classList.remove('scale-100');
+            });
+
+            sendResults(totalTimeSeconds);
+        }
+
+        async function sendResults(totalTimeSeconds) {
+            const payload = {
+                studentName,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                totalTimeSeconds,
+                questions,
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to send results');
+                }
+                console.log('Results sent successfully.');
+            } catch (error) {
+                console.error('Error sending results:', error);
+            }
+        }
+        
+        function resetQuiz() {
+            studentNameSection.classList.remove('hidden');
+            quizContainer.classList.add('hidden');
+            navigationControls.classList.add('hidden');
+            currentQuestionIndex = 0;
+            studentNameInput.value = '';
+            studentName = '';
+        }
+
+        // --- Event Listeners ---
+        startQuizBtn.addEventListener('click', () => {
+            studentName = studentNameInput.value.trim();
+            if (studentName) {
+                startTime = new Date();
+                studentNameSection.classList.add('hidden');
+                quizContainer.classList.remove('hidden');
+                navigationControls.classList.add('flex');
+                generateQuestions();
+                renderQuestion(currentQuestionIndex);
+            } else {
+                alert('이름을 입력해주세요. | Veuillez entrer votre nom.');
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion(currentQuestionIndex);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                renderQuestion(currentQuestionIndex);
+            }
+        });
+
+        finishBtn.addEventListener('click', showResults);
+        
+        printButton.addEventListener('click', () => window.print());
+
+        toggleExplanationBtn.addEventListener('click', () => {
+            if (explanationContent.style.maxHeight) {
+                explanationContent.style.maxHeight = null;
+                explanationIcon.classList.remove('rotate-180');
+            } else {
+                explanationContent.style.maxHeight = explanationContent.scrollHeight + "px";
+                explanationIcon.classList.add('rotate-180');
+            }
+        });
+    </script>
+</body>
+
+</html>
