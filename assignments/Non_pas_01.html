@@ -108,6 +108,7 @@
         </div>
     </div>
 
+    <script src="../assets/grading-criteria.js"></script>
     <script type="module">
         // --- DOM Elements ---
         const studentNameSection = document.getElementById('student-name-section');
@@ -149,31 +150,6 @@
             }
             return result;
         }
-
-        function gradingCriteria(score) {
-            if (score >= 90) {
-                return {
-                    title: { ko: "정말 대단해요!", fr: "Excellent travail !" },
-                    color: "text-green-600"
-                };
-            } else if (score >= 70) {
-                return {
-                    title: { ko: "아주 잘했어요!", fr: "Très bien !" },
-                    color: "text-blue-600"
-                };
-            } else if (score >= 50) {
-                return {
-                    title: { ko: "좋아요, 조금만 더!", fr: "Bien, encore un effort !" },
-                    color: "text-yellow-600"
-                };
-            } else {
-                return {
-                    title: { ko: "다시 한번 해볼까요?", fr: "On essaie encore ?" },
-                    color: "text-red-600"
-                };
-            }
-        }
-
 
         // --- Question Data Pool ---
         const questionPool = [
@@ -253,7 +229,7 @@
         function renderQuestion(index) {
             const q = questions[index];
             quizContainer.innerHTML = `
-                <div class="bg-white p-6 rounded-xl shadow-md animate-fade-in">
+                <div class="bg-white p-6 rounded-xl shadow-md animate-fade-in max-h-[calc(100vh-22rem)] overflow-y-auto">
                     <div class="mb-4">
                         <p class="text-sm text-slate-500">Question ${q.number} / ${questions.length}</p>
                         <p class="text-lg font-medium text-slate-800 mt-1" lang="fr">${q.fr}</p>
@@ -331,7 +307,6 @@
             finishBtn.classList.toggle('hidden', index !== questions.length - 1);
         }
 
-        // ✅ 수정됨: 서버 응답에 맞게 데이터 처리 방식 변경
         async function playAudio(text, voice) {
             const button = document.getElementById('play-audio-btn');
             if(!button) return;
@@ -348,7 +323,6 @@
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
-                // 서버는 { audioData, mimeType }을 반환합니다.
                 const { audioData, mimeType } = await response.json();
                 if (!audioData) {
                     throw new Error("No audio data received from server.");
@@ -399,7 +373,6 @@
                         mediaRecorder.addEventListener("stop", () => {
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                             
-                            // For playback
                             const audioUrl = URL.createObjectURL(audioBlob);
                             const playbackSection = document.getElementById('recording-playback-section');
                             const audioPlayer = document.getElementById('audio-playback');
@@ -408,7 +381,6 @@
                                 playbackSection.classList.remove('hidden');
                             }
 
-                            // For sending results
                             const reader = new FileReader();
                             reader.readAsDataURL(audioBlob);
                             reader.onloadend = function() {
@@ -443,13 +415,19 @@
                 q.userAnswer = userAnswers[i];
             });
 
-            const score = (correctCount / questions.length) * 100;
-            const feedback = gradingCriteria(score);
+            const score = Math.round((correctCount / questions.length) * 100);
+            const feedback = gradingCriteria(score); // This uses the old function name
+
+            // ✅ 수정됨: grading-criteria.js의 getGradingMessage 함수를 사용하도록 변경
+            // getGradingMessage는 전역 스코프에 로드됩니다.
+            const gradingResult = getGradingMessage(score);
 
             let resultsHtml = `
-                <h2 class="text-3xl font-bold text-slate-800 mb-2">${feedback.title.ko}</h2>
-                <p class="text-lg text-slate-600 mb-4">${feedback.title.fr}</p>
-                <p class="text-2xl font-semibold ${feedback.color} mb-6">${correctCount} / ${questions.length} (${score.toFixed(0)}%)</p>
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">${gradingResult.ko}</h2>
+                <p class="text-lg text-slate-600 mb-4">${gradingResult.fr}</p>
+                <p class="text-2xl font-semibold text-sky-600 mb-6">
+                    ${correctCount} / ${questions.length} (${gradingResult.score}%)
+                </p>
                 <div class="text-left max-h-60 overflow-y-auto pr-2">
             `;
 
@@ -461,7 +439,7 @@
                             <i class="fas ${q.isCorrect ? 'fa-check-circle' : 'fa-times-circle'}"></i>
                             당신의 답: ${q.userAnswer || "답변 없음"}
                         </p>
-                        ${!q.isCorrect ? `<p class="text-sm text-blue-700"><span class="font-bold">여기는 살짝 삐끗 😅 → 이렇게 하면 완벽!</span><br>${q.ko}</p>` : ''}
+                        ${!q.isCorrect ? `<p class="text-sm text-blue-700"><span class="font-bold">${comparisonMessage.ko}</span><br>${q.ko}</p>` : ''}
                         <p class="text-sm text-slate-500 mt-1 border-t pt-1">
                             <i class="fas fa-keyboard"></i>
                             받아쓰기: ${q.userDictation || "입력 없음"}
