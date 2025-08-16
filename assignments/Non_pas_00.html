@@ -306,15 +306,22 @@
             });
         }
         
-        // Helper function to convert base64 to a Blob
-        function base64ToBlob(base64, mimeType) {
+        // ✅ 수정됨: 더 안정적인 Blob 변환 함수로 교체
+        function base64ToBlob(base64, contentType = '', sliceSize = 512) {
             const byteCharacters = atob(base64);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            const byteArrays = [];
+
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
             }
-            const byteArray = new Uint8Array(byteNumbers);
-            return new Blob([byteArray], { type: mimeType });
+
+            return new Blob(byteArrays, {type: contentType});
         }
 
         async function playAudio(questionIndex) {
@@ -357,8 +364,8 @@
                     URL.revokeObjectURL(audioUrl); // Clean up
                 };
                 
-                audio.onerror = () => {
-                    console.error("Audio element error.");
+                audio.onerror = (e) => {
+                    console.error("Audio element error:", e);
                     throw new Error("Could not play the generated audio file.");
                 };
                 
