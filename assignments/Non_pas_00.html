@@ -159,9 +159,6 @@
         
         // --- 함수 ---
 
-        // ✅ 수정됨: 중복 선언을 막기 위해 grading-criteria.js에서 로드된 함수를 사용하도록 내부 복사본 제거
-        // getGradingMessage 함수는 grading-criteria.js 파일에 이미 정의되어 있습니다.
-
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -322,18 +319,31 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: textToSpeak, voice: 'woman' })
                 });
-                if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+                
+                if (!response.ok) {
+                    let errorInfo = `API error: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        errorInfo += `\nServer message: ${errorData.error || JSON.stringify(errorData.debug)}`;
+                    } catch (e) { /* Ignore if response body is not JSON */ }
+                    throw new Error(errorInfo);
+                }
                 
                 const data = await response.json();
                 if (!data.audioData || !data.mimeType) {
                     throw new Error("Invalid audio data received from server.");
                 }
                 const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
-                audio.play();
+                
+                audio.play().catch(e => {
+                    console.error("Audio playback failed:", e);
+                    alert("오디오 파일을 재생할 수 없습니다. 브라우저 호환성 문제일 수 있습니다.\n(Impossible de lire le fichier audio. Problème de compatibilité du navigateur possible.)");
+                });
+
                 audio.onended = () => { btn.disabled = false; };
             } catch (error) {
                 console.error('Error playing audio:', error);
-                alert("오디오 재생에 실패했습니다. (Échec de la lecture audio.)");
+                alert(`오디오 재생에 실패했습니다:\n(Échec de la lecture audio:)\n\n${error.message}`);
                 btn.disabled = false;
             }
         }
