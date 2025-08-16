@@ -335,15 +335,17 @@
                 }
                 const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
                 
-                audio.play().catch(e => {
-                    console.error("Audio playback failed:", e);
-                    alert("오디오 파일을 재생할 수 없습니다. 브라우저 호환성 문제일 수 있습니다.\n(Impossible de lire le fichier audio. Problème de compatibilité du navigateur possible.)");
-                });
+                audio.onended = () => { 
+                    btn.disabled = false; 
+                };
+                
+                // Explicitly handle the promise returned by play()
+                await audio.play();
 
-                audio.onended = () => { btn.disabled = false; };
             } catch (error) {
-                console.error('Error playing audio:', error);
+                console.error('Error fetching or playing audio:', error);
                 alert(`오디오 재생에 실패했습니다:\n(Échec de la lecture audio:)\n\n${error.message}`);
+                // Ensure button is re-enabled on any error
                 btn.disabled = false;
             }
         }
