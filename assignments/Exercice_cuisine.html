@@ -122,7 +122,7 @@
         // --- SPEECH SYNTHESIS (Netlify API) / 음성 합성 (Netlify API) ---
         const audioCache = {}; // Cache for generated audio
 
-    async function speak(text, buttonElement) {
+ async function speak(text, buttonElement) {
     const originalText = buttonElement.innerHTML;
     buttonElement.disabled = true;
     buttonElement.innerHTML = `
@@ -155,35 +155,24 @@
             throw new Error("Invalid audio response format");
         }
 
-        let audioUrl;
-
-        if (mimeType === "audio/wav" || mimeType === "audio/mp3") {
-            // WAV 또는 MP3는 바로 Blob 생성
-            const binary = atob(audioData);
-            const byteArray = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) {
-                byteArray[i] = binary.charCodeAt(i);
-            }
-            const blob = new Blob([byteArray], { type: mimeType });
-            audioUrl = URL.createObjectURL(blob);
-        } else if (mimeType.includes("rate=")) {
-            // PCM 등은 WAV로 감싸기
-            const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10) || 24000;
-            const pcmBuffer = Uint8Array.from(atob(audioData), c => c.charCodeAt(0)).buffer;
-            const wavBlob = pcmToWav(pcmBuffer, sampleRate);
-            audioUrl = URL.createObjectURL(wavBlob);
-        } else {
-            throw new Error("Unsupported audio MIME type.");
+        // 🎯 유연하게 모든 audio/* 타입 처리
+        const binary = atob(audioData);
+        const byteArray = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            byteArray[i] = binary.charCodeAt(i);
         }
+        const blob = new Blob([byteArray], { type: mimeType });
+        const audioUrl = URL.createObjectURL(blob);
 
         audioCache[text] = audioUrl;
         const audio = new Audio(audioUrl);
         await audio.play();
 
-        // 메모리 해제
+        // ✅ 메모리 해제
         audio.addEventListener('ended', () => {
             URL.revokeObjectURL(audioUrl);
         });
+
     } catch (error) {
         console.error("🎧 오류:", error);
         alert("오디오를 불러오는 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
@@ -192,6 +181,7 @@
         buttonElement.innerHTML = originalText;
     }
 }
+
 
 
         // --- HINT GENERATION / 힌트 생성 ---
@@ -297,6 +287,7 @@ questionsContainer.addEventListener('click', async (e) => {
     </script>
 </body>
 </html>
+
 
 
 
