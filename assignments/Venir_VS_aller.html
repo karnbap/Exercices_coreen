@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice Coréen : Le secret de 가다 et 오다</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        .font-korean {
+            font-family: 'Gowun Dodum', sans-serif;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #4338ca;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #d1d5db;
+        }
+        
+        .feedback {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+
+        .feedback.correct {
+            background-color: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        .feedback.incorrect {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
+        .recording-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .made-by {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #9ca3af;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
+<body class="text-slate-800">
+
+    <div class="made-by">Made by 성일, Pondant, Laon</div>
+
+    <div id="student-name-container" class="min-h-screen flex items-center justify-center bg-slate-50">
+        <div class="card text-center w-full max-w-md mx-auto">
+            <h1 class="text-3xl font-bold mb-2 text-slate-700">Exercice : 가다 vs 오다</h1>
+            <p class="text-slate-500 mb-6" id="student-name-prompt">Entrez votre nom pour commencer.</p>
+            <input type="text" id="student-name" class="input-field mb-4">
+            <button id="start-btn" class="btn btn-primary w-full">Commencer l'exercice</button>
+        </div>
+    </div>
+
+    <div id="quiz-container" class="hidden w-full max-w-4xl mx-auto p-4 md:p-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-indigo-700">Le secret de <span class="font-korean">가다</span> et <span class="font-korean">오다</span></h1>
+                <p class="text-slate-600 mt-1">Le locuteur est-il DÉJÀ à la destination ? 🤔</p>
+            </div>
+            <button id="print-btn" class="btn btn-secondary">Imprimer (프린트)</button>
+        </div>
+
+        <div id="question-card" class="card">
+            <p class="text-sm text-slate-500 text-center mb-4">Question <span id="question-number">1</span> sur <span id="total-questions"></span></p>
+            
+            <!-- Question Type 1: Choice -->
+            <div id="choice-practice" class="hidden">
+                 <div class="bg-slate-100 p-4 rounded-lg mb-6 text-left">
+                     <div class="text-lg text-slate-700 font-semibold" id="situation-info"></div>
+                </div>
+                <p class="text-xl text-center font-medium mb-6" id="sentence-choice"></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button class="btn btn-secondary btn-choice font-korean text-2xl p-6" data-choice="오다">오다</button>
+                    <button class="btn btn-secondary btn-choice font-korean text-2xl p-6" data-choice="가다">가다</button>
+                </div>
+            </div>
+
+            <!-- Question Type 2: Writing -->
+            <div id="writing-practice" class="hidden">
+                <div class="bg-slate-100 p-4 rounded-lg mb-6">
+                    <p class="text-lg text-slate-800" id="dialogue-fr"></p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6 mb-4">
+                    <div>
+                        <label class="font-semibold text-slate-600 block mb-2">1. Qui parle ? (누가 말해요?)</label>
+                        <input type="text" id="speaker-input" class="input-field" placeholder="Ex: Marie (마리)">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-600 block mb-2">2. Où est cette personne ? (어디에 있어요?)</label>
+                        <input type="text" id="location-input" class="input-field" placeholder="Ex: Chez elle (집)">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="font-semibold text-slate-600 block mb-2">3. Traduisez la phrase en coréen :</label>
+                    <div id="vocab-hint" class="text-sm text-slate-500 mb-2"></div>
+                    <input type="text" id="sentence-input" class="input-field font-korean text-lg">
+                </div>
+                 <div class="text-center mt-6">
+                    <button id="check-writing-btn" class="btn btn-primary w-full md:w-auto">Vérifier ma réponse</button>
+                </div>
+            </div>
+
+            <!-- Question Type 3: Listening & Speaking -->
+            <div id="listening-practice" class="hidden">
+                <div class="text-center mb-4">
+                    <button id="play-audio-btn" class="btn btn-primary">Écouter la phrase (문장 듣기)</button>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="font-semibold text-slate-600 block mb-2">1. Écrivez ce que vous entendez :</label>
+                        <textarea id="dictation-input" rows="2" class="input-field font-korean text-lg"></textarea>
+                        <label class="font-semibold text-slate-600 block mb-2 mt-4">2. Traduisez en français :</label>
+                        <textarea id="translation-input" rows="2" class="input-field text-lg"></textarea>
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-600 block mb-2">3. Enregistrez votre voix :</label>
+                        <div class="flex items-center gap-3">
+                            <button id="record-btn" class="btn btn-secondary">🎤 Enregistrer</button>
+                            <button id="stop-record-btn" class="btn btn-secondary" disabled>⏹️ Arrêter</button>
+                            <p id="recording-status" class="text-sm text-slate-500 flex items-center gap-2"></p>
+                        </div>
+                        <div id="audio-playback" class="mt-2"></div>
+                         <label class="font-semibold text-slate-600 block mb-2 mt-4">4. Réécoutez et écrivez :</label>
+                        <textarea id="self-dictation-input" rows="2" class="input-field font-korean text-lg" placeholder="Écrivez ce que vous entendez de VOTRE voix..."></textarea>
+                    </div>
+                </div>
+                 <div class="text-center mt-6">
+                    <button id="check-listening-btn" class="btn btn-primary w-full md:w-auto">Vérifier ma réponse</button>
+                </div>
+            </div>
+
+            <div id="feedback-container" class="mt-4"></div>
+        </div>
+
+        <div class="flex justify-between items-center mt-8">
+            <button id="prev-btn" class="btn btn-secondary">Précédent (이전)</button>
+            <a href="../index.html" class="btn btn-secondary">Retour aux exercices (연습문제 목록)</a>
+            <button id="next-btn" class="btn btn-primary">Suivant (다음)</button>
+            <button id="finish-btn" class="btn btn-primary hidden">Terminer & Envoyer (끝내기)</button>
+        </div>
+    </div>
+    
+    <!-- Results container -->
+    <div id="result-container" class="hidden min-h-screen flex items-center justify-center">
+        <div class="card text-center w-full max-w-3xl mx-auto p-8">
+            <h2 class="text-4xl font-bold text-slate-800 mb-4">Résultats</h2>
+            <div id="result-message" class="mb-6">
+                <h3 id="result-title" class="text-2xl font-bold"></h3>
+                <p id="result-subtitle" class="text-slate-600"></p>
+            </div>
+            <p class="text-lg mb-2">Score : <span id="score" class="font-bold"></span>%</p>
+            <p class="text-slate-500 mb-6">Temps total : <span id="total-time"></span> secondes.</p>
+            
+            <div id="review-section" class="text-left mt-8 max-h-96 overflow-y-auto">
+                <h4 class="font-bold text-xl mb-4">Révision des erreurs :</h4>
+                <div id="mistakes-review" class="space-y-4 pr-4"></div>
+            </div>
+
+            <div class="mt-8 flex justify-center gap-4">
+                <button id="restart-btn" class="btn btn-primary">Recommencer (다시하기)</button>
+                <a href="../index.html" class="btn btn-secondary">Retour à la liste (목록으로)</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/grading-criteria.js"></script>
+    <script>
+        // --- DATA: Questions ---
+        const allQuestions = [
+            // --- PART 1: Easy Choice (5 questions) ---
+            { type: 'choice', situation: "<b>Qui parle ?</b> Marie.<br><b>Où est-elle ?</b> Chez elle.", sentence: "Mon ami Paul ___ chez moi ce soir.", answer: "오다", korean_sentence: "오늘 저녁에 친구 폴이 우리 집에 와요." },
+            { type: 'choice', situation: "<b>Qui parle ?</b> Paul.<br><b>Où est-il ?</b> Au téléphone avec Marie, depuis son bureau.", sentence: "Oui, je ___ chez toi ce soir.", answer: "가다", korean_sentence: "응, 오늘 저녁에 너희 집에 갈게." },
+            { type: 'choice', situation: "<b>Dialogue :</b> A et B parlent de la fête de Sophie.<br><b>Qui parle ?</b> A.<br><b>Où est-il ?</b> Avec B, au café.", sentence: "Tu viens à la fête de Sophie demain ?", answer: "가다", korean_sentence: "내일 소피 파티에 가?" },
+            { type: 'choice', situation: "<b>Dialogue :</b> Un père appelle sa fille.<br><b>Qui parle ?</b> Le père.<br><b>Où est-il ?</b> À la maison.", sentence: "Ma chérie, tu ___ bientôt à la maison ?", answer: "오다", korean_sentence: "딸, 집에 곧 오니?" },
+            { type: 'choice', situation: "<b>Dialogue :</b> Un père appelle sa fille.<br><b>Qui parle ?</b> La fille.<br><b>Où est-elle ?</b> À la bibliothèque.", sentence: "Papa, je ___ à la maison dans une heure.", answer: "가다", korean_sentence: "아빠, 1시간 뒤에 집으로 갈게요." },
+
+            // --- PART 2: Writing Analysis (5 questions) ---
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Julie est à la bibliothèque. Elle envoie un message à Marc.<br><b>Phrase à traduire :</b> « Je suis à la bibliothèque. Tu viens ? »", vocab: { "bibliothèque": "도서관" }, answer: { speaker: "Julie / 줄리", location: "Bibliothèque / 도서관", sentence: "저 도서관인데, 올래요?" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Marc est au café. Il répond à Julie.<br><b>Phrase à traduire :</b> « D'accord, je vais à la bibliothèque maintenant. »", vocab: { "d'accord": "알겠어", "maintenant": "지금" }, answer: { speaker: "Marc / 마크", location: "Café / 카페", sentence: "알겠어, 지금 도서관으로 갈게." } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Le professeur est en classe. Un élève est en retard.<br><b>Phrase à traduire :</b> « Pourquoi n'es-tu pas encore venu en classe ? »", vocab: { "pourquoi": "왜", "pas encore": "아직", "classe": "교실" }, answer: { speaker: "Le professeur / 선생님", location: "En classe / 교실", sentence: "왜 아직 교실에 안 와요?" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> Anna est en Corée. Elle appelle sa famille en France.<br><b>Phrase à traduire :</b> « Vous me manquez. Venez en Corée s'il vous plaît ! »", vocab: { "manquer": "보고 싶다", "s'il vous plaît": "-세요" }, answer: { speaker: "Anna / 안나", location: "Corée / 한국", sentence: "보고 싶어요. 한국에 오세요!" } },
+            { type: 'writing', dialogue_fr: "<b>Situation :</b> La famille d'Anna est en France. Ils lui répondent.<br><b>Phrase à traduire :</b> « Nous irons en Corée l'année prochaine ! »", vocab: { "l'année prochaine": "내년" }, answer: { speaker: "La famille / 가족", location: "France / 프랑스", sentence: "우리가 내년에 한국으로 갈게!" } },
+
+            // --- PART 3: Listening & Recording (5 questions) ---
+            { type: 'listening', korean_sentence: "선생님이 교실에 들어오셨어요.", french_translation: "Le professeur est entré dans la classe." },
+            { type: 'listening', korean_sentence: "우리는 지금 공원에 갈 거예요.", french_translation: "Nous allons aller au parc maintenant." },
+            { type: 'listening', korean_sentence: "언제 한국에 올 거예요?", french_translation: "Quand viendras-tu en Corée ?" },
+            { type: 'listening', korean_sentence: "손님, 이쪽으로 오세요.", french_translation: "Client, venez par ici s'il vous plaît." },
+            { type: 'listening', korean_sentence: "내일 파티에 갈 수 있어요?", french_translation: "Peux-tu aller à la fête demain ?" }
+        ];
+
+        // --- DOM Elements ---
+        const studentNameContainer = document.getElementById('student-name-container');
+        const studentNamePrompt = document.getElementById('student-name-prompt');
+        const studentNameInput = document.getElementById('student-name');
+        const startBtn = document.getElementById('start-btn');
+        
+        const quizContainer = document.getElementById('quiz-container');
+        const questionNumberEl = document.getElementById('question-number');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        
+        const choicePracticeEl = document.getElementById('choice-practice');
+        const situationInfoEl = document.getElementById('situation-info');
+        const sentenceChoiceEl = document.getElementById('sentence-choice');
+        const choiceBtns = document.querySelectorAll('.btn-choice');
+
+        const writingPracticeEl = document.getElementById('writing-practice');
+        const dialogueFrEl = document.getElementById('dialogue-fr');
+        const speakerInput = document.getElementById('speaker-input');
+        const locationInput = document.getElementById('location-input');
+        const vocabHintEl = document.getElementById('vocab-hint');
+        const sentenceInput = document.getElementById('sentence-input');
+        const checkWritingBtn = document.getElementById('check-writing-btn');
+
+        const listeningPracticeEl = document.getElementById('listening-practice');
+        const playAudioBtn = document.getElementById('play-audio-btn');
+        const dictationInput = document.getElementById('dictation-input');
+        const translationInput = document.getElementById('translation-input');
+        const recordBtn = document.getElementById('record-btn');
+        const stopRecordBtn = document.getElementById('stop-record-btn');
+        const recordingStatusEl = document.getElementById('recording-status');
+        const audioPlaybackEl = document.getElementById('audio-playback');
+        const selfDictationInput = document.getElementById('self-dictation-input');
+        const checkListeningBtn = document.getElementById('check-listening-btn');
+
+        const feedbackContainer = document.getElementById('feedback-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const printBtn = document.getElementById('print-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // --- State ---
+        let studentName = '';
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];
+        let startTime, endTime;
+        let mediaRecorder;
+        let audioChunks = [];
+        let listenCount = 0;
+
+        // --- Functions ---
+        
+        function setRandomPlaceholder() {
+            const placeholders = ["Claire (클레르)", "Paul (폴)", "Marie (마리)", "Tom (톰)", "Julie (줄리)"];
+            const randomPlaceholder = placeholders[Math.floor(Math.random() * placeholders.length)];
+            studentNameInput.placeholder = randomPlaceholder;
+            studentNamePrompt.textContent = `Entrez votre nom pour commencer. (이름을 입력하고 시작하세요.)`;
+        }
+
+        function startQuiz() {
+            studentName = studentNameInput.value.trim();
+            if (!studentName) {
+                studentName = studentNameInput.placeholder;
+            }
+            
+            startTime = new Date();
+            // Questions are NOT shuffled to maintain progression
+            questions = allQuestions; 
+            userAnswers = new Array(questions.length).fill(null);
+            currentQuestionIndex = 0;
+
+            studentNameContainer.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const question = questions[currentQuestionIndex];
+            questionNumberEl.textContent = currentQuestionIndex + 1;
+            totalQuestionsEl.textContent = questions.length;
+            
+            feedbackContainer.innerHTML = '';
+            listenCount = 0;
+
+            choicePracticeEl.classList.add('hidden');
+            writingPracticeEl.classList.add('hidden');
+            listeningPracticeEl.classList.add('hidden');
+
+            if (question.type === 'choice') {
+                choicePracticeEl.classList.remove('hidden');
+                situationInfoEl.innerHTML = question.situation;
+                sentenceChoiceEl.innerHTML = question.sentence.replace('___', '<span class="font-korean font-bold text-indigo-500">_______</span>');
+                choiceBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('bg-green-200', 'bg-red-200', 'border-green-500', 'border-red-500');
+                });
+            } else if (question.type === 'writing') {
+                writingPracticeEl.classList.remove('hidden');
+                dialogueFrEl.innerHTML = question.dialogue_fr;
+                vocabHintEl.textContent = `Vocabulaire : ${Object.entries(question.vocab).map(([fr, ko]) => `${fr} (${ko})`).join(', ')}`;
+                speakerInput.value = '';
+                locationInput.value = '';
+                sentenceInput.value = '';
+                [speakerInput, locationInput, sentenceInput, checkWritingBtn].forEach(el => el.disabled = false);
+            } else if (question.type === 'listening') {
+                listeningPracticeEl.classList.remove('hidden');
+                dictationInput.value = '';
+                translationInput.value = '';
+                selfDictationInput.value = '';
+                audioPlaybackEl.innerHTML = '';
+                recordingStatusEl.innerHTML = '';
+                [dictationInput, translationInput, selfDictationInput, recordBtn, stopRecordBtn, checkListeningBtn].forEach(el => el.disabled = false);
+                stopRecordBtn.disabled = true;
+            }
+            
+            if (userAnswers[currentQuestionIndex]) {
+                restoreAnswer();
+            }
+
+            updateNavButtons();
+        }
+
+        function restoreAnswer() {
+            const answerData = userAnswers[currentQuestionIndex];
+            const question = questions[currentQuestionIndex];
+
+            if (question.type === 'choice') {
+                handleChoiceSelection(answerData.userAnswer.choice, true);
+            } else if (question.type === 'writing') {
+                speakerInput.value = answerData.userAnswer.speaker;
+                locationInput.value = answerData.userAnswer.location;
+                sentenceInput.value = answerData.userAnswer.sentence;
+                [speakerInput, locationInput, sentenceInput, checkWritingBtn].forEach(el => el.disabled = true);
+                showWritingFeedback(answerData.isCorrect, answerData.userAnswer);
+            } else if (question.type === 'listening') {
+                dictationInput.value = answerData.userAnswer.dictation;
+                translationInput.value = answerData.userAnswer.translation;
+                selfDictationInput.value = answerData.userAnswer.selfDictation;
+                listenCount = answerData.listenCount;
+                if(answerData.recording) {
+                    const audioUrl = URL.createObjectURL(base64ToBlob(answerData.recording.base64, answerData.recording.mimeType));
+                    audioPlaybackEl.innerHTML = `<audio controls src="${audioUrl}"></audio>`;
+                }
+                [dictationInput, translationInput, selfDictationInput, recordBtn, stopRecordBtn, checkListeningBtn].forEach(el => el.disabled = true);
+                showListeningFeedback(answerData.isCorrect, answerData.userAnswer);
+            }
+        }
+        
+        function handleChoiceSelection(selectedChoice, isRestoring = false) {
+            const question = questions[currentQuestionIndex];
+            const isCorrect = selectedChoice === question.answer;
+
+            if (!isRestoring) {
+                userAnswers[currentQuestionIndex] = {
+                    questionData: question,
+                    userAnswer: { choice: selectedChoice },
+                    isCorrect: isCorrect,
+                };
+            }
+
+            let feedbackHTML = '';
+            if (isCorrect) {
+                feedbackHTML = `<div class="feedback correct"><strong>Correct ! 👍</strong> <span class="font-korean">${question.korean_sentence}</span></div>`;
+            } else {
+                feedbackHTML = `<div class="feedback incorrect"><p class="font-bold">Oups, petit couac 😅</p> La bonne réponse était <strong class="font-korean">${question.answer}</strong>. <br><span class="font-korean">${question.korean_sentence}</span></div>`;
+            }
+            feedbackContainer.innerHTML = feedbackHTML;
+
+            const selectedBtn = document.querySelector(`.btn-choice[data-choice="${selectedChoice}"]`);
+            const correctBtn = document.querySelector(`.btn-choice[data-choice="${question.answer}"]`);
+            if (isCorrect) {
+                if(selectedBtn) selectedBtn.classList.add('bg-green-200', 'border-green-500');
+            } else {
+                if(selectedBtn) selectedBtn.classList.add('bg-red-200', 'border-red-500');
+                if(correctBtn) correctBtn.classList.add('bg-green-200', 'border-green-500');
+            }
+            choiceBtns.forEach(btn => btn.disabled = true);
+        }
+
+        function checkWritingAnswer() {
+            const question = questions[currentQuestionIndex];
+            const userAnswer = {
+                speaker: speakerInput.value.trim(),
+                location: locationInput.value.trim(),
+                sentence: sentenceInput.value.trim()
+            };
+            const isCorrect = userAnswer.sentence === question.answer.sentence;
+            
+            userAnswers[currentQuestionIndex] = { questionData: question, userAnswer, isCorrect };
+            showWritingFeedback(isCorrect, userAnswer);
+            checkWritingBtn.disabled = true;
+        }
+
+        function checkListeningAnswer() {
+            const question = questions[currentQuestionIndex];
+            const userAnswer = {
+                dictation: dictationInput.value.trim(),
+                translation: translationInput.value.trim(),
+                selfDictation: selfDictationInput.value.trim()
+            };
+            const isCorrect = userAnswer.dictation === question.korean_sentence;
+
+            showListeningFeedback(isCorrect, userAnswer);
+            checkListeningBtn.disabled = true;
+            
+            const recordingPromise = (audioChunks.length > 0)
+                ? blobToBase64(new Blob(audioChunks, { type: 'audio/webm' }))
+                : Promise.resolve(null);
+
+            recordingPromise.then(base64data => {
+                let recordingData = null;
+                if(base64data) {
+                    recordingData = { base64: base64data, filename: `recording_${studentName}_q${currentQuestionIndex + 1}.webm`, mimeType: 'audio/webm' };
+                }
+                userAnswers[currentQuestionIndex] = { questionData: question, userAnswer, isCorrect, listenCount, recording: recordingData };
+            });
+        }
+
+        function showWritingFeedback(isCorrect, userAnswer) {
+            const question = questions[currentQuestionIndex];
+            let feedbackHTML = '';
+            if (isCorrect) {
+                feedbackHTML = `<div class="feedback correct"><strong>Parfait !</strong> C'est exactement ça.</div>`;
+            } else {
+                feedbackHTML = `<div class="feedback incorrect">
+                    <p class="font-bold">Oups, petit couac 😅 → comme ça, c’est parfait !</p>
+                    <ul class="list-disc pl-5 mt-2 space-y-1">
+                        <li><strong>Qui parle :</strong> ${compareText(userAnswer.speaker, question.answer.speaker)}</li>
+                        <li><strong>Où :</strong> ${compareText(userAnswer.location, question.answer.location)}</li>
+                        <li class="font-korean"><strong>Phrase :</strong> ${compareText(userAnswer.sentence, question.answer.sentence)}</li>
+                    </ul>
+                </div>`;
+            }
+            feedbackContainer.innerHTML = feedbackHTML;
+            [speakerInput, locationInput, sentenceInput].forEach(el => el.disabled = true);
+        }
+        
+        function showListeningFeedback(isCorrect, userAnswer) {
+            const question = questions[currentQuestionIndex];
+            let feedbackHTML = '';
+             if (isCorrect) {
+                feedbackHTML = `<div class="feedback correct"><strong>Excellent !</strong> Vous avez parfaitement entendu.</div>`;
+            } else {
+                feedbackHTML = `<div class="feedback incorrect">
+                    <p class="font-bold">Oups, petit couac 😅 → comme ça, c’est parfait !</p>
+                    <p class="mt-2"><strong>Dictée correcte :</strong> <span class="font-korean">${question.korean_sentence}</span></p>
+                    <p><strong>Traduction :</strong> ${question.french_translation}</p>
+                </div>`;
+            }
+            feedbackContainer.innerHTML = feedbackHTML;
+            [dictationInput, translationInput, selfDictationInput, recordBtn, stopRecordBtn].forEach(el => el.disabled = true);
+        }
+
+        async function playAudio() {
+            const question = questions[currentQuestionIndex];
+            if (question.type !== 'listening') return;
+            listenCount++;
+            playAudioBtn.disabled = true;
+            playAudioBtn.textContent = "Chargement...";
+            try {
+                const voice = currentQuestionIndex % 2 === 0 ? 'woman1' : 'man1';
+                const response = await fetch(`/.netlify/functions/generate-audio?text=${encodeURIComponent(question.korean_sentence)}&voice=${voice}`);
+                
+                if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+
+                const data = await response.json();
+                if (data.audioContent) {
+                    const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+                    audio.play();
+                    audio.onended = () => {
+                         playAudioBtn.disabled = false;
+                         playAudioBtn.textContent = "Écouter la phrase (문장 듣기)";
+                    };
+                } else {
+                    throw new Error("No audio content in API response.");
+                }
+            } catch (error) {
+                console.error("Error playing audio:", error);
+                alert("Désolé, la lecture audio a échoué. Veuillez réessayer.");
+                playAudioBtn.disabled = false;
+                playAudioBtn.textContent = "Écouter la phrase (문장 듣기)";
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                audioChunks = [];
+                mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
+                recordBtn.disabled = true;
+                stopRecordBtn.disabled = false;
+                recordingStatusEl.innerHTML = `<div class="recording-dot"></div> Enregistrement...`;
+                mediaRecorder.addEventListener("stop", () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlaybackEl.innerHTML = `<audio controls src="${audioUrl}"></audio>`;
+                    recordBtn.disabled = false;
+                    stopRecordBtn.disabled = true;
+                    recordingStatusEl.textContent = 'Enregistrement terminé.';
+                });
+            } catch (err) {
+                console.error("Error starting recording:", err);
+                alert("L'accès au microphone est nécessaire pour enregistrer.");
+            }
+        }
+
+        function stopRecording() { if (mediaRecorder) { mediaRecorder.stop(); } }
+        function compareText(user, correct) {
+            const correctFr = correct.split('/')[0].trim().toLowerCase();
+            const correctKo = correct.split('/')[1] ? correct.split('/')[1].trim() : correctFr;
+            const userLower = user.toLowerCase();
+            if (userLower === correctFr || userLower === correctKo) {
+                 return `<span class="text-green-700">${user}</span>`;
+            }
+            return `<span class="text-red-700 line-through">${user || "..."}</span> <span class="text-green-700">${correct}</span>`;
+        }
+        function updateNavButtons() {
+            prevBtn.disabled = currentQuestionIndex === 0;
+            if (currentQuestionIndex === questions.length - 1) {
+                nextBtn.classList.add('hidden');
+                finishBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                finishBtn.classList.add('hidden');
+            }
+        }
+        function showNextQuestion() { if (currentQuestionIndex < questions.length - 1) { currentQuestionIndex++; displayQuestion(); } }
+        function showPrevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; displayQuestion(); } }
+        function finishQuiz() {
+            endTime = new Date();
+            const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
+            const correctAnswers = userAnswers.filter(answer => answer && answer.isCorrect).length;
+            const score = questions.length > 0 ? Math.round((correctAnswers / questions.length) * 100) : 0;
+            displayResults(score, totalTimeSeconds);
+            sendResultsToServer(totalTimeSeconds);
+            quizContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+        }
+        function displayResults(score, totalTimeSeconds) {
+            const grading = getGrading(score);
+            document.getElementById('result-title').textContent = grading.title_fr;
+            document.getElementById('result-subtitle').textContent = grading.subtitle_fr;
+            document.getElementById('score').textContent = score;
+            document.getElementById('total-time').textContent = totalTimeSeconds;
+            const mistakesReview = document.getElementById('mistakes-review');
+            mistakesReview.innerHTML = '';
+            const mistakes = userAnswers.filter(answer => answer && !answer.isCorrect);
+            if (mistakes.length > 0) {
+                mistakes.forEach(mistake => {
+                    const { questionData, userAnswer } = mistake;
+                    const mistakeEl = document.createElement('div');
+                    mistakeEl.className = 'p-4 bg-slate-50 rounded-lg border border-slate-200';
+                    let reviewHTML = '';
+                    if (questionData.type === 'choice') {
+                        reviewHTML = `<p class="text-slate-600"><strong>Situation :</strong> ${questionData.situation}</p>
+                                      <p><strong>Phrase :</strong> ${questionData.sentence.replace('___', `<span class="font-korean text-red-600">${userAnswer.choice}</span>`)}</p>
+                                      <p><strong>Correction :</strong> <span class="font-korean text-green-700">${questionData.answer}</span></p>`;
+                    } else if (questionData.type === 'writing') {
+                        reviewHTML = `<p class="text-slate-600"><strong>Situation :</strong> ${questionData.dialogue_fr}</p>
+                                      <p class="mt-2"><strong>Votre réponse :</strong></p>
+                                      <ul class="list-disc pl-5 text-sm"><li>Qui: <span class="text-red-600">${userAnswer.speaker}</span></li><li>Où: <span class="text-red-600">${userAnswer.location}</span></li><li>Phrase: <span class="font-korean text-red-600">${userAnswer.sentence}</span></li></ul>
+                                      <p class="mt-2"><strong>Correction :</strong></p>
+                                      <ul class="list-disc pl-5 text-sm"><li>Qui: <span class="text-green-700">${questionData.answer.speaker}</span></li><li>Où: <span class="text-green-700">${questionData.answer.location}</span></li><li>Phrase: <span class="font-korean text-green-700">${questionData.answer.sentence}</span></li></ul>`;
+                    } else { // listening
+                        reviewHTML = `<p class="text-slate-600"><strong>Phrase à écouter :</strong> ${questionData.french_translation}</p>
+                                      <p class="mt-2"><strong>Votre dictée :</strong> <span class="font-korean text-red-600">${userAnswer.dictation}</span></p>
+                                      <p><strong>Correction :</strong> <span class="font-korean text-green-700">${questionData.korean_sentence}</span></p>`;
+                    }
+                    mistakeEl.innerHTML = reviewHTML;
+                    mistakesReview.appendChild(mistakeEl);
+                });
+            } else {
+                mistakesReview.innerHTML = '<p class="text-green-600 font-semibold">Aucune erreur, félicitations ! 🎉</p>';
+            }
+        }
+        async function sendResultsToServer(totalTimeSeconds) {
+            const payload = {
+                studentName: studentName,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                totalTimeSeconds: totalTimeSeconds,
+                questions: userAnswers.map((answer, index) => {
+                    if (!answer) return null;
+                    const { questionData, userAnswer, isCorrect, listenCount, recording } = answer;
+                    let fr_text = '';
+                    if(questionData.type === 'choice') fr_text = questionData.situation.replace(/<br>|<b>|<\/b>/g, ' ');
+                    else if(questionData.type === 'writing') fr_text = questionData.dialogue_fr.replace(/<br>|<b>|<\/b>/g, ' ');
+                    else fr_text = questionData.french_translation;
+
+                    return {
+                        number: index + 1,
+                        ko: questionData.korean_sentence || questionData.answer.sentence,
+                        fr: fr_text,
+                        userAnswer: JSON.stringify(userAnswer),
+                        isCorrect: isCorrect,
+                        listenCount: listenCount || 0,
+                        hint1Count: 0, hint2Count: 0,
+                        recording: recording || null
+                    };
+                }).filter(Boolean)
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('Server response was not ok.');
+                console.log('Results sent successfully!');
+            } catch (error) {
+                console.error('Failed to send results:', error);
+            }
+        }
+        function blobToBase64(blob) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(blob); reader.onloadend = () => { resolve(reader.result.split(',')[1]); }; reader.onerror = error => reject(error); }); }
+        function base64ToBlob(base64, mimeType) { const byteCharacters = atob(base64); const byteNumbers = new Array(byteCharacters.length); for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); } const byteArray = new Uint8Array(byteNumbers); return new Blob([byteArray], {type: mimeType}); }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', setRandomPlaceholder);
+        startBtn.addEventListener('click', startQuiz);
+        studentNameInput.addEventListener('keydown', (e) => e.key === 'Enter' && startBtn.click());
+        choiceBtns.forEach(btn => btn.addEventListener('click', (e) => handleChoiceSelection(e.target.dataset.choice)));
+        checkWritingBtn.addEventListener('click', checkWritingAnswer);
+        checkListeningBtn.addEventListener('click', checkListeningAnswer);
+        playAudioBtn.addEventListener('click', playAudio);
+        recordBtn.addEventListener('click', startRecording);
+        stopRecordBtn.addEventListener('click', stopRecording);
+        nextBtn.addEventListener('click', showNextQuestion);
+        prevBtn.addEventListener('click', showPrevQuestion);
+        finishBtn.addEventListener('click', finishQuiz);
+        restartBtn.addEventListener('click', () => {
+            setRandomPlaceholder();
+            startQuiz();
+        });
+        printBtn.addEventListener('click', () => window.print());
+
+    </script>
+</body>
+
+</html>
