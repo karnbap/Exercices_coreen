@@ -79,10 +79,10 @@
                 <div id="step-2-questions" class="space-y-8"></div>
             </section>
 
-            <!-- 단계 3: 듣고, 힌트 보고, 녹음하기 -->
+            <!-- 단계 3: 듣고, 쓰고, 녹음하기 -->
             <section id="step-3" class="step-section bg-white p-8 rounded-xl shadow-lg mb-8">
-                <h2 class="text-2xl font-semibold text-royal-blue mb-1">Étape 3 : Écouter, indice et enregistrement 🎤 (5 questions)</h2>
-                <p class="text-slate-500 mb-6">Écoutez la phrase, utilisez les indices si besoin, puis enregistrez-vous.</p>
+                <h2 class="text-2xl font-semibold text-royal-blue mb-1">Étape 3 : Écouter, écrire et enregistrer 🎤 (5 questions)</h2>
+                <p class="text-slate-500 mb-6">Écoutez, écrivez ce que vous entendez, puis enregistrez-vous.</p>
                 <div id="step-3-questions" class="space-y-8"></div>
             </section>
 
@@ -181,7 +181,18 @@
             
             shuffleArray(questionBank.record);
             for(let i = 0; i < 5; i++) {
-                state.questions.push({ number: i + 11, type: 'record', ...questionBank.record[i], recording: null, hintLevel: 0, hint1Count: 0, hint2Count: 0, listenCount: 0 });
+                state.questions.push({ 
+                    number: i + 11, 
+                    type: 'record', 
+                    ...questionBank.record[i], 
+                    userAnswer: '',      // 받아쓰기 답안
+                    isCorrect: false,    // 받아쓰기 정답 여부
+                    recording: null, 
+                    hintLevel: 0, 
+                    hint1Count: 0, 
+                    hint2Count: 0, 
+                    listenCount: 0 
+                });
             }
         }
         
@@ -227,7 +238,7 @@
                         <p class="text-lg font-bold mb-2">${q.ko_template}</p>
                         <div class="flex flex-col sm:flex-row gap-2 items-center">
                             <input type="text" class="w-full sm:w-1/2 p-2 border-2 rounded-lg" placeholder="N2+이/가" data-question-index="${questionIndex}" data-input-part="0">
-                            <input type="text" class="w-full sm:w-1/2 p-2 border-2 rounded-lg" placeholder="N1 + particule (을/를, 에...) ou sans" data-question-index="${questionIndex}" data-input-part="1">
+                            <input type="text" class="w-full sm:w-1/2 p-2 border-2 rounded-lg" placeholder="N1 + particule" data-question-index="${questionIndex}" data-input-part="1">
                         </div>`;
                 } else if (q.type === 'record') {
                     questionHTML += `
@@ -242,7 +253,11 @@
                                 <p class="text-sm text-slate-500">힌트 보기<br>(Indice)</p>
                             </div>
                             <div id="hint-display-${questionIndex}" class="w-full text-center"></div>
-                            <div class="flex justify-center items-center gap-4 mt-4">
+                            
+                            <!-- 받아쓰기 입력 칸 추가 -->
+                            <input type="text" class="w-full p-2 mt-2 border-2 rounded-lg" placeholder="들은 내용을 여기에 쓰세요 (Écrivez ce que vous entendez)" data-question-index="${questionIndex}">
+
+                            <div class="flex justify-center items-center gap-4 mt-2">
                                 <button onclick="startRecording(${questionIndex})" class="button button-secondary" id="record-btn-${questionIndex}">🔴 Enregistrer</button>
                                 <button onclick="stopRecording(${questionIndex})" class="button button-secondary" id="stop-btn-${questionIndex}" disabled>⏹️ Arrêter</button>
                             </div>
@@ -302,6 +317,12 @@
                     const userAnswer2 = inputs[1] ? inputs[1].value.trim() : '';
                     q.userAnswer = `${userAnswer1}, ${userAnswer2}`;
                     q.isCorrect = userAnswer1 === q.answer[0] && userAnswer2 === q.answer[1];
+                } else if (q.type === 'record') {
+                    const input = document.querySelector(`input[data-question-index="${index}"]`);
+                    const userAnswer = input ? input.value.trim() : '';
+                    q.userAnswer = userAnswer;
+                    // 간단한 문자열 비교로 채점 (공백, 특수문자 등 무시하려면 정규식 추가 필요)
+                    q.isCorrect = userAnswer.replace(/\s/g, '') === q.ko.replace(/\s/g, '');
                 }
             });
         }
@@ -327,7 +348,7 @@
                     try {
                         const errorData = await response.json();
                         errorInfo += `\nServer message: ${errorData.error || JSON.stringify(errorData.debug)}`;
-                    } catch (e) { /* Ignore if response body is not JSON */ }
+                    } catch (e) { /* Ignore */ }
                     throw new Error(errorInfo);
                 }
                 
@@ -460,46 +481,46 @@
             resultSection.classList.remove('hidden');
 
             const correctCount = payload.questions.filter(q => q.isCorrect).length;
-            const totalGraded = payload.questions.filter(q => q.type !== 'record').length;
+            const totalGraded = payload.questions.length; // 이제 15문제 모두 채점
             const score = totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 100;
             
-            // ✅ 수정됨: getGradingMessage가 반환하는 객체 구조에 맞게 수정
             const { ko, fr, emoji, score: finalScore } = getGradingMessage(score);
 
             let resultHTML = `
                 <h2 class="text-3xl font-bold text-royal-blue mb-2">${state.studentName}, 수고했어요!</h2>
                 <p class="text-4xl font-bold text-slate-700 my-4">총점 (Score final): ${finalScore} / 100</p>
+                <p class="text-lg text-slate-500 mb-4">(${totalGraded}개 중 ${correctCount}개 정답)</p>
                 <p class="text-2xl mb-2">${emoji} ${ko}</p>
                 <p class="text-lg text-slate-600 mb-6">${fr}</p>
                 <div class="text-left bg-slate-50 p-6 rounded-lg max-h-96 overflow-y-auto">`;
 
-            payload.questions.filter(q => q.type !== 'record').forEach(q => {
+            payload.questions.forEach(q => {
                 resultHTML += `<div class="mb-4 pb-4 border-b">
                     <p class="font-semibold text-lg">Question ${q.number}: ${q.fr}</p>`;
                 if (q.isCorrect) {
-                    resultHTML += `<p class="text-green-600">✔️ 제출 답안 (Votre réponse) : ${q.userAnswer.split(', ').join(', ')}</p>`;
+                    let userAnswerDisplay = q.userAnswer;
+                    if(q.type === 'write') userAnswerDisplay = q.userAnswer.split(', ').join(', ');
+                    resultHTML += `<p class="text-green-600">✔️ 제출 답안 (Votre réponse) : ${userAnswerDisplay}</p>`;
                 } else {
-                     const userAnswers = q.userAnswer.split(', ');
-                     const correctAnswers = Array.isArray(q.answer) ? q.answer : [q.answer];
-                     let comparisonHTML = q.ko_template.replace('______', `<span class="text-red-600">${userAnswers[0] || '...'}</span>`);
-                     if (userAnswers.length > 1) {
-                        comparisonHTML = comparisonHTML.replace('______', `<span class="text-red-600">${userAnswers[1] || '...'}</span>`);
-                     }
-
-                    resultHTML += `
-                        <p class="text-red-600">❌ 제출 답안 (Votre réponse) : ${comparisonHTML}</p>
-                        <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko_template.replace('______', correctAnswers[0]).replace('______', correctAnswers[1] || '')}</p>
-                        <p class="mt-1 text-sm text-orange-500">${comparisonMessage.ko}</p>
-                        <p class="mt-1 text-sm text-orange-400">${comparisonMessage.fr}</p>`;
+                    if (q.type === 'choice' || q.type === 'write') {
+                        const userAnswers = q.userAnswer.split(', ');
+                        const correctAnswers = Array.isArray(q.answer) ? q.answer : [q.answer];
+                        let comparisonHTML = q.ko_template.replace('______', `<span class="text-red-600">${userAnswers[0] || '...'}</span>`);
+                        if (userAnswers.length > 1) {
+                            comparisonHTML = comparisonHTML.replace('______', `<span class="text-red-600">${userAnswers[1] || '...'}</span>`);
+                        }
+                        resultHTML += `
+                            <p class="text-red-600">❌ 제출 답안 (Votre réponse) : ${comparisonHTML}</p>
+                            <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko_template.replace('______', correctAnswers[0]).replace('______', correctAnswers[1] || '')}</p>`;
+                    } else { // record (dictation)
+                         resultHTML += `
+                            <p class="text-red-600">❌ 받아쓰기 답안 (Votre dictée) : ${q.userAnswer || '(입력 없음)'}</p>
+                            <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko}</p>`;
+                    }
+                    resultHTML += `<p class="mt-1 text-sm text-orange-500">${comparisonMessage.ko}</p>
+                                   <p class="mt-1 text-sm text-orange-400">${comparisonMessage.fr}</p>`;
                 }
                 resultHTML += `</div>`;
-            });
-            
-            payload.questions.filter(q => q.type === 'record').forEach(q => {
-                 resultHTML += `<div class="mb-4 pb-4 border-b">
-                    <p class="font-semibold text-lg">Question ${q.number}: ${q.fr}</p>
-                    <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko}</p>
-                 </div>`;
             });
 
             resultHTML += `</div>
