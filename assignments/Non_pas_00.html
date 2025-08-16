@@ -159,27 +159,6 @@
         
         // --- 함수 ---
 
-        // ✅ 수정됨: 누락되었던 getGradingMessage 함수를 여기에 추가하여 오류 해결
-        function getGradingMessage(score) {
-            // 이 함수는 grading-criteria.js 파일에 있는 gradingMessages 변수를 사용합니다.
-            // 해당 파일이 정상적으로 로드되었다고 가정합니다.
-            if (typeof gradingMessages === 'undefined') {
-                console.error("grading-criteria.js is not loaded correctly.");
-                return { message: "채점 기준을 불러올 수 없습니다.", frMessage: "Impossible de charger les critères.", emoji: "❓" };
-            }
-            let result;
-            if (score === 100) result = gradingMessages.perfect;
-            else if (score >= 80) result = gradingMessages.excellent;
-            else if (score >= 60) result = gradingMessages.good;
-            else result = gradingMessages.effort;
-            
-            return {
-                message: result.ko,
-                frMessage: result.fr,
-                emoji: score === 100 ? '👑' : (score >= 80 ? '👍' : (score >= 60 ? '😎' : '💪'))
-            };
-        }
-
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -483,12 +462,15 @@
             const correctCount = payload.questions.filter(q => q.isCorrect).length;
             const totalGraded = payload.questions.filter(q => q.type !== 'record').length;
             const score = totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 100;
-            const { message, frMessage, emoji } = getGradingMessage(score);
+            
+            // ✅ 수정됨: getGradingMessage가 반환하는 객체 구조에 맞게 수정
+            const { ko, fr, emoji, score: finalScore } = getGradingMessage(score);
 
             let resultHTML = `
                 <h2 class="text-3xl font-bold text-royal-blue mb-2">${state.studentName}, 수고했어요!</h2>
-                <p class="text-2xl mb-2">${emoji} ${message}</p>
-                <p class="text-lg text-slate-600 mb-6">${frMessage}</p>
+                <p class="text-4xl font-bold text-slate-700 my-4">총점 (Score final): ${finalScore} / 100</p>
+                <p class="text-2xl mb-2">${emoji} ${ko}</p>
+                <p class="text-lg text-slate-600 mb-6">${fr}</p>
                 <div class="text-left bg-slate-50 p-6 rounded-lg max-h-96 overflow-y-auto">`;
 
             payload.questions.filter(q => q.type !== 'record').forEach(q => {
@@ -516,7 +498,7 @@
             payload.questions.filter(q => q.type === 'record').forEach(q => {
                  resultHTML += `<div class="mb-4 pb-4 border-b">
                     <p class="font-semibold text-lg">Question ${q.number}: ${q.fr}</p>
-                    <p class="text-blue-600">� 정답 (Réponse correcte) : ${q.ko}</p>
+                    <p class="text-blue-600">💡 정답 (Réponse correcte) : ${q.ko}</p>
                  </div>`;
             });
 
@@ -539,4 +521,3 @@
     </script>
 </body>
 </html>
-�
