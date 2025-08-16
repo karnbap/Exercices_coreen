@@ -382,8 +382,7 @@
                 document.getElementById('hint1-btn').addEventListener('click', () => showHint(1));
                 document.getElementById('hint2-btn').addEventListener('click', () => showHint(2));
             }
-
-            // ✅ 수정됨: 더 정확한 조건으로 복원 로직 실행
+            
             if (userAnswers[currentQuestionIndex] && Object.keys(userAnswers[currentQuestionIndex].userAnswer).length > 0) {
                 restoreAnswer();
             }
@@ -532,6 +531,20 @@
                 hintDisplay.innerHTML = `<p><strong>Au secours 2 (단어):</strong></p><ul class="list-disc list-inside">${vocabHtml}</ul>`;
             }
         }
+        
+        function getCho(str) {
+            const cho = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+            let result = "";
+            for (let i = 0; i < str.length; i++) {
+                const code = str.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    result += cho[Math.floor(code / 588)];
+                } else {
+                    result += str.charAt(i);
+                }
+            }
+            return result;
+        }
 
         async function playAudio() {
             const question = questions[currentQuestionIndex];
@@ -626,10 +639,11 @@
             document.getElementById('total-time').textContent = totalTimeSeconds;
             const mistakesReview = document.getElementById('mistakes-review');
             mistakesReview.innerHTML = '';
-            const mistakes = userAnswers.filter(answer => answer && !answer.isCorrect);
+            const mistakes = userAnswers.map((answer, index) => ({...answer, index})).filter(answer => answer && !answer.isCorrect);
             if (mistakes.length > 0) {
                 mistakes.forEach(mistake => {
-                    const { questionData, userAnswer } = mistake;
+                    const questionData = questions[mistake.index];
+                    const { userAnswer } = mistake;
                     const mistakeEl = document.createElement('div');
                     mistakeEl.className = 'p-4 bg-slate-50 rounded-lg border border-slate-200';
                     let reviewHTML = '';
@@ -663,8 +677,8 @@
                 endTime: endTime.toISOString(),
                 totalTimeSeconds: totalTimeSeconds,
                 questions: userAnswers.map((answer, index) => {
-                    if (!answer) return null;
-                    const { questionData, userAnswer, isCorrect, listenCount, hint1Count, hint2Count, recording } = answer;
+                    const questionData = questions[index];
+                    const { userAnswer, isCorrect, listenCount, hint1Count, hint2Count, recording } = answer;
                     let fr_text = '';
                     if(questionData.type === 'choice') fr_text = questionData.situation.replace(/<br>|<b>|<\/b>/g, ' ');
                     else if(questionData.type === 'writing') fr_text = questionData.dialogue_fr.replace(/<br>|<b>|<\/b>/g, ' ');
@@ -681,7 +695,7 @@
                         hint2Count: hint2Count || 0,
                         recording: recording || null
                     };
-                }).filter(Boolean)
+                })
             };
 
             try {
