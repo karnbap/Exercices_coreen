@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.2.0",
     "nodemailer": "^7.0.5"
   }
 }
