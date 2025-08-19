@@ -2,7 +2,7 @@
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.2.0",
     "google-auth-library": "^10.2.1",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5"
   }
 }
