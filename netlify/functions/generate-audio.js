@@ -1,17 +1,32 @@
-const textToSpeech = require('@google-cloud/text-to-speech');
+const { GoogleAuth } = require('google-auth-library');
+const fetch = require('node-fetch');
 
 let credentials;
+let projectId;
 try {
   if (!process.env.GOOGLE_CREDENTIALS_JSON) {
     throw new Error('GOOGLE_CREDENTIALS_JSON environment variable is not set.');
   }
   credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+  projectId = credentials.project_id;
+  if (!projectId) {
+    throw new Error('Project ID is missing in the credentials JSON.');
+  }
 } catch (e) {
   console.error('Failed to parse Google credentials:', e);
   global.initError = e;
 }
 
-const client = new textToSpeech.TextToSpeechClient({ credentials });
+// 인증을 위한 함수
+const getAuthToken = async () => {
+  const auth = new GoogleAuth({
+    credentials,
+    scopes: 'https://www.googleapis.com/auth/cloud-platform',
+  });
+  const client = await auth.getClient();
+  const accessToken = await client.getAccessToken();
+  return accessToken.token;
+};
 
 exports.handler = async function (event) {
   if (global.initError) {
@@ -35,16 +50,19 @@ exports.handler = async function (event) {
       };
     }
 
-    // ✅ 자연스러운 남/여 목소리 랜덤 선택
-    const femaleVoices = ['ko-KR-Wavenet-A', 'ko-KR-Wavenet-C'];
-    const maleVoices = ['ko-KR-Wavenet-B', 'ko-KR-Wavenet-D'];
+    // ✅ 새로운 생성형 'Studio' 음성 모델
+    const femaleVoices = ['ko-KR-Studio-O']; // 여성 Studio 목소리
+    const maleVoices = ['ko-KR-Studio-P'];   // 남성 Studio 목소리
 
     const selectedVoice =
       voice === 'man'
         ? maleVoices[Math.floor(Math.random() * maleVoices.length)]
         : femaleVoices[Math.floor(Math.random() * femaleVoices.length)];
 
-    const request = {
+    const token = await getAuthToken();
+    const API_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/texttospeech:synthesize`;
+
+    const requestBody = {
       input: { text },
       voice: {
         languageCode: 'ko-KR',
@@ -52,13 +70,26 @@ exports.handler = async function (event) {
       },
       audioConfig: {
         audioEncoding: 'MP3',
-        pitch: 0.0,
-        speakingRate: 1.0,
       },
     };
 
-    const [response] = await client.synthesizeSpeech(request);
-    const audioData = response.audioContent.toString('base64');
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        console.error('API Error:', errorBody);
+        throw new Error(`API call failed with status ${response.status}: ${errorBody.error.message}`);
+    }
+
+    const responseData = await response.json();
+    const audioData = responseData.audioContent; // Base64로 이미 인코딩되어 있음
 
     return {
       statusCode: 200,
