@@ -41,9 +41,8 @@ exports.handler = async function (event) {
 
     // 최신 생성형 'Studio' 음성 모델 이름
     // Using standard WaveNet voices for guaranteed compatibility.
-    const femaleVoices = ['ko-KR-Wavenet-A', 'ko-KR-Wavenet-C'];
-    const maleVoices = ['ko-KR-Wavenet-B', 'ko-KR-Wavenet-D'];
-
+      const femaleVoices = ['ko-KR-Neural2-A', 'ko-KR-Neural2-C'];
+    const maleVoices = ['ko-KR-Neural2-B'];
     const selectedVoice =
       voice === 'man'
         ? maleVoices[Math.floor(Math.random() * maleVoices.length)]
@@ -84,4 +83,5 @@ exports.handler = async function (event) {
     };
   }
 };
+
 
