@@ -1,33 +1,22 @@
-const { GoogleAuth } = require('google-auth-library');
-const fetch = require('node-fetch');
+const textToSpeech = require('@google-cloud/text-to-speech');
 
 let credentials;
-let projectId;
 try {
   if (!process.env.GOOGLE_CREDENTIALS_JSON) {
     throw new Error('GOOGLE_CREDENTIALS_JSON environment variable is not set.');
   }
+  // Netlify 환경 변수에서 JSON 키 내용을 파싱합니다.
   credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-  projectId = credentials.project_id;
-  if (!projectId) {
-    throw new Error('Project ID is missing in the credentials JSON.');
-  }
 } catch (e) {
   console.error('Failed to parse Google credentials:', e);
   global.initError = e;
 }
 
-const getAuthToken = async () => {
-  const auth = new GoogleAuth({
-    credentials,
-    scopes: 'https://www.googleapis.com/auth/cloud-platform',
-  });
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-  return accessToken.token;
-};
+// 공식 라이브러리의 클라이언트를 생성합니다.
+const client = new textToSpeech.TextToSpeechClient({ credentials });
 
 exports.handler = async function (event) {
+  // 서버 설정 오류가 있으면 즉시 에러를 반환합니다.
   if (global.initError) {
     return {
       statusCode: 500,
@@ -35,6 +24,7 @@ exports.handler = async function (event) {
     };
   }
 
+  // POST 요청만 허용합니다.
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -49,6 +39,7 @@ exports.handler = async function (event) {
       };
     }
 
+    // 최신 생성형 'Studio' 음성 모델 이름
     const femaleVoices = ['ko-KR-Studio-O'];
     const maleVoices = ['ko-KR-Studio-P'];
 
@@ -57,41 +48,23 @@ exports.handler = async function (event) {
         ? maleVoices[Math.floor(Math.random() * maleVoices.length)]
         : femaleVoices[Math.floor(Math.random() * femaleVoices.length)];
 
-    const token = await getAuthToken();
-
-    // ▼▼▼▼▼ 바로 이 주소가 잘못되었습니다! 올바르게 수정했습니다. ▼▼▼▼▼
-    const API_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/tts-1:synthesizeSpeech`;
-
-    const requestBody = {
-      // API 요청 본문 구조도 약간 변경되었습니다.
-      synthesisInput: { text },
+    // API에 보낼 요청 객체를 생성합니다.
+    const request = {
+      input: { text },
       voice: {
         languageCode: 'ko-KR',
-        name: selectedVoice,
+        name: selectedVoice, // 라이브러리가 이 이름을 보고 자동으로 최신 모델로 요청을 보냅니다.
       },
       audioConfig: {
         audioEncoding: 'MP3',
       },
     };
 
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // 음성 합성을 요청합니다.
+    const [response] = await client.synthesizeSpeech(request);
+    const audioData = response.audioContent.toString('base64');
 
-    if (!response.ok) {
-        const errorBody = await response.json();
-        console.error('API Error:', errorBody);
-        throw new Error(`API call failed with status ${response.status}: ${errorBody.error.message}`);
-    }
-
-    const responseData = await response.json();
-    const audioData = responseData.audioContent;
-
+    // 성공적으로 오디오 데이터를 반환합니다.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
