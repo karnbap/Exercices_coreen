@@ -17,7 +17,6 @@ try {
   global.initError = e;
 }
 
-// 인증을 위한 함수
 const getAuthToken = async () => {
   const auth = new GoogleAuth({
     credentials,
@@ -50,9 +49,8 @@ exports.handler = async function (event) {
       };
     }
 
-    // ✅ 새로운 생성형 'Studio' 음성 모델
-    const femaleVoices = ['ko-KR-Studio-O']; // 여성 Studio 목소리
-    const maleVoices = ['ko-KR-Studio-P'];   // 남성 Studio 목소리
+    const femaleVoices = ['ko-KR-Studio-O'];
+    const maleVoices = ['ko-KR-Studio-P'];
 
     const selectedVoice =
       voice === 'man'
@@ -60,10 +58,13 @@ exports.handler = async function (event) {
         : femaleVoices[Math.floor(Math.random() * femaleVoices.length)];
 
     const token = await getAuthToken();
-    const API_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/texttospeech:synthesize`;
+
+    // ▼▼▼▼▼ 바로 이 주소가 잘못되었습니다! 올바르게 수정했습니다. ▼▼▼▼▼
+    const API_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/tts-1:synthesizeSpeech`;
 
     const requestBody = {
-      input: { text },
+      // API 요청 본문 구조도 약간 변경되었습니다.
+      synthesisInput: { text },
       voice: {
         languageCode: 'ko-KR',
         name: selectedVoice,
@@ -89,7 +90,7 @@ exports.handler = async function (event) {
     }
 
     const responseData = await response.json();
-    const audioData = responseData.audioContent; // Base64로 이미 인코딩되어 있음
+    const audioData = responseData.audioContent;
 
     return {
       statusCode: 200,
