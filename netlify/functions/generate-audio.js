@@ -40,8 +40,9 @@ exports.handler = async function (event) {
     }
 
     // 최신 생성형 'Studio' 음성 모델 이름
-    const femaleVoices = ['ko-KR-Studio-O'];
-    const maleVoices = ['ko-KR-Studio-P'];
+    // Using standard WaveNet voices for guaranteed compatibility.
+    const femaleVoices = ['ko-KR-Wavenet-A', 'ko-KR-Wavenet-C'];
+    const maleVoices = ['ko-KR-Wavenet-B', 'ko-KR-Wavenet-D'];
 
     const selectedVoice =
       voice === 'man'
@@ -83,3 +84,4 @@ exports.handler = async function (event) {
     };
   }
 };
+
