@@ -14,9 +14,7 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         .form-input {
             background-color: #f1f5f9;
             border: 1px solid #cbd5e1;
@@ -32,10 +30,8 @@
         }
         .step-section { display: none; }
         .step-section.active { display: block; }
-        .choice-btn.selected {
-            background-color: var(--royal-blue);
-            color: white;
-        }
+        .choice-btn.selected { background-color: var(--royal-blue); color: white; }
+        .control-button, .main-button, .nav-button { white-space: nowrap; }
     </style>
 </head>
 
@@ -45,8 +41,8 @@
         <!-- Header -->
         <header class="flex justify-between items-center mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">부정 표현 연습 🇰🇷</h1>
-                <p class="text-slate-500">Exercice sur les expressions de négation</p>
+                <h1 class="text-3xl font-bold text-slate-800">부정 표현 연습 🇰🇷 | Exercice sur la négation 🇫🇷</h1>
+                <p class="text-slate-500">한국어 부정 표현 연습 | Exercices sur les expressions de négation</p>
             </div>
             <div class="flex items-center space-x-2">
                 <button id="printButton" class="control-button" title="프린트 | Imprimer">
@@ -68,14 +64,12 @@
                     <!-- Part 1 -->
                     <div>
                         <h3 class="font-bold text-lg text-slate-700">1. “mais pas” → <span class="text-blue-600">~지만 ~아니에요</span></h3>
-                        <p class="text-sm text-slate-500 mt-1">A는 좋아하지만, B는 아니다'처럼 단순한 대조를 나타낼 때 사용해요.</p>
-                        <p class="text-sm text-slate-500 mt-1 fr">Utilisé pour une opposition simple, comme "J'aime A, mais pas B."</p>
+                        <p class="text-sm text-slate-500 mt-1">A는 좋아하지만, B는 아니에요처럼 단순한 대조를 나타낼 때 사용해요. | Utilisé pour une opposition simple, comme « J'aime A, mais pas B ».</p>
                     </div>
                     <!-- Part 2 -->
                     <div>
                         <h3 class="font-bold text-lg text-slate-700">2. “Ce n’est pas A mais B” → <span class="text-green-600">~이/가 아니라</span></h3>
-                        <p class="text-sm text-slate-500 mt-1">'A가 아니라 B다'처럼 잘못된 정보를 바로잡거나 강조할 때 써요.</p>
-                        <p class="text-sm text-slate-500 mt-1 fr">Utilisé pour corriger une idée ou insister sur une précision : "Ce n'est pas A, mais B."</p>
+                        <p class="text-sm text-slate-500 mt-1">잘못된 정보를 바로잡거나 강조할 때: « A가 아니라 B예요. » | Pour corriger/insister : « Ce n’est pas A, mais B. »</p>
                     </div>
                 </div>
             </div>
@@ -83,10 +77,10 @@
 
         <!-- Student Name Input -->
         <div id="student-name-section" class="bg-white p-8 rounded-xl shadow-md text-center">
-            <h2 class="text-2xl font-semibold text-slate-700 mb-2">🚀 퀴즈를 시작할 준비가 됐나요?</h2>
-            <p class="text-slate-500 mb-6">Prêt(e) à commencer le quiz ?</p>
+            <h2 class="text-2xl font-semibold text-slate-700 mb-2">🚀 퀴즈를 시작할 준비가 됐나요? | Prêt(e) à commencer le quiz ?</h2>
+            <p class="text-slate-500 mb-6">이름을 입력하고 시작하세요. | Entrez votre nom pour commencer.</p>
             <div class="max-w-sm mx-auto">
-                <label for="studentName" class="block text-left font-medium text-slate-600 mb-1">먼저 이름을 입력해주세요.</label>
+                <label for="studentName" class="block text-left font-medium text-slate-600 mb-1">먼저 이름을 입력해주세요. | Veuillez entrer votre nom.</label>
                 <input type="text" id="studentName" class="w-full form-input" placeholder="예) 세두 | Ex) Cédou">
                 <button id="start-quiz-btn" class="main-button w-full mt-4">시작! | C'est parti !</button>
             </div>
@@ -96,26 +90,26 @@
         <div id="quiz-container" class="hidden">
             <!-- Step 1: Simple Choice -->
             <section id="step-1" class="step-section">
-                <h2 class="text-2xl font-semibold text-slate-700 mb-4">Étape 1: 선택하기 (10 questions)</h2>
+                <h2 class="text-2xl font-semibold text-slate-700 mb-4">1단계 | Étape 1 : 선택하기 (10문항) | Choix simples (10)</h2>
                 <div id="step-1-questions" class="space-y-6"></div>
             </section>
             <!-- Step 2: Word Input -->
             <section id="step-2" class="step-section">
-                <h2 class="text-2xl font-semibold text-slate-700 mb-4">Étape 2: 단어 입력하기 (10 questions)</h2>
+                <h2 class="text-2xl font-semibold text-slate-700 mb-4">2단계 | Étape 2 : 단어 입력하기 (10문항) | Saisie de mots (10)</h2>
                 <div id="step-2-questions" class="space-y-6"></div>
             </section>
             <!-- Step 3: Sentence Writing -->
             <section id="step-3" class="step-section">
-                <h2 class="text-2xl font-semibold text-slate-700 mb-4">Étape 3: 듣고, 쓰고, 녹음하기 (10 questions)</h2>
+                <h2 class="text-2xl font-semibold text-slate-700 mb-4">3단계 | Étape 3 : 듣고, 쓰고, 녹음하기 (10문항) | Écouter, écrire et enregistrer (10)</h2>
                 <div id="step-3-questions" class="space-y-6"></div>
             </section>
 
             <!-- Navigation -->
             <div id="navigation-controls" class="flex justify-between items-center mt-6">
-                <button id="prev-btn" class="nav-button"><i class="fas fa-arrow-left mr-2"></i> 이전 단계</button>
-                <div id="progress-indicator" class="text-slate-600 font-medium"></div>
-                <button id="next-btn" class="nav-button">다음 단계 <i class="fas fa-arrow-right ml-2"></i></button>
-                <button id="finish-btn" class="main-button hidden">끝내기 & 결과 보기</button>
+                <button id="prev-btn" class="nav-button"><i class="fas fa-arrow-left mr-2"></i> 이전 단계 | Étape précédente</button>
+                <div id="progress-indicator" class="text-slate-600 font-medium">단계 | Étape 1 / 3</div>
+                <button id="next-btn" class="nav-button">다음 단계 | Étape suivante <i class="fas fa-arrow-right ml-2"></i></button>
+                <button id="finish-btn" class="main-button hidden">끝내기 & 결과 보기 | Terminer & voir les résultats</button>
             </div>
         </div>
         
@@ -206,7 +200,7 @@
             { fr: "Il vient souvent, mais pas aujourd’hui.", ko: "자주는 오지만 오늘은 아니에요.", vocab: { '자주': 'souvent', '오늘': "aujourd'hui", '오다': 'venir' } },
             { fr: "J'aime l'été, mais pas l'hiver.", ko: "여름은 좋아하지만 겨울은 아니에요.", vocab: { '여름': 'été', '겨울': 'hiver' } },
             { fr: "Ce n’est pas un livre, mais un cahier que je veux.", ko: "책이 아니라 공책을 원해요.", vocab: { '책': 'livre', '공책': 'cahier' } },
-            { fr: "Ce n’est pas que je m'amuse, je suis en train d'étudier.", ko: "노는 게 아니에요, 공부하는 중이에요.", vocab: { '놀다': 's\'amuser', '공부하다': 'étudier' } },
+            { fr: "Ce n’est pas que je m'amuse, je suis en train d'étudier.", ko: "노는 게 아니에요, 공부하는 중이에요.", vocab: { '놀다': "s'amuser", '공부하다': 'étudier' } },
             { fr: "Il est venu hier, mais pas aujourd'hui.", ko: "어제는 왔지만 오늘은 아니에요.", vocab: { '어제': 'hier', '오늘': "aujourd'hui" } },
             { fr: "J'aime les chiens, mais pas les chats.", ko: "강아지는 좋아하지만 고양이는 아니에요.", vocab: { '강아지': 'chien', '고양이': 'chat' } },
             { fr: "Ce n’est pas de l'eau, mais du jus que je veux.", ko: "물이 아니라 주스를 원해요.", vocab: { '물': 'eau', '주스': 'jus' } }
@@ -217,21 +211,36 @@
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+                [array[i], array[j]] = [array[j]], [array[i]];
             }
         }
 
         function generateQuestions() {
             questions = [];
             
-            shuffleArray(choicePool);
-            choicePool.slice(0, 10).forEach(q => questions.push({ ...q, type: 'choice', userAnswer: '', isCorrect: false }));
+            // Choice 10
+            const choiceCopy = [...choicePool];
+            for (let i = choiceCopy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [choiceCopy[i], choiceCopy[j]] = [choiceCopy[j], choiceCopy[i]];
+            }
+            choiceCopy.slice(0, 10).forEach(q => questions.push({ ...q, type: 'choice', userAnswer: '', isCorrect: false }));
 
-            shuffleArray(inputPool);
-            inputPool.slice(0, 10).forEach(q => questions.push({ ...q, type: 'input', userAnswer: '', isCorrect: false }));
+            // Input 10
+            const inputCopy = [...inputPool];
+            for (let i = inputCopy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [inputCopy[i], inputCopy[j]] = [inputCopy[j], inputCopy[i]];
+            }
+            inputCopy.slice(0, 10).forEach(q => questions.push({ ...q, type: 'input', userAnswer: '', isCorrect: false }));
 
-            shuffleArray(sentenceWritingPool);
-            sentenceWritingPool.slice(0, 10).forEach(q => questions.push({ 
+            // Sentence 10
+            const sentenceCopy = [...sentenceWritingPool];
+            for (let i = sentenceCopy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [sentenceCopy[i], sentenceCopy[j]] = [sentenceCopy[j], sentenceCopy[i]];
+            }
+            sentenceCopy.slice(0, 10).forEach(q => questions.push({ 
                 ...q, 
                 type: 'sentence', 
                 userDictation: '',      
@@ -268,47 +277,48 @@
                         </div>
                     `;
                 } else if (q.type === 'input') {
+                    const parts = q.ko_template.split('___');
                     questionHTML += `
                         <p class="font-semibold text-slate-700 mb-2">Q${q.number}. ${q.fr}</p>
                         <div class="flex items-center space-x-2">
-                            <p class="text-lg font-mono text-slate-800">${q.ko_template.split('___')[0]}</p>
-                            <input type="text" class="form-input w-24 text-center text-lg" data-question-number="${q.number}" value="${q.userAnswer || ''}">
-                            <p class="text-lg font-mono text-slate-800">${q.ko_template.split('___')[1]}</p>
+                            <p class="text-lg font-mono text-slate-800">${parts[0]}</p>
+                            <input type="text" class="form-input w-24 text-center text-lg" data-question-number="${q.number}" value="${q.userAnswer || ''}" placeholder="정답 | Réponse">
+                            <p class="text-lg font-mono text-slate-800">${parts[1]}</p>
                         </div>
                     `;
                 } else if (q.type === 'sentence') {
                      questionHTML += `
-                        <p class="font-semibold text-slate-700 mb-4">Q${q.number}. Écoutez et complétez les champs.</p>
+                        <p class="font-semibold text-slate-700 mb-4">Q${q.number}. 듣고, 쓰고, 녹음하기 | Écoutez, écrivez et enregistrez</p>
                         
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">1. 듣고 받아쓰기 (힌트 사용 가능)</label>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">1. 듣고 받아쓰기 (Écouter et faire une dictée)</label>
                                 <div class="flex items-center space-x-2 mb-2">
-                                    <button class="control-button" onclick="playAudio(${q.number - 1})"><i class="fas fa-volume-up"></i> 듣기</button>
-                                    <button class="control-button" onclick="showHint1(${q.number - 1})"><i class="fas fa-lightbulb"></i> 초성</button>
-                                    <button class="control-button" onclick="showHint2(${q.number - 1})"><i class="fas fa-book"></i> 단어</button>
+                                    <button class="control-button" onclick="playAudio(${q.number - 1})"><i class="fas fa-volume-up"></i> 듣기 | Écouter</button>
+                                    <button class="control-button" onclick="showHint1(${q.number - 1})"><i class="fas fa-lightbulb"></i> 초성 | Consonnes initiales</button>
+                                    <button class="control-button" onclick="showHint2(${q.number - 1})"><i class="fas fa-book"></i> 단어 | Vocabulaire</button>
                                 </div>
                                 <div id="hint-display-${q.number}" class="my-2 text-blue-600 font-semibold"></div>
-                                <input type="text" id="dictation-input-${q.number}" class="form-input" value="${q.userDictation || ''}" placeholder="들은 내용을 한국어로 쓰세요...">
+                                <input type="text" id="dictation-input-${q.number}" class="form-input" value="${q.userDictation || ''}" placeholder="들은 내용을 한국어로 쓰세요 | Écrivez ce que vous entendez en coréen">
                             </div>
 
                             <div>
-                                <label for="translation-input-${q.number}" class="block text-sm font-medium text-slate-600 mb-1">2. 위 문장을 불어로 번역하기</label>
-                                <input type="text" id="translation-input-${q.number}" class="form-input" value="${q.userTranslation || ''}" placeholder="Traduisez la phrase en français...">
+                                <label for="translation-input-${q.number}" class="block text-sm font-medium text-slate-600 mb-1">2. 위 문장을 불어로 번역하기 | Traduisez la phrase en français</label>
+                                <input type="text" id="translation-input-${q.number}" class="form-input" value="${q.userTranslation || ''}" placeholder="불어로 번역... | Traduisez en français...">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">3. 발음 녹음하고 들어보기</label>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">3. 발음 녹음하고 들어보기 | Enregistrez et écoutez votre enregistrement</label>
                                 <div class="flex items-center space-x-2">
-                                    <button id="record-btn-${q.number}" class="control-button record-button" onclick="toggleRecording(${q.number - 1})"><i class="fas fa-microphone"></i> 녹음</button>
+                                    <button id="record-btn-${q.number}" class="control-button record-button" onclick="toggleRecording(${q.number - 1})"><i class="fas fa-microphone"></i> 녹음 | Enregistrer</button>
                                     <span id="record-status-${q.number}" class="text-sm text-slate-500"></span>
                                 </div>
                                 <audio id="audio-playback-${q.number}" controls class="w-full mt-2 hidden"></audio>
                             </div>
 
                              <div>
-                                <label for="self-dictation-input-${q.number}" class="block text-sm font-medium text-slate-600 mb-1">4. 자기 녹음 듣고 받아쓰기</label>
-                                <input type="text" id="self-dictation-input-${q.number}" class="form-input" value="${q.userSelfDictation || ''}" placeholder="자신의 녹음을 듣고 쓰세요...">
+                                <label for="self-dictation-input-${q.number}" class="block text-sm font-medium text-slate-600 mb-1">4. 자기 녹음 듣고 받아쓰기 | Faire une dictée avec votre enregistrement</label>
+                                <input type="text" id="self-dictation-input-${q.number}" class="form-input" value="${q.userSelfDictation || ''}" placeholder="자신의 녹음을 듣고 쓰세요 | Écrivez ce que vous entendez de votre enregistrement">
                             </div>
                         </div>
                     `;
@@ -357,7 +367,7 @@
         }
 
         function updateNavigation() {
-            progressIndicator.textContent = `Étape ${currentStep + 1} / 3`;
+            progressIndicator.textContent = `단계 | Étape ${currentStep + 1} / 3`;
             prevBtn.disabled = currentStep === 0;
             nextBtn.classList.toggle('hidden', currentStep === 2);
             finishBtn.classList.toggle('hidden', currentStep !== 2);
@@ -433,8 +443,8 @@
                         audioChunks = [];
                         
                         icon.classList.replace('fa-microphone', 'fa-stop-circle');
-                        recordBtn.innerHTML = `<i class="fas fa-stop-circle"></i> 녹음 중지`;
-                        recordStatus.textContent = '녹음 중...';
+                        recordBtn.innerHTML = `<i class=\"fas fa-stop-circle\"></i> 녹음 중지 | Arrêter`;
+                        recordStatus.textContent = '녹음 중... | Enregistrement en cours...';
 
                         mediaRecorder.addEventListener("dataavailable", event => {
                             audioChunks.push(event.data);
@@ -442,8 +452,8 @@
 
                         mediaRecorder.addEventListener("stop", () => {
                             icon.classList.replace('fa-stop-circle', 'fa-microphone');
-                            recordBtn.innerHTML = `<i class="fas fa-microphone"></i> 녹음 시작`;
-                            recordStatus.textContent = '녹음 완료!';
+                            recordBtn.innerHTML = `<i class=\"fas fa-microphone\"></i> 녹음 시작 | Enregistrer`;
+                            recordStatus.textContent = '녹음 완료! | Enregistrement terminé !';
 
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                             const audioUrl = URL.createObjectURL(audioBlob);
@@ -466,20 +476,23 @@
                         });
                     }).catch(err => {
                         console.error("Error accessing microphone:", err);
-                        recordStatus.textContent = "마이크 접근 오류";
+                        recordStatus.textContent = "마이크 접근 오류 | Erreur d'accès au micro";
                     });
             }
         }
         window.toggleRecording = toggleRecording;
 
+        function cleanText(str) {
+            return (str || '').replace(/[.,\s]/g, '').toLowerCase();
+        }
+
         function checkAnswers() {
             questions.forEach(q => {
-                const clean = (str) => str.replace(/[.,\s]/g, '').toLowerCase();
                 if (q.type === 'choice' || q.type === 'input') {
-                    q.isCorrect = clean(q.userAnswer) === clean(q.answer);
+                    q.isCorrect = cleanText(q.userAnswer) === cleanText(q.answer);
                 } else if (q.type === 'sentence') {
-                    const isDictationCorrect = clean(q.userDictation) === clean(q.ko);
-                    const isTranslationCorrect = clean(q.userTranslation) === clean(q.fr);
+                    const isDictationCorrect = cleanText(q.userDictation) === cleanText(q.ko);
+                    const isTranslationCorrect = cleanText(q.userTranslation) === cleanText(q.fr);
                     q.isCorrect = isDictationCorrect && isTranslationCorrect;
                 }
             });
@@ -498,20 +511,29 @@
                 <h2 class="text-3xl font-bold text-slate-800 mb-2">${gradingResult.ko}</h2>
                 <p class="text-lg text-slate-600 mb-4">${gradingResult.fr}</p>
                 <p class="text-2xl font-semibold text-sky-600 mb-6">
-                    총점: ${correctCount} / ${questions.length} (${gradingResult.score}%)
+                    총점 | Score : ${correctCount} / ${questions.length} (${gradingResult.score}%)
                 </p>
                 <div class="text-left max-h-60 overflow-y-auto pr-2">
             `;
 
             questions.forEach((q) => {
+                const yourAnswer = q.userAnswer || q.userDictation || "답변 없음 | Aucune réponse";
+                let correctionBlock = '';
+                if (!q.isCorrect) {
+                    const corrLabel = (typeof comparisonMessage !== 'undefined' && comparisonMessage?.ko)
+                        ? `${comparisonMessage.ko} / ${comparisonMessage.fr || 'Réponse'}`
+                        : '정답 | Réponse';
+                    const correctText = q.answer || q.ko;
+                    correctionBlock = `<p class="text-sm text-blue-700"><span class="font-bold">${corrLabel}</span><br>${correctText}</p>`;
+                }
                 resultsHtml += `
                     <div class="p-3 rounded-lg mb-3 ${q.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
                         <p class="font-semibold text-slate-700">Q${q.number}: ${q.fr}</p>
                         <p class="text-sm ${q.isCorrect ? 'text-green-700' : 'text-red-700'}">
                             <i class="fas ${q.isCorrect ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-                            당신의 답: ${q.userAnswer || q.userDictation || "답변 없음"}
+                            당신의 답 | Votre réponse : ${yourAnswer}
                         </p>
-                        ${!q.isCorrect ? `<p class="text-sm text-blue-700"><span class="font-bold">${comparisonMessage.ko}</span><br>${q.answer || q.ko}</p>` : ''}
+                        ${correctionBlock}
                     </div>
                 `;
             });
