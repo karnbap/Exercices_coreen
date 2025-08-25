@@ -46,7 +46,7 @@
         }
 
         .btn-action:hover {
-            transform: translateY(-2px);
+            transform: translateY(-px);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         
@@ -586,8 +586,8 @@
                     number: questionNumber++,
                     ko: task.ko,
                     fr: task.fr,
-                    userAnswer: '', // Reading task has no text answer
-                    isCorrect: null, // Manual grading
+                    userAnswer: '',
+                    isCorrect: null,
                     recording: studentData.recordings[task.id] || null
                 });
             });
@@ -610,7 +610,7 @@
                     ko: task.ko,
                     fr: `(Question de compréhension) ${task.fr}`,
                     userAnswer: userAnswer,
-                    isCorrect: null, // Manual grading
+                    isCorrect: null,
                 });
             });
 
@@ -624,7 +624,7 @@
                     ko: `(질문) ${task.ko}`,
                     fr: `(Question) ${task.fr}`,
                     userAnswer: JSON.stringify({ dictation, translation, selfDictation }),
-                    isCorrect: dictation.trim().replace(/[.?]/g, '') === task.ko.replace(/[.?]/g, ''),
+                    isCorrect: null, // Detailed scoring will handle this
                     recording: studentData.recordings[task.id + '-answer'] || null
                 });
             });
@@ -632,18 +632,63 @@
             return questions;
         }
 
+        // --- NEW: 단어별 채점 함수 ---
+        function calculateWordScore(userAnswer, correctAnswer) {
+            const normalize = (str) => str.replace(/[.,!?]/g, '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+            const userWords = normalize(userAnswer);
+            const correctWords = normalize(correctAnswer);
+            
+            if (correctWords.length === 0) return { score: 0, max: 0 };
+
+            let correctCount = 0;
+            const userWordSet = new Set(userWords);
+
+            for (const word of correctWords) {
+                if (userWordSet.has(word)) {
+                    correctCount++;
+                }
+            }
+            return { score: correctCount, max: correctWords.length };
+        }
+
+        // --- NEW: 최종 점수 계산 로직 ---
+        function calculateDetailedScore() {
+            let totalPoints = 0;
+            let maxPoints = 0;
+
+            // 1. 어휘 점수
+            const vocabScore = parseInt(document.getElementById('vocab-score').textContent);
+            totalPoints += vocabScore;
+            maxPoints += testData.vocabulary.length;
+
+            // 2. 받아쓰기 점수
+            testData.listenSpeak.forEach(task => {
+                const userAnswer = document.getElementById(`ls-dictation-${task.id}`).value;
+                const result = calculateWordScore(userAnswer, task.ko);
+                totalPoints += result.score;
+                maxPoints += result.max;
+            });
+            
+            return maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
+        }
+
         finishBtn.addEventListener('click', async () => {
             finishBtn.disabled = true;
             finishBtn.textContent = '결과를 전송하는 중...';
             
+            const questions = collectAllData();
             const endTime = new Date();
+            
             const payload = {
                 studentName: studentData.name,
                 startTime: startTime.toISOString(),
                 endTime: endTime.toISOString(),
                 totalTimeSeconds: Math.round((endTime - startTime) / 1000),
-                questions: collectAllData()
+                questions: questions
             };
+
+            // --- UPDATED: 상세 점수 계산 로직 호출 ---
+            const score = calculateDetailedScore();
 
             try {
                 const response = await fetch('/.netlify/functions/send-results', {
@@ -653,14 +698,35 @@
                 });
 
                 if (response.ok) {
-                    document.body.innerHTML = `
+                    let resultHTML = '';
+                    if (score < 50) {
+                        resultHTML = `
                         <div class="task-container text-center">
-                            <h1 class="text-4xl font-bold text-green-600 mb-4">🎉 제출 완료! 🎉</h1>
-                            <p class="text-lg text-gray-700">테스트에 참여해주셔서 감사합니다, ${studentData.name}님!</p>
-                            <p class="text-gray-600 mt-2">결과를 선생님께 안전하게 보냈어요. 곧 피드백을 받으실 거예요.</p>
+                            <h1 class="text-4xl font-bold text-blue-600 mb-4">🎉 테스트 완료! 🎉</h1>
+                            <p class="text-lg text-gray-700 mb-4">고생 많았어요, ${studentData.name}님!</p>
+                            <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                                <h2 class="text-2xl font-bold text-blue-800 mb-2">결과: A0 레벨에 가까워요! (점수: ${score}점)</h2>
+                                <p class="text-gray-700">기초부터 차근차근 함께하면 금방 실력이 늘 거예요. 포기하지 마세요! 💪</p>
+                                <p class="text-gray-600 mt-2 text-sm">Votre niveau est proche du A0 ! En commençant par les bases, vous progresserez très vite. Ne baissez pas les bras !</p>
+                            </div>
+                            <p class="text-gray-600 mt-6">자세한 결과는 선생님께 안전하게 보냈어요. 곧 피드백을 받으실 거예요.</p>
                             <div class="creator-stamp" style="margin-top: 40px;">Made by 성일, Pondant, Laon</div>
-                        </div>
-                    `;
+                        </div>`;
+                    } else {
+                        resultHTML = `
+                        <div class="task-container text-center">
+                            <h1 class="text-4xl font-bold text-green-600 mb-4">🎉 테스트 완료! 🎉</h1>
+                            <p class="text-lg text-gray-700 mb-4">정말 잘했어요, ${studentData.name}님!</p>
+                            <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                                <h2 class="text-2xl font-bold text-green-800 mb-2">결과: A1 레벨에 가까워요! (점수: ${score}점)</h2>
+                                <p class="text-gray-700">훌륭해요! 이대로라면 A2 레벨까지 금방 도달할 수 있을 거예요. 정말 멋져요! ✨</p>
+                                <p class="text-gray-600 mt-2 text-sm">Excellent ! Votre niveau est proche du A1 ! À ce rythme, vous atteindrez bientôt le niveau A2.</p>
+                            </div>
+                            <p class="text-gray-600 mt-6">자세한 결과는 선생님께 안전하게 보냈어요. 곧 피드백을 받으실 거예요.</p>
+                            <div class="creator-stamp" style="margin-top: 40px;">Made by 성일, Pondant, Laon</div>
+                        </div>`;
+                    }
+                    document.body.innerHTML = resultHTML;
                 } else {
                     throw new Error('Server responded with an error');
                 }
