@@ -30,6 +30,10 @@
         .page-container.active {
             display: block;
         }
+        .listen-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -59,7 +63,7 @@
         <main id="main-content" class="hidden">
             <!-- Explanation 1: Basics -->
             <div id="page-explanation-1" class="page-container bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">Rappel 1 : Les bases ! (기초!)</h2>
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Rappel 1 : Les bases ! (기초 복습!)</h2>
                 <p class="mb-2">En coréen, la forme d'un verbe change selon le <strong>temps</strong> et le <strong>niveau de politesse</strong>.</p>
                 <ul class="list-disc list-inside space-y-2 text-gray-600">
                     <li><strong>Infinitif (동사 원형)</strong> : La forme de base du dictionnaire, se termine toujours par <code class="bg-gray-200 rounded px-1">다</code>. Ex: <code class="bg-gray-200 rounded px-1">먹다</code> (manger).</li>
@@ -158,18 +162,18 @@
 
         // --- Verb Data ---
         const verbs = [
-            { inf: '먹다', p: '먹어요', pa: '먹었어요', f: '먹을 거예요', l: '먹어', fml: '먹습니다', fr: 'manger' },
-            { inf: '가다', p: '가요', pa: '갔어요', f: '갈 거예요', l: '가', fml: '갑니다', fr: 'aller' },
-            { inf: '하다', p: '해요', pa: '했어요', f: '할 거예요', l: '해', fml: '합니다', fr: 'faire' },
-            { inf: '보다', p: '봐요', pa: '봤어요', f: '볼 거예요', l: '봐', fml: '봅니다', fr: 'voir' },
-            { inf: '마시다', p: '마셔요', pa: '마셨어요', f: '마실 거예요', l: '마셔', fml: '마십니다', fr: 'boire' },
-            { inf: '읽다', p: '읽어요', pa: '읽었어요', f: '읽을 거예요', l: '읽어', fml: '읽습니다', fr: 'lire' },
-            { inf: '만들다', p: '만들어요', pa: '만들었어요', f: '만들 거예요', l: '만들어', fml: '만듭니다', fr: 'fabriquer' },
-            { inf: '듣다', p: '들어요', pa: '들었어요', f: '들을 거예요', l: '들어', fml: '듣습니다', fr: 'écouter' },
-            { inf: '걷다', p: '걸어요', pa: '걸었어요', f: '걸을 거예요', l: '걸어', fml: '걷습니다', fr: 'marcher' },
-            { inf: '자다', p: '자요', pa: '잤어요', f: '잘 거예요', l: '자', fml: '잡니다', fr: 'dormir' },
-            { inf: '사다', p: '사요', pa: '샀어요', f: '살 거예요', l: '사', fml: '삽니다', fr: 'acheter' },
-            { inf: '일하다', p: '일해요', pa: '일했어요', f: '일할 거예요', l: '일해', fml: '일합니다', fr: 'travailler' },
+            { inf: '먹다', p: '먹어요', pa: '먹었어요', f: '먹을 거예요', l: '먹어', fml: '먹습니다', fr: 'manger', rule: { tense: 'other_vowel', future: 'batchim' } },
+            { inf: '가다', p: '가요', pa: '갔어요', f: '갈 거예요', l: '가', fml: '갑니다', fr: 'aller', rule: { tense: 'a_o_vowel', future: 'no_batchim' } },
+            { inf: '하다', p: '해요', pa: '했어요', f: '할 거예요', l: '해', fml: '합니다', fr: 'faire', rule: { tense: 'hada', future: 'no_batchim' } },
+            { inf: '보다', p: '봐요', pa: '봤어요', f: '볼 거예요', l: '봐', fml: '봅니다', fr: 'voir', rule: { tense: 'a_o_vowel', future: 'no_batchim' } },
+            { inf: '마시다', p: '마셔요', pa: '마셨어요', f: '마실 거예요', l: '마셔', fml: '마십니다', fr: 'boire', rule: { tense: 'other_vowel', future: 'no_batchim' } },
+            { inf: '읽다', p: '읽어요', pa: '읽었어요', f: '읽을 거예요', l: '읽어', fml: '읽습니다', fr: 'lire', rule: { tense: 'other_vowel', future: 'batchim' } },
+            { inf: '만들다', p: '만들어요', pa: '만들었어요', f: '만들 거예요', l: '만들어', fml: '만듭니다', fr: 'fabriquer', rule: { tense: 'other_vowel', future: 'rieul_batchim' } },
+            { inf: '듣다', p: '들어요', pa: '들었어요', f: '들을 거예요', l: '들어', fml: '듣습니다', fr: 'écouter', rule: { tense: 'irregular_d', future: 'batchim' } },
+            { inf: '걷다', p: '걸어요', pa: '걸었어요', f: '걸을 거예요', l: '걸어', fml: '걷습니다', fr: 'marcher', rule: { tense: 'irregular_d', future: 'batchim' } },
+            { inf: '자다', p: '자요', pa: '잤어요', f: '잘 거예요', l: '자', fml: '잡니다', fr: 'dormir', rule: { tense: 'a_o_vowel', future: 'no_batchim' } },
+            { inf: '사다', p: '사요', pa: '샀어요', f: '살 거예요', l: '사', fml: '삽니다', fr: 'acheter', rule: { tense: 'a_o_vowel', future: 'no_batchim' } },
+            { inf: '일하다', p: '일해요', pa: '일했어요', f: '일할 거예요', l: '일해', fml: '일합니다', fr: 'travailler', rule: { tense: 'hada', future: 'no_batchim' } },
         ];
 
         // --- DOM Elements ---
@@ -193,7 +197,10 @@
             state.parts = [];
             // Part 1: Infinitif vs Conjugué
             const p1Verbs = shuffleArray([...verbs]).slice(0, 5);
-            const p1Questions = p1Verbs.map(v => ({ question: Math.random() > 0.5 ? v.inf : v.p, options: ['Infinitif (동사 원형)', 'Conjugué (변형 동사)'], answer: (Math.random() > 0.5 ? v.inf : v.p).endsWith('다') ? 'Infinitif (동사 원형)' : 'Conjugué (변형 동사)', userAnswer: null }));
+            const p1Questions = p1Verbs.map(v => {
+                const word = Math.random() > 0.5 ? v.inf : v.p;
+                return { question: word, options: ['Infinitif (동사 원형)', 'Conjugué (변형 동사)'], answer: word.endsWith('다') ? 'Infinitif (동사 원형)' : 'Conjugué (변형 동사)', userAnswer: null };
+            });
             state.parts.push({ title: 'Infinitif ou Conjugué ?', type: 'mcq', questions: p1Questions });
 
             // Part 2: Niveaux de politesse
@@ -222,13 +229,13 @@
             const p6Verbs = shuffleArray([...verbs]).slice(0, 10);
             const p6Questions = p6Verbs.map(v => {
                 const isPast = Math.random() > 0.5;
-                return { question: `Le verbe <span class="font-bold">${v.inf} (${v.fr})</span> au <span class="font-bold">${isPast ? 'passé' : 'présent'}</span> ?`, answer: isPast ? v.pa : v.p, userAnswer: '' };
+                return { verb: v, tense: isPast ? 'passé' : 'présent', answer: isPast ? v.pa : v.p, userAnswer: '' };
             });
             state.parts.push({ title: 'Écris la bonne forme (Présent/Passé)', type: 'fib', questions: p6Questions });
 
             // Part 7: Future Fill-in-the-blank
             const p7Verbs = shuffleArray([...verbs]).slice(0, 10);
-            const p7Questions = p7Verbs.map(v => ({ question: `Le verbe <span class="font-bold">${v.inf} (${v.fr})</span> au <span class="font-bold">futur</span> ?`, answer: v.f, userAnswer: '' }));
+            const p7Questions = p7Verbs.map(v => ({ verb: v, tense: 'futur', answer: v.f, userAnswer: '' }));
             state.parts.push({ title: 'Écris la bonne forme (Futur)', type: 'fib', questions: p7Questions });
             
             // Part 8: Listening
@@ -238,16 +245,19 @@
                 { s: '내일 친구를 만날 거예요.', t: 'Futur (미래)', fr: 'Demain, je vais rencontrer un(e) ami(e).'},
                 { s: '학생은 책을 읽습니다.', t: 'Présent (현재)', fr: 'L\'étudiant lit un livre.'},
                 { s: '우리는 음악을 들었어요.', t: 'Passé (과거)', fr: 'Nous avons écouté de la musique.'},
+                { s: '고양이가 자요.', t: 'Présent (현재)', fr: 'Le chat dort.'},
+                { s: '저는 김치를 만들 거예요.', t: 'Futur (미래)', fr: 'Je vais faire du kimchi.'},
+                { s: '동생이 공원에 갔어요.', t: 'Passé (과거)', fr: 'Mon petit frère/sœur est allé(e) au parc.'}
             ];
-            const p8Questions = shuffleArray(sentences).slice(0,3).map(sent => ({ sentence: sent.s, tense: sent.t, fr: sent.fr, userTense: null, userDictation: '', recording: null, userSelfDictation: '', listenCount: 0, hint1Count: 0 }));
+            const p8Questions = shuffleArray(sentences).slice(0, 6).map(sent => ({ sentence: sent.s, tense: sent.t, fr: sent.fr, userTense: null, userDictation: '', recording: null, userSelfDictation: '', listenCount: 0, hint1Count: 0 }));
             state.parts.push({ title: 'Écoute et écris !', type: 'listening', questions: p8Questions });
 
             // Build the page sequence
             state.pages = [
-                { type: 'explanation', id: 'page-explanation-1', title: 'Rappel 1' },
+                { type: 'explanation', id: 'page-explanation-1' },
                 { type: 'quiz', partIndex: 0 },
                 { type: 'quiz', partIndex: 1 },
-                { type: 'explanation', id: 'page-explanation-2', title: 'Rappel 2' },
+                { type: 'explanation', id: 'page-explanation-2' },
                 { type: 'quiz', partIndex: 2 },
                 { type: 'quiz', partIndex: 3 },
                 { type: 'quiz', partIndex: 4 },
@@ -274,12 +284,20 @@
                         q.options.forEach(opt => { questionsHtml += `<button class="option-btn p-3 border rounded-lg" onclick="selectAnswer(${partIndex}, ${qIndex}, this)">${opt}</button>`; });
                         questionsHtml += `</div>`;
                     } else if (part.type === 'fib') {
-                         questionsHtml += `<p class="text-lg mb-3"><strong>Q${qIndex + 1}:</strong> ${q.question}</p><input type="text" class="w-full p-2 border-2 rounded-lg" onchange="updateAnswer(${partIndex}, ${qIndex}, this.value)">`;
+                        const questionText = `Le verbe <span class="font-bold">${q.verb.inf} (${q.verb.fr})</span> au <span class="font-bold">${q.tense}</span> ?`;
+                        questionsHtml += `<div class="flex items-center justify-between">
+                                            <p class="text-lg mb-3"><strong>Q${qIndex + 1}:</strong> ${questionText}</p>`;
+                        if (qIndex < 5) { // Add hint button for first 5 questions
+                            questionsHtml += `<button class="control-button hint-button text-sm" onclick="showFibHint(${partIndex}, ${qIndex})">Aide 🙏</button>`;
+                        }
+                        questionsHtml += `</div>
+                                        <div id="hint-box-${partIndex}-${qIndex}" class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg hidden"></div>
+                                        <input type="text" class="w-full p-2 border-2 rounded-lg" onchange="updateAnswer(${partIndex}, ${qIndex}, this.value)">`;
                     } else if (part.type === 'listening') {
                         const hintFr = `<strong>Indice (힌트) :</strong> C'est une phrase sur "${q.fr}"`;
                         questionsHtml += `<p class="text-lg mb-3"><strong>Q${qIndex + 1}:</strong> Écoutez bien et répondez.</p>
                             <div class="flex items-center gap-4 mb-4">
-                                <button class="control-button listen-button" onclick="playAudio('${q.sentence}'); state.parts[${partIndex}].questions[${qIndex}].listenCount++"><i class="fas fa-volume-high"></i> Écouter</button>
+                                <button class="control-button listen-button" onclick="playAudio(this, '${q.sentence}'); state.parts[${partIndex}].questions[${qIndex}].listenCount++"><i class="fas fa-volume-high"></i> Écouter</button>
                                 <button class="control-button hint-button" onclick="showHint(${partIndex}, ${qIndex}, '${hintFr.replace(/'/g, "\\'")}')">🙏 Aidez moi!</button>
                             </div>
                             <div id="hint-box-${partIndex}-${qIndex}" class="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg hidden"></div>
@@ -361,8 +379,91 @@
             hintBox.classList.remove('hidden');
         }
 
+        function showFibHint(partIndex, qIndex) {
+            const q = state.parts[partIndex].questions[qIndex];
+            const verb = q.verb;
+            const tense = q.tense;
+            let hintText = '';
+
+            if (tense === 'présent' || tense === 'passé') {
+                const presentEnding = '<strong>-아요</strong>';
+                const pastEnding = '<strong>-았어요</strong>';
+                const presentOtherEnding = '<strong>-어요</strong>';
+                const pastOtherEnding = '<strong>-었어요</strong>';
+                const presentHadaEnding = '<strong>해요</strong>';
+                const pastHadaEnding = '<strong>했어요</strong>';
+
+                switch (verb.rule.tense) {
+                    case 'a_o_vowel':
+                        hintText = `La dernière voyelle du radical est un <strong>ㅏ</strong> ou un <strong>ㅗ</strong>. Il faut donc utiliser ${tense === 'présent' ? presentEnding : pastEnding}.<br>(어간의 마지막 모음이 <strong>ㅏ/ㅗ</strong>라서 ${tense === 'présent' ? presentEnding : pastEnding}를 붙여요.)`;
+                        break;
+                    case 'other_vowel':
+                        hintText = `La dernière voyelle du radical n'est <strong>ni ㅏ, ni ㅗ</strong>. Il faut donc utiliser ${tense === 'présent' ? presentOtherEnding : pastOtherEnding}.<br>(어간의 마지막 모음이 <strong>ㅏ/ㅗ</strong>가 아니라서 ${tense === 'présent' ? presentOtherEnding : pastOtherEnding}를 붙여요.)`;
+                        break;
+                    case 'hada':
+                        hintText = `C'est un verbe qui se termine par <strong>하다</strong>. Il se transforme toujours en ${tense === 'présent' ? presentHadaEnding : pastHadaEnding}.<br>(<strong>하다</strong> 동사는 항상 ${tense === 'présent' ? presentHadaEnding : pastHadaEnding}로 바뀌어요.)`;
+                        break;
+                    case 'irregular_d':
+                        hintText = `Attention, c'est un verbe irrégulier ! Le <strong>ㄷ</strong> final du radical se transforme en <strong>ㄹ</strong> devant une voyelle.<br>(불규칙 동사 주의! 어간의 마지막 <strong>ㄷ</strong>이 모음 앞에서 <strong>ㄹ</strong>로 바뀌어요.)`;
+                        break;
+                }
+            } else if (tense === 'futur') {
+                switch (verb.rule.future) {
+                    case 'batchim':
+                        hintText = `Le radical se termine par une consonne finale (받침). Il faut donc ajouter <strong>-을 거예요</strong>.<br>(어간이 받침으로 끝나요. 그래서 <strong>-을 거예요</strong>를 붙여요.)`;
+                        break;
+                    case 'no_batchim':
+                        hintText = `Le radical se termine par une voyelle (pas de 받침). Il faut donc ajouter <strong>-ㄹ 거예요</strong>.<br>(어간이 모음으로 끝나요 (받침 없음). 그래서 <strong>-ㄹ 거예요</strong>를 붙여요.)`;
+                        break;
+                    case 'rieul_batchim':
+                        hintText = `Attention, cas spécial ! Le radical se termine déjà par <strong>ㄹ</strong>. Il suffit d'ajouter <strong>-거예요</strong> directement.<br>(특별 규칙 주의! 어간이 이미 <strong>ㄹ</strong>로 끝나요. 바로 뒤에 <strong>-거예요</strong>만 붙이면 돼요.)`;
+                        break;
+                }
+            }
+
+            const hintBox = document.getElementById(`hint-box-${partIndex}-${qIndex}`);
+            hintBox.innerHTML = hintText;
+            hintBox.classList.remove('hidden');
+        }
+
+
         // --- Audio & Recording ---
-        const playAudio = (text) => { console.log(`Playing: ${text}`); };
+        async function playAudio(buttonEl, text) {
+            buttonEl.disabled = true;
+            buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+            try {
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: Math.random() > 0.5 ? 'man' : 'woman'
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Audio generation failed');
+                }
+
+                const { audioData, mimeType } = await response.json();
+                const audioBlob = new Blob([Uint8Array.from(atob(audioData), c => c.charCodeAt(0))], { type: mimeType });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+                audio.onended = () => {
+                    buttonEl.disabled = false;
+                    buttonEl.innerHTML = '<i class="fas fa-volume-high"></i> Écouter';
+                };
+
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                alert("Désolé, une erreur est survenue lors de la lecture de l'audio. (오디오 재생 중 오류가 발생했습니다.)");
+                buttonEl.disabled = false;
+                buttonEl.innerHTML = '<i class="fas fa-volume-high"></i> Écouter';
+            }
+        }
+
         let mediaRecorder;
         let audioChunks = [];
 
@@ -377,11 +478,16 @@
             const stopBtn = document.getElementById(`stop-btn-${partIndex}-${qIndex}`);
             
             recordBtn.onclick = async () => {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.start(); audioChunks = [];
-                recordBtn.classList.add('hidden'); stopBtn.classList.remove('hidden');
-                mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start(); audioChunks = [];
+                    recordBtn.classList.add('hidden'); stopBtn.classList.remove('hidden');
+                    mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
+                } catch (err) {
+                    console.error("Error accessing microphone:", err);
+                    alert("Impossible d'accéder au microphone. Veuillez vérifier les autorisations. (마이크에 접근할 수 없습니다. 권한을 확인해주세요.)");
+                }
             };
             stopBtn.onclick = () => {
                 mediaRecorder.stop();
@@ -422,9 +528,20 @@
             state.endTime = new Date().toISOString();
             const totalTimeSeconds = (new Date(state.endTime) - new Date(state.startTime)) / 1000;
             const payload = { studentName: state.studentName, startTime: state.startTime, endTime: state.endTime, totalTimeSeconds, score: { totalCorrect, totalQuestions }, parts: state.parts };
-            console.log("Submitting payload:", payload);
-            showResultModal(totalCorrect, totalQuestions);
-            state.isSubmitting = false;
+            
+            try {
+                await fetch('/.netlify/functions/send-results', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload) 
+                });
+                showResultModal(totalCorrect, totalQuestions);
+            } catch (error) {
+                console.error("Failed to send results:", error);
+                alert("Une erreur est survenue lors de l'envoi des résultats. (결과 전송 중 오류가 발생했습니다.)");
+            } finally {
+                state.isSubmitting = false;
+            }
         }
 
         function showResultModal(correct, total) {
@@ -432,7 +549,7 @@
             const modal = document.getElementById('result-modal');
             const title = document.getElementById('result-title');
             const message = document.getElementById('result-message');
-            if (score === 100) { title.textContent = "Parfait absolu ! 👑🎉"; message.textContent = "Génie confirmé !"; }
+            if (score === 100) { title.textContent = "Parfait absolu ! �🎉"; message.textContent = "Génie confirmé !"; }
             else if (score >= 80) { title.textContent = "Très bien joué ! 👍"; message.textContent = "Presque un maître !"; }
             else if (score >= 60) { title.textContent = "Pas mal du tout ! 😎"; message.textContent = "Encore un petit effort !"; }
             else { title.textContent = "Allez, on repart ! ☕💪"; message.textContent = "Un petit café et on continue !"; }
@@ -450,3 +567,4 @@
     </script>
 </body>
 </html>
+�
