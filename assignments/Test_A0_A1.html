@@ -109,7 +109,7 @@
       <button id="prev-btn" class="btn-action bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 hidden">이전 (Précédent)</button>
       <button id="next-btn" class="btn-action bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600 hidden">다음 (Suivant)</button>
       <button id="finish-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg hover:bg-green-700 hidden">
-        제출하고 결과 확인하기 (Terminer et voir les résultats)
+        제출하고 종료 (Terminer)
       </button>
     </div>
   </div>
@@ -542,19 +542,6 @@
       return questions;
     }
 
-    function calculateComprehensionScore(){
-      let score=0; const total=testData.comprehension.length;
-      const norm = s => new Set((s||'').toLowerCase().replace(/[.,!?']/g,'').trim().split(/\s+/).filter(Boolean));
-      testData.comprehension.forEach(task=>{
-        const user = document.getElementById(`comprehension-input-${task.id}`).value || '';
-        const gold = norm(task.fr), ans = norm(user);
-        if (!gold.size) return;
-        let hit=0; ans.forEach(w=>{ if (gold.has(w)) hit++; });
-        if ((hit/gold.size) >= 0.5) score++;
-      });
-      return { score, total };
-    }
-
     // ===== 제출/전송 =====
     finishBtn.addEventListener('click', async ()=>{
       if (finishInProgress) return; // 이중 방지
@@ -582,76 +569,39 @@
 
         if (!res.ok) throw new Error('Server responded with an error');
 
-        // 미리보기 결과
-        const vocabScore = document.getElementById('vocab-score').textContent;
-        const vocabTotal = testData.vocabulary.length;
-        const comp = calculateComprehensionScore();
-
-        let compHTML = '';
-        testData.comprehension.forEach((task,i)=>{
-          const ua = document.getElementById(`comprehension-input-${task.id}`).value || '';
-          compHTML += `
-            <div class="text-left p-3 bg-gray-50 rounded-md mb-2">
-              <p class="font-semibold text-gray-700">${i+1}. ${task.ko}</p>
-              <p class="text-blue-700">Votre réponse : <span class="font-mono">${ua || '(vide)'}</span></p>
-            </div>
-          `;
-        });
-
+        // ✅ 학생에게는 점수/세부내용 미표시 — 간단 메시지만
         const resultHTML = `
           <div class="task-container text-center">
-            <h1 class="text-4xl font-bold text-green-600 mb-4">🎉 테스트 완료! 🎉</h1>
-            <p class="text-lg text-gray-700 mb-6">수고 많았어요, ${studentData.name}님! 결과를 선생님께 안전하게 보냈어요.</p>
-
-            <div class="bg-gray-100 p-6 rounded-lg border border-gray-200 text-left">
-              <h2 class="text-2xl font-bold text-gray-800 mb-4">결과 미리보기 (Aperçu des résultats)</h2>
-
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold text-indigo-700">3단계: 어휘 (Vocabulaire)</h3>
-                <p class="text-lg">맞춘 개수 / Bonnes réponses: <span class="font-bold">${vocabScore} / ${vocabTotal}</span></p>
-              </div>
-
-              <div>
-                <h3 class="text-xl font-semibold text-indigo-700">4단계: 이해력 (Compréhension)</h3>
-                <p class="text-lg">맞춘 개수 / Bonnes réponses: <span class="font-bold">${comp.score} / ${comp.total}</span></p>
-                <div class="mt-2">${compHTML}</div>
-              </div>
-            </div>
-
-            <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 mt-6 text-left">
-              <p class="text-blue-800 font-semibold">말하기/읽기의 자세한 피드백은 시범수업에서 드릴게요. À très vite !</p>
-            </div>
-
-            <div class="mt-6 flex flex-col sm:flex-row gap-3">
-              <button id="retry-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black">
-                다시하기 / Recommencer
-              </button>
-              <button id="print-result-btn" class="w-full bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
-                🖨️ 인쇄하기 / Imprimer
-              </button>
-              <a href="/assignments/" class="w-full text-center bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
+            <h1 class="text-3xl font-bold text-green-600 mb-6">✅ 테스트 완료</h1>
+            <p class="text-lg text-gray-800 leading-relaxed">
+              수고하셨어요! 자세한 피드백은 시범수업에서 드릴게요. <br/>
+              <span class="text-blue-700 text-base">
+                (Merci pour vos efforts ! Le feedback détaillé sera donné pendant le cours d’essai.)
+              </span>
+            </p>
+            <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+              <a href="/assignments/" class="w-full sm:w-auto text-center bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
                 ⬅️ 이전 연습문제로 가기
               </a>
+              <button id="print-result-btn" class="w-full sm:w-auto bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
+                🖨️ 인쇄하기 / Imprimer
+              </button>
             </div>
-
             <div class="creator-stamp" style="margin-top:24px">
               made by <strong>성일, Pondant</strong> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
             </div>
           </div>
-
           <script>
-            document.getElementById('retry-btn')?.addEventListener('click', ()=>window.location.reload());
             document.getElementById('print-result-btn')?.addEventListener('click', ()=>window.print());
           <\/script>
         `;
-
         document.body.innerHTML = resultHTML;
 
       }catch(err){
         console.error('결과 전송 실패:', err);
         alert('결과 전송에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.');
         finishBtn.disabled=false;
-        finishBtn.textContent='제출하고 결과 확인하기';
+        finishBtn.textContent='제출하고 종료 (Terminer)';
         finishInProgress = false;
       }
     });
