@@ -160,7 +160,7 @@
         <div id="stage-3" class="section">
             <h2 class="text-2xl font-semibold text-gray-700 mb-2">3단계: 어휘 테스트 (Étape 3 : Test de vocabulaire)</h2>
             <p class="mb-4">연관된 한국어와 프랑스어 단어를 짝지어 보세요! <br>Associez les mots coréens et français qui vont ensemble !</p>
-            <p class="text-lg font-bold mb-4">맞춘 개수 réponse correcte : <span id="vocab-score">0</span> / 15</p>
+            <p class="text-lg font-bold mb-4">맞춘 개수 / Nombre de bonnes réponses: <span id="vocab-score">0</span> / 15</p>
             <div id="vocab-game" class="vocab-grid"></div>
         </div>
 
@@ -239,7 +239,7 @@
                 { id: 'ls7', ko: '직업이 뭐예요?', fr: "Quel est votre métier ?" },
                 { id: 'ls8', ko: '한국어 공부는 재미있어요?', fr: "Est-ce que l'étude du coréen est amusante ?" },
                 { id: 'ls9', ko: '주말에 보통 뭐 해요?', fr: "Que faites-vous habituellement le week-end ?" },
-                { id: 'ls10', ko: '도와줄까요?', fr: "Puis-je vous aider ?" }
+                { id: 'ls10', ko: '내일 같이 영화 볼까요?', fr: "Et si on allait voir un film demain ?" }
             ]
         };
 
@@ -511,7 +511,7 @@
                     }).catch(err => alert("마이크 접근 권한이 필요합니다. (L'accès au microphone est requis.)"));
             } else {
                 mediaRecorders[id].stop();
-                button.querySelector('.icon').textContent = '�';
+                button.querySelector('.icon').textContent = '🎤';
                 button.querySelector('.text').textContent = ' 녹음';
                 button.classList.replace('bg-red-500', 'bg-green-500');
                 statusDiv.classList.add('hidden');
@@ -607,6 +607,33 @@
             return questions;
         }
 
+        function calculateComprehensionScore() {
+            let score = 0;
+            const total = testData.comprehension.length;
+            
+            const normalize = (str) => new Set(str.toLowerCase().replace(/[.,!?']/g, '').trim().split(/\s+/).filter(Boolean));
+
+            testData.comprehension.forEach(task => {
+                const userAnswer = document.getElementById(`comprehension-input-${task.id}`).value;
+                const correctWords = normalize(task.fr);
+                const userWords = normalize(userAnswer);
+
+                if (correctWords.size === 0) return;
+
+                let matchCount = 0;
+                userWords.forEach(word => {
+                    if (correctWords.has(word)) {
+                        matchCount++;
+                    }
+                });
+                
+                if ((matchCount / correctWords.size) >= 0.5) {
+                    score++;
+                }
+            });
+            return { score, total };
+        }
+
         finishBtn.addEventListener('click', async () => {
             finishBtn.disabled = true;
             finishBtn.textContent = '결과를 전송하는 중...';
@@ -632,11 +659,12 @@
                 if (response.ok) {
                     const vocabScore = document.getElementById('vocab-score').textContent;
                     const vocabTotal = testData.vocabulary.length;
+                    const comprehensionResult = calculateComprehensionScore();
 
-                    let comprehensionHTML = '';
+                    let comprehensionAnswersHTML = '';
                     testData.comprehension.forEach((task, index) => {
                         const userAnswer = document.getElementById(`comprehension-input-${task.id}`).value;
-                        comprehensionHTML += `
+                        comprehensionAnswersHTML += `
                             <div class="text-left p-3 bg-gray-50 rounded-md mb-2">
                                 <p class="font-semibold text-gray-700">${index + 1}. ${task.ko}</p>
                                 <p class="text-blue-600">Votre réponse : <span class="font-mono">${userAnswer || '(vide)'}</span></p>
@@ -654,12 +682,13 @@
                                 
                                 <div class="mb-4">
                                     <h3 class="text-xl font-semibold text-indigo-700">3단계: 어휘 (Vocabulaire)</h3>
-                                    <p class="text-lg">맞춘 개수: <span class="font-bold">${vocabScore} / ${vocabTotal}</span></p>
+                                    <p class="text-lg">맞춘 개수 / Nombre de bonnes réponses: <span class="font-bold">${vocabScore} / ${vocabTotal}</span></p>
                                 </div>
 
                                 <div>
                                     <h3 class="text-xl font-semibold text-indigo-700">4단계: 이해력 (Compréhension)</h3>
-                                    ${comprehensionHTML}
+                                    <p class="text-lg">맞춘 개수 / Nombre de bonnes réponses: <span class="font-bold">${comprehensionResult.score} / ${comprehensionResult.total}</span></p>
+                                    <div class="mt-2">${comprehensionAnswersHTML}</div>
                                 </div>
                             </div>
 
@@ -688,4 +717,3 @@
     </script>
 </body>
 </html>
-�
