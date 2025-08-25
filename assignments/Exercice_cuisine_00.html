@@ -731,7 +731,7 @@
 
     async function submitResults(payload, force=false) {
       const teacherEmail = exerciseCard.dataset.teacherEmail || 'teacher@example.com';
-      const endpoint = '/.netlify/functions/submit-results';
+      const endpoint = '/.netlify/functions/send-results';
       sendStatus.textContent = '제출 중… (잠시만요)';
       sendAgainBtn.classList.add('hidden');
 
@@ -934,4 +934,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
 
