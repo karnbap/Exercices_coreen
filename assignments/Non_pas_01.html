@@ -117,7 +117,9 @@
             <div class="max-w-sm mx-auto">
                 <label for="studentName" class="block text-left font-medium text-slate-600 mb-1">이름 | Nom</label>
                 <input type="text" id="studentName" class="form-input" placeholder="예: 세두 | Ex: Cédou" />
-                <button id="start-quiz-btn" class="main-button w-full mt-4">시작! | C’est parti !</button>
+            <button id="start-quiz-btn" type="button" class="main-button w-full mt-4">
+              시작! | C’est parti !
+            </button>
             </div>
         </div>
 
@@ -514,6 +516,41 @@
         prevBtn.addEventListener('click', ()=>{ if(currentStep>0) showStep(currentStep-1); });
         finishBtn.addEventListener('click', showResults);
         printButton.addEventListener('click', ()=> window.print());
-    </script>
+ <script>
+  (function () {
+    const btn   = document.getElementById('start-quiz-btn');
+    const input = document.getElementById('studentName');
+    const nameBox = document.getElementById('student-name-section');
+    const quiz    = document.getElementById('quiz-container');
+    const nav     = document.getElementById('navigation-controls');
+    if (!btn) return;
+
+    // 항상 활성화
+    btn.removeAttribute('disabled');
+    btn.type = 'button';
+
+    // 클릭 핸들러 (모듈이 깨져도 동작)
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      const name = (input && input.value ? input.value : '').trim();
+      if (!name) {
+        alert('이름을 입력하세요 | Veuillez entrer votre nom');
+        return;
+      }
+      if (nameBox) nameBox.classList.add('hidden');
+      if (quiz)    quiz.classList.remove('hidden');
+      if (nav) { nav.classList.remove('hidden'); nav.classList.add('flex'); }
+
+      // 모듈 함수가 있으면 사용해서 바로 1단계 렌더링
+      try {
+        if (window.generateQuestions) generateQuestions();
+        if (window.showStep) showStep(0);
+      } catch (_) { /* 무시 */ }
+    });
+  })();
+</script>
+
 </body>
+
+
 </html>
