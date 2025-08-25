@@ -46,7 +46,7 @@
         }
 
         .btn-action:hover {
-            transform: translateY(-px);
+            transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         
@@ -250,6 +250,7 @@
             recordings: {}
         };
         let startTime;
+        let timers = { stage4Started: false };
 
         // --- UI 요소 ---
         const progressBar = document.getElementById('progress-bar');
@@ -284,11 +285,10 @@
             const comprehensionContainer = document.getElementById('comprehension-tasks');
             testData.comprehension.forEach((task, index) => {
                 comprehensionContainer.innerHTML += `
-                    <div class="p-4 border rounded-lg">
+                    <div class="p-4 border rounded-lg comprehension-task-container" data-task-id="${task.id}">
                         <p class="text-lg font-semibold mb-2">${index + 1}. ${task.ko}</p>
                         <div class="flex items-center gap-4">
                             <input type="text" id="comprehension-input-${task.id}" class="w-full p-2 border rounded-md" placeholder="Français...">
-                            <button class="start-timer-btn btn-action bg-gray-200 px-3 py-2 rounded-md" data-task-id="${task.id}">Start</button>
                             <span id="timer-${task.id}" class="font-bold text-red-500 w-16 text-center">15s</span>
                         </div>
                     </div>
@@ -438,26 +438,22 @@
             document.querySelectorAll('.record-btn').forEach(btn => {
                 btn.addEventListener('click', () => toggleRecording(btn));
             });
-            document.querySelectorAll('.start-timer-btn').forEach(btn => {
-                btn.addEventListener('click', () => startComprehensionTimer(btn.dataset.taskId, btn));
-            });
         }
         
         // --- 핵심 기능 함수들 ---
-        let timers = {};
-        function startComprehensionTimer(taskId, button) {
-            if (timers[taskId]) return;
-            button.disabled = true;
-            button.classList.add('bg-gray-400');
+        function startComprehensionTimer(taskId) {
             const timerEl = document.getElementById(`timer-${taskId}`);
             const inputEl = document.getElementById(`comprehension-input-${taskId}`);
+            if (!timerEl || timerEl.dataset.started) return;
+
+            timerEl.dataset.started = 'true';
             let timeLeft = 15;
             
-            timers[taskId] = setInterval(() => {
+            const intervalId = setInterval(() => {
                 timeLeft--;
                 timerEl.textContent = `${timeLeft}s`;
                 if (timeLeft <= 0) {
-                    clearInterval(timers[taskId]);
+                    clearInterval(intervalId);
                     timerEl.textContent = "Time's up!";
                     inputEl.disabled = true;
                 }
@@ -556,6 +552,14 @@
             progressBar.style.width = `${progress}%`;
             progressBar.textContent = `${Math.round(progress)}%`;
 
+            // 타이머 자동 시작 로직
+            if (currentStage === 4 && !timers.stage4Started) {
+                document.querySelectorAll('.comprehension-task-container').forEach(container => {
+                    startComprehensionTimer(container.dataset.taskId);
+                });
+                timers.stage4Started = true;
+            }
+
             prevBtn.classList.toggle('hidden', currentStage <= 1);
             nextBtn.classList.toggle('hidden', currentStage >= totalStages || currentStage === 0);
             finishBtn.classList.toggle('hidden', currentStage !== totalStages);
@@ -624,52 +628,12 @@
                     ko: `(질문) ${task.ko}`,
                     fr: `(Question) ${task.fr}`,
                     userAnswer: JSON.stringify({ dictation, translation, selfDictation }),
-                    isCorrect: null, // Detailed scoring will handle this
+                    isCorrect: null,
                     recording: studentData.recordings[task.id + '-answer'] || null
                 });
             });
 
             return questions;
-        }
-
-        // --- NEW: 단어별 채점 함수 ---
-        function calculateWordScore(userAnswer, correctAnswer) {
-            const normalize = (str) => str.replace(/[.,!?]/g, '').toLowerCase().trim().split(/\s+/).filter(Boolean);
-            const userWords = normalize(userAnswer);
-            const correctWords = normalize(correctAnswer);
-            
-            if (correctWords.length === 0) return { score: 0, max: 0 };
-
-            let correctCount = 0;
-            const userWordSet = new Set(userWords);
-
-            for (const word of correctWords) {
-                if (userWordSet.has(word)) {
-                    correctCount++;
-                }
-            }
-            return { score: correctCount, max: correctWords.length };
-        }
-
-        // --- NEW: 최종 점수 계산 로직 ---
-        function calculateDetailedScore() {
-            let totalPoints = 0;
-            let maxPoints = 0;
-
-            // 1. 어휘 점수
-            const vocabScore = parseInt(document.getElementById('vocab-score').textContent);
-            totalPoints += vocabScore;
-            maxPoints += testData.vocabulary.length;
-
-            // 2. 받아쓰기 점수
-            testData.listenSpeak.forEach(task => {
-                const userAnswer = document.getElementById(`ls-dictation-${task.id}`).value;
-                const result = calculateWordScore(userAnswer, task.ko);
-                totalPoints += result.score;
-                maxPoints += result.max;
-            });
-            
-            return maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
         }
 
         finishBtn.addEventListener('click', async () => {
@@ -687,9 +651,6 @@
                 questions: questions
             };
 
-            // --- UPDATED: 상세 점수 계산 로직 호출 ---
-            const score = calculateDetailedScore();
-
             try {
                 const response = await fetch('/.netlify/functions/send-results', {
                     method: 'POST',
@@ -698,34 +659,47 @@
                 });
 
                 if (response.ok) {
-                    let resultHTML = '';
-                    if (score < 50) {
-                        resultHTML = `
-                        <div class="task-container text-center">
-                            <h1 class="text-4xl font-bold text-blue-600 mb-4">🎉 테스트 완료! 🎉</h1>
-                            <p class="text-lg text-gray-700 mb-4">고생 많았어요, ${studentData.name}님!</p>
-                            <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                                <h2 class="text-2xl font-bold text-blue-800 mb-2">결과: A0 레벨에 가까워요! (점수: ${score}점)</h2>
-                                <p class="text-gray-700">기초부터 차근차근 함께하면 금방 실력이 늘 거예요. 포기하지 마세요! 💪</p>
-                                <p class="text-gray-600 mt-2 text-sm">Votre niveau est proche du A0 ! En commençant par les bases, vous progresserez très vite. Ne baissez pas les bras !</p>
+                    const vocabScore = document.getElementById('vocab-score').textContent;
+                    const vocabTotal = testData.vocabulary.length;
+
+                    let comprehensionHTML = '';
+                    testData.comprehension.forEach((task, index) => {
+                        const userAnswer = document.getElementById(`comprehension-input-${task.id}`).value;
+                        comprehensionHTML += `
+                            <div class="text-left p-3 bg-gray-50 rounded-md mb-2">
+                                <p class="font-semibold text-gray-700">${index + 1}. ${task.ko}</p>
+                                <p class="text-blue-600">Votre réponse : <span class="font-mono">${userAnswer || '(vide)'}</span></p>
                             </div>
-                            <p class="text-gray-600 mt-6">자세한 결과는 선생님께 안전하게 보냈어요. 곧 피드백을 받으실 거예요.</p>
-                            <div class="creator-stamp" style="margin-top: 40px;">Made by 성일, Pondant, Laon</div>
-                        </div>`;
-                    } else {
-                        resultHTML = `
+                        `;
+                    });
+
+                    const resultHTML = `
                         <div class="task-container text-center">
                             <h1 class="text-4xl font-bold text-green-600 mb-4">🎉 테스트 완료! 🎉</h1>
-                            <p class="text-lg text-gray-700 mb-4">정말 잘했어요, ${studentData.name}님!</p>
-                            <div class="bg-green-50 p-6 rounded-lg border border-green-200">
-                                <h2 class="text-2xl font-bold text-green-800 mb-2">결과: A1 레벨에 가까워요! (점수: ${score}점)</h2>
-                                <p class="text-gray-700">훌륭해요! 이대로라면 A2 레벨까지 금방 도달할 수 있을 거예요. 정말 멋져요! ✨</p>
-                                <p class="text-gray-600 mt-2 text-sm">Excellent ! Votre niveau est proche du A1 ! À ce rythme, vous atteindrez bientôt le niveau A2.</p>
+                            <p class="text-lg text-gray-700 mb-6">수고 많았어요, ${studentData.name}님! 결과를 선생님께 안전하게 보냈어요.</p>
+                            
+                            <div class="bg-gray-100 p-6 rounded-lg border border-gray-200 text-left">
+                                <h2 class="text-2xl font-bold text-gray-800 mb-4">결과 미리보기 (Aperçu des résultats)</h2>
+                                
+                                <div class="mb-4">
+                                    <h3 class="text-xl font-semibold text-indigo-700">3단계: 어휘 (Vocabulaire)</h3>
+                                    <p class="text-lg">맞춘 개수: <span class="font-bold">${vocabScore} / ${vocabTotal}</span></p>
+                                </div>
+
+                                <div>
+                                    <h3 class="text-xl font-semibold text-indigo-700">4단계: 이해력 (Compréhension)</h3>
+                                    ${comprehensionHTML}
+                                </div>
                             </div>
-                            <p class="text-gray-600 mt-6">자세한 결과는 선생님께 안전하게 보냈어요. 곧 피드백을 받으실 거예요.</p>
+
+                            <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 mt-6">
+                                <p class="text-blue-800 font-semibold">말하기, 읽기 등 나머지 파트의 자세한 결과는 선생님이 시범 수업에서 직접 피드백해 주실 거예요. 곧 만나요!</p>
+                                <p class="text-blue-700 mt-2 text-sm">Les résultats détaillés pour l'expression orale, la lecture, etc., seront discutés par votre professeur lors du cours d'essai. À bientôt !</p>
+                            </div>
+
                             <div class="creator-stamp" style="margin-top: 40px;">Made by 성일, Pondant, Laon</div>
-                        </div>`;
-                    }
+                        </div>
+                    `;
                     document.body.innerHTML = resultHTML;
                 } else {
                     throw new Error('Server responded with an error');
