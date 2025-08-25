@@ -13,6 +13,8 @@
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    /* Table scroller on small screens */
+    .table-wrap { overflow-x:auto; }
   </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -41,7 +43,7 @@
     <!-- Conteneur des exercices -->
     <div id="quiz-container" class="space-y-16">
 
-      <!-- Étape 1: Explication simple (MISE À JOUR) -->
+      <!-- Étape 1: Explication simple -->
       <div class="quiz-step" data-step="1">
         <h2 class="text-2xl font-bold text-blue-700 mb-4">1. Les 3 Types d'Honorifiques ! 🤔</h2>
         <div class="bg-white p-6 rounded-lg shadow-md space-y-6 text-base md:text-lg">
@@ -85,29 +87,60 @@
         </div>
       </div>
 
-      <!-- Étape 2: QCM -->
+      <!-- Étape 2: Mots et Expressions Clés -->
       <div class="quiz-step" data-step="2" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">2. Choisis la bonne réponse ! 🤔 (5 questions)</h2>
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">2. Mots et Expressions Clés 📋</h2>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <p class="text-gray-700 mb-4">
+            Voici quelques mots et particules honorifiques essentiels à mémoriser !
+          </p>
+          <div class="table-wrap">
+            <table class="min-w-full text-left text-sm">
+              <thead>
+                <tr class="bg-blue-50 text-blue-800">
+                  <th class="px-3 py-2 font-semibold">Type</th>
+                  <th class="px-3 py-2 font-semibold">Forme Standard</th>
+                  <th class="px-3 py-2 font-semibold">Forme Honorifique</th>
+                  <th class="px-3 py-2 font-semibold">Utilisation</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr><td class="px-3 py-2">주체 (Sujet)</td><td class="px-3 py-2">Suffixe de verbe</td><td class="px-3 py-2">-(으)시-</td><td class="px-3 py-2">Ex: 읽다 → 읽으시다</td></tr>
+                <tr><td class="px-3 py-2">주체 (Sujet)</td><td class="px-3 py-2">이/가</td><td class="px-3 py-2">께서</td><td class="px-3 py-2">Pour le sujet respecté</td></tr>
+                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">에게/한테</td><td class="px-3 py-2">께</td><td class="px-3 py-2">Pour le destinataire respecté</td></tr>
+                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">보다 (voir)</td><td class="px-3 py-2">뵙다 / 뵈다</td><td class="px-3 py-2">Quand on voit une personne respectée</td></tr>
+                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">주다 (donner)</td><td class="px-3 py-2">드리다</td><td class="px-3 py-2">Quand on donne à une personne respectée</td></tr>
+                <tr><td class="px-3 py-2">Verbe</td><td class="px-3 py-2">먹다 (manger)</td><td class="px-3 py-2">드시다 / 잡수시다</td><td class="px-3 py-2">Quand une personne respectée mange</td></tr>
+                <tr><td class="px-3 py-2">Verbe</td><td class="px-3 py-2">자다 (dormir)</td><td class="px-3 py-2">주무시다</td><td class="px-3 py-2">Quand une personne respectée dort</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 3: QCM -->
+      <div class="quiz-step" data-step="3" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">3. Choisis la bonne réponse ! 🤔 (5 questions)</h2>
         <div id="mcq-questions" class="space-y-6"></div>
       </div>
 
-      <!-- Étape 3: Mots à compléter -->
-      <div class="quiz-step" data-step="3" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">3. Complète avec le bon mot ! ✍️ (5 questions)</h2>
+      <!-- Étape 4: Mots à compléter -->
+      <div class="quiz-step" data-step="4" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">4. Complète avec le bon mot ! ✍️ (5 questions)</h2>
         <div id="fill-in-the-blank-questions" class="space-y-6"></div>
       </div>
 
-      <!-- Étape 4: Écriture de phrases -->
-      <div class="quiz-step" data-step="4" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">4. À toi d'écrire ! ✒️ (5 phrases)</h2>
+      <!-- Étape 5: Écriture de phrases -->
+      <div class="quiz-step" data-step="5" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">5. À toi d'écrire ! ✒️ (5 phrases)</h2>
         <p class="text-gray-600 mb-6">Écris la phrase en coréen en utilisant la forme honorifique.</p>
         <div id="writing-questions" class="space-y-8"></div>
       </div>
 
-      <!-- Étape 5: Écoute et écris -->
-      <div class="quiz-step" data-step="5" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">5. Écoute et écris ! 🎧 (5 phrases)</h2>
-        <p class="text-gray-600 mb-6">Écoute bien la phrase et suis les étapes. fighting! 💪</p>
+      <!-- Étape 6: Écoute et écris -->
+      <div class="quiz-step" data-step="6" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">6. Écoute et écris ! 🎧 (5 phrases)</h2>
+        <p class="text-gray-600 mb-6">Écoute, écris, enregistre ta voix, puis réessaie la dictée d’après ta propre voix. (La 2e dictée n’est pas notée, mais est envoyée au prof avec l’audio.)</p>
         <div id="listening-questions" class="space-y-12"></div>
       </div>
 
@@ -120,7 +153,7 @@
       <button id="prev-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition duration-300 disabled:opacity-50" disabled>
         <i class="fas fa-arrow-left mr-2"></i> Précédent
       </button>
-      <div id="step-indicator" class="text-gray-600 font-semibold">Étape 1 / 5</div>
+      <div id="step-indicator" class="text-gray-600 font-semibold">Étape 1 / 6</div>
       <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
         Suivant <i class="fas fa-arrow-right ml-2"></i>
       </button>
@@ -137,42 +170,75 @@
   <script>
     // --- Global State & Config ---
     let currentStep = 1;
-    const totalSteps = 5;
+    const totalSteps = 6;
 
-    // Session time
     const sessionMeta = { startTime: new Date().toISOString() };
 
-    // TTS / stats / recordings
-    const ttsBusy = new Set();
-    const listenStats = {}; // { [questionId]: { listenCount, hint1Count, hint2Count } }
-    const recordings = {};  // { [questionId]: { base64, mimeType, duration, filename } }
+    // Stats: listens & hints for ALL question blocks
+    const stats = {}; // stats[qid] = { listens:0, hint1:0, hint2:0 }
+    const recordings = {}; // recordings[qid] = { base64, mimeType, duration, filename }
 
-    // Recorder
     let recorder;
     let isRecording = false;
     let recordStartAt = 0;
 
+    // ===== Quiz Data with Hints for ALL =====
     const quizData = {
       mcq: [
-        { question: "Pour remplacer la particule sujet `이/가` quand on parle de son grand-père, on utilise...", options: ["은/는", "께서", "을/를", "께"], answer: "께서", explanation: "`께서` est la particule honorifique qui remplace `이/가` pour un sujet respecté." },
-        { question: "Dans la phrase `어머니께서 책을 읽으세요`, qu'est-ce qui montre le respect dans le verbe ?", options: ["-어요", "-으세요", "-세요", "-으-"], answer: "-으세요", explanation: "On ajoute `-(으)시-` au radical du verbe (`읽-`) + la terminaison `-어요` pour former `읽으세요`." },
-        { question: "Quel est le verbe honorifique pour `주다` (donner) ?", options: ["드리다", "받다", "보다", "계시다"], answer: "드리다", explanation: "Quand on donne quelque chose à une personne respectée, on utilise `드리다`." },
-        { question: "Quelle est la phrase correcte pour dire 'Je vois le professeur' de manière respectueuse ?", options: ["선생님을 봐요.", "선생님께서 봐요.", "선생님을 뵈어요.", "선생님을 보세요."], answer: "선생님을 뵈어요.", explanation: "Le verbe `보다` (voir) devient `뵈다` quand la personne que l'on voit (le COD) est respectée." },
-        { question: "La particule `께` est la forme honorifique de...", options: ["에서", "하고", "만", "에게/한테"], answer: "에게/한테", explanation: "`께` remplace `에게` ou `한테` pour indiquer le destinataire (COI) d'une action de manière respectueuse." }
+        {
+          question: "Pour remplacer la particule sujet `이/가` quand on parle de son grand-père, on utilise...",
+          options: ["은/는", "께서", "을/를", "께"],
+          answer: "께서",
+          explanation: "`께서` est la particule honorifique qui remplace `이/가` pour un sujet respecté.",
+          hint1: "Particule sujet… mais version honorifique.",
+          hint2: "Sujet respecté ⇒ `께서` remplace `이/가`."
+        },
+        {
+          question: "Dans la phrase `어머니께서 책을 읽으세요`, qu'est-ce qui montre le respect dans le verbe ?",
+          options: ["-어요", "-으세요", "-세요", "-으-"],
+          answer: "-으세요",
+          explanation: "On ajoute `-(으)시-` au radical du verbe (`읽-`) + la terminaison `-어요` pour former `읽으세요`.",
+          hint1: "Regarde la terminaison polie + 시.",
+          hint2: "Honorification verbale: -(으)시- + 해요체 ⇒ -(으)세요."
+        },
+        {
+          question: "Quel est le verbe honorifique pour `주다` (donner) ?",
+          options: ["드리다", "받다", "보다", "계시다"],
+          answer: "드리다",
+          explanation: "Quand on donne quelque chose à une personne respectée, on utilise `드리다`.",
+          hint1: "Donner → verbe humble/hon.",
+          hint2: "`주다`→`드리다` (destinataire honorifique)."
+        },
+        {
+          question: "Quelle est la phrase correcte pour dire 'Je vois le professeur' de manière respectueuse ?",
+          options: ["선생님을 봐요.", "선생님께서 봐요.", "선생님을 뵈어요.", "선생님을 보세요."],
+          answer: "선생님을 뵈어요.",
+          explanation: "`보다` devient `뵈다` quand le COD est une personne respectée.",
+          hint1: "`보다` → ? (honorifique du complément)",
+          hint2: "Voir une personne respectée ⇒ `뵈다`."
+        },
+        {
+          question: "La particule `께` est la forme honorifique de...",
+          options: ["에서", "하고", "만", "에게/한테"],
+          answer: "에게/한테",
+          explanation: "`께` remplace `에게/한테` pour indiquer le destinataire (COI) honorifique.",
+          hint1: "COI (à/chez) → version honorifique.",
+          hint2: "`에게/한테` → `께`."
+        }
       ],
       fillIn: [
-        { sentence: "할머니___ 지금 주무세요.", answer: "께서", translation: "Grand-mère dort maintenant.", vocab: { "할머니": "grand-mère", "지금": "maintenant", "주무시다": "dormir (hon.)" } },
-        { sentence: "사장님___ 선물을 드렸어요.", answer: "께", translation: "J'ai donné un cadeau au patron.", vocab: { "사장님": "patron", "선물": "cadeau", "드리다": "donner (hon.)" } },
-        { sentence: "아버지께서 신문을 읽___.", answer: "으세요", translation: "Père lit le journal.", vocab: { "아버지": "père", "신문": "journal", "읽다": "lire" } },
-        { sentence: "저는 교수님을 처음 ___.", answer: "뵙겠습니다", translation: "Je rencontre le professeur pour la première fois. (formel)", vocab: { "저": "je", "교수님": "professeur", "처음": "pour la première fois", "뵙다": "voir/rencontrer (hon.)" } },
-        { sentence: "어머니, 진지 ___.", answer: "드세요", translation: "Maman, mange ton repas s'il te plaît.", vocab: { "어머니": "maman", "진지": "repas (hon.)", "드시다": "manger (hon.)" } }
+        { sentence: "할머니___ 지금 주무세요.", answer: "께서", translation: "Grand-mère dort maintenant.", vocab: { "할머니": "grand-mère", "지금": "maintenant", "주무시다": "dormir (hon.)" }, hint1: "Sujet honorifique → particule…", hint2: "`이/가` → `께서`" },
+        { sentence: "사장님___ 선물을 드렸어요.", answer: "께", translation: "J'ai donné un cadeau au patron.", vocab: { "사장님": "patron", "선물": "cadeau", "드리다": "donner (hon.)" }, hint1: "COI honorifique.", hint2: "`에게/한테` → `께`" },
+        { sentence: "아버지께서 신문을 읽___.", answer: "으세요", translation: "Père lit le journal.", vocab: { "아버지": "père", "신문": "journal", "읽다": "lire" }, hint1: "Honorification verbale + 해요체.", hint2: "어간 + (으)시 + 어요 ⇒ (으)세요" },
+        { sentence: "저는 교수님을 처음 ___.", answer: "뵙겠습니다", translation: "Je rencontre le professeur pour la première fois. (formel)", vocab: { "저": "je", "교수님": "professeur", "처음": "pour la première fois", "뵙다": "voir/rencontrer (hon.)" }, hint1: "Formel/합쇼체 종결.", hint2: "`뵙다` + 겠 + 습니다" },
+        { sentence: "어머니, 진지 ___.", answer: "드세요", translation: "Maman, mange ton repas s'il te plaît.", vocab: { "어머니": "maman", "진지": "repas (hon.)", "드시다": "manger (hon.)" }, hint1: "Honorifique manger.", hint2: "`드시다` + (으)세요" }
       ],
       writing: [
-        { situation: "Dites que votre mère (어머니) se repose (쉬다).", answer: "어머니께서 쉬세요." },
-        { situation: "Dites que vous donnez un livre (책) au professeur (선생님).", answer: "선생님께 책을 드려요." },
-        { situation: "Dites que le président (대통령) parle (말씀하다).", answer: "대통령께서 말씀하세요." },
-        { situation: "Dites que vous voyez (뵈다) votre grand-père (할아버지).", answer: "할아버지를 뵈어요." },
-        { situation: "Demandez si le client (손님) a mangé (식사하다).", answer: "손님, 식사하셨어요?" }
+        { situation: "Dites que votre mère (어머니) se repose (쉬다).", answer: "어머니께서 쉬세요.", hint1: "Sujet honorifique + -(으)시-.", hint2: "`어머니께서` + `쉬세요`" },
+        { situation: "Dites que vous donnez un livre (책) au professeur (선생님).", answer: "선생님께 책을 드려요.", hint1: "COI honorifique + 드리다.", hint2: "`선생님께` + `드려요`" },
+        { situation: "Dites que le président (대통령) parle (말씀하다).", answer: "대통령께서 말씀하세요.", hint1: "말하다→말씀하시다.", hint2: "`대통령께서` + `말씀하세요`" },
+        { situation: "Dites que vous voyez (뵈다) votre grand-père (할아버지).", answer: "할아버지를 뵈어요.", hint1: "보다→뵈다 (obj. honor.).", hint2: "`할아버지` COD, verbe `뵈어요`" },
+        { situation: "Demandez si le client (손님) a mangé (식사하다).", answer: "손님, 식사하셨어요?", hint1: "하다→하시다.", hint2: "`식사하시다` + -았/었어요?" }
       ],
       listening: [
         { number: 1, ko: "선생님께서 한국어를 가르치세요.", fr: "Le professeur enseigne le coréen.", hint1: "ㅅㅅㄴㄲㅅ ㅎㄱㅇㄹ ㄱㄹㅊㅅㅇ.", hint2: "가르치다 (enseigner)" },
@@ -183,7 +249,7 @@
       ]
     };
 
-    // --- Initialization ---
+    // --- Init ---
     document.addEventListener('DOMContentLoaded', () => {
       populateMCQ();
       populateFillIn();
@@ -204,33 +270,55 @@
       return placeholders[Math.floor(Math.random() * placeholders.length)];
     }
 
-    // --- Populate Functions ---
+    // --- helpers (stats) ---
+    function ensureStat(qid) {
+      if (!stats[qid]) stats[qid] = { listens: 0, hint1: 0, hint2: 0 };
+    }
+    function bumpHint(qid, which) {
+      ensureStat(qid);
+      if (which === 1) stats[qid].hint1++;
+      else if (which === 2) stats[qid].hint2++;
+    }
+
+    // --- Populate: QCM (with hints) ---
     function populateMCQ() {
       const container = document.getElementById('mcq-questions');
       quizData.mcq.forEach((q, index) => {
-        const questionDiv = document.createElement('div');
-        questionDiv.className = 'bg-white p-6 rounded-lg shadow-md';
-        questionDiv.innerHTML = `
+        const qid = `mcq-${index}`;
+        const div = document.createElement('div');
+        div.className = 'bg-white p-6 rounded-lg shadow-md';
+        div.innerHTML = `
           <p class="font-semibold mb-4">${index + 1}. ${q.question}</p>
           <div class="space-y-2">
             ${q.options.map(opt => `
               <div>
-                <input type="radio" id="mcq-${index}-${opt.replace(/\s/g, '-')}"
-                       name="mcq-${index}" value="${opt}" class="mr-2 cursor-pointer">
-                <label for="mcq-${index}-${opt.replace(/\s/g, '-')}" class="cursor-pointer">${opt}</label>
+                <input type="radio" id="${qid}-${opt.replace(/\s/g, '-')}"
+                       name="${qid}" value="${opt}" class="mr-2 cursor-pointer">
+                <label for="${qid}-${opt.replace(/\s/g, '-')}" class="cursor-pointer">${opt}</label>
               </div>
             `).join('')}
           </div>
-          <div id="mcq-result-${index}" class="mt-4 text-sm"></div>`;
-        container.appendChild(questionDiv);
+          <div class="mt-3 space-x-2">
+            <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                    class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+            <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                    class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+          </div>
+          <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+          <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+          <div id="${qid}-result" class="mt-4 text-sm"></div>
+        `;
+        container.appendChild(div);
       });
     }
 
+    // --- Populate: Fill-in (with hints) ---
     function populateFillIn() {
       const container = document.getElementById('fill-in-the-blank-questions');
       quizData.fillIn.forEach((q, index) => {
-        const questionDiv = document.createElement('div');
-        questionDiv.className = 'bg-white p-6 rounded-lg shadow-md';
+        const qid = `fill-${index}`;
+        const div = document.createElement('div');
+        div.className = 'bg-white p-6 rounded-lg shadow-md';
         const sentenceParts = q.sentence.split('___');
 
         let vocabHTML = '<ul class="list-disc list-inside text-sm text-gray-600 mt-2">';
@@ -239,11 +327,12 @@
         }
         vocabHTML += '</ul>';
 
-        questionDiv.innerHTML = `
+        div.innerHTML = `
           <div class="mb-4">
-            <label for="fill-${index}" class="font-semibold text-lg">
+            <label for="${qid}-input" class="font-semibold text-lg">
               ${index + 1}. ${sentenceParts[0]}
-              <input type="text" id="fill-${index}" class="border-b-2 border-gray-300 focus:border-blue-500 outline-none w-24 text-center mx-1">
+              <input type="text" id="${qid}-input"
+                     class="border-b-2 border-gray-300 focus:border-blue-500 outline-none w-24 text-center mx-1">
               ${sentenceParts[1]}
             </label>
             <p class="text-gray-500 italic mt-1">"${q.translation}"</p>
@@ -252,69 +341,112 @@
             <h5 class="font-bold text-sm">Mots utiles :</h5>
             ${vocabHTML}
           </div>
-          <div id="fill-result-${index}" class="mt-4 text-sm"></div>
+          <div class="mt-3 space-x-2">
+            <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                    class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+            <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                    class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+          </div>
+          <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+          <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+
+          <div id="${qid}-result" class="mt-4 text-sm"></div>
         `;
-        container.appendChild(questionDiv);
+        container.appendChild(div);
       });
     }
 
+    // --- Populate: Writing (with hints) ---
     function populateWriting() {
       const container = document.getElementById('writing-questions');
       quizData.writing.forEach((q, index) => {
-        const questionDiv = document.createElement('div');
-        questionDiv.className = 'bg-white p-6 rounded-lg shadow-md';
-        questionDiv.innerHTML = `
+        const qid = `write-${index}`;
+        const div = document.createElement('div');
+        div.className = 'bg-white p-6 rounded-lg shadow-md';
+        div.innerHTML = `
           <p class="font-semibold mb-2">${index + 1}. ${q.situation}</p>
-          <textarea id="write-${index}" rows="2"
+          <textarea id="${qid}-input" rows="2"
                     class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Écrivez votre réponse en coréen..."></textarea>
-          <div id="write-result-${index}" class="mt-4 text-sm"></div>
+
+          <div class="mt-3 space-x-2">
+            <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                    class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+            <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                    class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+          </div>
+          <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+          <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+
+          <div id="${qid}-result" class="mt-4 text-sm"></div>
         `;
-        container.appendChild(questionDiv);
+        container.appendChild(div);
       });
     }
 
+    // --- Populate: Listening (play button close + self-dictation) ---
     function populateListening() {
       const container = document.getElementById('listening-questions');
       quizData.listening.forEach((q, index) => {
-        const questionId = `listen-${index}`;
+        const qid = `listen-${index}`;
         const div = document.createElement('div');
         div.className = 'bg-white p-6 rounded-lg shadow-lg';
-        div.id = questionId;
+        div.id = qid;
+
+        // label + PLAY button side-by-side (closer to dictation)
         div.innerHTML = `
-          <div class="flex items-center justify-between mb-4">
+          <div class="mb-4">
             <h3 class="text-lg font-bold text-blue-800">Phrase ${index + 1}</h3>
-            <button onclick="playAudio('${q.ko}', this, '${questionId}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-full transition duration-300 ease-in-out transform hover:scale-110">
-              <i class="fas fa-play"></i>
-            </button>
           </div>
+
           <div class="space-y-6">
+            <!-- Dictation row with play button right here -->
             <div>
-              <label class="block font-semibold mb-2 text-gray-700">1. Écoutez et écrivez (받아쓰기)</label>
-              <input type="text" id="${questionId}-dictation" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Écrivez ce que vous entendez...">
-              <div class="mt-2 space-x-2">
-                <button onclick="toggleHint('${questionId}-hint1')" class="text-sm bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Aidez moi 🙏 (consonnes)</button>
-                <button onclick="toggleHint('${questionId}-hint2')" class="text-sm bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Au secours 🛟 (mots clés)</button>
+              <div class="flex items-center justify-between gap-2">
+                <label class="block font-semibold text-gray-700">1. Écoutez et écrivez (받아쓰기)</label>
+                <button onclick="playAudio('${q.ko}', this, '${qid}')"
+                        class="shrink-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-full transition duration-300 ease-in-out">
+                  <i class="fas fa-play"></i>
+                </button>
               </div>
-              <p id="${questionId}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
-              <p id="${questionId}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+              <input type="text" id="${qid}-dictation"
+                     class="mt-2 w-full p-2 border border-gray-300 rounded-md"
+                     placeholder="Écrivez ce que vous entendez...">
+              <div class="mt-2 space-x-2">
+                <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                        class="text-sm bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1 (consonnes)</button>
+                <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                        class="text-sm bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2 (mots clés)</button>
+              </div>
+              <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+              <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
             </div>
+
             <div>
               <label class="block font-semibold mb-2 text-gray-700">2. Traduisez en français</label>
-              <input type="text" id="${questionId}-translation" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Que signifie la phrase ?">
+              <input type="text" id="${qid}-translation" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Que signifie la phrase ?">
             </div>
+
             <div>
               <label class="block font-semibold mb-2 text-gray-700">3. Enregistrez votre prononciation</label>
               <div class="flex items-center gap-4">
-                <button id="${questionId}-record-btn" onclick="toggleRecording('${questionId}')" class="bg-red-500 hover:bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300">
+                <button id="${qid}-record-btn" onclick="toggleRecording('${qid}')"
+                        class="bg-red-500 hover:bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300">
                   <i class="fas fa-microphone"></i>
                 </button>
-                <div id="${questionId}-record-status" class="text-gray-600">Cliquez pour enregistrer</div>
+                <div id="${qid}-record-status" class="text-gray-600">Cliquez pour enregistrer</div>
               </div>
-              <audio id="${questionId}-audio-playback" controls class="w-full mt-4 hidden"></audio>
+              <audio id="${qid}-audio-playback" controls class="w-full mt-4 hidden"></audio>
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-2 text-gray-700">4. Re-dictée d’après ma voix (non notée)</label>
+              <input type="text" id="${qid}-selfdict" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Réécrivez la phrase après avoir écouté votre enregistrement.">
+              <p class="text-xs text-gray-500 mt-1">Astuce: Écoute ton enregistrement ci-dessus, puis réécris la phrase ici.</p>
             </div>
           </div>
-          <div id="${questionId}-result" class="mt-4 text-sm"></div>
+
+          <div id="${qid}-result" class="mt-4 text-sm"></div>
         `;
         container.appendChild(div);
       });
@@ -350,11 +482,8 @@
     }
 
     // --- Audio (Google TTS + fallback) ---
-    function ensureListenStat(qid) {
-      if (!listenStats[qid]) listenStats[qid] = { listenCount: 0, hint1Count: 0, hint2Count: 0 };
-    }
-
-    async function playAudio(text, button, questionId = null) {
+    const ttsBusy = new Set();
+    async function playAudio(text, button, qid = null) {
       if (ttsBusy.has(button)) return;
       ttsBusy.add(button);
 
@@ -363,9 +492,9 @@
       icon.classList.add('fa-spinner', 'fa-spin');
       button.disabled = true;
 
-      if (questionId) {
-        ensureListenStat(questionId);
-        listenStats[questionId].listenCount++;
+      if (qid) {
+        ensureStat(qid);
+        stats[qid].listens++;
       }
 
       try {
@@ -420,19 +549,15 @@
     function toggleHint(hintId) {
       const el = document.getElementById(hintId);
       el.classList.toggle('hidden');
-      const [qid, tag] = hintId.split('-hint');
-      ensureListenStat(qid);
-      if (tag === '1') listenStats[qid].hint1Count++;
-      else if (tag === '2') listenStats[qid].hint2Count++;
     }
 
     // --- Recording (webm -> base64) ---
-    function toggleRecording(questionId) {
-      if (isRecording) stopRecording(questionId);
-      else startRecording(questionId);
+    function toggleRecording(qid) {
+      if (isRecording) stopRecording(qid);
+      else startRecording(qid);
     }
 
-    async function startRecording(questionId) {
+    async function startRecording(qid) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -444,54 +569,52 @@
         recorder.onstop = () => {
           const duration = Math.max(1, Math.round((performance.now() - recordStartAt) / 1000));
           const blob = new Blob(chunks, { type: 'audio/webm' });
-          const audioURL = window.URL.createObjectURL(blob);
+          const url = URL.createObjectURL(blob);
 
-          const audioEl = document.getElementById(`${questionId}-audio-playback`);
-          audioEl.src = audioURL;
+          const audioEl = document.getElementById(`${qid}-audio-playback`);
+          audioEl.src = url;
           audioEl.classList.remove('hidden');
 
-          // Convert to base64
           const reader = new FileReader();
           reader.onloadend = () => {
             const dataUrl = String(reader.result); // data:audio/webm;base64,AAAA...
             const [header, base64] = dataUrl.split(',');
             const mimeMatch = header.match(/data:(.*?);base64/);
-            recordings[questionId] = {
+            recordings[qid] = {
               base64,
               mimeType: mimeMatch ? mimeMatch[1] : 'audio/webm',
               duration,
-              filename: `${questionId}.webm`,
+              filename: `${qid}.webm`,
             };
-            URL.revokeObjectURL(audioURL);
+            URL.revokeObjectURL(url);
           };
           reader.readAsDataURL(blob);
 
-          // stop tracks
           recorder.stream.getTracks().forEach(t => t.stop());
         };
 
         recorder.start();
         isRecording = true;
-        updateRecordingUI(questionId, true);
+        updateRecordingUI(qid, true);
       } catch (error) {
         console.error('Error starting recording:', error);
         alert("Impossible d'accéder au microphone. Veuillez vérifier les autorisations.");
       }
     }
 
-    function stopRecording(questionId) {
+    function stopRecording(qid) {
       if (recorder && recorder.state !== "inactive") {
         recorder.stop();
         isRecording = false;
-        updateRecordingUI(questionId, false);
+        updateRecordingUI(qid, false);
       }
     }
 
-    function updateRecordingUI(questionId, isRecordingNow) {
-      const recordBtn = document.getElementById(`${questionId}-record-btn`);
-      const statusDiv = document.getElementById(`${questionId}-record-status`);
+    function updateRecordingUI(qid, isRec) {
+      const recordBtn = document.getElementById(`${qid}-record-btn`);
+      const statusDiv = document.getElementById(`${qid}-record-status`);
       const icon = recordBtn.querySelector('i');
-      if (isRecordingNow) {
+      if (isRec) {
         recordBtn.classList.replace('bg-red-500', 'bg-gray-700');
         recordBtn.classList.add('animate-pulse');
         icon.classList.replace('fa-microphone', 'fa-stop');
@@ -526,69 +649,67 @@
 
       // QCM
       quizData.mcq.forEach((q, i) => {
-        const userAnswer = document.querySelector(`input[name="mcq-${i}"]:checked`)?.value || '';
+        const qid = `mcq-${i}`;
+        const userAnswer = document.querySelector(`input[name="${qid}"]:checked`)?.value || '';
         const isCorrect = userAnswer === q.answer;
-        if (isCorrect) score++;
-        total++;
-        document.getElementById(`mcq-result-${i}`).innerHTML = isCorrect
+        if (isCorrect) score++; total++;
+
+        document.getElementById(`${qid}-result`).innerHTML = isCorrect
           ? `<p class="text-green-600 font-bold">Correct ! 👍 ${q.explanation}</p>`
           : `<p class="text-red-600 font-bold">Oups... La bonne réponse était : "${q.answer}"</p><p class="text-gray-600">😅 → ${q.explanation}</p>`;
 
+        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
         questionsForMail.push({
-          number: `QCM ${i + 1}`,
-          fr: q.question,
-          ko: '',
-          userAnswer,
-          isCorrect,
-          listenCount: 0, hint1Count: 0, hint2Count: 0
+          number: `QCM ${i + 1}`, fr: q.question, ko: '',
+          userAnswer, isCorrect,
+          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
         });
       });
 
       // Fill-in
       quizData.fillIn.forEach((q, i) => {
-        const userAnswer = document.getElementById(`fill-${i}`).value.trim();
+        const qid = `fill-${i}`;
+        const userAnswer = document.getElementById(`${qid}-input`).value.trim();
         const isCorrect = userAnswer === q.answer;
-        if (isCorrect) score++;
-        total++;
-        document.getElementById(`fill-result-${i}`).innerHTML = isCorrect
+        if (isCorrect) score++; total++;
+
+        document.getElementById(`${qid}-result`).innerHTML = isCorrect
           ? `<p class="text-green-600 font-bold">Parfait !</p>`
           : `<p class="text-red-600 font-bold">Oups, petit couac 😅 → La réponse correcte est : "${q.answer}"</p>`;
 
         const koFull = q.sentence.replace('___', q.answer);
+        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
         questionsForMail.push({
-          number: `FILL ${i + 1}`,
-          fr: q.translation,
-          ko: koFull,
-          userAnswer,
-          isCorrect,
-          listenCount: 0, hint1Count: 0, hint2Count: 0
+          number: `FILL ${i + 1}`, fr: q.translation, ko: koFull,
+          userAnswer, isCorrect,
+          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
         });
       });
 
       // Writing
       quizData.writing.forEach((q, i) => {
-        const userAnswer = document.getElementById(`write-${i}`).value.trim();
+        const qid = `write-${i}`;
+        const userAnswer = document.getElementById(`${qid}-input`).value.trim();
         const isCorrect = userAnswer.length > 0;
-        if (isCorrect) score++;
-        total++;
-        document.getElementById(`write-result-${i}`).innerHTML = `<p class="text-blue-600">Réponse suggérée : "${q.answer}".</p>`;
+        if (isCorrect) score++; total++;
+
+        document.getElementById(`${qid}-result`).innerHTML =
+          `<p class="text-blue-600">Réponse suggérée : "${q.answer}".</p>`;
+
+        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
         questionsForMail.push({
-          number: `WR ${i + 1}`,
-          fr: q.situation,
-          ko: q.answer,
-          userAnswer,
-          isCorrect,
-          listenCount: 0, hint1Count: 0, hint2Count: 0
+          number: `WR ${i + 1}`, fr: q.situation, ko: q.answer,
+          userAnswer, isCorrect,
+          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
         });
       });
 
-      // Listening
+      // Listening (includes self-dictation & recording)
       quizData.listening.forEach((q, i) => {
         const qid = `listen-${i}`;
         const userAnswerKo = document.getElementById(`${qid}-dictation`).value.trim().replace(/[.?]/g, '');
         const isCorrectKo = userAnswerKo === q.ko.replace(/[.?]/g, '');
-        if (isCorrectKo) score++;
-        total++;
+        if (isCorrectKo) score++; total++;
 
         const resultDiv = document.getElementById(`${qid}-result`);
         let resultHTML = isCorrectKo
@@ -597,18 +718,15 @@
         resultHTML += `<p class="text-blue-600 mt-1">Traduction : "${q.fr}"</p>`;
         resultDiv.innerHTML = resultHTML;
 
-        const stats = listenStats[qid] || { listenCount: 0, hint1Count: 0, hint2Count: 0 };
+        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
         const rec = recordings[qid];
+        const selfDict = document.getElementById(`${qid}-selfdict`).value.trim();
 
         const item = {
-          number: `LS ${i + 1}`,
-          fr: q.fr,
-          ko: q.ko,
-          userAnswer: userAnswerKo,
-          isCorrect: isCorrectKo,
-          listenCount: stats.listenCount,
-          hint1Count: stats.hint1Count,
-          hint2Count: stats.hint2Count
+          number: `LS ${i + 1}`, fr: q.fr, ko: q.ko,
+          userAnswer: userAnswerKo, isCorrect: isCorrectKo,
+          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2,
+          selfDictation: selfDict
         };
         if (rec) item.recording = rec;
 
@@ -643,7 +761,7 @@
       resultsSection.style.display = 'block';
       resultsSection.scrollIntoView({ behavior: 'smooth' });
 
-      // Envoi des résultats
+      // send payload
       const endTime = new Date().toISOString();
       const totalTimeSeconds = Math.max(1, Math.round((new Date(endTime) - new Date(sessionMeta.startTime)) / 1000));
       const payload = {
