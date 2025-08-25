@@ -1,778 +1,682 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Exercice Coréen: Focus sur la Forme Honorifique</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <style>
-    .quiz-step { animation: fadeIn 0.5s ease-in-out; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    /* Table scroller on small screens */
-    .table-wrap { overflow-x:auto; }
-  </style>
-</head>
-<body class="bg-gray-50 font-sans">
+<script>
+  // --- Global State & Config ---
+  let currentStep = 1;
+  const totalSteps = 6;
 
-  <!-- En-tête -->
-  <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
-    <div class="text-sm text-gray-500">
-      <p class="font-semibold">Fait par 성일, Pondant, Laon</p>
-    </div>
-    <h1 class="text-xl md:text-2xl font-bold text-center text-blue-800">Les 3 Types d'Honorifiques</h1>
-    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center">
-      <i class="fas fa-print mr-2"></i> <span class="hidden md:inline">Imprimer</span>
-    </button>
-  </header>
+  const sessionMeta = { startTime: new Date().toISOString() };
 
-  <main class="container mx-auto p-4 md:p-8">
+  // Stats: listens & hints for ALL question blocks
+  const stats = {}; // stats[qid] = { listens:0, hint1:0, hint2:0 }
+  const recordings = {}; // recordings[qid] = { base64, mimeType, duration, filename }
 
-    <!-- Section Nom de l'étudiant -->
-    <section id="student-name-section" class="text-center mb-12">
-      <h2 class="text-2xl font-bold mb-4">Qui est le champion du jour ? 🏆</h2>
-      <input type="text" id="studentName"
-             placeholder="Entrez votre nom ici, futur maître du coréen !"
-             class="text-center p-3 border-2 border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-1/2">
-    </section>
+  let recorder;
+  let isRecording = false;
+  let recordStartAt = 0;
 
-    <!-- Conteneur des exercices -->
-    <div id="quiz-container" class="space-y-16">
+  // 결과 전송/채점 1회 가드
+  let hasSubmitted = false;   // 끝내기 버튼 다중 클릭 방지
+  let emailSent   = false;    // 메일 다중 전송 방지
 
-      <!-- Étape 1: Explication simple -->
-      <div class="quiz-step" data-step="1">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">1. Les 3 Types d'Honorifiques ! 🤔</h2>
-        <div class="bg-white p-6 rounded-lg shadow-md space-y-6 text-base md:text-lg">
+  // ===== Quiz Data with Hints for ALL =====
+  const quizData = {
+    mcq: [
+      {
+        question: "Pour remplacer la particule sujet `이/가` quand on parle de son grand-père, on utilise...",
+        options: ["은/는", "께서", "을/를", "께"],
+        answer: "께서",
+        explanation: "`께서` est la particule honorifique qui remplace `이/가` pour un sujet respecté.",
+        hint1: "Particule sujet… mais version honorifique.",
+        hint2: "Sujet respecté ⇒ `께서` remplace `이/가`."
+      },
+      {
+        question: "Dans la phrase `어머니께서 책을 읽으세요`, qu'est-ce qui montre le respect dans le verbe ?",
+        options: ["-어요", "-으세요", "-세요", "-으-"],
+        answer: "-으세요",
+        explanation: "On ajoute `-(으)시-` au radical du verbe (`읽-`) + la terminaison `-어요` pour former `읽으세요`.",
+        hint1: "Regarde la terminaison polie + 시.",
+        hint2: "Honorification verbale: -(으)시- + 해요체 ⇒ -(으)세요."
+      },
+      {
+        question: "Quel est le verbe honorifique pour `주다` (donner) ?",
+        options: ["드리다", "받다", "보다", "계시다"],
+        answer: "드리다",
+        explanation: "Quand on donne quelque chose à une personne respectée, on utilise `드리다`.",
+        hint1: "Donner → verbe humble/hon.",
+        hint2: "`주다`→`드리다` (destinataire honorifique)."
+      },
+      {
+        question: "Quelle est la phrase correcte pour dire 'Je vois le professeur' de manière respectueuse ?",
+        options: ["선생님을 봐요.", "선생님께서 봐요.", "선생님을 뵈어요.", "선생님을 보세요."],
+        answer: "선생님을 뵈어요.",
+        explanation: "`보다` devient `뵈다` quand le COD est une personne respectée.",
+        hint1: "`보다` → ? (honorifique du complément)",
+        hint2: "Voir une personne respectée ⇒ `뵈다`."
+      },
+      {
+        question: "La particule `께` est la forme honorifique de...",
+        options: ["에서", "하고", "만", "에게/한테"],
+        answer: "에게/한테",
+        explanation: "`께` remplace `에게/한테` pour indiquer le destinataire (COI) honorifique.",
+        hint1: "COI (à/chez) → version honorifique.",
+        hint2: "`에게/한테` → `께`."
+      }
+    ],
+    fillIn: [
+      { sentence: "할머니___ 지금 주무세요.", answer: "께서", translation: "Grand-mère dort maintenant.", vocab: { "할머니": "grand-mère", "지금": "maintenant", "주무시다": "dormir (hon.)" }, hint1: "Sujet honorifique → particule…", hint2: "`이/가` → `께서`" },
+      { sentence: "사장님___ 선물을 드렸어요.", answer: "께", translation: "J'ai donné un cadeau au patron.", vocab: { "사장님": "patron", "선물": "cadeau", "드리다": "donner (hon.)" }, hint1: "COI honorifique.", hint2: "`에게/한테` → `께`" },
+      { sentence: "아버지께서 신문을 읽___.", answer: "으세요", translation: "Père lit le journal.", vocab: { "아버지": "père", "신문": "journal", "읽다": "lire" }, hint1: "Honorification verbale + 해요체.", hint2: "어간 + (으)시 + 어요 ⇒ (으)세요" },
+      { sentence: "저는 교수님을 처음 ___.", answer: "뵙겠습니다", translation: "Je rencontre le professeur pour la première fois. (formel)", vocab: { "저": "je", "교수님": "professeur", "처음": "pour la première fois", "뵙다": "voir/rencontrer (hon.)" }, hint1: "Formel/합쇼체 종결.", hint2: "`뵙다` + 겠 + 습니다" },
+      { sentence: "어머니, 진지 ___.", answer: "드세요", translation: "Maman, mange ton repas s'il te plaît.", vocab: { "어머니": "maman", "진지": "repas (hon.)", "드시다": "manger (hon.)" }, hint1: "Honorifique manger.", hint2: "`드시다` + (으)세요" }
+    ],
+    writing: [
+      { situation: "Dites que votre mère (어머니) se repose (쉬다).", answer: "어머니께서 쉬세요.", hint1: "Sujet honorifique + -(으)시-.", hint2: "`어머니께서` + `쉬세요`" },
+      { situation: "Dites que vous donnez un livre (책) au professeur (선생님).", answer: "선생님께 책을 드려요.", hint1: "COI honorifique + 드리다.", hint2: "`선생님께` + `드려요`" },
+      { situation: "Dites que le président (대통령) parle (말씀하다).", answer: "대통령께서 말씀하세요.", hint1: "말하다→말씀하시다.", hint2: "`대통령께서` + `말씀하세요`" },
+      { situation: "Dites que vous voyez (뵈다) votre grand-père (할아버지).", answer: "할아버지를 뵈어요.", hint1: "보다→뵈다 (obj. honor.).", hint2: "`할아버지` COD, verbe `뵈어요`" },
+      { situation: "Demandez si le client (손님) a mangé (식사하다).", answer: "손님, 식사하셨어요?", hint1: "하다→하시다.", hint2: "`식사하시다` + -았/었어요?" }
+    ],
+    listening: [
+      { number: 1, ko: "선생님께서 한국어를 가르치세요.", fr: "Le professeur enseigne le coréen.", hint1: "ㅅㅅㄴㄲㅅ ㅎㄱㅇㄹ ㄱㄹㅊㅅㅇ.", hint2: "가르치다 (enseigner)" },
+      { number: 2, ko: "할머니께 전화를 드렸어요.", fr: "J'ai téléphoné à ma grand-mère.", hint1: "ㅎㅁㄴㄲ ㅈㅎㄹ ㄷㄹㅇㅇ.", hint2: "전화를 드리다 (téléphoner - hon.)" },
+      { number: 3, ko: "사장님을 복도에서 뵈었어요.", fr: "J'ai vu le patron dans le couloir.", hint1: "ㅅㅈㄴㅇ ㅂㄷㅇㅅ ㅂㅇㅇㅇ.", hint2: "복도 (couloir), 뵈다 (voir - hon.)" },
+      { number: 4, ko: "아버님, 진지 드세요.", fr: "Père, mangez votre repas s'il vous plaît.", hint1: "ㅇㅂㄴ, ㅈㅈ ㄷㅅㅇ.", hint2: "아버님 (père - hon.), 진지 (repas - hon.)" },
+      { number: 5, ko: "의사 선생님께서 지금 안 계세요.", fr: "Le docteur n'est pas là pour le moment.", hint1: "ㅇㅅ ㅅㅅㄴㄲㅅ ㅈㄱ ㅇ ㄱㅅㅇ.", hint2: "계시다 (être - hon.), 안 (ne...pas)" }
+    ]
+  };
 
-          <!-- 주체 높임법 -->
-          <div class="border-2 border-blue-200 p-4 rounded-lg">
-            <h4 class="font-bold text-blue-600">🟢 주체 높임법 (Honorification du sujet)</h4>
-            <p class="mt-2 text-gray-700">Le <strong>sujet</strong> de la phrase est une personne respectée (professeur, aîné, etc.).</p>
-            <p class="mt-3">On montre le respect en modifiant le verbe (suffixe <code class="bg-red-100 p-1 rounded font-bold">-(으)시-</code>) et en utilisant une particule de sujet honorifique (<code class="bg-blue-100 p-1 rounded font-bold">께서</code>).</p>
-            <p class="mt-2">✅ <code class="bg-gray-100 p-1 rounded">선생님<span class="text-blue-500 font-bold">께서</span> 오<span class="text-red-500 font-bold">세</span>요.</code></p>
-          </div>
+  // --- Init ---
+  document.addEventListener('DOMContentLoaded', () => {
+    populateMCQ();
+    populateFillIn();
+    populateWriting();
+    populateListening();
+    setupNavigation();
+    document.getElementById('studentName').placeholder = getRandomPlaceholder();
+  });
 
-          <!-- 객체 높임법 -->
-          <div class="border-2 border-green-200 p-4 rounded-lg">
-            <h4 class="font-bold text-green-600">🟡 객체 높임법 (Honorification du complément)</h4>
-            <p class="mt-2 text-gray-700">Le <strong>complément</strong> (COD ou COI) est une personne importante (professeur, parent, etc.).</p>
-            <p class="mt-3">On utilise des verbes honorifiques spécifiques pour exprimer le respect (<code class="bg-purple-100 p-1 rounded font-bold">뵙다, 드리다, 여쭙다</code>, etc.).</p>
-            <p class="mt-2">✅ <code class="bg-gray-100 p-1 rounded">선생님께 선물을 <span class="text-purple-500 font-bold">드려요</span>.</code></p>
-          </div>
+  function getRandomPlaceholder() {
+    const placeholders = [
+      "Le futur boss du TOPIK !",
+      "Qui va briller aujourd'hui ?",
+      "Ton nom pour la postérité coréenne...",
+      "Prêt(e) à tout déchirer ?",
+      "Inscris ton nom dans la légende !"
+    ];
+    return placeholders[Math.floor(Math.random() * placeholders.length)];
+  }
 
-          <!-- 상대 높임법 -->
-          <div class="border-2 border-orange-200 p-4 rounded-lg">
-            <h4 class="font-bold text-orange-600">🔵 상대 높임법 (Honorification de l’interlocuteur)</h4>
-            <p class="mt-2 text-gray-700">Cela montre le niveau de politesse envers la personne <strong>à qui l’on parle</strong>.</p>
-            <p class="text-sm text-gray-600 italic mt-1">
-              👉 Un peu comme « les 3 registres de langue » en français :
-              « Je te remercie » (familier) → « Je vous remercie » (standard/vouvoiement) → « Je vous suis reconnaissant » (soutenu).
-            </p>
-            <p class="mt-3 text-gray-700">
-              ⚠️ Différence importante : En français, le registre soutenu dépend souvent du milieu (certains ne l’utilisent presque jamais).
-              Mais en coréen, le style <strong>formel</strong> (합쇼체) s’emploie selon la <u>situation</u> (cadre professionnel/officiel, avec des inconnus).
-              Et certains mots comme <code class="bg-gray-100 p-1 rounded">감사합니다</code> et <code class="bg-gray-100 p-1 rounded">죄송합니다</code> s’utilisent très souvent pour renforcer la politesse, même hors cadre officiel.
-            </p>
-            <ul class="mt-2 space-y-1 list-disc list-inside">
-              <li><code class="bg-gray-100 p-1 rounded">가</code> (familier / registre familier / 반말)</li>
-              <li><code class="bg-gray-100 p-1 rounded">가<span class="text-orange-500 font-bold">요</span></code> (style poli / registre standard / 해요체)</li>
-              <li><code class="bg-gray-100 p-1 rounded">갑<span class="text-orange-500 font-bold">니다</span></code> (style très formel / registre formel / 합쇼체)</li>
-            </ul>
-          </div>
+  // --- helpers (stats) ---
+  function ensureStat(qid) {
+    if (!stats[qid]) stats[qid] = { listens: 0, hint1: 0, hint2: 0 };
+  }
+  function bumpHint(qid, which) {
+    ensureStat(qid);
+    if (which === 1) stats[qid].hint1++;
+    else if (which === 2) stats[qid].hint2++;
+  }
 
+  // --- Populate: QCM (with hints) ---
+  function populateMCQ() {
+    const container = document.getElementById('mcq-questions');
+    quizData.mcq.forEach((q, index) => {
+      const qid = `mcq-${index}`;
+      const div = document.createElement('div');
+      div.className = 'bg-white p-6 rounded-lg shadow-md';
+      div.innerHTML = `
+        <p class="font-semibold mb-4">${index + 1}. ${q.question}</p>
+        <div class="space-y-2">
+          ${q.options.map(opt => `
+            <div>
+              <input type="radio" id="${qid}-${opt.replace(/\s/g, '-')}"
+                    name="${qid}" value="${opt}" class="mr-2 cursor-pointer">
+              <label for="${qid}-${opt.replace(/\s/g, '-')}" class="cursor-pointer">${opt}</label>
+            </div>
+          `).join('')}
         </div>
-      </div>
+        <div class="mt-3 space-x-2">
+          <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                  class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+          <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                  class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+        </div>
+        <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+        <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+        <div id="${qid}-result" class="mt-4 text-sm"></div>
+      `;
+      container.appendChild(div);
+    });
+  }
 
-      <!-- Étape 2: Mots et Expressions Clés -->
-      <div class="quiz-step" data-step="2" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">2. Mots et Expressions Clés 📋</h2>
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <p class="text-gray-700 mb-4">
-            Voici quelques mots et particules honorifiques essentiels à mémoriser !
-          </p>
-          <div class="table-wrap">
-            <table class="min-w-full text-left text-sm">
-              <thead>
-                <tr class="bg-blue-50 text-blue-800">
-                  <th class="px-3 py-2 font-semibold">Type</th>
-                  <th class="px-3 py-2 font-semibold">Forme Standard</th>
-                  <th class="px-3 py-2 font-semibold">Forme Honorifique</th>
-                  <th class="px-3 py-2 font-semibold">Utilisation</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y">
-                <tr><td class="px-3 py-2">주체 (Sujet)</td><td class="px-3 py-2">Suffixe de verbe</td><td class="px-3 py-2">-(으)시-</td><td class="px-3 py-2">Ex: 읽다 → 읽으시다</td></tr>
-                <tr><td class="px-3 py-2">주체 (Sujet)</td><td class="px-3 py-2">이/가</td><td class="px-3 py-2">께서</td><td class="px-3 py-2">Pour le sujet respecté</td></tr>
-                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">에게/한테</td><td class="px-3 py-2">께</td><td class="px-3 py-2">Pour le destinataire respecté</td></tr>
-                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">보다 (voir)</td><td class="px-3 py-2">뵙다 / 뵈다</td><td class="px-3 py-2">Quand on voit une personne respectée</td></tr>
-                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">주다 (donner)</td><td class="px-3 py-2">드리다</td><td class="px-3 py-2">Quand on donne à une personne respectée</td></tr>
-                <tr><td class="px-3 py-2">Verbe</td><td class="px-3 py-2">먹다 (manger)</td><td class="px-3 py-2">드시다 / 잡수시다</td><td class="px-3 py-2">Quand une personne respectée mange</td></tr>
-                <tr><td class="px-3 py-2">Verbe</td><td class="px-3 py-2">자다 (dormir)</td><td class="px-3 py-2">주무시다</td><td class="px-3 py-2">Quand une personne respectée dort</td></tr>
-              </tbody>
-            </table>
+  // --- Populate: Fill-in (with hints) ---
+  function populateFillIn() {
+    const container = document.getElementById('fill-in-the-blank-questions');
+    quizData.fillIn.forEach((q, index) => {
+      const qid = `fill-${index}`;
+      const div = document.createElement('div');
+      div.className = 'bg-white p-6 rounded-lg shadow-md';
+      const sentenceParts = q.sentence.split('___');
+
+      let vocabHTML = '<ul class="list-disc list-inside text-sm text-gray-600 mt-2">';
+      for (const [ko, fr] of Object.entries(q.vocab)) {
+        vocabHTML += `<li><strong>${ko}</strong> : ${fr}</li>`;
+      }
+      vocabHTML += '</ul>';
+
+      div.innerHTML = `
+        <div class="mb-4">
+          <label for="${qid}-input" class="font-semibold text-lg">
+            ${index + 1}. ${sentenceParts[0]}
+            <input type="text" id="${qid}-input"
+                  class="border-b-2 border-gray-300 focus:border-blue-500 outline-none w-24 text-center mx-1">
+            ${sentenceParts[1]}
+          </label>
+          <p class="text-gray-500 italic mt-1">"${q.translation}"</p>
+        </div>
+        <div>
+          <h5 class="font-bold text-sm">Mots utiles :</h5>
+          ${vocabHTML}
+        </div>
+        <div class="mt-3 space-x-2">
+          <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                  class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+          <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                  class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+        </div>
+        <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+        <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+
+        <div id="${qid}-result" class="mt-4 text-sm"></div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // --- Populate: Writing (with hints) ---
+  function populateWriting() {
+    const container = document.getElementById('writing-questions');
+    quizData.writing.forEach((q, index) => {
+      const qid = `write-${index}`;
+      const div = document.createElement('div');
+      div.className = 'bg-white p-6 rounded-lg shadow-md';
+      div.innerHTML = `
+        <p class="font-semibold mb-2">${index + 1}. ${q.situation}</p>
+        <textarea id="${qid}-input" rows="2"
+                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Écrivez votre réponse en coréen..."></textarea>
+
+        <div class="mt-3 space-x-2">
+          <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                  class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+          <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                  class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+        </div>
+        <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+        <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+
+        <div id="${qid}-result" class="mt-4 text-sm"></div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // --- Populate: Listening (play button close + self-dictation) ---
+  function populateListening() {
+    const container = document.getElementById('listening-questions');
+    quizData.listening.forEach((q, index) => {
+      const qid = `listen-${index}`;
+      const div = document.createElement('div');
+      div.className = 'bg-white p-6 rounded-lg shadow-lg';
+      div.id = qid;
+
+      div.innerHTML = `
+        <div class="mb-4">
+          <h3 class="text-lg font-bold text-blue-800">Phrase ${index + 1}</h3>
+        </div>
+
+        <div class="space-y-6">
+          <!-- Dictation row with play button right here -->
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <label class="block font-semibold text-gray-700">1. Écoutez et écrivez (받아쓰기)</label>
+              <button onclick="playAudio('${q.ko}', this, '${qid}')"
+                      class="shrink-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-full transition duration-300 ease-in-out">
+                <i class="fas fa-play"></i>
+              </button>
+            </div>
+            <input type="text" id="${qid}-dictation"
+                    class="mt-2 w-full p-2 border border-gray-300 rounded-md"
+                    placeholder="Écrivez ce que vous entendez...">
+            <div class="mt-2 space-x-2">
+              <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
+                      class="text-sm bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1 (consonnes)</button>
+              <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
+                      class="text-sm bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2 (mots clés)</button>
+            </div>
+            <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+            <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-2 text-gray-700">2. Traduisez en français</label>
+            <input type="text" id="${qid}-translation" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Que signifie la phrase ?">
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-2 text-gray-700">3. Enregistrez votre prononciation</label>
+            <div class="flex items-center gap-4">
+              <button id="${qid}-record-btn" onclick="toggleRecording('${qid}')"
+                      class="bg-red-500 hover:bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <div id="${qid}-record-status" class="text-gray-600">Cliquez pour enregistrer</div>
+            </div>
+            <audio id="${qid}-audio-playback" controls class="w-full mt-4 hidden"></audio>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-2 text-gray-700">4. Re-dictée d’après ma voix (non notée)</label>
+            <input type="text" id="${qid}-selfdict" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Réécrivez la phrase après avoir écouté votre enregistrement.">
+            <p class="text-xs text-gray-500 mt-1">Astuce: Écoute ton enregistrement ci-dessus, puis réécris la phrase ici.</p>
           </div>
         </div>
-      </div>
 
-      <!-- Étape 3: QCM -->
-      <div class="quiz-step" data-step="3" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">3. Choisis la bonne réponse ! 🤔 (5 questions)</h2>
-        <div id="mcq-questions" class="space-y-6"></div>
-      </div>
+        <div id="${qid}-result" class="mt-4 text-sm"></div>
+      `;
+      container.appendChild(div);
+    });
+  }
 
-      <!-- Étape 4: Mots à compléter -->
-      <div class="quiz-step" data-step="4" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">4. Complète avec le bon mot ! ✍️ (5 questions)</h2>
-        <div id="fill-in-the-blank-questions" class="space-y-6"></div>
-      </div>
+  // --- Navigation ---
+  function setupNavigation() {
+    const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const finishBtn = document.getElementById('finish-btn');
 
-      <!-- Étape 5: Écriture de phrases -->
-      <div class="quiz-step" data-step="5" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">5. À toi d'écrire ! ✒️ (5 phrases)</h2>
-        <p class="text-gray-600 mb-6">Écris la phrase en coréen en utilisant la forme honorifique.</p>
-        <div id="writing-questions" class="space-y-8"></div>
-      </div>
-
-      <!-- Étape 6: Écoute et écris -->
-      <div class="quiz-step" data-step="6" style="display:none;">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">6. Écoute et écris ! 🎧 (5 phrases)</h2>
-        <p class="text-gray-600 mb-6">Écoute, écris, enregistre ta voix, puis réessaie la dictée d’après ta propre voix. (La 2e dictée n’est pas notée, mais est envoyée au prof avec l’audio.)</p>
-        <div id="listening-questions" class="space-y-12"></div>
-      </div>
-
-      <!-- Section des résultats -->
-      <div id="results-section" class="text-center" style="display:none;"></div>
-    </div>
-
-    <!-- Boutons de navigation -->
-    <div class="mt-12 flex justify-between items-center">
-      <button id="prev-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition duration-300 disabled:opacity-50" disabled>
-        <i class="fas fa-arrow-left mr-2"></i> Précédent
-      </button>
-      <div id="step-indicator" class="text-gray-600 font-semibold">Étape 1 / 6</div>
-      <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
-        Suivant <i class="fas fa-arrow-right ml-2"></i>
-      </button>
-      <button id="finish-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300" style="display: none;">
-        Terminer & Voir les résultats <i class="fas fa-check-circle ml-2"></i>
-      </button>
-    </div>
-
-    <footer class="text-center mt-12 text-sm text-gray-500">
-      <p>Fait avec ❤️ par 성일, Pondant, Laon</p>
-    </footer>
-  </main>
-
-  <script>
-    // --- Global State & Config ---
-    let currentStep = 1;
-    const totalSteps = 6;
-
-    const sessionMeta = { startTime: new Date().toISOString() };
-
-    // Stats: listens & hints for ALL question blocks
-    const stats = {}; // stats[qid] = { listens:0, hint1:0, hint2:0 }
-    const recordings = {}; // recordings[qid] = { base64, mimeType, duration, filename }
-
-    let recorder;
-    let isRecording = false;
-    let recordStartAt = 0;
-
-    // ===== Quiz Data with Hints for ALL =====
-    const quizData = {
-      mcq: [
-        {
-          question: "Pour remplacer la particule sujet `이/가` quand on parle de son grand-père, on utilise...",
-          options: ["은/는", "께서", "을/를", "께"],
-          answer: "께서",
-          explanation: "`께서` est la particule honorifique qui remplace `이/가` pour un sujet respecté.",
-          hint1: "Particule sujet… mais version honorifique.",
-          hint2: "Sujet respecté ⇒ `께서` remplace `이/가`."
-        },
-        {
-          question: "Dans la phrase `어머니께서 책을 읽으세요`, qu'est-ce qui montre le respect dans le verbe ?",
-          options: ["-어요", "-으세요", "-세요", "-으-"],
-          answer: "-으세요",
-          explanation: "On ajoute `-(으)시-` au radical du verbe (`읽-`) + la terminaison `-어요` pour former `읽으세요`.",
-          hint1: "Regarde la terminaison polie + 시.",
-          hint2: "Honorification verbale: -(으)시- + 해요체 ⇒ -(으)세요."
-        },
-        {
-          question: "Quel est le verbe honorifique pour `주다` (donner) ?",
-          options: ["드리다", "받다", "보다", "계시다"],
-          answer: "드리다",
-          explanation: "Quand on donne quelque chose à une personne respectée, on utilise `드리다`.",
-          hint1: "Donner → verbe humble/hon.",
-          hint2: "`주다`→`드리다` (destinataire honorifique)."
-        },
-        {
-          question: "Quelle est la phrase correcte pour dire 'Je vois le professeur' de manière respectueuse ?",
-          options: ["선생님을 봐요.", "선생님께서 봐요.", "선생님을 뵈어요.", "선생님을 보세요."],
-          answer: "선생님을 뵈어요.",
-          explanation: "`보다` devient `뵈다` quand le COD est une personne respectée.",
-          hint1: "`보다` → ? (honorifique du complément)",
-          hint2: "Voir une personne respectée ⇒ `뵈다`."
-        },
-        {
-          question: "La particule `께` est la forme honorifique de...",
-          options: ["에서", "하고", "만", "에게/한테"],
-          answer: "에게/한테",
-          explanation: "`께` remplace `에게/한테` pour indiquer le destinataire (COI) honorifique.",
-          hint1: "COI (à/chez) → version honorifique.",
-          hint2: "`에게/한테` → `께`."
-        }
-      ],
-      fillIn: [
-        { sentence: "할머니___ 지금 주무세요.", answer: "께서", translation: "Grand-mère dort maintenant.", vocab: { "할머니": "grand-mère", "지금": "maintenant", "주무시다": "dormir (hon.)" }, hint1: "Sujet honorifique → particule…", hint2: "`이/가` → `께서`" },
-        { sentence: "사장님___ 선물을 드렸어요.", answer: "께", translation: "J'ai donné un cadeau au patron.", vocab: { "사장님": "patron", "선물": "cadeau", "드리다": "donner (hon.)" }, hint1: "COI honorifique.", hint2: "`에게/한테` → `께`" },
-        { sentence: "아버지께서 신문을 읽___.", answer: "으세요", translation: "Père lit le journal.", vocab: { "아버지": "père", "신문": "journal", "읽다": "lire" }, hint1: "Honorification verbale + 해요체.", hint2: "어간 + (으)시 + 어요 ⇒ (으)세요" },
-        { sentence: "저는 교수님을 처음 ___.", answer: "뵙겠습니다", translation: "Je rencontre le professeur pour la première fois. (formel)", vocab: { "저": "je", "교수님": "professeur", "처음": "pour la première fois", "뵙다": "voir/rencontrer (hon.)" }, hint1: "Formel/합쇼체 종결.", hint2: "`뵙다` + 겠 + 습니다" },
-        { sentence: "어머니, 진지 ___.", answer: "드세요", translation: "Maman, mange ton repas s'il te plaît.", vocab: { "어머니": "maman", "진지": "repas (hon.)", "드시다": "manger (hon.)" }, hint1: "Honorifique manger.", hint2: "`드시다` + (으)세요" }
-      ],
-      writing: [
-        { situation: "Dites que votre mère (어머니) se repose (쉬다).", answer: "어머니께서 쉬세요.", hint1: "Sujet honorifique + -(으)시-.", hint2: "`어머니께서` + `쉬세요`" },
-        { situation: "Dites que vous donnez un livre (책) au professeur (선생님).", answer: "선생님께 책을 드려요.", hint1: "COI honorifique + 드리다.", hint2: "`선생님께` + `드려요`" },
-        { situation: "Dites que le président (대통령) parle (말씀하다).", answer: "대통령께서 말씀하세요.", hint1: "말하다→말씀하시다.", hint2: "`대통령께서` + `말씀하세요`" },
-        { situation: "Dites que vous voyez (뵈다) votre grand-père (할아버지).", answer: "할아버지를 뵈어요.", hint1: "보다→뵈다 (obj. honor.).", hint2: "`할아버지` COD, verbe `뵈어요`" },
-        { situation: "Demandez si le client (손님) a mangé (식사하다).", answer: "손님, 식사하셨어요?", hint1: "하다→하시다.", hint2: "`식사하시다` + -았/었어요?" }
-      ],
-      listening: [
-        { number: 1, ko: "선생님께서 한국어를 가르치세요.", fr: "Le professeur enseigne le coréen.", hint1: "ㅅㅅㄴㄲㅅ ㅎㄱㅇㄹ ㄱㄹㅊㅅㅇ.", hint2: "가르치다 (enseigner)" },
-        { number: 2, ko: "할머니께 전화를 드렸어요.", fr: "J'ai téléphoné à ma grand-mère.", hint1: "ㅎㅁㄴㄲ ㅈㅎㄹ ㄷㄹㅇㅇ.", hint2: "전화를 드리다 (téléphoner - hon.)" },
-        { number: 3, ko: "사장님을 복도에서 뵈었어요.", fr: "J'ai vu le patron dans le couloir.", hint1: "ㅅㅈㄴㅇ ㅂㄷㅇㅅ ㅂㅇㅇㅇ.", hint2: "복도 (couloir), 뵈다 (voir - hon.)" },
-        { number: 4, ko: "아버님, 진지 드세요.", fr: "Père, mangez votre repas s'il vous plaît.", hint1: "ㅇㅂㄴ, ㅈㅈ ㄷㅅㅇ.", hint2: "아버님 (père - hon.), 진지 (repas - hon.)" },
-        { number: 5, ko: "의사 선생님께서 지금 안 계세요.", fr: "Le docteur n'est pas là pour le moment.", hint1: "ㅇㅅ ㅅㅅㄴㄲㅅ ㅈㄱ ㅇ ㄱㅅㅇ.", hint2: "계시다 (être - hon.), 안 (ne...pas)" }
-      ]
-    };
-
-    // --- Init ---
-    document.addEventListener('DOMContentLoaded', () => {
-      populateMCQ();
-      populateFillIn();
-      populateWriting();
-      populateListening();
-      setupNavigation();
-      document.getElementById('studentName').placeholder = getRandomPlaceholder();
+    nextBtn.addEventListener('click', () => {
+      if (currentStep < totalSteps) changeStep(currentStep + 1);
     });
 
-    function getRandomPlaceholder() {
-      const placeholders = [
-        "Le futur boss du TOPIK !",
-        "Qui va briller aujourd'hui ?",
-        "Ton nom pour la postérité coréenne...",
-        "Prêt(e) à tout déchirer ?",
-        "Inscris ton nom dans la légende !"
-      ];
-      return placeholders[Math.floor(Math.random() * placeholders.length)];
-    }
+    prevBtn.addEventListener('click', () => {
+      if (currentStep > 1) changeStep(currentStep - 1);
+    });
 
-    // --- helpers (stats) ---
-    function ensureStat(qid) {
-      if (!stats[qid]) stats[qid] = { listens: 0, hint1: 0, hint2: 0 };
-    }
-    function bumpHint(qid, which) {
+    // ✅ 끝내기: 1회만 동작 + 1회만 메일 전송
+    finishBtn.addEventListener('click', () => {
+      if (hasSubmitted) return;
+      hasSubmitted = true;
+      collectAndGradeAnswers();
+    });
+  }
+
+  function changeStep(step) {
+    document.querySelector(`.quiz-step[data-step="${currentStep}"]`).style.display = 'none';
+    document.querySelector(`.quiz-step[data-step="${step}"]`).style.display = 'block';
+    currentStep = step;
+    updateNavigation();
+    window.scrollTo(0, 0);
+  }
+
+  function updateNavigation() {
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const finishBtn = document.getElementById('finish-btn');
+    const stepIndicator = document.getElementById('step-indicator');
+    prevBtn.disabled = (currentStep === 1);
+    nextBtn.style.display = currentStep === totalSteps ? 'none' : 'inline-block';
+    finishBtn.style.display = currentStep === totalSteps ? 'inline-block' : 'none';
+    stepIndicator.textContent = `Étape ${currentStep} / ${totalSteps}`;
+  }
+
+  // --- Audio (Google TTS + fallback) ---
+  const ttsBusy = new Set();
+  async function playAudio(text, button, qid = null) {
+    if (ttsBusy.has(button)) return;
+    ttsBusy.add(button);
+
+    const icon = button.querySelector('i');
+    icon.classList.remove('fa-play');
+    icon.classList.add('fa-spinner', 'fa-spin');
+    button.disabled = true;
+
+    if (qid) {
       ensureStat(qid);
-      if (which === 1) stats[qid].hint1++;
-      else if (which === 2) stats[qid].hint2++;
+      stats[qid].listens++;
     }
 
-    // --- Populate: QCM (with hints) ---
-    function populateMCQ() {
-      const container = document.getElementById('mcq-questions');
-      quizData.mcq.forEach((q, index) => {
-        const qid = `mcq-${index}`;
-        const div = document.createElement('div');
-        div.className = 'bg-white p-6 rounded-lg shadow-md';
-        div.innerHTML = `
-          <p class="font-semibold mb-4">${index + 1}. ${q.question}</p>
-          <div class="space-y-2">
-            ${q.options.map(opt => `
-              <div>
-                <input type="radio" id="${qid}-${opt.replace(/\s/g, '-')}"
-                       name="${qid}" value="${opt}" class="mr-2 cursor-pointer">
-                <label for="${qid}-${opt.replace(/\s/g, '-')}" class="cursor-pointer">${opt}</label>
-              </div>
-            `).join('')}
-          </div>
-          <div class="mt-3 space-x-2">
-            <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
-                    class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
-            <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
-                    class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
-          </div>
-          <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
-          <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
-          <div id="${qid}-result" class="mt-4 text-sm"></div>
-        `;
-        container.appendChild(div);
+    try {
+      const res = await fetch('/.netlify/functions/generate-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
       });
-    }
-
-    // --- Populate: Fill-in (with hints) ---
-    function populateFillIn() {
-      const container = document.getElementById('fill-in-the-blank-questions');
-      quizData.fillIn.forEach((q, index) => {
-        const qid = `fill-${index}`;
-        const div = document.createElement('div');
-        div.className = 'bg-white p-6 rounded-lg shadow-md';
-        const sentenceParts = q.sentence.split('___');
-
-        let vocabHTML = '<ul class="list-disc list-inside text-sm text-gray-600 mt-2">';
-        for (const [ko, fr] of Object.entries(q.vocab)) {
-          vocabHTML += `<li><strong>${ko}</strong> : ${fr}</li>`;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioData) {
+          const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
+          audio.onended = () => resetAudioBtn(icon, button);
+          audio.onerror = () => fallbackSpeechSynthesis(text, icon, button);
+          audio.play();
+          return;
         }
-        vocabHTML += '</ul>';
-
-        div.innerHTML = `
-          <div class="mb-4">
-            <label for="${qid}-input" class="font-semibold text-lg">
-              ${index + 1}. ${sentenceParts[0]}
-              <input type="text" id="${qid}-input"
-                     class="border-b-2 border-gray-300 focus:border-blue-500 outline-none w-24 text-center mx-1">
-              ${sentenceParts[1]}
-            </label>
-            <p class="text-gray-500 italic mt-1">"${q.translation}"</p>
-          </div>
-          <div>
-            <h5 class="font-bold text-sm">Mots utiles :</h5>
-            ${vocabHTML}
-          </div>
-          <div class="mt-3 space-x-2">
-            <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
-                    class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
-            <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
-                    class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
-          </div>
-          <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
-          <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
-
-          <div id="${qid}-result" class="mt-4 text-sm"></div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    // --- Populate: Writing (with hints) ---
-    function populateWriting() {
-      const container = document.getElementById('writing-questions');
-      quizData.writing.forEach((q, index) => {
-        const qid = `write-${index}`;
-        const div = document.createElement('div');
-        div.className = 'bg-white p-6 rounded-lg shadow-md';
-        div.innerHTML = `
-          <p class="font-semibold mb-2">${index + 1}. ${q.situation}</p>
-          <textarea id="${qid}-input" rows="2"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Écrivez votre réponse en coréen..."></textarea>
-
-          <div class="mt-3 space-x-2">
-            <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
-                    class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
-            <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
-                    class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
-          </div>
-          <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
-          <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
-
-          <div id="${qid}-result" class="mt-4 text-sm"></div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    // --- Populate: Listening (play button close + self-dictation) ---
-    function populateListening() {
-      const container = document.getElementById('listening-questions');
-      quizData.listening.forEach((q, index) => {
-        const qid = `listen-${index}`;
-        const div = document.createElement('div');
-        div.className = 'bg-white p-6 rounded-lg shadow-lg';
-        div.id = qid;
-
-        // label + PLAY button side-by-side (closer to dictation)
-        div.innerHTML = `
-          <div class="mb-4">
-            <h3 class="text-lg font-bold text-blue-800">Phrase ${index + 1}</h3>
-          </div>
-
-          <div class="space-y-6">
-            <!-- Dictation row with play button right here -->
-            <div>
-              <div class="flex items-center justify-between gap-2">
-                <label class="block font-semibold text-gray-700">1. Écoutez et écrivez (받아쓰기)</label>
-                <button onclick="playAudio('${q.ko}', this, '${qid}')"
-                        class="shrink-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-full transition duration-300 ease-in-out">
-                  <i class="fas fa-play"></i>
-                </button>
-              </div>
-              <input type="text" id="${qid}-dictation"
-                     class="mt-2 w-full p-2 border border-gray-300 rounded-md"
-                     placeholder="Écrivez ce que vous entendez...">
-              <div class="mt-2 space-x-2">
-                <button onclick="toggleHint('${qid}-hint1'); bumpHint('${qid}',1)"
-                        class="text-sm bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1 (consonnes)</button>
-                <button onclick="toggleHint('${qid}-hint2'); bumpHint('${qid}',2)"
-                        class="text-sm bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2 (mots clés)</button>
-              </div>
-              <p id="${qid}-hint1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
-              <p id="${qid}-hint2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
-            </div>
-
-            <div>
-              <label class="block font-semibold mb-2 text-gray-700">2. Traduisez en français</label>
-              <input type="text" id="${qid}-translation" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Que signifie la phrase ?">
-            </div>
-
-            <div>
-              <label class="block font-semibold mb-2 text-gray-700">3. Enregistrez votre prononciation</label>
-              <div class="flex items-center gap-4">
-                <button id="${qid}-record-btn" onclick="toggleRecording('${qid}')"
-                        class="bg-red-500 hover:bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300">
-                  <i class="fas fa-microphone"></i>
-                </button>
-                <div id="${qid}-record-status" class="text-gray-600">Cliquez pour enregistrer</div>
-              </div>
-              <audio id="${qid}-audio-playback" controls class="w-full mt-4 hidden"></audio>
-            </div>
-
-            <div>
-              <label class="block font-semibold mb-2 text-gray-700">4. Re-dictée d’après ma voix (non notée)</label>
-              <input type="text" id="${qid}-selfdict" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Réécrivez la phrase après avoir écouté votre enregistrement.">
-              <p class="text-xs text-gray-500 mt-1">Astuce: Écoute ton enregistrement ci-dessus, puis réécris la phrase ici.</p>
-            </div>
-          </div>
-
-          <div id="${qid}-result" class="mt-4 text-sm"></div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    // --- Navigation ---
-    function setupNavigation() {
-      const nextBtn = document.getElementById('next-btn');
-      const prevBtn = document.getElementById('prev-btn');
-      const finishBtn = document.getElementById('finish-btn');
-      nextBtn.addEventListener('click', () => { if (currentStep < totalSteps) changeStep(currentStep + 1); });
-      prevBtn.addEventListener('click', () => { if (currentStep > 1) changeStep(currentStep - 1); });
-      finishBtn.addEventListener('click', collectAndGradeAnswers);
-    }
-
-    function changeStep(step) {
-      document.querySelector(`.quiz-step[data-step="${currentStep}"]`).style.display = 'none';
-      document.querySelector(`.quiz-step[data-step="${step}"]`).style.display = 'block';
-      currentStep = step;
-      updateNavigation();
-      window.scrollTo(0, 0);
-    }
-
-    function updateNavigation() {
-      const prevBtn = document.getElementById('prev-btn');
-      const nextBtn = document.getElementById('next-btn');
-      const finishBtn = document.getElementById('finish-btn');
-      const stepIndicator = document.getElementById('step-indicator');
-      prevBtn.disabled = (currentStep === 1);
-      nextBtn.style.display = currentStep === totalSteps ? 'none' : 'inline-block';
-      finishBtn.style.display = currentStep === totalSteps ? 'inline-block' : 'none';
-      stepIndicator.textContent = `Étape ${currentStep} / ${totalSteps}`;
-    }
-
-    // --- Audio (Google TTS + fallback) ---
-    const ttsBusy = new Set();
-    async function playAudio(text, button, qid = null) {
-      if (ttsBusy.has(button)) return;
-      ttsBusy.add(button);
-
-      const icon = button.querySelector('i');
-      icon.classList.remove('fa-play');
-      icon.classList.add('fa-spinner', 'fa-spin');
-      button.disabled = true;
-
-      if (qid) {
-        ensureStat(qid);
-        stats[qid].listens++;
       }
-
-      try {
-        const res = await fetch('/.netlify/functions/generate-audio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.audioData) {
-            const audio = new Audio(`data:${data.mimeType};base64,${data.audioData}`);
-            audio.onended = () => resetAudioBtn(icon, button);
-            audio.onerror = () => fallbackSpeechSynthesis(text, icon, button);
-            audio.play();
-            return;
-          }
-        }
-        fallbackSpeechSynthesis(text, icon, button);
-      } catch (e) {
-        console.error('Audio playback error:', e);
-        fallbackSpeechSynthesis(text, icon, button);
-      } finally {
-        ttsBusy.delete(button);
-      }
+      fallbackSpeechSynthesis(text, icon, button);
+    } catch (e) {
+      console.error('Audio playback error:', e);
+      fallbackSpeechSynthesis(text, icon, button);
+    } finally {
+      ttsBusy.delete(button);
     }
+  }
 
-    function resetAudioBtn(icon, button) {
+  function resetAudioBtn(icon, button) {
+    icon.classList.remove('fa-spinner', 'fa-spin');
+    icon.classList.add('fa-play');
+    button.disabled = false;
+  }
+
+  function fallbackSpeechSynthesis(text, icon, button) {
+    try {
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ko-KR';
+        u.onend = () => resetAudioBtn(icon, button);
+        speechSynthesis.speak(u);
+      } else {
+        throw new Error('Speech Synthesis not supported');
+      }
+    } catch {
+      alert("La synthèse vocale n'est pas disponible sur votre navigateur.");
       icon.classList.remove('fa-spinner', 'fa-spin');
-      icon.classList.add('fa-play');
+      icon.classList.add('fa-exclamation-circle');
       button.disabled = false;
     }
+  }
 
-    function fallbackSpeechSynthesis(text, icon, button) {
-      try {
-        if ('speechSynthesis' in window) {
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = 'ko-KR';
-          u.onend = () => resetAudioBtn(icon, button);
-          speechSynthesis.speak(u);
-        } else {
-          throw new Error('Speech Synthesis not supported');
-        }
-      } catch {
-        alert("La synthèse vocale n'est pas disponible sur votre navigateur.");
-        icon.classList.remove('fa-spinner', 'fa-spin');
-        icon.classList.add('fa-exclamation-circle');
-        button.disabled = false;
-      }
-    }
+  function toggleHint(hintId) {
+    const el = document.getElementById(hintId);
+    el.classList.toggle('hidden');
+  }
 
-    function toggleHint(hintId) {
-      const el = document.getElementById(hintId);
-      el.classList.toggle('hidden');
-    }
+  // --- Recording (webm -> base64) ---
+  function toggleRecording(qid) {
+    if (isRecording) stopRecording(qid);
+    else startRecording(qid);
+  }
 
-    // --- Recording (webm -> base64) ---
-    function toggleRecording(qid) {
-      if (isRecording) stopRecording(qid);
-      else startRecording(qid);
-    }
+  async function startRecording(qid) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const chunks = [];
+      recordStartAt = performance.now();
 
-    async function startRecording(qid) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-        const chunks = [];
-        recordStartAt = performance.now();
+      recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
 
-        recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        const duration = Math.max(1, Math.round((performance.now() - recordStartAt) / 1000));
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
 
-        recorder.onstop = () => {
-          const duration = Math.max(1, Math.round((performance.now() - recordStartAt) / 1000));
-          const blob = new Blob(chunks, { type: 'audio/webm' });
-          const url = URL.createObjectURL(blob);
+        const audioEl = document.getElementById(`${qid}-audio-playback`);
+        audioEl.src = url;
+        audioEl.classList.remove('hidden');
 
-          const audioEl = document.getElementById(`${qid}-audio-playback`);
-          audioEl.src = url;
-          audioEl.classList.remove('hidden');
-
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrl = String(reader.result); // data:audio/webm;base64,AAAA...
-            const [header, base64] = dataUrl.split(',');
-            const mimeMatch = header.match(/data:(.*?);base64/);
-            recordings[qid] = {
-              base64,
-              mimeType: mimeMatch ? mimeMatch[1] : 'audio/webm',
-              duration,
-              filename: `${qid}.webm`,
-            };
-            URL.revokeObjectURL(url);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = String(reader.result); // data:audio/webm;base64,AAAA...
+          const [header, base64] = dataUrl.split(',');
+          const mimeMatch = header.match(/data:(.*?);base64/);
+          recordings[qid] = {
+            base64,
+            mimeType: mimeMatch ? mimeMatch[1] : 'audio/webm',
+            duration,
+            filename: `${qid}.webm`,
           };
-          reader.readAsDataURL(blob);
-
-          recorder.stream.getTracks().forEach(t => t.stop());
+          URL.revokeObjectURL(url);
         };
+        reader.readAsDataURL(blob);
 
-        recorder.start();
-        isRecording = true;
-        updateRecordingUI(qid, true);
-      } catch (error) {
-        console.error('Error starting recording:', error);
-        alert("Impossible d'accéder au microphone. Veuillez vérifier les autorisations.");
-      }
+        recorder.stream.getTracks().forEach(t => t.stop());
+      };
+
+      recorder.start();
+      isRecording = true;
+      updateRecordingUI(qid, true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert("Impossible d'accéder au microphone. Veuillez vérifier les autorisations.");
     }
+  }
 
-    function stopRecording(qid) {
-      if (recorder && recorder.state !== "inactive") {
-        recorder.stop();
-        isRecording = false;
-        updateRecordingUI(qid, false);
-      }
+  function stopRecording(qid) {
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+      isRecording = false;
+      updateRecordingUI(qid, false);
     }
+  }
 
-    function updateRecordingUI(qid, isRec) {
-      const recordBtn = document.getElementById(`${qid}-record-btn`);
-      const statusDiv = document.getElementById(`${qid}-record-status`);
-      const icon = recordBtn.querySelector('i');
-      if (isRec) {
-        recordBtn.classList.replace('bg-red-500', 'bg-gray-700');
-        recordBtn.classList.add('animate-pulse');
-        icon.classList.replace('fa-microphone', 'fa-stop');
-        statusDiv.textContent = 'Enregistrement en cours...';
-      } else {
-        recordBtn.classList.replace('bg-gray-700', 'bg-red-500');
-        recordBtn.classList.remove('animate-pulse');
-        icon.classList.replace('fa-stop', 'fa-microphone');
-        statusDiv.textContent = 'Enregistrement terminé.';
-      }
+  function updateRecordingUI(qid, isRec) {
+    const recordBtn = document.getElementById(`${qid}-record-btn`);
+    const statusDiv = document.getElementById(`${qid}-record-status`);
+    const icon = recordBtn.querySelector('i');
+    if (isRec) {
+      recordBtn.classList.replace('bg-red-500', 'bg-gray-700');
+      recordBtn.classList.add('animate-pulse');
+      icon.classList.replace('fa-microphone', 'fa-stop');
+      statusDiv.textContent = 'Enregistrement en cours...';
+    } else {
+      recordBtn.classList.replace('bg-gray-700', 'bg-red-500');
+      recordBtn.classList.remove('animate-pulse');
+      icon.classList.replace('fa-stop', 'fa-microphone');
+      statusDiv.textContent = 'Enregistrement terminé.';
     }
+  }
 
-    // --- Send results to server ---
-    async function sendResultsToServer(payload) {
-      try {
-        const res = await fetch('/.netlify/functions/send-results', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        console.log('Résultats envoyés:', data);
-      } catch (err) {
-        console.error("Erreur d'envoi des résultats:", err);
-      }
-    }
-
-    // --- Grading and Results ---
-    function collectAndGradeAnswers() {
-      let score = 0, total = 0;
-      const questionsForMail = [];
-
-      // QCM
-      quizData.mcq.forEach((q, i) => {
-        const qid = `mcq-${i}`;
-        const userAnswer = document.querySelector(`input[name="${qid}"]:checked`)?.value || '';
-        const isCorrect = userAnswer === q.answer;
-        if (isCorrect) score++; total++;
-
-        document.getElementById(`${qid}-result`).innerHTML = isCorrect
-          ? `<p class="text-green-600 font-bold">Correct ! 👍 ${q.explanation}</p>`
-          : `<p class="text-red-600 font-bold">Oups... La bonne réponse était : "${q.answer}"</p><p class="text-gray-600">😅 → ${q.explanation}</p>`;
-
-        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
-        questionsForMail.push({
-          number: `QCM ${i + 1}`, fr: q.question, ko: '',
-          userAnswer, isCorrect,
-          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
-        });
+  // --- Send results to server (guarded for single send) ---
+  async function sendResultsToServer(payload) {
+    if (emailSent) return;        // ✅ 이미 보냈으면 무시
+    emailSent = true;             // ✅ 딱 한 번만 보내기
+    try {
+      const res = await fetch('/.netlify/functions/send-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-
-      // Fill-in
-      quizData.fillIn.forEach((q, i) => {
-        const qid = `fill-${i}`;
-        const userAnswer = document.getElementById(`${qid}-input`).value.trim();
-        const isCorrect = userAnswer === q.answer;
-        if (isCorrect) score++; total++;
-
-        document.getElementById(`${qid}-result`).innerHTML = isCorrect
-          ? `<p class="text-green-600 font-bold">Parfait !</p>`
-          : `<p class="text-red-600 font-bold">Oups, petit couac 😅 → La réponse correcte est : "${q.answer}"</p>`;
-
-        const koFull = q.sentence.replace('___', q.answer);
-        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
-        questionsForMail.push({
-          number: `FILL ${i + 1}`, fr: q.translation, ko: koFull,
-          userAnswer, isCorrect,
-          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
-        });
-      });
-
-      // Writing
-      quizData.writing.forEach((q, i) => {
-        const qid = `write-${i}`;
-        const userAnswer = document.getElementById(`${qid}-input`).value.trim();
-        const isCorrect = userAnswer.length > 0;
-        if (isCorrect) score++; total++;
-
-        document.getElementById(`${qid}-result`).innerHTML =
-          `<p class="text-blue-600">Réponse suggérée : "${q.answer}".</p>`;
-
-        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
-        questionsForMail.push({
-          number: `WR ${i + 1}`, fr: q.situation, ko: q.answer,
-          userAnswer, isCorrect,
-          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
-        });
-      });
-
-      // Listening (includes self-dictation & recording)
-      quizData.listening.forEach((q, i) => {
-        const qid = `listen-${i}`;
-        const userAnswerKo = document.getElementById(`${qid}-dictation`).value.trim().replace(/[.?]/g, '');
-        const isCorrectKo = userAnswerKo === q.ko.replace(/[.?]/g, '');
-        if (isCorrectKo) score++; total++;
-
-        const resultDiv = document.getElementById(`${qid}-result`);
-        let resultHTML = isCorrectKo
-          ? `<p class="text-green-600 font-bold">Dictée parfaite ! 👍</p>`
-          : `<p class="text-red-600 font-bold">Dictée - Oups... 😅 → La phrase correcte est : "${q.ko}"</p>`;
-        resultHTML += `<p class="text-blue-600 mt-1">Traduction : "${q.fr}"</p>`;
-        resultDiv.innerHTML = resultHTML;
-
-        const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
-        const rec = recordings[qid];
-        const selfDict = document.getElementById(`${qid}-selfdict`).value.trim();
-
-        const item = {
-          number: `LS ${i + 1}`, fr: q.fr, ko: q.ko,
-          userAnswer: userAnswerKo, isCorrect: isCorrectKo,
-          listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2,
-          selfDictation: selfDict
-        };
-        if (rec) item.recording = rec;
-
-        questionsForMail.push(item);
-      });
-
-      displayResults(score, total, questionsForMail);
+      const data = await res.json();
+      console.log('Résultats envoyés:', data);
+    } catch (err) {
+      console.error("Erreur d'envoi des résultats:", err);
     }
+  }
 
-    function displayResults(score, total, questionsForMail) {
-      document.getElementById('quiz-container').style.display = 'none';
-      document.querySelector('.flex.justify-between.items-center').style.display = 'none';
-      const resultsSection = document.getElementById('results-section');
+  // --- Build summary (정오표) ---
+  function buildSummaryHTML(questions) {
+    const groups = { QCM: [], FILL: [], WR: [], LS: [] };
+    questions.forEach(q => {
+      const type = String(q.number).split(' ')[0]; // "QCM","FILL","WR","LS"
+      groups[type]?.push(q);
+    });
 
-      const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-      let frMessage, icon;
-      if (percentage === 100) { frMessage = "Parfait absolu ! 👑🎉 Génie confirmé !"; icon = 'fa-crown text-yellow-500'; }
-      else if (percentage >= 80) { frMessage = "Très bien joué ! 👍 Presque un maître !"; icon = 'fa-thumbs-up text-green-500'; }
-      else if (percentage >= 60) { frMessage = "Pas mal du tout ! 😎 Encore un petit effort !"; icon = 'fa-glasses text-blue-500'; }
-      else { frMessage = "Allez, un petit café et on repart ! ☕💪"; icon = 'fa-coffee text-red-500'; }
+    const renderGroup = (title, arr) => {
+      if (!arr || arr.length === 0) return '';
+      const rows = arr.map(q => {
+        const ok = q.isCorrect ? '✅' : '❌';
+        const prompt = q.fr || q.ko || '';
+        const answerShown = q.ko ? `<div class="text-xs text-gray-500 mt-1"><b>Référence:</b> ${q.ko}</div>` : '';
+        const userShown = q.userAnswer ? `<div class="text-xs text-gray-500"><b>Votre réponse:</b> ${q.userAnswer}</div>` : '';
+        const selfDict = q.selfDictation ? `<div class="text-xs text-indigo-600 mt-1"><b>Re-dictée (non notée):</b> ${q.selfDictation}</div>` : '';
+        return `
+          <li class="border rounded-md p-3">
+            <div class="font-semibold">${ok} ${q.number}</div>
+            <div class="text-sm text-gray-700 mt-1">${prompt}</div>
+            ${answerShown}
+            ${userShown}
+            ${selfDict}
+          </li>
+        `;
+      }).join('');
+      return `
+        <div class="mt-6">
+          <h3 class="text-lg font-bold text-blue-700 mb-2">${title}</h3>
+          <ul class="space-y-2">${rows}</ul>
+        </div>
+      `;
+    };
 
-      resultsSection.innerHTML = `
-        <div class="bg-white p-8 rounded-xl shadow-2xl text-center">
+    return `
+      ${renderGroup('QCM', groups.QCM)}
+      ${renderGroup('Complète le mot', groups.FILL)}
+      ${renderGroup('Écriture', groups.WR)}
+      ${renderGroup('Écoute & Dictée', groups.LS)}
+    `;
+  }
+
+  // --- Grading and Results ---
+  function collectAndGradeAnswers() {
+    let score = 0, total = 0;
+    const questionsForMail = [];
+
+    // QCM
+    quizData.mcq.forEach((q, i) => {
+      const qid = `mcq-${i}`;
+      const userAnswer = document.querySelector(`input[name="${qid}"]:checked`)?.value || '';
+      const isCorrect = userAnswer === q.answer;
+      if (isCorrect) score++; total++;
+
+      document.getElementById(`${qid}-result`).innerHTML = isCorrect
+        ? `<p class="text-green-600 font-bold">Correct ! 👍 ${q.explanation}</p>`
+        : `<p class="text-red-600 font-bold">Oups... La bonne réponse était : "${q.answer}"</p><p class="text-gray-600">😅 → ${q.explanation}</p>`;
+
+      const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
+      questionsForMail.push({
+        number: `QCM ${i + 1}`, fr: q.question, ko: '',
+        userAnswer, isCorrect,
+        listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
+      });
+    });
+
+    // Fill-in
+    quizData.fillIn.forEach((q, i) => {
+      const qid = `fill-${i}`;
+      const userAnswer = document.getElementById(`${qid}-input`).value.trim();
+      const isCorrect = userAnswer === q.answer;
+      if (isCorrect) score++; total++;
+
+      document.getElementById(`${qid}-result`).innerHTML = isCorrect
+        ? `<p class="text-green-600 font-bold">Parfait !</p>`
+        : `<p class="text-red-600 font-bold">Oups, petit couac 😅 → La réponse correcte est : "${q.answer}"</p>`;
+
+      const koFull = q.sentence.replace('___', q.answer);
+      const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
+      questionsForMail.push({
+        number: `FILL ${i + 1}`, fr: q.translation, ko: koFull,
+        userAnswer, isCorrect,
+        listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
+      });
+    });
+
+    // Writing
+    quizData.writing.forEach((q, i) => {
+      const qid = `write-${i}`;
+      const userAnswer = document.getElementById(`${qid}-input`).value.trim();
+      const isCorrect = userAnswer.length > 0;
+      if (isCorrect) score++; total++;
+
+      document.getElementById(`${qid}-result`).innerHTML =
+        `<p class="text-blue-600">Réponse suggérée : "${q.answer}".</p>`;
+
+      const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
+      questionsForMail.push({
+        number: `WR ${i + 1}`, fr: q.situation, ko: q.answer,
+        userAnswer, isCorrect,
+        listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2
+      });
+    });
+
+    // Listening (includes self-dictation & recording)
+    quizData.listening.forEach((q, i) => {
+      const qid = `listen-${i}`;
+      const userAnswerKo = document.getElementById(`${qid}-dictation`).value.trim().replace(/[.?]/g, '');
+      const isCorrectKo = userAnswerKo === q.ko.replace(/[.?]/g, '');
+      if (isCorrectKo) score++; total++;
+
+      const resultDiv = document.getElementById(`${qid}-result`);
+      let resultHTML = isCorrectKo
+        ? `<p class="text-green-600 font-bold">Dictée parfaite ! 👍</p>`
+        : `<p class="text-red-600 font-bold">Dictée - Oups... 😅 → La phrase correcte est : "${q.ko}"</p>`;
+      resultHTML += `<p class="text-blue-600 mt-1">Traduction : "${q.fr}"</p>`;
+      resultDiv.innerHTML = resultHTML;
+
+      const s = stats[qid] || { listens:0, hint1:0, hint2:0 };
+      const rec = recordings[qid];
+      const selfDict = document.getElementById(`${qid}-selfdict`).value.trim();
+
+      const item = {
+        number: `LS ${i + 1}`, fr: q.fr, ko: q.ko,
+        userAnswer: userAnswerKo, isCorrect: isCorrectKo,
+        listenCount: s.listens, hint1Count: s.hint1, hint2Count: s.hint2,
+        selfDictation: selfDict
+      };
+      if (rec) item.recording = rec;
+
+      questionsForMail.push(item);
+    });
+
+    displayResults(score, total, questionsForMail);
+  }
+
+  function displayResults(score, total, questionsForMail) {
+    // 화면 전환
+    document.getElementById('quiz-container').style.display = 'none';
+    document.querySelector('.flex.justify-between.items-center').style.display = 'none';
+    const resultsSection = document.getElementById('results-section');
+
+    const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+    let frMessage, icon;
+    if (percentage === 100) { frMessage = "Parfait absolu ! 👑🎉 Génie confirmé !"; icon = 'fa-crown text-yellow-500'; }
+    else if (percentage >= 80) { frMessage = "Très bien joué ! 👍 Presque un maître !"; icon = 'fa-thumbs-up text-green-500'; }
+    else if (percentage >= 60) { frMessage = "Pas mal du tout ! 😎 Encore un petit effort !"; icon = 'fa-glasses text-blue-500'; }
+    else { frMessage = "Allez, un petit café et on repart ! ☕💪"; icon = 'fa-coffee text-red-500'; }
+
+    // ✅ 정오표(요약) HTML
+    const summaryHTML = buildSummaryHTML(questionsForMail);
+
+    resultsSection.innerHTML = `
+      <div class="bg-white p-8 rounded-xl shadow-2xl">
+        <div class="text-center">
           <i class="fas ${icon} text-6xl mb-4"></i>
           <h2 class="text-3xl font-bold text-blue-800 mb-2">${frMessage}</h2>
-          <p class="text-4xl font-bold text-gray-800 mb-6">Votre score : ${score} / ${total} (${percentage}%)</p>
-          <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105">
+          <p class="text-4xl font-bold text-gray-800">Votre score : ${score} / ${total} (${percentage}%)</p>
+        </div>
+
+        <div class="mt-8">
+          <h3 class="text-xl font-bold text-gray-800 mb-2">Résumé des réponses</h3>
+          <p class="text-sm text-gray-600 mb-4">✅ = correct, ❌ = incorrect — La re-dictée (Étape 6.4) n'est pas notée mais envoyée au professeur avec l'audio.</p>
+          ${summaryHTML}
+        </div>
+
+        <div class="mt-10 text-center">
+          <button onclick="window.location.reload()"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105">
             <i class="fas fa-redo-alt mr-2"></i> Recommencer
           </button>
         </div>
-      `;
-      resultsSection.style.display = 'block';
-      resultsSection.scrollIntoView({ behavior: 'smooth' });
+      </div>
+    `;
+    resultsSection.style.display = 'block';
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
 
-      // send payload
-      const endTime = new Date().toISOString();
-      const totalTimeSeconds = Math.max(1, Math.round((new Date(endTime) - new Date(sessionMeta.startTime)) / 1000));
-      const payload = {
-        studentName: document.getElementById('studentName').value.trim() || 'Élève',
-        startTime: sessionMeta.startTime,
-        endTime,
-        totalTimeSeconds,
-        questions: questionsForMail
-      };
-      sendResultsToServer(payload);
-    }
-  </script>
-</body>
-</html>
+    // ✅ 메일 전송은 딱 한 번만
+    const endTime = new Date().toISOString();
+    const totalTimeSeconds = Math.max(1, Math.round((new Date(endTime) - new Date(sessionMeta.startTime)) / 1000));
+    const payload = {
+      studentName: document.getElementById('studentName').value.trim() || 'Élève',
+      startTime: sessionMeta.startTime,
+      endTime,
+      totalTimeSeconds,
+      questions: questionsForMail
+    };
+    sendResultsToServer(payload); // 내부에서 emailSent 가드로 1회만 전송
+  }
+</script>
