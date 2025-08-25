@@ -294,11 +294,10 @@
                                         <div id="hint-box-${partIndex}-${qIndex}" class="mb-2 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg hidden"></div>
                                         <input type="text" class="w-full p-2 border-2 rounded-lg" onchange="updateAnswer(${partIndex}, ${qIndex}, this.value)">`;
                     } else if (part.type === 'listening') {
-                        const hintFr = `<strong>Indice (힌트) :</strong> C'est une phrase sur "${q.fr}"`;
                         questionsHtml += `<p class="text-lg mb-3"><strong>Q${qIndex + 1}:</strong> Écoutez bien et répondez.</p>
                             <div class="flex items-center gap-4 mb-4">
                                 <button class="control-button listen-button" onclick="playAudio(this, '${q.sentence}'); state.parts[${partIndex}].questions[${qIndex}].listenCount++"><i class="fas fa-volume-high"></i> Écouter</button>
-                                <button class="control-button hint-button" onclick="showHint(${partIndex}, ${qIndex}, '${hintFr.replace(/'/g, "\\'")}')">🙏 Aidez moi!</button>
+                                <button class="control-button hint-button" onclick="showListeningHint(${partIndex}, ${qIndex})">🙏 Aidez moi!</button>
                             </div>
                             <div id="hint-box-${partIndex}-${qIndex}" class="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg hidden"></div>
                             <p class="font-semibold mt-4 mb-2">1. C'est du présent, passé ou futur ?</p>
@@ -372,8 +371,10 @@
         function updateDictation(partIndex, qIndex, value) { state.parts[partIndex].questions[qIndex].userDictation = value.trim(); }
         function updateSelfDictation(partIndex, qIndex, value) { state.parts[partIndex].questions[qIndex].userSelfDictation = value.trim(); }
 
-        function showHint(partIndex, qIndex, hintText) {
-            state.parts[partIndex].questions[qIndex].hint1Count++;
+        function showListeningHint(partIndex, qIndex) {
+            const question = state.parts[partIndex].questions[qIndex];
+            question.hint1Count++;
+            const hintText = `<strong>Indice (힌트) :</strong> C'est une phrase sur "${question.fr}"`;
             const hintBox = document.getElementById(`hint-box-${partIndex}-${qIndex}`);
             hintBox.innerHTML = hintText;
             hintBox.classList.remove('hidden');
