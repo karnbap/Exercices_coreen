@@ -8,13 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/assets/style.css">
     <style>
+        /* Base styles for option buttons */
         .option-btn {
             transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
         }
         .option-btn.selected {
-            background-color: #3b82f6; /* bg-blue-600 */
+            background-color: #3b82f6; /* bg-blue-500 */
             color: white;
             transform: scale(1.05);
+            border-color: #2563eb; /* bg-blue-700 */
         }
         .option-btn.correct {
             background-color: #22c55e; /* bg-green-500 */
@@ -24,16 +27,62 @@
             background-color: #ef4444; /* bg-red-500 */
             color: white;
         }
+
+        /* Page visibility */
         .page-container {
             display: none;
         }
         .page-container.active {
             display: block;
         }
-        .listen-button:disabled {
-            background-color: #9ca3af;
-            cursor: not-allowed;
+
+        /* Enhanced button styles */
+        .control-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem; /* 8px */
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem; /* 8px */
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
         }
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .control-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .control-button:disabled {
+            background-color: #9ca3af; /* bg-gray-400 */
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Specific button colors */
+        .listen-button { background-color: #3b82f6; } /* bg-blue-500 */
+        .listen-button:hover { background-color: #2563eb; } /* bg-blue-600 */
+        
+        .record-button { background-color: #ef4444; } /* bg-red-500 */
+        .record-button:hover { background-color: #dc2626; } /* bg-red-600 */
+
+        .stop-button { background-color: #4b5563; } /* bg-gray-600 */
+        .stop-button:hover { background-color: #1f2937; } /* bg-gray-800 */
+
+        .hint-button { background-color: #f59e0b; color: #422006;} /* bg-amber-500 */
+        .hint-button:hover { background-color: #d97706; } /* bg-amber-600 */
+
+        .nav-button { background-color: #6b7280; } /* bg-gray-500 */
+        .nav-button:hover { background-color: #4b5563; } /* bg-gray-600 */
+        
+        .finish-button { background-color: #22c55e; } /* bg-green-500 */
+        .finish-button:hover { background-color: #16a34a; } /* bg-green-600 */
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -281,7 +330,7 @@
                     questionsHtml += `<div class="mb-6 border-t pt-4">`;
                     if (part.type === 'mcq') {
                         questionsHtml += `<p class="text-lg mb-3"><strong>Q${qIndex + 1}:</strong> "${q.question}"</p><div class="grid grid-cols-2 gap-3">`;
-                        q.options.forEach(opt => { questionsHtml += `<button class="option-btn p-3 border rounded-lg" onclick="selectAnswer(${partIndex}, ${qIndex}, this)">${opt}</button>`; });
+                        q.options.forEach(opt => { questionsHtml += `<button class="option-btn p-3 border rounded-lg bg-gray-100 hover:bg-gray-200" onclick="selectAnswer(${partIndex}, ${qIndex}, this)">${opt}</button>`; });
                         questionsHtml += `</div>`;
                     } else if (part.type === 'fib') {
                         const questionText = `Le verbe <span class="font-bold">${q.verb.inf} (${q.verb.fr})</span> au <span class="font-bold">${q.tense}</span> ?`;
@@ -297,11 +346,11 @@
                         questionsHtml += `<p class="text-lg mb-3"><strong>Q${qIndex + 1}:</strong> Écoutez bien et répondez.</p>
                             <div class="flex items-center gap-4 mb-4">
                                 <button class="control-button listen-button" onclick="playAudio(this, '${q.sentence}'); state.parts[${partIndex}].questions[${qIndex}].listenCount++"><i class="fas fa-volume-high"></i> Écouter</button>
-                                <button class="control-button hint-button" onclick="showListeningHint(${partIndex}, ${qIndex})">🙏 Aidez moi!</button>
+                                <button class="control-button hint-button" onclick="showListeningHint(${partIndex}, ${qIndex})">Aide 🙏</button>
                             </div>
                             <div id="hint-box-${partIndex}-${qIndex}" class="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg hidden"></div>
                             <p class="font-semibold mt-4 mb-2">1. C'est du présent, passé ou futur ?</p>
-                            <div class="grid grid-cols-3 gap-3">${['Présent (현재)', 'Passé (과거)', 'Futur (미래)'].map(t => `<button class="option-btn p-2 border rounded-lg" onclick="selectTense(${partIndex}, ${qIndex}, this, '${t}')">${t}</button>`).join('')}</div>
+                            <div class="grid grid-cols-3 gap-3">${['Présent (현재)', 'Passé (과거)', 'Futur (미래)'].map(t => `<button class="option-btn p-2 border rounded-lg bg-gray-100 hover:bg-gray-200" onclick="selectTense(${partIndex}, ${qIndex}, this, '${t}')">${t}</button>`).join('')}</div>
                             <p class="font-semibold mt-4 mb-2">2. Écrivez la phrase (받아쓰기)</p>
                             <textarea class="w-full p-2 border-2 rounded-lg" rows="2" onchange="updateDictation(${partIndex}, ${qIndex}, this.value)"></textarea>
                             <p class="font-semibold mt-4 mb-2">3. Enregistrez votre voix (목소리 녹음 - non noté)</p>
@@ -472,8 +521,8 @@
             const container = document.getElementById(`recorder-${partIndex}-${qIndex}`);
             if (!container || container.innerHTML !== '') return;
             container.innerHTML = `<div class="flex items-center gap-4">
-                    <button id="record-btn-${partIndex}-${qIndex}" class="control-button record-button"><i class="fas fa-microphone"></i></button>
-                    <button id="stop-btn-${partIndex}-${qIndex}" class="control-button stop-button hidden"><i class="fas fa-stop"></i></button>
+                    <button id="record-btn-${partIndex}-${qIndex}" class="control-button record-button"><i class="fas fa-microphone"></i> Enregistrer</button>
+                    <button id="stop-btn-${partIndex}-${qIndex}" class="control-button stop-button hidden"><i class="fas fa-stop"></i> Arrêter</button>
                     <div id="audio-playback-${partIndex}-${qIndex}"></div></div>`;
             const recordBtn = document.getElementById(`record-btn-${partIndex}-${qIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${partIndex}-${qIndex}`);
