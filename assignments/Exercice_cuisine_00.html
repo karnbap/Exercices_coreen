@@ -853,5 +853,85 @@
       closeModal();
     });
   </script>
+<script>
+/**
+ * Réponse → Indice(힌트)로 버튼 라벨 변경 + 각 문항 힌트(불어/한국어) 주입
+ * - 기존 toggleAnswer('qX_answer') 로직/카운트 그대로 사용
+ * - 기존 answer-box 배경색/스타일 유지, 내부 내용만 힌트로 교체
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  // 1) "Réponse" 버튼 텍스트를 "Indice"로 일괄 변경
+  document.querySelectorAll('button[onclick^="toggleAnswer(\'q"][onclick$="_answer\')"]').forEach(btn => {
+    btn.textContent = 'Indice';
+    // 원하면 버튼 색도 통일할 수 있어요 (주석 해제)
+    // btn.classList.remove('bg-indigo-500','bg-purple-500');
+    // btn.classList.add('bg-amber-500','hover:bg-amber-600');
+  });
+
+  // 2) 문항별 힌트(불어/한국어) 주입
+  const HINTS = {
+    1: { fr: `Mot interrogatif pour "quoi" (objet) → "뭐/무엇" + 를. Contraction fréquente: "뭘".`,
+         ko: `‘무엇(=뭐)’ + 목적격 조사 ‘를’ → ‘뭘’(구어체).` },
+    2: { fr: `Négation avec "안" + passé -았/었어요 du verbe rencontrer(만나다).`,
+         ko: `부정 "안" + ‘만나다’ 과거형(만났어요) → "안 만났어요".` },
+    3: { fr: `"쌀" = riz cru (non cuit). "밥" = riz cuit.`,
+         ko: `‘쌀’은 날쌀, ‘밥’은 지은 밥.` },
+    4: { fr: `"자주" = souvent (adverbe de fréquence).`,
+         ko: `빈도 부사 ‘자주’ = 자주(종종).` },
+    5: { fr: `Entrer = "들어가다". Présent poli: "들어가요".`,
+         ko: `‘들어가다’의 현재 존댓말 → ‘들어가요’.` },
+
+    6: { fr: `와/과: après voyelle → "와". (김치 + 와)`,
+         ko: `모음 뒤에는 ‘와’, 자음 뒤에는 ‘과’.` },
+    7: { fr: `Sujet 이/가: après voyelle → "가". (친구 + 가)`,
+         ko: `주격 조사: 모음 뒤 ‘가’, 자음 뒤 ‘이’.` },
+    8: { fr: `Thème 은/는: après consonne → "은". (사람 + 은)`,
+         ko: `주제 조사: 받침 있으면 ‘은’, 없으면 ‘는’.` },
+    9: { fr: `Objet 을/를: après consonne → "을". (밥 + 을)`,
+         ko: `목적격 조사: 받침 있으면 ‘을’, 없으면 ‘를’.` },
+    10:{ fr: `Destination/lieu d’arrivée avec verbe de mouvement → "에".`,
+         ko: `이동/도착 지점에는 ‘에’를 사용.` },
+
+    11:{ fr: `"잘 보여요?" = "Tu me vois bien ?" (bien + voir).`,
+         ko: `‘잘 보이다?’ = “잘 보여요?” (상대가 잘 보이는지 묻기).` },
+    12:{ fr: `"쌀" = riz, pas "pâtes".`,
+         ko: `‘쌀’은 밥쌀, 파스타는 ‘파스타/국수’.` },
+    13:{ fr: `"안 만났어요" = ne pas avoir rencontré (négation).`,
+         ko: `부정 ‘안’ + 만나다 과거 → ‘안 만났어요’.` },
+    14:{ fr: `"가끔" = parfois, de temps en temps.`,
+         ko: `‘가끔’ = sometimes(때때로).` },
+    15:{ fr: `"집" = maison, "식당" = restaurant (ne pas confondre).`,
+         ko: `‘집’=house, ‘식당’=restaurant.` },
+
+    16:{ fr: `Enchaînement avec "-고" et négation "안": …고 …안 ….`,
+         ko: `연결 어미 ‘-고’ + 부정 ‘안’ 조합 주의.` },
+    17:{ fr: `"하고" = et (pour noms), "같이" = ensemble.`,
+         ko: `나열 ‘하고’, 함께 ‘같이’.` },
+    18:{ fr: `Connexion d’actions: 넣-고 → 볶아요.`,
+         ko: `연결 ‘-고’: 넣고 볶아요.` },
+    19:{ fr: `Ordre naturel: 만나고 → (puis) 봐요.`,
+         ko: `먼저 만나고, 그다음 본다.` },
+    20:{ fr: `Mouvement d’abord (entrer), puis action ensemble.`,
+         ko: `먼저 들어가고, 그다음 같이 먹어요.` }
+  };
+
+  for (let i = 1; i <= 20; i++) {
+    const box = document.getElementById(`q${i}_answer`);
+    if (!box || !HINTS[i]) continue;
+
+    // 기존 정답/설명 텍스트를 힌트로 교체(불어+한국어)
+    // 색상/테두리 등 기존 answer-box 스타일은 그대로 유지됩니다.
+    box.innerHTML = `
+      <div class="space-y-1">
+        <div class="font-semibold">Indice <span class="text-xs text-gray-500">(힌트)</span></div>
+        <div><b>FR :</b> ${HINTS[i].fr}</div>
+        <div><b>KO :</b> ${HINTS[i].ko}</div>
+      </div>
+    `;
+  }
+});
+</script>
+
 </body>
 </html>
+
