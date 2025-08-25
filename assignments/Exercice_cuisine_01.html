@@ -78,3 +78,503 @@
           <div class="mt-4 text-right">
             <button onclick="toggleAnswer('q3_answer')" class="bg-indigo-500 text-white py-1 px-4 rounded-md hover:bg-indigo-600 transition">Réponse</button>
           </div>
+          <div id="q3_answer" class="answer-box mt-3 p-3 bg-indigo-100 text-indigo-800 rounded-lg">
+            <strong>Réponse :</strong> 쌀<br><strong>Phrase :</strong> 저는 쌀을 자주 먹어요. (Je mange souvent du riz.)
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">4. Écoutez et complétez avec l'adverbe.</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q4" data-text="한국 사람들은 김치찌개를 자주 먹어요.">🔊</button>
+            <p class="text-xl font-medium">한국 사람들은 김치찌개를
+              <input type="text" id="q4_input" class="border-b-2 border-gray-300 focus:border-indigo-500 outline-none w-20 text-center bg-transparent"> 먹어요.
+            </p>
+          </div>
+          <div class="mt-4 text-right">
+            <button onclick="toggleAnswer('q4_answer')" class="bg-indigo-500 text-white py-1 px-4 rounded-md hover:bg-indigo-600 transition">Réponse</button>
+          </div>
+          <div id="q4_answer" class="answer-box mt-3 p-3 bg-indigo-100 text-indigo-800 rounded-lg">
+            <strong>Réponse :</strong> 자주<br><strong>Phrase :</strong> 한국 사람들은 김치찌개를 자주 먹어요.
+          </div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">5. Écoutez et complétez avec le verbe.</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q5" data-text="저는 식당에 들어가요.">🔊</button>
+            <p class="text-xl font-medium">저는 식당에
+              <input type="text" id="q5_input" class="border-b-2 border-gray-300 focus:border-indigo-500 outline-none w-28 text-center bg-transparent">.
+            </p>
+          </div>
+          <div class="mt-4 text-right">
+            <button onclick="toggleAnswer('q5_answer')" class="bg-indigo-500 text-white py-1 px-4 rounded-md hover:bg-indigo-600 transition">Réponse</button>
+          </div>
+          <div id="q5_answer" class="answer-box mt-3 p-3 bg-indigo-100 text-indigo-800 rounded-lg">
+            <strong>Réponse :</strong> 들어가요<br><strong>Phrase :</strong> 저는 식당에 들어가요.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exercice 2 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-gray-700 border-l-4 border-cyan-500 pl-4">Exercice 2 : Choisissez la bonne particule (조사 선택하기)</h2>
+      <div class="space-y-6">
+        <!-- Q6 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">6. Écoutez et choisissez la particule pour "et".</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q6" data-text="김치와 돼지고기가 들어가요.">🔊</button>
+            <p class="text-xl font-medium">김치<span id="q6_blank" class="font-bold text-cyan-600">__</span> 돼지고기가 들어가요.</p>
+          </div>
+          <div class="flex space-x-4 mt-4" id="q6_options">
+            <button onclick="checkParticle('q6','와',true)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">와</button>
+            <button onclick="checkParticle('q6','과',false)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">과</button>
+          </div>
+          <div id="q6_answer" class="answer-box mt-3 p-3 bg-cyan-100 text-cyan-800 rounded-lg">
+            <strong>Réponse :</strong> 와.<br><strong>Explication :</strong> Après une voyelle (김치), on utilise '와'.
+          </div>
+        </div>
+
+        <!-- Q7 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">7. Écoutez et choisissez la particule de sujet.</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q7" data-text="제 친구가 영화를 봐요.">🔊</button>
+            <p class="text-xl font-medium">제 친구<span id="q7_blank" class="font-bold text-cyan-600">__</span> 영화를 봐요.</p>
+          </div>
+          <div class="flex space-x-4 mt-4" id="q7_options">
+            <button onclick="checkParticle('q7','를',false)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">를</button>
+            <button onclick="checkParticle('q7','가',true)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">가</button>
+          </div>
+          <div id="q7_answer" class="answer-box mt-3 p-3 bg-cyan-100 text-cyan-800 rounded-lg">
+            <strong>Réponse :</strong> 가.<br><strong>Explication :</strong> '친구' (voyelle) est le sujet, on utilise '가'.
+          </div>
+        </div>
+
+        <!-- Q8 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">8. Écoutez et choisissez la particule de thème.</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q8" data-text="한국 사람들은 김치찌개를 자주 먹어요.">🔊</button>
+            <p class="text-xl font-medium">한국 사람<span id="q8_blank" class="font-bold text-cyan-600">__</span> 김치찌개를 자주 먹어요.</p>
+          </div>
+          <div class="flex space-x-4 mt-4" id="q8_options">
+            <button onclick="checkParticle('q8','은',true)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">은</button>
+            <button onclick="checkParticle('q8','는',false)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">는</button>
+          </div>
+          <div id="q8_answer" class="answer-box mt-3 p-3 bg-cyan-100 text-cyan-800 rounded-lg">
+            <strong>Réponse :</strong> 은.<br><strong>Explication :</strong> Après une consonne (사람), on utilise '은'.
+          </div>
+        </div>
+
+        <!-- Q9 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">9. Écoutez et choisissez la particule d'objet (COD).</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q9" data-text="저는 밥을 먹어요.">🔊</button>
+            <p class="text-xl font-medium">저는 밥<span id="q9_blank" class="font-bold text-cyan-600">__</span> 먹어요.</p>
+          </div>
+          <div class="flex space-x-4 mt-4" id="q9_options">
+            <button onclick="checkParticle('q9','을',true)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">을</button>
+            <button onclick="checkParticle('q9','를',false)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">를</button>
+          </div>
+          <div id="q9_answer" class="answer-box mt-3 p-3 bg-cyan-100 text-cyan-800 rounded-lg">
+            <strong>Réponse :</strong> 을.<br><strong>Explication :</strong> Après une consonne (밥), on utilise '을'.
+          </div>
+        </div>
+
+        <!-- Q10 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">10. Écoutez et choisissez la particule de lieu/destination.</p>
+          <div class="flex items-center space-x-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q10" data-text="저는 집에 들어가요.">🔊</button>
+            <p class="text-xl font-medium">저는 집<span id="q10_blank" class="font-bold text-cyan-600">__</span> 들어가요.</p>
+          </div>
+          <div class="flex space-x-4 mt-4" id="q10_options">
+            <button onclick="checkParticle('q10','에',true)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">에</button>
+            <button onclick="checkParticle('q10','에서',false)" class="particle-btn flex-1 bg-gray-200 hover:bg-cyan-200 text-gray-800 font-bold py-2 px-4 rounded">에서</button>
+          </div>
+          <div id="q10_answer" class="answer-box mt-3 p-3 bg-cyan-100 text-cyan-800 rounded-lg">
+            <strong>Réponse :</strong> 에.<br><strong>Explication :</strong> Pour une destination (verbe de mouvement), on utilise '에'.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exercice 3 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-gray-700 border-l-4 border-green-500 pl-4">Exercice 3 : Vrai ou Faux (O/X 퀴즈)</h2>
+      <div class="space-y-6">
+        <!-- Q11 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">11. Écoutez la question. L'affirmation est-elle la bonne traduction ?</p>
+          <div class="flex items-center space-x-4 mb-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q11" data-text="잘 보여요?">🔊</button>
+            <p class="italic text-gray-600">Affirmation : "Tu me vois bien ?"</p>
+          </div>
+          <div class="flex space-x-4" id="q11_options">
+            <button onclick="checkTrueFalse('q11',true)" class="flex-1 bg-blue-200 hover:bg-blue-300 text-blue-800 font-bold py-2 px-4 rounded">Vrai (O)</button>
+            <button onclick="checkTrueFalse('q11',false)" class="flex-1 bg-red-200 hover:bg-red-300 text-red-800 font-bold py-2 px-4 rounded">Faux (X)</button>
+          </div>
+          <div id="q11_answer" class="answer-box mt-3 p-3 bg-green-100 text-green-800 rounded-lg">
+            <strong>Réponse :</strong> Vrai (O).
+          </div>
+        </div>
+
+        <!-- Q12 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">12. Écoutez la phrase. L'affirmation est-elle correcte ?</p>
+          <div class="flex items-center space-x-4 mb-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q12" data-text="저는 쌀을 자주 먹어요.">🔊</button>
+            <p class="italic text-gray-600">Affirmation : "Je mange souvent des pâtes."</p>
+          </div>
+          <div class="flex space-x-4" id="q12_options">
+            <button onclick="checkTrueFalse('q12',false)" class="flex-1 bg-blue-200 hover:bg-blue-300 text-blue-800 font-bold py-2 px-4 rounded">Vrai (O)</button>
+            <button onclick="checkTrueFalse('q12',true)" class="flex-1 bg-red-200 hover:bg-red-300 text-red-800 font-bold py-2 px-4 rounded">Faux (X)</button>
+          </div>
+          <div id="q12_answer" class="answer-box mt-3 p-3 bg-red-100 text-red-800 rounded-lg">
+            <strong>Réponse :</strong> Faux (X).
+          </div>
+        </div>
+
+        <!-- Q13 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">13. Écoutez la phrase. L'affirmation est-elle correcte ?</p>
+          <div class="flex items-center space-x-4 mb-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q13" data-text="제 친구가 친구들을 안 만났어요.">🔊</button>
+            <p class="italic text-gray-600">Affirmation : "Mon ami a rencontré ses amis."</p>
+          </div>
+          <div class="flex space-x-4" id="q13_options">
+            <button onclick="checkTrueFalse('q13',false)" class="flex-1 bg-blue-200 hover:bg-blue-300 text-blue-800 font-bold py-2 px-4 rounded">Vrai (O)</button>
+            <button onclick="checkTrueFalse('q13',true)" class="flex-1 bg-red-200 hover:bg-red-300 text-red-800 font-bold py-2 px-4 rounded">Faux (X)</button>
+          </div>
+          <div id="q13_answer" class="answer-box mt-3 p-3 bg-red-100 text-red-800 rounded-lg">
+            <strong>Réponse :</strong> Faux (X).
+          </div>
+        </div>
+
+        <!-- Q14 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">14. Écoutez la phrase. L'affirmation est-elle correcte ?</p>
+          <div class="flex items-center space-x-4 mb-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q14" data-text="프랑스 사람들은 바게트를 가끔 먹어요.">🔊</button>
+            <p class="italic text-gray-600">Affirmation : "Les Français mangent parfois de la baguette."</p>
+          </div>
+          <div class="flex space-x-4" id="q14_options">
+            <button onclick="checkTrueFalse('q14',true)" class="flex-1 bg-blue-200 hover:bg-blue-300 text-blue-800 font-bold py-2 px-4 rounded">Vrai (O)</button>
+            <button onclick="checkTrueFalse('q14',false)" class="flex-1 bg-red-200 hover:bg-red-300 text-red-800 font-bold py-2 px-4 rounded">Faux (X)</button>
+          </div>
+          <div id="q14_answer" class="answer-box mt-3 p-3 bg-green-100 text-green-800 rounded-lg">
+            <strong>Réponse :</strong> Vrai (O).
+          </div>
+        </div>
+
+        <!-- Q15 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">15. Écoutez la phrase. L'affirmation est-elle correcte ?</p>
+          <div class="flex items-center space-x-4 mb-4">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q15" data-text="저는 집에 들어가요.">🔊</button>
+            <p class="italic text-gray-600">Affirmation : "J'entre dans un restaurant."</p>
+          </div>
+          <div class="flex space-x-4" id="q15_options">
+            <button onclick="checkTrueFalse('q15',false)" class="flex-1 bg-blue-200 hover:bg-blue-300 text-blue-800 font-bold py-2 px-4 rounded">Vrai (O)</button>
+            <button onclick="checkTrueFalse('q15',true)" class="flex-1 bg-red-200 hover:bg-red-300 text-red-800 font-bold py-2 px-4 rounded">Faux (X)</button>
+          </div>
+          <div id="q15_answer" class="answer-box mt-3 p-3 bg-red-100 text-red-800 rounded-lg">
+            <strong>Réponse :</strong> Faux (X).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exercice 4 -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4 text-gray-700 border-l-4 border-purple-500 pl-4">Exercice 4 : Dictée et Combinaison (받아쓰기 및 문장 연결)</h2>
+      <div class="space-y-6">
+        <!-- Q16 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">16. <strong>Dictée :</strong> Écoutez et écrivez la phrase complète.</p>
+          <div class="flex items-center space-x-4 mb-3">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q16" data-text="저는 친구를 안 만나고 영화를 안 봤어요.">🔊</button>
+            <input type="text" id="q16_input" class="w-full p-2 border-2 border-gray-300 rounded-md focus:border-purple-500 outline-none" placeholder="Écrivez ce que vous entendez...">
+          </div>
+          <div class="mt-4 text-right"><button onclick="toggleAnswer('q16_answer')" class="bg-purple-500 text-white py-1 px-4 rounded-md hover:bg-purple-600 transition">Réponse</button></div>
+          <div id="q16_answer" class="answer-box mt-3 p-3 bg-purple-100 text-purple-800 rounded-lg">
+            <strong>Phrase :</strong> 저는 친구를 안 만나고 영화를 안 봤어요.
+          </div>
+        </div>
+
+        <!-- Q17 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">17. <strong>Dictée :</strong> Écoutez et écrivez la phrase complète.</p>
+          <div class="flex items-center space-x-4 mb-3">
+            <button class="audio-btn bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                    data-audio-id="q17" data-text="김치하고 밥을 같이 먹어요.">🔊</button>
+            <input type="text" id="q17_input" class="w-full p-2 border-2 border-gray-300 rounded-md focus:border-purple-500 outline-none" placeholder="Écrivez ce que vous entendez...">
+          </div>
+          <div class="mt-4 text-right"><button onclick="toggleAnswer('q17_answer')" class="bg-purple-500 text-white py-1 px-4 rounded-md hover:bg-purple-600 transition">Réponse</button></div>
+          <div id="q17_answer" class="answer-box mt-3 p-3 bg-purple-100 text-purple-800 rounded-lg">
+            <strong>Phrase :</strong> 김치하고 밥을 같이 먹어요.
+          </div>
+        </div>
+
+        <!-- Q18 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">18. <strong>Combinaison (-고) :</strong> Combinez les deux phrases.</p>
+          <div class="mb-4"><p class="text-xl font-medium">Phrase 1 : 돼지고기를 냄비에 넣어요.<br>Phrase 2 : 볶아요.</p></div>
+          <input type="text" id="q18_input" class="w-full p-2 border-2 border-gray-300 rounded-md focus:border-purple-500 outline-none" placeholder="Combinez les deux phrases ici...">
+          <div class="mt-4 text-right"><button onclick="toggleAnswer('q18_answer')" class="bg-purple-500 text-white py-1 px-4 rounded-md hover:bg-purple-600 transition">Réponse</button></div>
+          <div id="q18_answer" class="answer-box mt-3 p-3 bg-purple-100 text-purple-800 rounded-lg">
+            <strong>Réponse :</strong> 돼지고기를 냄비에 넣고 볶아요.
+          </div>
+        </div>
+
+        <!-- Q19 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">19. <strong>Combinaison (-고) :</strong> Combinez les deux phrases.</p>
+          <div class="mb-4"><p class="text-xl font-medium">Phrase 1 : 저는 친구를 만나요.<br>Phrase 2 : 영화를 봐요.</p></div>
+          <input type="text" id="q19_input" class="w-full p-2 border-2 border-gray-300 rounded-md focus:border-purple-500 outline-none" placeholder="Combinez les deux phrases ici...">
+          <div class="mt-4 text-right"><button onclick="toggleAnswer('q19_answer')" class="bg-purple-500 text-white py-1 px-4 rounded-md hover:bg-purple-600 transition">Réponse</button></div>
+          <div id="q19_answer" class="answer-box mt-3 p-3 bg-purple-100 text-purple-800 rounded-lg">
+            <strong>Réponse :</strong> 저는 친구를 만나고 영화를 봐요.
+          </div>
+        </div>
+
+        <!-- Q20 -->
+        <div class="bg-gray-50 p-5 rounded-lg shadow-sm">
+          <p class="mb-3 text-lg">20. <strong>Combinaison (-고) :</strong> Combinez les deux phrases.</p>
+          <div class="mb-4"><p class="text-xl font-medium">Phrase 1 : 식당에 들어가요.<br>Phrase 2 : 같이 먹어요.</p></div>
+          <input type="text" id="q20_input" class="w-full p-2 border-2 border-gray-300 rounded-md focus:border-purple-500 outline-none" placeholder="Combinez les deux phrases ici...">
+          <div class="mt-4 text-right"><button onclick="toggleAnswer('q20_answer')" class="bg-purple-500 text-white py-1 px-4 rounded-md hover:bg-purple-600 transition">Réponse</button></div>
+          <div id="q20_answer" class="answer-box mt-3 p-3 bg-purple-100 text-purple-800 rounded-lg">
+            <strong>Réponse :</strong> 식당에 들어가고 같이 먹어요.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /************ 오디오 유틸 ************/
+    const audioState = {
+      current: null,             // 현재 재생 중인 Audio
+      currentUrl: null,          // 현재 Blob URL
+      busyButtons: new Set(),    // 중복 클릭 방지
+      controllers: new Map(),    // fetch 취소용 AbortController
+    };
+
+    function safeResetButton(btn, originalHTML){
+      btn.classList.remove('loading');
+      btn.innerHTML = originalHTML;
+      btn.disabled = false;
+      audioState.busyButtons.delete(btn);
+    }
+
+    function stopAndCleanup(){
+      try{
+        if (audioState.current){
+          audioState.current.pause();
+          audioState.current.src = '';
+          audioState.current.load(); // Safari 메모리 누수 방지
+          audioState.current = null;
+        }
+        if (audioState.currentUrl){
+          URL.revokeObjectURL(audioState.currentUrl);
+          audioState.currentUrl = null;
+        }
+      }catch(e){ console.warn('cleanup error', e); }
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const bin = atob(base64);
+      const len = bin.length;
+      const bytes = new Uint8Array(len);
+      for (let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    }
+
+    function pcmToWav(pcmData, sampleRate){
+      const pcm16 = new Int16Array(pcmData);
+      const header = new ArrayBuffer(44);
+      const view = new DataView(header);
+      const write = (o,s)=>{ for(let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i)); };
+
+      write(0,'RIFF'); view.setUint32(4, 36+pcm16.byteLength, true);
+      write(8,'WAVE'); write(12,'fmt ');
+      view.setUint32(16,16,true); view.setUint16(20,1,true);
+      const ch=1; view.setUint16(22,ch,true);
+      view.setUint32(24,sampleRate,true);
+      view.setUint32(28,sampleRate*ch*2,true);
+      view.setUint16(32,ch*2,true);
+      view.setUint16(34,16,true);
+      write(36,'data'); view.setUint32(40, pcm16.byteLength, true);
+
+      return new Blob([header, pcm16], { type: 'audio/wav' });
+    }
+
+    async function fetchWithTimeout(url, options={}, timeoutMs=15000){
+      const controller = new AbortController();
+      const id = setTimeout(()=>controller.abort(), timeoutMs);
+      const merged = { ...options, signal: controller.signal };
+      const res = await fetch(url, merged);
+      clearTimeout(id);
+      return res;
+    }
+
+    async function generateAndPlayAudio(text, btn){
+      if (audioState.busyButtons.has(btn)) return; // 버튼별 중복 방지
+      audioState.busyButtons.add(btn);
+
+      const originalHTML = btn.innerHTML;
+      btn.classList.add('loading');
+      btn.disabled = true;
+      btn.innerHTML = '…';
+
+      // 이전 재생/리소스 정리
+      stopAndCleanup();
+
+      // 버튼별 진행 중 fetch 취소 세팅
+      const id = btn.dataset.audioId || crypto.randomUUID();
+      const prevController = audioState.controllers.get(id);
+      if (prevController) prevController.abort();
+      const controller = new AbortController();
+      audioState.controllers.set(id, controller);
+
+      try {
+        const res = await fetchWithTimeout('/.netlify/functions/generate-audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+          signal: controller.signal
+        }, 15000);
+
+        if (!res.ok) {
+          let msg = `HTTP ${res.status}`;
+          try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+          throw new Error(msg);
+        }
+
+        const result = await res.json();
+
+        // 백엔드가 mp3/wav url을 줄 수도, base64 PCM을 줄 수도 있다는 전제의 안전 처리
+        let blobUrl = null;
+
+        if (result.audioUrl && typeof result.audioUrl === 'string') {
+          // (선호) 서버에서 이미 호스팅된 오디오 URL을 반환한 경우
+          blobUrl = result.audioUrl;
+        } else if (result.audioData) {
+          const mimeType = result.mimeType || 'audio/wav;rate=24000';
+          if (mimeType.startsWith('audio/')) {
+            const rateMatch = mimeType.match(/rate=(\d+)/);
+            const sr = rateMatch ? parseInt(rateMatch[1],10) : 24000;
+            const pcm = base64ToArrayBuffer(result.audioData);
+            const wav = pcmToWav(pcm, sr);
+            blobUrl = URL.createObjectURL(wav);
+          } else {
+            throw new Error('Invalid mimeType in response');
+          }
+        } else {
+          throw new Error('No audio payload in response');
+        }
+
+        audioState.currentUrl = blobUrl;
+        const audio = new Audio(blobUrl);
+        audioState.current = audio;
+
+        // 재생 이벤트 핸들링 (모든 경로에서 버튼 상태 복원)
+        const finalize = () => safeResetButton(btn, originalHTML);
+        audio.addEventListener('ended', () => { finalize(); stopAndCleanup(); }, { once:true });
+        audio.addEventListener('error', () => { finalize(); stopAndCleanup(); }, { once:true });
+
+        // iOS/Safari 재생 거부 대비: play() Promise 에러 처리
+        try {
+          await audio.play();
+        } catch (err) {
+          finalize();
+          stopAndCleanup();
+          console.warn('Autoplay/gesture blocked or play error:', err);
+          alert('브라우저가 재생을 막았습니다. 버튼을 다시 한 번 눌러 주세요.');
+          return;
+        }
+
+      } catch (e) {
+        console.error('Audio generation/playback error:', e);
+        safeResetButton(btn, originalHTML);
+      } finally {
+        // 이 버튼의 fetch 컨트롤러는 정리
+        audioState.controllers.delete(id);
+      }
+    }
+
+    /************ UI 로직(답안 박스 토글/채점) ************/
+    function toggleAnswer(id){
+      document.getElementById(id)?.classList.toggle('show');
+    }
+
+    function checkParticle(qId, chosen, isCorrect){
+      const answerBox = document.getElementById(qId + '_answer');
+      const options = document.getElementById(qId + '_options');
+      const blank = document.getElementById(qId + '_blank');
+
+      if (blank) blank.textContent = chosen;
+      if (answerBox) answerBox.classList.add('show');
+
+      options?.querySelectorAll('button')?.forEach(btn=>{
+        btn.disabled = true;
+        if (btn.textContent === chosen) {
+          btn.classList.remove('bg-gray-200','hover:bg-cyan-200');
+          btn.classList.add(isCorrect ? 'bg-green-500' : 'bg-red-500','text-white');
+          if (blank) blank.classList.add(isCorrect ? 'text-green-600' : 'text-red-600');
+        } else {
+          btn.classList.add('opacity-50');
+        }
+      });
+    }
+
+    function checkTrueFalse(qId, isChoiceCorrect){
+      const answerBox = document.getElementById(qId + '_answer');
+      const options = document.getElementById(qId + '_options');
+      answerBox?.classList.add('show');
+      options?.querySelectorAll('button')?.forEach(btn=>{
+        btn.disabled = true;
+        const isVrai = btn.textContent.includes('Vrai');
+        const isCorrectBtn = (isVrai && isChoiceCorrect) || (!isVrai && !isChoiceCorrect);
+        if (isCorrectBtn) btn.classList.add('ring-4','ring-green-500');
+        else btn.classList.add('opacity-50');
+      });
+    }
+
+    /************ 이벤트 바인딩 ************/
+    // DOMContentLoaded 보장 후 바인딩 (일부 브라우저에서 조기 바인딩 이슈 예방)
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.querySelectorAll('.audio-btn').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const text = btn.dataset.text || '';
+          generateAndPlayAudio(text, btn);
+        });
+      });
+      // 페이지 떠날 때 리소스 해제
+      window.addEventListener('pagehide', stopAndCleanup);
+      window.addEventListener('beforeunload', stopAndCleanup);
+    });
+  </script>
+</body>
+</html>
