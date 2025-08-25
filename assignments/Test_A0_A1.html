@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국어 실력 테스트 (Test de niveau de coréen)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .creator-stamp {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .task-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            display: none; /* 각 단계는 처음에 숨김 */
+            margin-bottom: 2.5rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .section.active {
+            display: block; /* 현재 단계만 보임 */
+        }
+
+        .btn-action {
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            height: 20px;
+            width: 0%;
+            background-color: #4a90e2;
+            border-radius: 10px;
+            transition: width 0.5s ease-in-out;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* 어휘 게임 스타일 */
+        .vocab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .vocab-card {
+            padding: 1rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .vocab-card.selected {
+            background-color: #bfdbfe;
+            border-color: #3b82f6;
+        }
+        .vocab-card.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+            cursor: default;
+            opacity: 0.7;
+        }
+        .vocab-card.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .recording-dot {
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(255, 82, 82, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+
+    <div class="creator-stamp top">Made by 성일, Pondant, Laon</div>
+
+    <div class="task-container">
+        <!-- 헤더 -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">한국어 레벨 테스트 ⏱️</h1>
+            <h2 class="text-xl font-semibold text-blue-600">A0-A1 Niveau Débutant</h2>
+            <p class="text-gray-600 mt-2">새로운 시작을 응원해요! 5단계 테스트를 통해 현재 실력을 확인해 보세요. <br>Bienvenue ! Faisons un test en 5 étapes pour voir où tu en es en coréen.</p>
+        </div>
+        
+        <!-- 진행률 바 -->
+        <div class="progress-bar-container">
+            <div id="progress-bar" class="progress-bar">0%</div>
+        </div>
+
+        <!-- 0단계: 시작 화면 -->
+        <div id="stage-0" class="section active text-center">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">테스트 시작하기</h2>
+            <p class="mb-6">이름을 입력하고 테스트를 시작하세요!</p>
+            <div class="mb-4">
+                <label for="studentName" class="block text-lg font-semibold text-gray-700 mb-2">이름 / Nom</label>
+                <input type="text" id="studentName" class="w-full max-w-md mx-auto p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="예) 슈퍼스타 이재용">
+            </div>
+            <button id="start-btn" class="btn-action bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-indigo-700">시작! (Commencer !)</button>
+        </div>
+
+        <!-- 1단계: 듣고 읽기 -->
+        <div id="stage-1" class="section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">1단계: 듣고 읽기 (Étape 1 : Écouter et lire)</h2>
+            <p class="mb-4">문장을 듣고, 따라서 읽으며 녹음해 주세요. <br>Écoutez la phrase, puis lisez-la à voix haute en vous enregistrant.</p>
+            <div id="listen-read-tasks" class="space-y-6"></div>
+        </div>
+
+        <!-- 2단계: 혼자 읽기 -->
+        <div id="stage-2" class="section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">2단계: 혼자 읽기 (Étape 2 : Lire seul)</h2>
+            <p class="mb-4">아래 문장을 보고 소리 내어 읽으며 녹음해 주세요. <br>Lisez la phrase ci-dessous à voix haute en vous enregistrant.</p>
+            <div id="read-alone-tasks" class="space-y-6"></div>
+        </div>
+
+        <!-- 3단계: 어휘 테스트 -->
+        <div id="stage-3" class="section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">3단계: 어휘 테스트 (Étape 3 : Test de vocabulaire)</h2>
+            <p class="mb-4">연관된 한국어와 프랑스어 단어를 짝지어 보세요! <br>Associez les mots coréens et français qui vont ensemble !</p>
+            <p class="text-lg font-bold mb-4">맞춘 개수: <span id="vocab-score">0</span> / 15</p>
+            <div id="vocab-game" class="vocab-grid"></div>
+        </div>
+
+        <!-- 4단계: 이해력 테스트 -->
+        <div id="stage-4" class="section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">4단계: 이해력 테스트 (Étape 4 : Test de compréhension)</h2>
+            <p class="mb-4">15초 안에 문장을 읽고 이해한 대로 프랑스어로 써보세요. <br>Lisez la phrase et écrivez ce que vous avez compris en français en 15 secondes.</p>
+            <div id="comprehension-tasks" class="space-y-6"></div>
+        </div>
+
+        <!-- 5단계: 듣고 말하기 -->
+        <div id="stage-5" class="section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">5단계: 듣고 말하기 (Étape 5 : Écouter et parler)</h2>
+            <p class="mb-4">질문을 듣고, 받아쓰고, 번역한 후, 한국어로 대답을 녹음해 보세요. <br>Écoutez la question, écrivez-la, traduisez-la, puis enregistrez votre réponse en coréen.</p>
+            <div id="listen-speak-tasks" class="space-y-8"></div>
+        </div>
+        
+        <!-- 네비게이션 버튼 -->
+        <div class="flex justify-between mt-8">
+            <button id="prev-btn" class="btn-action bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 hidden">이전 (Précédent)</button>
+            <button id="next-btn" class="btn-action bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600 hidden">다음 (Suivant)</button>
+            <button id="finish-btn" class="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg text-lg hover:bg-green-700 hidden">
+                제출하고 결과 확인하기 (Terminer et voir les résultats)
+            </button>
+        </div>
+    </div>
+
+    <div class="creator-stamp bottom">Made by 성일, Pondant, Laon</div>
+
+    <script type="module">
+        // --- 테스트 데이터 ---
+        const testData = {
+            listenRead: [
+                { id: 'lr1', ko: '이것은 사과입니다.', fr: "C'est une pomme." },
+                { id: 'lr2', ko: '저는 학생입니다.', fr: "Je suis étudiant(e)." },
+                { id: 'lr3', ko: '오늘 날씨가 좋아요.', fr: "Il fait beau aujourd'hui." },
+                { id: 'lr4', ko: '한국어를 공부해요.', fr: "J'étudie le coréen." },
+                { id: 'lr5', ko: '주말에 뭐 했어요?', fr: "Qu'as-tu fait ce week-end ?" }
+            ],
+            readAlone: [
+                { id: 'ra1', ko: '저는 아침을 먹어요.', fr: "Je prends le petit-déjeuner." },
+                { id: 'ra2', ko: '고양이가 귀여워요.', fr: "Le chat est mignon." },
+                { id: 'ra3', ko: '지금 몇 시예요?', fr: "Quelle heure est-il ?" },
+                { id: 'ra4', ko: '가방 안에 책이 있어요.', fr: "Il y a un livre dans le sac." },
+                { id: 'ra5', ko: '내일 영화 보러 갈까요?', fr: "On va voir un film demain ?" }
+            ],
+            vocabulary: [
+                { id: 1, ko: '학교', fr: 'École' }, { id: 2, ko: '친구', fr: 'Ami(e)' },
+                { id: 3, ko: '물', fr: 'Eau' }, { id: 4, ko: '밥', fr: 'Riz/Repas' },
+                { id: 5, ko: '오늘', fr: 'Aujourd\'hui' }, { id: 6, ko: '내일', fr: 'Demain' },
+                { id: 7, ko: '가다', fr: 'Aller' }, { id: 8, ko: '보다', fr: 'Voir/Regarder' },
+                { id: 9, ko: '먹다', fr: 'Manger' }, { id: 10, ko: '하다', fr: 'Faire' },
+                { id: 11, ko: '크다', fr: 'Grand(e)' }, { id: 12, ko: '작다', fr: 'Petit(e)' },
+                { id: 13, ko: '있다', fr: 'Avoir/Être (là)' }, { id: 14, ko: '없다', fr: 'Ne pas avoir/Ne pas être (là)' },
+                { id: 15, ko: '감사합니다', fr: 'Merci' }
+            ],
+            comprehension: [
+                { id: 'c1', ko: '저는 매일 운동해요.', fr: "Je fais de l'exercice tous les jours." },
+                { id: 'c2', ko: '이 버스는 어디로 가요?', fr: "Où va ce bus ?" },
+                { id: 'c3', ko: '지금 비가 와요.', fr: "Il pleut maintenant." },
+                { id: 'c4', ko: '도서관은 저쪽이에요.', fr: "La bibliothèque est par là-bas." },
+                { id: 'c5', ko: '생일 축하해요!', fr: "Joyeux anniversaire !" },
+                { id: 'c6', ko: '너무 피곤해서 자고 싶어요.', fr: "Je suis très fatigué(e) et je veux dormir." },
+                { id: 'c7', ko: '이 음식은 조금 매워요.', fr: "Ce plat est un peu épicé." },
+                { id: 'c8', ko: '저는 강아지를 더 좋아해요.', fr: "Je préfère les chiens." },
+                { id: 'c9', ko: '지하철역까지 걸어서 10분 걸려요.', fr: "Ça prend 10 minutes à pied jusqu'à la station de métro." },
+                { id: 'c10', ko: '다음에 또 만나요.', fr: "On se revoit la prochaine fois." }
+            ],
+            listenSpeak: [
+                { id: 'ls1', ko: '이름이 뭐예요?', fr: "Comment vous appelez-vous ?" },
+                { id: 'ls2', ko: '어디에서 왔어요?', fr: "D'où venez-vous ?" },
+                { id: 'ls3', ko: '취미가 뭐예요?', fr: "Quel est votre loisir ?" },
+                { id: 'ls4', ko: '무슨 음식을 좋아해요?', fr: "Quel genre de nourriture aimez-vous ?" },
+                { id: 'ls5', ko: '오늘 기분이 어때요?', fr: "Comment vous sentez-vous aujourd'hui ?" },
+                { id: 'ls6', ko: '몇 살이에요?', fr: "Quel âge avez-vous ?" },
+                { id: 'ls7', ko: '직업이 뭐예요?', fr: "Quel est votre métier ?" },
+                { id: 'ls8', ko: '한국어 공부는 재미있어요?', fr: "Est-ce que l'étude du coréen est amusante ?" },
+                { id: 'ls9', ko: '주말에 보통 뭐 해요?', fr: "Que faites-vous habituellement le week-end ?" },
+                { id: 'ls10', ko: '도와줄까요?', fr: "Puis-je vous aider ?" }
+            ]
+        };
+
+        // --- 상태 관리 ---
+        let currentStage = 0;
+        const totalStages = 5;
+        const studentData = {
+            recordings: {}
+        };
+        let startTime;
+
+        // --- UI 요소 ---
+        const progressBar = document.getElementById('progress-bar');
+        const sections = document.querySelectorAll('.section');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const startBtn = document.getElementById('start-btn');
+        const studentNameInput = document.getElementById('studentName');
+
+        // --- 초기화 함수 ---
+        function initializeTest() {
+            const placeholders = ["만수르", "빌 게이츠", "일론 머스크", "슈퍼스타 이재용", "방탄소년단 RM"];
+            studentNameInput.placeholder = `예) ${placeholders[Math.floor(Math.random() * placeholders.length)]}`;
+            
+            // 1단계: 듣고 읽기
+            const listenReadContainer = document.getElementById('listen-read-tasks');
+            testData.listenRead.forEach((task, index) => {
+                listenReadContainer.innerHTML += createRecordingTaskHTML(task.id, index + 1, task.ko, true);
+            });
+
+            // 2단계: 혼자 읽기
+            const readAloneContainer = document.getElementById('read-alone-tasks');
+            testData.readAlone.forEach((task, index) => {
+                readAloneContainer.innerHTML += createRecordingTaskHTML(task.id, index + 1, task.ko, false);
+            });
+            
+            // 3단계: 어휘
+            initializeVocabGame();
+
+            // 4단계: 이해력
+            const comprehensionContainer = document.getElementById('comprehension-tasks');
+            testData.comprehension.forEach((task, index) => {
+                comprehensionContainer.innerHTML += `
+                    <div class="p-4 border rounded-lg">
+                        <p class="text-lg font-semibold mb-2">${index + 1}. ${task.ko}</p>
+                        <div class="flex items-center gap-4">
+                            <input type="text" id="comprehension-input-${task.id}" class="w-full p-2 border rounded-md" placeholder="Français...">
+                            <button class="start-timer-btn btn-action bg-gray-200 px-3 py-2 rounded-md" data-task-id="${task.id}">Start</button>
+                            <span id="timer-${task.id}" class="font-bold text-red-500 w-16 text-center">15s</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 5단계: 듣고 말하기
+            const listenSpeakContainer = document.getElementById('listen-speak-tasks');
+            testData.listenSpeak.forEach((task, index) => {
+                listenSpeakContainer.innerHTML += `
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <p class="text-lg font-bold mb-3">Question ${index + 1}</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block font-semibold mb-1">a) Écoutez et écrivez (듣고 받아쓰기)</label>
+                                <div class="flex items-center gap-2">
+                                    <button class="play-audio-btn btn-action bg-blue-500 text-white py-2 px-4 rounded-lg" data-text="${task.ko}">🔊 Écouter</button>
+                                    <input type="text" id="ls-dictation-${task.id}" class="w-full p-2 border rounded-md" placeholder="Coréen...">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-1">b) Traduisez (불어로 번역)</label>
+                                <input type="text" id="ls-translation-${task.id}" class="w-full p-2 border rounded-md" placeholder="Français...">
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-1">c) Répondez en coréen (한국어로 답변 녹음)</label>
+                                ${createRecordingTaskHTML(task.id + '-answer', null, '', false)}
+                            </div>
+                             <div>
+                                <label class="block font-semibold mb-1">d) Écoutez votre enregistrement et écrivez (자기 녹음 듣고 받아쓰기)</label>
+                                <input type="text" id="ls-self-dictation-${task.id}" class="w-full p-2 border rounded-md" placeholder="Coréen...">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            addEventListeners();
+        }
+
+        function createRecordingTaskHTML(id, number, sentence, includePlayBtn) {
+            return `
+                <div class="p-4 border rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex-grow">
+                        ${number ? `<p class="text-lg font-semibold">${number}. ${sentence}</p>` : ''}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${includePlayBtn ? `<button class="play-audio-btn btn-action bg-blue-500 text-white py-2 px-4 rounded-lg" data-text="${sentence}">🔊</button>` : ''}
+                        <button class="record-btn btn-action bg-green-500 text-white py-2 px-4 rounded-lg flex items-center gap-1" data-id="${id}">
+                            <span class="icon">🎤</span><span class="text hidden sm:inline"> 녹음</span>
+                        </button>
+                        <div class="recording-status hidden items-center gap-2 text-red-500">
+                            <div class="recording-dot"></div>
+                        </div>
+                        <audio controls class="hidden w-40 h-10" id="audio-${id}"></audio>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 어휘 게임 로직 ---
+        function initializeVocabGame() {
+            const gameContainer = document.getElementById('vocab-game');
+            const scoreEl = document.getElementById('vocab-score');
+            let score = 0;
+            let selectedKo = null, selectedFr = null;
+            let lockBoard = false;
+
+            const koreanWords = [...testData.vocabulary];
+            const frenchWords = [...testData.vocabulary].sort(() => 0.5 - Math.random());
+
+            const koContainer = document.createElement('div');
+            koContainer.className = 'flex flex-col gap-2';
+            const frContainer = document.createElement('div');
+            frContainer.className = 'flex flex-col gap-2';
+
+            koreanWords.forEach(word => {
+                const card = document.createElement('button');
+                card.className = 'vocab-card';
+                card.textContent = word.ko;
+                card.dataset.id = word.id;
+                card.dataset.lang = 'ko';
+                koContainer.appendChild(card);
+            });
+
+            frenchWords.forEach(word => {
+                const card = document.createElement('button');
+                card.className = 'vocab-card';
+                card.textContent = word.fr;
+                card.dataset.id = word.id;
+                card.dataset.lang = 'fr';
+                frContainer.appendChild(card);
+            });
+
+            gameContainer.append(koContainer, frContainer);
+
+            gameContainer.addEventListener('click', (e) => {
+                if (lockBoard || !e.target.classList.contains('vocab-card') || e.target.classList.contains('correct')) return;
+
+                const clickedCard = e.target;
+
+                if (clickedCard.dataset.lang === 'ko') {
+                    if (selectedKo) selectedKo.classList.remove('selected');
+                    selectedKo = clickedCard;
+                    selectedKo.classList.add('selected');
+                } else {
+                    if (selectedFr) selectedFr.classList.remove('selected');
+                    selectedFr = clickedCard;
+                    selectedFr.classList.add('selected');
+                }
+
+                if (selectedKo && selectedFr) {
+                    lockBoard = true;
+                    if (selectedKo.dataset.id === selectedFr.dataset.id) {
+                        score++;
+                        scoreEl.textContent = score;
+                        selectedKo.classList.add('correct');
+                        selectedFr.classList.add('correct');
+                        selectedKo.classList.remove('selected');
+                        selectedFr.classList.remove('selected');
+                        selectedKo = null;
+                        selectedFr = null;
+                        lockBoard = false;
+                        if (score === testData.vocabulary.length) {
+                           setTimeout(() => alert('어휘 테스트 완료! (Test de vocabulaire terminé !)'), 200);
+                        }
+                    } else {
+                        selectedKo.classList.add('incorrect');
+                        selectedFr.classList.add('incorrect');
+                        setTimeout(() => {
+                            selectedKo.classList.remove('selected', 'incorrect');
+                            selectedFr.classList.remove('selected', 'incorrect');
+                            selectedKo = null;
+                            selectedFr = null;
+                            lockBoard = false;
+                        }, 800);
+                    }
+                }
+            });
+        }
+
+        // --- 이벤트 리스너 추가 ---
+        function addEventListeners() {
+            document.querySelectorAll('.play-audio-btn').forEach(btn => {
+                btn.addEventListener('click', () => playAudio(btn.dataset.text, btn));
+            });
+            document.querySelectorAll('.record-btn').forEach(btn => {
+                btn.addEventListener('click', () => toggleRecording(btn));
+            });
+            document.querySelectorAll('.start-timer-btn').forEach(btn => {
+                btn.addEventListener('click', () => startComprehensionTimer(btn.dataset.taskId, btn));
+            });
+        }
+        
+        // --- 핵심 기능 함수들 ---
+        let timers = {};
+        function startComprehensionTimer(taskId, button) {
+            if (timers[taskId]) return;
+            button.disabled = true;
+            button.classList.add('bg-gray-400');
+            const timerEl = document.getElementById(`timer-${taskId}`);
+            const inputEl = document.getElementById(`comprehension-input-${taskId}`);
+            let timeLeft = 15;
+            
+            timers[taskId] = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timers[taskId]);
+                    timerEl.textContent = "Time's up!";
+                    inputEl.disabled = true;
+                }
+            }, 1000);
+        }
+
+        const playAudio = async (text, button) => {
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '🔊...';
+            try {
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text }),
+                });
+                if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+                
+                const { audioData, mimeType } = await response.json();
+                const audio = new Audio(`data:${mimeType};base64,${audioData}`);
+                audio.play();
+                audio.onended = () => {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                };
+            } catch (error) {
+                console.error('오디오 재생 오류:', error);
+                alert('오디오를 재생할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        };
+
+        let mediaRecorders = {};
+        let audioChunks = {};
+        function toggleRecording(button) {
+            const id = button.dataset.id;
+            const statusDiv = button.nextElementSibling;
+            const audioEl = document.getElementById(`audio-${id}`);
+            
+            if (!mediaRecorders[id] || mediaRecorders[id].state === "inactive") {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const options = { mimeType: 'audio/webm' };
+                        mediaRecorders[id] = new MediaRecorder(stream, options);
+                        audioChunks[id] = [];
+                        let recordingStartTime;
+
+                        mediaRecorders[id].ondataavailable = e => audioChunks[id].push(e.data);
+                        
+                        mediaRecorders[id].onstop = () => {
+                            const duration = Math.round((Date.now() - recordingStartTime) / 1000);
+                            const blob = new Blob(audioChunks[id], { type: options.mimeType });
+                            const audioURL = window.URL.createObjectURL(blob);
+                            audioEl.src = audioURL;
+                            audioEl.classList.remove('hidden');
+                            
+                            const reader = new FileReader();
+                            reader.readAsDataURL(blob); 
+                            reader.onloadend = function() {
+                                studentData.recordings[id] = {
+                                    base64: reader.result.split(',')[1],
+                                    filename: `recording_${id}.webm`,
+                                    mimeType: options.mimeType,
+                                    duration: duration
+                                };
+                            }
+                        };
+                        
+                        recordingStartTime = Date.now();
+                        mediaRecorders[id].start();
+                        button.querySelector('.icon').textContent = '⏹️';
+                        button.querySelector('.text').textContent = ' 중지';
+                        button.classList.replace('bg-green-500', 'bg-red-500');
+                        statusDiv.classList.remove('hidden');
+                    }).catch(err => alert("마이크 접근 권한이 필요합니다. (L'accès au microphone est requis.)"));
+            } else {
+                mediaRecorders[id].stop();
+                button.querySelector('.icon').textContent = '�';
+                button.querySelector('.text').textContent = ' 녹음';
+                button.classList.replace('bg-red-500', 'bg-green-500');
+                statusDiv.classList.add('hidden');
+            }
+        }
+
+        // --- 네비게이션 및 진행 관리 ---
+        function updateStage(newStage) {
+            if (newStage < 0 || newStage > totalStages + 1) return;
+            currentStage = newStage;
+            
+            sections.forEach(s => s.classList.remove('active'));
+            const activeSection = document.getElementById(`stage-${currentStage}`);
+            if(activeSection) activeSection.classList.add('active');
+
+            const progress = (currentStage > 0) ? ((currentStage -1) / totalStages) * 100 : 0;
+            progressBar.style.width = `${progress}%`;
+            progressBar.textContent = `${Math.round(progress)}%`;
+
+            prevBtn.classList.toggle('hidden', currentStage <= 1);
+            nextBtn.classList.toggle('hidden', currentStage >= totalStages || currentStage === 0);
+            finishBtn.classList.toggle('hidden', currentStage !== totalStages);
+        }
+
+        startBtn.addEventListener('click', () => {
+            const studentName = studentNameInput.value.trim();
+            if (!studentName) {
+                alert('이름을 입력해주세요! (Veuillez entrer votre nom !)');
+                studentNameInput.focus();
+                return;
+            }
+            studentData.name = studentName;
+            startTime = new Date();
+            updateStage(1);
+        });
+
+        nextBtn.addEventListener('click', () => updateStage(currentStage + 1));
+        prevBtn.addEventListener('click', () => updateStage(currentStage - 1));
+        
+        function collectAllData() {
+            const questions = [];
+            let questionNumber = 1;
+
+            // Stage 1 & 2
+            [...testData.listenRead, ...testData.readAlone].forEach(task => {
+                questions.push({
+                    number: questionNumber++,
+                    ko: task.ko,
+                    fr: task.fr,
+                    userAnswer: '', // Reading task has no text answer
+                    isCorrect: null, // Manual grading
+                    recording: studentData.recordings[task.id] || null
+                });
+            });
+
+            // Stage 3
+            const vocabScore = document.getElementById('vocab-score').textContent;
+            questions.push({
+                number: questionNumber++,
+                ko: '어휘 짝짓기 게임',
+                fr: 'Jeu d\'association de vocabulaire',
+                userAnswer: `Score: ${vocabScore} / ${testData.vocabulary.length}`,
+                isCorrect: parseInt(vocabScore) === testData.vocabulary.length,
+            });
+
+            // Stage 4
+            testData.comprehension.forEach(task => {
+                const userAnswer = document.getElementById(`comprehension-input-${task.id}`).value;
+                questions.push({
+                    number: questionNumber++,
+                    ko: task.ko,
+                    fr: `(Question de compréhension) ${task.fr}`,
+                    userAnswer: userAnswer,
+                    isCorrect: null, // Manual grading
+                });
+            });
+
+            // Stage 5
+            testData.listenSpeak.forEach(task => {
+                const dictation = document.getElementById(`ls-dictation-${task.id}`).value;
+                const translation = document.getElementById(`ls-translation-${task.id}`).value;
+                const selfDictation = document.getElementById(`ls-self-dictation-${task.id}`).value;
+                questions.push({
+                    number: questionNumber++,
+                    ko: `(질문) ${task.ko}`,
+                    fr: `(Question) ${task.fr}`,
+                    userAnswer: JSON.stringify({ dictation, translation, selfDictation }),
+                    isCorrect: dictation.trim().replace(/[.?]/g, '') === task.ko.replace(/[.?]/g, ''),
+                    recording: studentData.recordings[task.id + '-answer'] || null
+                });
+            });
+
+            return questions;
+        }
+
+        finishBtn.addEventListener('click', async () => {
+            finishBtn.disabled = true;
+            finishBtn.textContent = '결과를 전송하는 중...';
+            
+            const endTime = new Date();
+            const payload = {
+                studentName: studentData.name,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                totalTimeSeconds: Math.round((endTime - startTime) / 1000),
+                questions: collectAllData()
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    document.body.innerHTML = `
+                        <div class="task-container text-center">
+                            <h1 class="text-4xl font-bold text-green-600 mb-4">🎉 제출 완료! 🎉</h1>
+                            <p class="text-lg text-gray-700">테스트에 참여해주셔서 감사합니다, ${studentData.name}님!</p>
+                            <p class="text-gray-600 mt-2">결과를 선생님께 안전하게 보냈어요. 곧 피드백을 받으실 거예요.</p>
+                            <div class="creator-stamp" style="margin-top: 40px;">Made by 성일, Pondant, Laon</div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('Server responded with an error');
+                }
+            } catch (error) {
+                console.error('결과 전송 실패:', error);
+                alert('결과 전송에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+                finishBtn.disabled = false;
+                finishBtn.textContent = '제출하고 결과 확인하기';
+            }
+        });
+
+        // --- 초기 실행 ---
+        initializeTest();
+    </script>
+</body>
+</html>
+�
