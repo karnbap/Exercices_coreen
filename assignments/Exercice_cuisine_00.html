@@ -1,0 +1,210 @@
+<script>
+  let currentAudio = null;
+
+  // --- 유틸: base64 문자열을 표준형으로 교정 ---
+  function normalizeBase64(b64) {
+    // URL-safe → 표준
+    b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+    // 패딩 보정
+    const pad = b64.length % 4;
+    if (pad === 2) b64 += '==';
+    else if (pad === 3) b64 += '=';
+    else if (pad !== 0) {
+      // 이상한 길이면 그대로 두되, atob에서 실패할 수 있음
+    }
+    return b64;
+  }
+
+  function base64ToArrayBuffer(base64) {
+    const normalized = normalizeBase64(base64);
+    const binaryString = window.atob(normalized);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  // --- PCM(Linear16) → WAV 래핑 ---
+  function pcmToWav(pcmData, sampleRate) {
+    const pcm16 = new Int16Array(pcmData);
+    const header = new ArrayBuffer(44);
+    const view = new DataView(header);
+    const writeString = (v, o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + pcm16.byteLength, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    const numChannels = 1;
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * 2, true);
+    view.setUint16(32, numChannels * 2, true);
+    view.setUint16(34, 16, true); // 16-bit
+    writeString(view, 36, 'data');
+    view.setUint32(40, pcm16.byteLength, true);
+    return new Blob([header, pcm16], { type: 'audio/wav' });
+  }
+
+  // --- 오디오 생성/재생(포맷 분기 + 에러 안전) ---
+  async function generateAndPlayAudio(text, buttonElement) {
+    if (buttonElement.classList.contains('loading')) return;
+
+    buttonElement.classList.add('loading');
+    const originalContent = buttonElement.innerHTML;
+    buttonElement.textContent = '...';
+
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+
+    try {
+      const response = await fetch('/.netlify/functions/generate-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      let payloadText = await response.text();
+      if (!response.ok) {
+        // 서버가 JSON이 아닐 수도 있으니 안전 처리
+        try {
+          const err = JSON.parse(payloadText);
+          throw new Error(err.error || `HTTP ${response.status}`);
+        } catch {
+          throw new Error(`HTTP ${response.status}: ${payloadText.slice(0, 200)}...`);
+        }
+      }
+
+      // 정상 응답 파싱
+      let result;
+      try {
+        result = JSON.parse(payloadText);
+      } catch {
+        throw new Error('서버 응답을 JSON으로 파싱할 수 없습니다.');
+      }
+
+      const { audioData, mimeType } = result || {};
+      if (!audioData || !mimeType || !mimeType.startsWith('audio/')) {
+        throw new Error('서버가 올바른 오디오 데이터를 반환하지 않았습니다.');
+      }
+
+      let blob;
+      // 서버가 Linear16(헤더 없는 PCM)을 주는 경우 흔히 mimeType으로 audio/L16;rate=24000;channels=1 등을 사용
+      if (mimeType.startsWith('audio/L16') || mimeType.startsWith('audio/linear16')) {
+        // sample rate 파싱
+        const rateMatch = mimeType.match(/rate=(\d+)/i);
+        const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
+        const pcmData = base64ToArrayBuffer(audioData);
+        blob = pcmToWav(pcmData, sampleRate);
+      } else if (mimeType.startsWith('audio/wav') || mimeType.startsWith('audio/x-wav') || mimeType.startsWith('audio/mpeg') || mimeType.startsWith('audio/mp3') || mimeType.startsWith('audio/ogg')) {
+        // 이미 컨테이너/코덱이 있는 경우: 그대로 Blob 생성
+        const arrBuf = base64ToArrayBuffer(audioData);
+        blob = new Blob([arrBuf], { type: mimeType });
+      } else {
+        // 알 수 없는 형식이면 일단 일반 Blob로 시도
+        const arrBuf = base64ToArrayBuffer(audioData);
+        blob = new Blob([arrBuf], { type: mimeType });
+      }
+
+      const audioUrl = URL.createObjectURL(blob);
+      currentAudio = new Audio(audioUrl);
+      currentAudio.play().catch(() => {
+        // 자동재생 차단 등
+        console.warn('오디오 자동재생이 차단되었습니다. 버튼을 다시 눌러주세요.');
+      });
+      currentAudio.onended = () => {
+        buttonElement.classList.remove('loading');
+        buttonElement.innerHTML = originalContent;
+        URL.revokeObjectURL(audioUrl);
+      };
+    } catch (error) {
+      console.error('오디오 생성/재생 오류:', error);
+      buttonElement.classList.remove('loading');
+      buttonElement.innerHTML = originalContent;
+      alert('오디오를 재생할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
+  // 이벤트 바인딩
+  document.querySelectorAll('.audio-btn').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const textToSpeak = button.dataset.text;
+      generateAndPlayAudio(textToSpeak, button);
+    });
+  });
+
+  // --- 정답 토글 ---
+  function toggleAnswer(elementId) {
+    document.getElementById(elementId).classList.toggle('show');
+  }
+
+  // --- 조사 선택(기존 로직 OK, 약간의 방어 코드 추가) ---
+  function checkParticle(questionId, chosenParticle, isCorrect) {
+    const answerBox = document.getElementById(questionId + '_answer');
+    const optionsContainer = document.getElementById(questionId + '_options');
+    const blank = document.getElementById(questionId + '_blank');
+    if (!answerBox || !optionsContainer || !blank) return;
+
+    blank.textContent = chosenParticle;
+    answerBox.classList.add('show');
+
+    optionsContainer.querySelectorAll('button').forEach(btn => {
+      btn.disabled = true;
+      if (btn.textContent.trim() === chosenParticle) {
+        btn.classList.remove('bg-gray-200', 'hover:bg-cyan-200');
+        if (isCorrect) {
+          btn.classList.add('bg-green-500', 'text-white');
+          blank.classList.add('text-green-600');
+        } else {
+          btn.classList.add('bg-red-500', 'text-white');
+          blank.classList.add('text-red-600');
+        }
+      } else {
+        btn.classList.add('opacity-50');
+      }
+    });
+  }
+
+  // --- O/X(진위) 정답 테이블과 비교 로직 수정 ---
+  // 각 문항의 정답: true = Vrai(O), false = Faux(X)
+  const TRUE_FALSE_ANSWERS = {
+    q11: true,
+    q12: false,
+    q13: false,
+    q14: true,
+    q15: false
+  };
+
+  // userChoseVrai : 사용자가 'Vrai(O)' 버튼을 눌렀는지 여부
+  function checkTrueFalse(questionId, userChoseVrai) {
+    const correctIsVrai = TRUE_FALSE_ANSWERS[questionId];
+    const isUserCorrect = userChoseVrai === correctIsVrai;
+
+    const answerBox = document.getElementById(questionId + '_answer');
+    const optionsContainer = document.getElementById(questionId + '_options');
+    if (!answerBox || !optionsContainer) return;
+
+    answerBox.classList.add('show');
+    optionsContainer.querySelectorAll('button').forEach(btn => {
+      btn.disabled = true;
+
+      const thisIsVraiBtn = btn.textContent.includes('Vrai');
+      const thisIsFauxBtn = btn.textContent.includes('Faux');
+
+      // 정답 버튼에는 초록 링 표시
+      const isThisCorrectButton = (thisIsVraiBtn && correctIsVrai) || (thisIsFauxBtn && !correctIsVrai);
+      if (isThisCorrectButton) {
+        btn.classList.add('ring-4', 'ring-green-500');
+      } else {
+        btn.classList.add('opacity-50');
+      }
+
+      // 사용자가 선택한 버튼은 배경 강조(정/오답 색 다르게)
+      const isUserClickedButton = (thisIsVraiBtn && userChoseVrai) || (thisIsFauxBtn && !userChoseVrai);
+      if (isUserClickedButton) {
+        btn.classList.add(isUserCorrect ? 'bg-green-500' : 'bg-red-500', 'text-white');
+      }
+    });
+  }
+</script>
