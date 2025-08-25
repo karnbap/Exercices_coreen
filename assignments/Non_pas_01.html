@@ -414,7 +414,7 @@
                         reader.onloadend = ()=>{ q.recording = { base64: reader.result.split(',')[1], filename: `recording_${studentName.replace(/\s/g,'_')}_q${q.number}.webm`, mimeType: 'audio/webm' }; };
                         stream.getTracks().forEach(t=>t.stop());
                     });
-                }).catch(err){ console.error('Mic error:', err); status.textContent = '마이크 사용이 차단되었습니다 | Micro non disponible'; }
+                }).catch(err => { console.error('Mic error:', err); status.textContent = '마이크 사용이 차단되었습니다 | Micro non disponible'; }
             }
         }
         window.toggleRecording = toggleRecording;
