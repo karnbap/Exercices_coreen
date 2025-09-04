@@ -13,6 +13,19 @@
         .correct { border: 2px solid #22c55e; background-color: #f0fdf4; }
         .incorrect { border: 2px solid #ef4444; background-color: #fef2f2; }
         [type="radio"]:checked { background-image: url("data:image/svg+xml,%3csvg viewBox='0' 0 16 16' fill='%234f46e5' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e"); }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6366f1;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -100,8 +113,25 @@
             <div id="result-message" class="text-2xl font-semibold p-6 rounded-lg mb-4"></div>
             <p class="text-lg">Votre score : <span id="score" class="font-bold"></span>%</p>
             <p class="text-slate-600">Temps total : <span id="total-time"></span> secondes.</p>
-            <p class="mt-6 text-slate-700">Les résultats détaillés et les conseils personnalisés ont été envoyés par e-mail.</p>
-            <p class="text-slate-500 text-sm">(자세한 결과와 맞춤 설명이 이메일로 전송되었습니다.)</p>
+
+            <!-- AI Feedback Section -->
+            <div id="ai-feedback-container" class="mt-8 text-left hidden">
+                <h3 class="text-2xl font-bold mb-4 text-center">💡 Analyse et conseils de l'IA</h3>
+                <div id="ai-feedback-loader" class="text-center p-4">
+                    <div class="loader"></div>
+                    <p class="mt-2 text-slate-500">분석 중... 잠시만 기다려 주세요! (Analyse en cours...)</p>
+                </div>
+                <div id="ai-feedback-content" class="hidden p-5 bg-purple-50 border-l-4 border-purple-500 rounded-lg text-slate-700">
+                    <!-- AI content will be inserted here -->
+                </div>
+                 <div id="ai-feedback-perfect" class="hidden p-5 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                    <p class="text-green-800">🎉 <strong>Score parfait !</strong><br>Vous avez tout compris. Aucune explication supplémentaire n'est nécessaire ! (만점이에요! 추가 설명이 필요 없네요!)</p>
+                </div>
+                 <div id="ai-feedback-error" class="hidden p-5 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                    <p class="text-red-800"><strong>Oups !</strong><br>L'analyse IA n'a pas pu être effectuée. Les résultats ont tout de même été envoyés. (AI 분석에 실패했습니다. 결과는 정상적으로 전송되었습니다.)</p>
+                </div>
+            </div>
+
             <button id="restart-btn" class="mt-8 bg-indigo-600 text-white py-3 px-8 rounded-lg text-lg font-bold hover:bg-indigo-700 transition">Recommencer (다시하기)</button>
         </div>
     </div>
@@ -121,6 +151,12 @@
     const startBtn = document.getElementById('start-btn');
     const quizForm = document.getElementById('quiz-form');
     const restartBtn = document.getElementById('restart-btn');
+    const aiFeedbackContainer = document.getElementById('ai-feedback-container');
+    const aiFeedbackLoader = document.getElementById('ai-feedback-loader');
+    const aiFeedbackContent = document.getElementById('ai-feedback-content');
+    const aiFeedbackPerfect = document.getElementById('ai-feedback-perfect');
+    const aiFeedbackError = document.getElementById('ai-feedback-error');
+
 
     // --- FUNCTIONS ---
     function generateQuestions() {
@@ -273,7 +309,7 @@
         }
     }
 
-    function finishQuiz() {
+    async function finishQuiz() {
         const sections = [...new Set(questions.map(q => q.section))];
         const lastSectionTitle = sections[currentSectionIndex];
         questions.forEach((q, index) => {
@@ -283,6 +319,7 @@
         endTime = new Date();
         quizContentDiv.classList.add('hidden');
         resultsDiv.classList.remove('hidden');
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
 
         let correctCount = 0;
         const incorrectAnswersForAI = [];
@@ -292,24 +329,10 @@
             
             if (q.type === 'multiple-choice') {
                 isCorrect = userAnswer === q.answer;
-                const optionsContainer = document.querySelector(`#q-${i}`);
-                optionsContainer.querySelectorAll('label').forEach(label => {
-                    const radio = label.querySelector('input');
-                    if (radio.value === q.answer) label.classList.add('correct');
-                    else if (radio.checked) label.classList.add('incorrect');
-                    radio.disabled = true;
-                });
             } else { // write-word & translate-sentence
                 const cleanUserAnswer = userAnswer.replace(/[.?\s]/g, '');
                 const cleanAnswer = q.answer.replace(/[.?\s]/g, '');
                 isCorrect = cleanUserAnswer.includes(cleanAnswer);
-                const input = document.getElementById(`q${i}-input`);
-                input.disabled = true;
-                input.classList.add(isCorrect ? 'correct' : 'incorrect');
-                if (!isCorrect) {
-                    const feedbackDiv = document.getElementById(`feedback-${i}`);
-                    feedbackDiv.innerHTML = `<p class="mt-2 text-green-700">Exemple de réponse : <strong>${q.answer}</strong></p>`;
-                }
             }
 
             if (isCorrect) {
@@ -350,19 +373,49 @@
         resultMessageDiv.innerHTML = `${frMessage}<br>${message}`;
         resultMessageDiv.className = `text-2xl font-semibold p-6 rounded-lg mb-4 ${bgColor}`;
 
-        resultsDiv.scrollIntoView({ behavior: 'smooth' });
-        
         const payload = { 
             studentName, 
             startTime: startTime.toISOString(), 
             endTime: endTime.toISOString(), 
             totalTimeSeconds, 
             questions: questionsPayload,
-            incorrectAnswers: incorrectAnswersForAI // Sending raw data for backend analysis
+            incorrectAnswers: incorrectAnswersForAI
         };
-        fetch('/.netlify/functions/send-results-v2', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-        }).catch(error => console.error("Error sending results:", error));
+        
+        // --- AI Feedback Logic ---
+        aiFeedbackContainer.classList.remove('hidden');
+        if (incorrectAnswersForAI.length > 0) {
+            aiFeedbackLoader.classList.remove('hidden');
+            aiFeedbackContent.classList.add('hidden');
+            aiFeedbackPerfect.classList.add('hidden');
+            aiFeedbackError.classList.add('hidden');
+        } else {
+            aiFeedbackLoader.classList.add('hidden');
+            aiFeedbackPerfect.classList.remove('hidden');
+        }
+        
+        try {
+            const response = await fetch('/.netlify/functions/send-results-v2', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.aiFeedback) {
+                    aiFeedbackLoader.classList.add('hidden');
+                    aiFeedbackContent.innerHTML = result.aiFeedback.replace(/\n/g, '<br>');
+                    aiFeedbackContent.classList.remove('hidden');
+                } else if (incorrectAnswersForAI.length > 0) {
+                    aiFeedbackError.classList.remove('hidden');
+                }
+            } else {
+                 throw new Error('Server response was not ok.');
+            }
+        } catch (error) {
+            console.error("Error during fetch for AI feedback:", error);
+            aiFeedbackLoader.classList.add('hidden');
+            aiFeedbackError.classList.remove('hidden');
+        }
     }
     
     // --- INIT ---
