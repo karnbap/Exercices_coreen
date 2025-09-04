@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국어 연습: 후에 / 전에</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Inter', 'Pretendard', sans-serif; background-color: #f8fafc; }
+        .made-by-top, .made-by-bottom { text-align: center; padding: 8px; font-size: 0.8rem; color: #64748b; background-color: #f1f5f9; }
+        .made-by-top { border-bottom: 1px solid #e2e8f0; }
+        .made-by-bottom { border-top: 1px solid #e2e8f0; margin-top: 40px; }
+        .print-button-container { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+        .btn { display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 0.5rem; transition: all 0.2s ease-in-out; cursor: pointer; padding: 0.75rem 1.5rem; }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover { background-color: #3730a3; }
+        .btn-secondary { background-color: #e0e7ff; color: #3730a3; padding: 0.5rem 1rem; }
+        .btn-secondary:hover { background-color: #c7d2fe; }
+        .btn-choice { border: 2px solid #e5e7eb; width: 100%; justify-content: flex-start; text-align: left; padding: 1rem; font-size: 1.125rem; }
+        .btn-choice:hover { border-color: #facc15; background-color: #fef9c3; }
+        .btn-choice.selected { border-color: #fbbf24; background-color: #fef08a; }
+        .btn-hint { padding: 0.5rem 1rem; font-size: 0.9rem; }
+        .btn-record { background-color: #ef4444; color: white; }
+        .btn-record.recording { background-color: #10b981; }
+        .invisible { visibility: hidden; }
+        .section-title { font-size: 1.5rem; font-weight: bold; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        @media print { .no-print { display: none !important; } main { box-shadow: none !important; padding: 0 !important; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="made-by-top no-print">Made with ❤️ by 성일, Pongdang</div>
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Exercice Coréen : Après / Avant</h1>
+            <p class="text-md text-slate-600 mt-2">N + 후에 / R+(으)ㄴ 후에 / R+기 전에</p>
+        </header>
+
+        <div class="print-button-container no-print">
+            <button onclick="window.print()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2H5zm0 2h10v2H5V4zm2 5h6v1H7V9zm0 2h6v1H7v-1z" clip-rule="evenodd" /></svg>
+                Imprimer / 프린트
+            </button>
+        </div>
+
+        <div id="start-screen" class="text-center">
+            <input type="text" id="student-name" class="w-full max-w-sm p-3 border-2 border-slate-300 rounded-lg text-center text-lg focus:border-purple-500 focus:ring focus:ring-purple-200 transition" placeholder="학생 이름이 궁금해요! (Ton nom)">
+            <button id="start-btn" class="mt-4 w-full max-w-sm bg-purple-600 hover:bg-purple-800 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-lg transform hover:scale-105 transition">
+                시작! (Commencer)
+            </button>
+        </div>
+
+        <main id="quiz-container" class="hidden"></main>
+
+        <div id="result-screen" class="hidden text-center p-8 bg-white rounded-2xl shadow-xl max-w-2xl mx-auto no-print">
+             <h2 class="text-3xl font-bold mb-4">🎉 Bravo ! 🎉</h2>
+             <p id="result-message" class="text-lg text-slate-700 mb-6"></p>
+             
+             <!-- AI Feedback Section -->
+             <div id="ai-feedback-container" class="mt-8 text-left p-6 bg-indigo-50 border border-indigo-200 rounded-lg hidden">
+                <h3 class="text-xl font-bold text-indigo-800 mb-3 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.707.707M12 21v-1" /></svg>
+                    Analyse et conseils de l'IA
+                </h3>
+                <div id="ai-feedback-loading" class="text-center py-4">
+                    <p class="text-slate-600">Analyse de tes réponses en cours...</p>
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mt-4"></div>
+                </div>
+                <div id="ai-feedback-content" class="text-slate-700 space-y-2" style="white-space: pre-wrap;"></div>
+             </div>
+
+             <div class="flex justify-center space-x-4 mt-8">
+                <button id="retry-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg">
+                    다시하기 (Recommencer)
+                </button>
+             </div>
+        </div>
+    </div>
+    
+    <div class="made-by-bottom no-print">Made with ❤️ by 성일, Pongdang</div>
+
+    <script>
+        // --- GRADING CRITERIA ---
+        function getGradingMessage(percentage, lang = 'ko') {
+            if (lang === 'fr') {
+                if (percentage >= 100) return "Parfait absolu ! 👑🎉 Génie confirmé !";
+                if (percentage >= 80) return "Très bien joué ! 👍 Presque un maître !";
+                if (percentage >= 60) return "Pas mal du tout ! 😎 Encore un petit effort et c’est le top !";
+                return "Allez, un petit café et on repart ! ☕💪";
+            }
+            if (percentage >= 100) return "완벽 그 자체! 👑🎉 천재 인증!";
+            if (percentage >= 80) return "아주 잘했어요! 👍 이 정도면 거의 마스터!";
+            if (percentage >= 60) return "꽤 잘했어요! 😎 조금만 더 가면 최고!";
+            return "자, 커피 한 잔 하고 다시 가자! ☕💪🇰🇷";
+        }
+
+        // --- DOM ELEMENTS ---
+        const startScreen = document.getElementById('start-screen');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('start-btn');
+        const studentNameInput = document.getElementById('student-name');
+        const retryBtn = document.getElementById('retry-btn');
+
+        // --- STATE VARIABLES ---
+        let studentName = '', startTime, endTime;
+        let currentQuestionIndex = 0;
+        let questionsData = [], quizData = [];
+        let mediaRecorder, audioChunks = [];
+
+        studentNameInput.placeholder = ["Super Cédou", "Génie Julie", "Champion Léo", "Star Alice"][Math.floor(Math.random() * 4)];
+
+        // --- QUESTION POOLS ---
+        const questionPools = {
+            afterVerb: [
+                { base: '밥을 먹다', answer: '먹은 후에', verb: 'Manger' },
+                { base: '숙제를 하다', answer: '한 후에', verb: 'Faire les devoirs' },
+                { base: '영화를 보다', answer: '본 후에', verb: 'Regarder un film' },
+                { base: '책을 읽다', answer: '읽은 후에', verb: 'Lire un livre' },
+                { base: '운동을 하다', answer: '운동한 후에', verb: 'Faire du sport'}
+            ],
+            beforeVerb: [
+                { base: '잠을 자다', answer: '자기 전에', verb: 'Dormir' },
+                { base: '수업에 들어가다', answer: '들어가기 전에', verb: 'Entrer en classe' },
+                { base: '손을 씻다', answer: '씻기 전에', verb: 'Se laver les mains' },
+                { base: '밖으로 나가다', answer: '나가기 전에', verb: 'Sortir' },
+                { base: '커피를 마시다', answer: '마시기 전에', verb: 'Boire du café'}
+            ],
+            sentences: [
+                { fr: "Après avoir fini le travail, je suis rentré chez moi.", ko: "일을 끝낸 후에 집에 돌아왔어요.", hint1: "ㅇㅇ ㄲㄴ ㅎㅇ ㅈㅇ ㄷㅇㅇㅇㅇ.", hint2: "일(travail), 끝내다(finir), 집(maison)"},
+                { fr: "Avant de sortir, j’ai pris mon parapluie.", ko: "나가기 전에 우산을 챙겼어요.", hint1: "ㄴㄱㄱ ㅈㅇ ㅇㅅㅇ ㅊㄱㅇㅇ.", hint2: "나가다(sortir), 우산(parapluie), 챙기다(prendre)"},
+                { fr: "Après avoir regardé le film, j’ai dormi.", ko: "영화를 본 후에 잠을 잤어요.", hint1: "ㅇㅎㄹ ㅂ ㅎㅇ ㅈㅇ ㅈㅇㅇ.", hint2: "영화(film), 보다(regarder), 잠을 자다(dormir)"},
+                { fr: "Avant de manger du pain, je bois du lait.", ko: "빵을 먹기 전에 우유를 마셔요.", hint1: "ㅃㅇ ㅁㄱ ㅈㅇ ㅇㅇㄹ ㅁㅅㅇ.", hint2: "빵(pain), 먹다(manger), 우유(lait), 마시다(boire)"},
+                { fr: "Après avoir fait du sport, j'ai pris une douche.", ko: "운동한 후에 샤워했어요.", hint1: "ㅇㄷㅎ ㅎㅇ ㅅㅇㅎㅇㅇ.", hint2: "운동하다(faire du sport), 샤워하다(prendre une douche)"},
+                { fr: "Avant de dormir, je lis un livre.", ko: "자기 전에 책을 읽어요.", hint1: "ㅈㄱ ㅈㅇ ㅊㅇ ㅇㅇㅇ.", hint2: "자다(dormir), 책(livre), 읽다(lire)"},
+            ]
+        };
+        
+        // --- HELPER FUNCTIONS ---
+        const shuffleArray = (arr) => arr.sort(() => 0.5 - Math.random());
+
+        // --- QUIZ GENERATION ---
+        function generateAndSetQuizData() {
+            quizData = [];
+            quizData.push({ type: 'explanation' });
+            const mcqPool = shuffleArray([...questionPools.afterVerb, ...questionPools.beforeVerb]);
+            mcqPool.slice(0, 5).forEach(q => {
+                const isAfter = q.answer.includes('후에');
+                const fr_instruction = isAfter ? `après avoir ${q.verb.toLowerCase()}` : `avant de ${q.verb.toLowerCase()}`;
+                const distractor = isAfter ? q.answer.replace(/(으|ㄴ|한) 후에/g, '기 전에') : q.answer.replace(/기 전에/g, 'ㄴ 후에');
+                quizData.push({ type: 'multiple-choice', fr: `Choisissez la forme correcte pour dire "${fr_instruction}".`, ko: `(${q.base}) 친구를 만나요.`, correctAnswer: q.answer, choices: shuffleArray([q.answer, distractor]) });
+            });
+            shuffleArray(mcqPool).slice(0, 5).forEach(q => {
+                 const isAfter = q.answer.includes('후에');
+                 const fr_instruction = isAfter ? `après avoir ${q.verb.toLowerCase()}` : `avant de ${q.verb.toLowerCase()}`;
+                 quizData.push({ type: 'fill-in-the-blank', fr: `Écrivez la forme pour dire "${fr_instruction}".`, ko: `(${q.base}) ___ 친구를 만나요.`, correctAnswer: q.answer });
+            });
+            shuffleArray(questionPools.sentences).slice(0, 5).forEach(q => quizData.push({ type: 'translate-sentence', ...q }));
+            shuffleArray(questionPools.sentences).slice(0, 5).forEach(q => quizData.push({ type: 'listening-dictation', ...q }));
+        }
+
+        // --- EVENT LISTENERS ---
+        startBtn.addEventListener('click', startQuiz);
+        retryBtn.addEventListener('click', () => location.reload());
+
+        // --- AUDIO & RECORDING LOGIC ---
+        async function playAudio(text, voice = 'alloy') {
+            if(questionsData[currentQuestionIndex]) questionsData[currentQuestionIndex].listenCount++;
+            alert('Audio playback is simulated in this environment.');
+        }
+        async function toggleRecording() {
+            const recordBtn = document.getElementById('record-btn');
+            const player = document.getElementById('recording-player');
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                recordBtn.classList.remove('recording');
+                recordBtn.textContent = 'Enregistrer ma voix / 내 목소리 녹음하기';
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        player.src = audioUrl; player.hidden = false;
+                        const reader = new FileReader(); reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => { questionsData[currentQuestionIndex].recording.base64 = reader.result.split(',')[1]; };
+                    };
+                    mediaRecorder.start(); recordBtn.classList.add('recording'); recordBtn.textContent = 'Arrêter / 녹음 중지';
+                } catch (err) { console.error("Error recording:", err); alert("Le microphone est nécessaire. Veuillez autoriser l'accès. / 마이크 권한이 필요합니다."); }
+            }
+        }
+        
+        // --- QUIZ FLOW ---
+        function startQuiz() {
+            studentName = studentNameInput.value.trim();
+            if (!studentName) { alert('학생 이름을 입력해주세요! (Veuillez entrer votre nom)'); return; }
+            startTime = new Date();
+            startScreen.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            generateAndSetQuizData();
+            questionsData = quizData.map((q, i) => ({ number: i, ...q, userAnswer: {}, listenCount: 0, hint1Count: 0, hint2Count: 0, recording: {} }));
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            quizContainer.innerHTML = '';
+            if (currentQuestionIndex >= quizData.length) { finishQuiz(); return; }
+            const q = quizData[currentQuestionIndex];
+            const card = document.createElement('div'); card.className = 'p-6 bg-white rounded-xl shadow-lg';
+            let content = `<p class="text-sm text-slate-500 mb-4">Question ${currentQuestionIndex} / ${quizData.length - 1}</p>`;
+            
+            if (q.type === 'explanation') {
+                content += `<h2 class="section-title">Comment dire "Après" et "Avant" en coréen?</h2><div class="space-y-6 text-lg"><div><h3 class="font-bold text-xl mb-2 text-indigo-700">1. Avec un Verbe (동사)</h3><div class="pl-4 border-l-4 border-indigo-200 space-y-4"><div><p><strong>Pour dire "après avoir fait..." → <code class="bg-indigo-100 p-1 rounded">-(으)ㄴ 후에</code></strong></p><p class="ml-4">Ex) <strong>먹다</strong> (manger) → <strong>먹<span class="text-red-500 font-semibold">은 후에</span></strong> (après avoir mangé)</p><p class="ml-4">Ex) <strong>가다</strong> (aller) → <strong>가<span class="text-red-500 font-semibold">ㄴ 후에</span></strong> (après être allé)</p></div><div><p><strong>Pour dire "avant de faire..." → <code class="bg-green-100 p-1 rounded">-기 전에</code></strong></p><p class="ml-4">Ex) <strong>먹다</strong> (manger) → <strong>먹<span class="text-red-500 font-semibold">기 전에</span></strong> (avant de manger)</p><p class="ml-4">Ex) <strong>가다</strong> (aller) → <strong>가<span class="text-red-500 font-semibold">기 전에</span></strong> (avant d'aller)</p></div></div></div><div class="border-t pt-6"><h3 class="font-bold text-xl mb-2 text-sky-700">2. Avec un Nom (명사)</h3><div class="pl-4 border-l-4 border-sky-200 space-y-2"><p>On peut aussi les utiliser avec des noms, surtout ceux qui décrivent <strong>une action ou un événement</strong>.</p><p class="ml-4">Ex) <strong>수업</strong> (le cours) → <strong>수업<span class="text-blue-500 font-semibold"> 후에</span></strong> (après le cours)</p><p class="ml-4">Ex) <strong>식사</strong> (le repas) → <strong>식사<span class="text-blue-500 font-semibold"> 전에</span></strong> (avant le repas)</p><div class="mt-4 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg"><p class="font-bold text-amber-800">💡 Astuce !</p><p class="text-amber-700">Certains noms fonctionnent mieux que d'autres. Par exemple :</p><p class="ml-4">"일 후에" (après le travail) est correct, mais <strong>"퇴근 후에"</strong> (après avoir quitté le travail) est plus naturel.</p><p class="ml-4">"학교 전에" (avant l'école) est un peu bizarre, mais <strong>"수업 전에"</strong> (avant le cours) ou <strong>"등교 전에"</strong> (avant d'aller à l'école) est mieux.</p></div></div></div></div>`;
+            } else {
+                 if(q.type === 'multiple-choice') content += `<h2 class="section-title">Étape 1: Choisir la bonne réponse / 알맞은 답 고르기</h2>`;
+                 if(q.type === 'fill-in-the-blank') content += `<h2 class="section-title">Étape 2: Remplir le vide / 빈칸 채우기</h2>`;
+                 if(q.type === 'translate-sentence') content += `<h2 class="section-title">Étape 3: Traduire la phrase / 문장 번역하기</h2>`;
+                 if(q.type === 'listening-dictation') content += `<h2 class="section-title">Étape 4: Écouter et écrire / 듣고 받아쓰기</h2>`;
+                if (q.type === 'listening-dictation') { content += `<p class="text-xl font-semibold text-slate-800 mb-2">Écoutez et écrivez. <br> Mots-clés : <span class="font-normal text-slate-600">${q.hint2}</span></p>`; } else { content += `<p class="text-xl font-semibold text-slate-800 mb-2">${q.fr}</p>`; }
+                if(q.type.startsWith('listening')){ content += `<div class="flex items-center mt-2 mb-4"><p class="text-2xl font-bold text-indigo-600 mr-3">Coréen : </p><button onclick="playAudio('${q.ko}')" class="btn btn-secondary">Écouter / 듣기</button></div>`; } else { content += `<p class="text-2xl font-bold text-indigo-600 mb-4">${q.ko}</p>`; }
+                if (q.type === 'multiple-choice') { content += `<div class="grid grid-cols-1 gap-3">${q.choices.map(c => `<button class="btn btn-choice" data-answer="${c}">${c}</button>`).join('')}</div>`; } else if (q.type === 'fill-in-the-blank') { content += q.ko.replace('___', `<input type="text" id="answer-input" class="p-2 border-2 border-slate-300 rounded-lg text-lg text-center mx-2" style="width: 200px;">`); } else if (q.type === 'translate-sentence') { content += `<textarea id="answer-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" rows="2" placeholder="Traduisez en coréen..."></textarea>`; } else if (q.type === 'listening-dictation') { content += `<p class="font-semibold mt-4 mb-2">1. Écrivez ce que vous entendez / 들은 내용을 적어보세요</p><input id="dictation1" class="w-full p-2 border-2 border-slate-300 rounded-lg"><p class="font-semibold mt-4 mb-2">2. Enregistrez votre voix / 목소리를 녹음하세요</p><div class="flex items-center gap-4"><button id="record-btn" class="btn btn-record" onclick="toggleRecording()">Enregistrer / 녹음하기</button><audio id="recording-player" controls hidden></audio></div><p class="font-semibold mt-4 mb-2">3. Écoutez votre voix et écrivez / 본인 목소리를 듣고 적어보세요</p><input id="dictation2" class="w-full p-2 border-2 border-slate-300 rounded-lg">`; }
+                if (q.hint1 && q.hint2 && q.type !== 'listening-dictation') { content += `<div class="mt-4 flex space-x-2"><button onclick="showHint(1, '${q.hint1}')" class="btn-hint bg-green-100 text-green-800">Aidez moi 🙏 (초성)</button><button onclick="showHint(2, '${q.hint2}')" class="btn-hint bg-blue-100 text-blue-800">Au secours 🛟 (단어)</button></div><div id="hint-display" class="mt-3 p-3 bg-slate-50 rounded-lg text-slate-600 min-h-[50px]"></div>`; }
+            }
+            content += `<div class="mt-6 flex justify-between items-center no-print"><button id="prev-btn" class="btn btn-primary ${currentQuestionIndex === 0 ? 'invisible' : ''}">Précédent / 이전</button><button id="next-btn" class="btn btn-primary">${currentQuestionIndex === quizData.length - 1 ? 'Terminer / 끝내기' : 'Suivant / 다음'}</button></div>`;
+            card.innerHTML = content; quizContainer.appendChild(card); addQuestionEventListeners();
+        }
+
+        function addQuestionEventListeners() {
+            document.getElementById('prev-btn')?.addEventListener('click', prevQuestion);
+            document.getElementById('next-btn')?.addEventListener('click', nextQuestion);
+            document.querySelectorAll('.btn-choice').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.btn-choice').forEach(b => b.classList.remove('selected'));
+                    e.currentTarget.classList.add('selected'); setTimeout(nextQuestion, 300);
+                });
+            });
+        }
+        function showHint(num, text) { if(num === 1) questionsData[currentQuestionIndex].hint1Count++; else questionsData[currentQuestionIndex].hint2Count++; document.getElementById('hint-display').textContent = text; }
+        function saveCurrentAnswer() {
+            const q = quizData[currentQuestionIndex]; const qData = questionsData[currentQuestionIndex]; if (!q || !qData) return;
+            if (q.type === 'multiple-choice') { const selected = document.querySelector('.btn-choice.selected'); qData.userAnswer.main = selected ? selected.dataset.answer : ''; } else if (q.type === 'fill-in-the-blank' || q.type === 'translate-sentence') { qData.userAnswer.main = document.getElementById('answer-input')?.value.trim() || ''; } else if (q.type === 'listening-dictation') { qData.userAnswer.dictation1 = document.getElementById('dictation1')?.value.trim() || ''; qData.userAnswer.dictation2 = document.getElementById('dictation2')?.value.trim() || ''; }
+        }
+        function prevQuestion() { if (currentQuestionIndex > 0) { saveCurrentAnswer(); currentQuestionIndex--; renderQuestion(); } }
+        function nextQuestion() { saveCurrentAnswer(); if (currentQuestionIndex < quizData.length - 1) { currentQuestionIndex++; renderQuestion(); } else { finishQuiz(); } }
+
+        async function finishQuiz() {
+            endTime = new Date(); evaluateAnswers();
+            quizContainer.classList.add('hidden'); resultScreen.classList.remove('hidden');
+            const score = questionsData.filter(q => q.isCorrect).length; const total = quizData.length - 1;
+            const percentage = Math.round((score / total) * 100);
+            const resultMessage = getGradingMessage(percentage, 'fr');
+            document.getElementById('result-message').innerHTML = `<strong class="text-2xl">${studentName}, ton score est de ${score} / ${total}</strong><br>${resultMessage}`;
+            if(percentage === 100) confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+            
+            const aiFeedbackContainer = document.getElementById('ai-feedback-container');
+            const aiFeedbackContent = document.getElementById('ai-feedback-content');
+            const aiFeedbackLoading = document.getElementById('ai-feedback-loading');
+            aiFeedbackContainer.classList.remove('hidden'); aiFeedbackLoading.classList.remove('hidden'); aiFeedbackContent.classList.add('hidden');
+            
+            const incorrectAnswers = questionsData.filter(qData => !qData.isCorrect && qData.type !== 'explanation').map(qData => ({ q: quizData[qData.number], qData }));
+            const aiFeedback = await getAiFeedback(incorrectAnswers);
+            
+            aiFeedbackLoading.classList.add('hidden'); aiFeedbackContent.textContent = aiFeedback; aiFeedbackContent.classList.remove('hidden');
+            sendResults(aiFeedback);
+        }
+
+        function evaluateAnswers() {
+            questionsData.forEach(qData => {
+                if (qData.type === 'explanation') return;
+                const format = (str) => (str || '').replace(/[.\s+!?]/g, '').toLowerCase(); let isCorrect = false;
+                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { isCorrect = format(qData.userAnswer.main) === format(qData.correctAnswer); } else if (qData.type === 'translate-sentence') { isCorrect = format(qData.userAnswer.main) === format(qData.ko); } else if (qData.type === 'listening-dictation') { isCorrect = format(qData.userAnswer.dictation1) === format(qData.ko); }
+                qData.isCorrect = isCorrect;
+            });
+        }
+
+        async function getAiFeedback(incorrectAnswers) {
+            if (incorrectAnswers.length === 0) {
+                return "Félicitations ! Aucune erreur trouvée. Tu es sur la bonne voie ! 👍";
+            }
+            const mistakesText = incorrectAnswers.map(item => {
+                let userAnswerText = item.qData.userAnswer.main || item.qData.userAnswer.dictation1 || '';
+                let correctAnswerText = item.q.correctAnswer || item.q.ko;
+                return `Question Type: ${item.q.type}\nInstruction (FR): ${item.q.fr}\nStudent's Answer: "${userAnswerText}"\nCorrect Answer: "${correctAnswerText}"\n---`;
+            }).join('\n');
+
+            const systemPrompt = "Tu es un tuteur de coréen sympathique et encourageant. L'étudiant est un débutant complet francophone. Analyse les erreurs suivantes, identifie le principal point de confusion (par exemple, confusion entre -기 전에 et -(으)ㄴ 후에, ou des erreurs de conjugaison). Fournis une explication très simple, courte et positive en français. Utilise des emojis pour rendre le tout plus amical. Termine par une phrase d'encouragement. Ne sois pas trop long.";
+            const userQuery = `Voici les erreurs de l'étudiant :\n${mistakesText}\n\nAnalyse ces erreurs et donne une explication simple et encourageante.`;
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, };
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                return text || "Désolé, une erreur est survenue lors de l'analyse. Réessaye !";
+            } catch (error) {
+                console.error("Error fetching AI feedback:", error);
+                return "Impossible de contacter le service d'analyse. Vérifie ta connexion ou réessaye plus tard.";
+            }
+        }
+
+        async function sendResults(aiFeedback = '') {
+            const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
+            const payload = { studentName, startTime: startTime.toISOString(), endTime: endTime.toISOString(), totalTimeSeconds, questions: questionsData, aiFeedback };
+            console.log("--- QUIZ RESULTS (with AI Feedback) ---");
+            console.log(JSON.stringify(payload, null, 2));
+             try {
+                const response = await fetch('/.netlify/functions/send-results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`Failed to send results: ${response.statusText}`);
+                console.log('Results sent successfully!');
+            } catch (error) { console.error('Error sending results:', error); }
+        }
+
+    </script>
+</body>
+</html>
+
