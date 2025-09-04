@@ -1,11 +1,60 @@
-//Exercices_coreen/netlify/functions/send-results-v2.html
-
 const nodemailer = require('nodemailer');
+const fetch = require('node-fetch');
+
+/**
+ * Calls the Gemini API to get personalized feedback on incorrect answers.
+ * @param {Array} incorrectAnswersData Array of objects with incorrect answers.
+ * @param {string} apiKey The Gemini API key.
+ * @returns {Promise<string|null>} The AI-generated feedback text or null.
+ */
+async function getAIFeedback(incorrectAnswersData, apiKey) {
+  if (!apiKey) {
+    console.log("GEMINI_API_KEY is not set. Skipping AI feedback.");
+    return null;
+  }
+  if (!incorrectAnswersData || incorrectAnswersData.length === 0) {
+    return null; // No incorrect answers to analyze.
+  }
+
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+  const systemPrompt = `Vous êtes un professeur de coréen sympathique et encourageant pour des débutants francophones.
+Analysez les erreurs suivantes de l'étudiant sur les particules coréennes 은/는, 이/가, 을/를.
+Identifiez la principale faiblesse ou le point de confusion de l'étudiant.
+Fournissez une explication concise et simple en français, suivie de la même explication en coréen.
+Utilisez un langage très simple et des exemples clairs pour aider l'étudiant à comprendre la nuance.
+Commencez par une analyse générale, puis donnez un ou deux exemples corrigés tirés des erreurs de l'étudiant.
+Soyez positif et encourageant. Adressez-vous directement à l'étudiant.`;
+
+  const userQuery = `Voici les erreurs de l'étudiant. L'objectif est de comprendre si l'étudiant a du mal avec la règle du 받침 (consonne finale), ou s'il confond le rôle de 은/는 (contraste) avec 이/가 (identification du sujet) ou 을/를 (objet). Analysez ses réponses et donnez une explication personnalisée :\n\n${JSON.stringify(incorrectAnswersData, null, 2)}`;
+  
+  const payload = {
+      contents: [{ parts: [{ text: userQuery }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+  };
+
+  try {
+      const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+          const errorBody = await response.text();
+          console.error(`Gemini API request failed with status ${response.status}:`, errorBody);
+          return "L'analyse IA a rencontré une erreur.";
+      }
+      const result = await response.json();
+      return result.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (error) {
+      console.error("Error fetching AI feedback:", error);
+      return "Impossible de contacter le service d'analyse IA.";
+  }
+}
+
 
 /**
  * Helper function to safely escape HTML entities.
- * @param {string} str The string to escape.
- * @returns {string} The escaped string.
  */
 function escapeHtml(str = '') {
   if (typeof str !== 'string') return '';
@@ -15,14 +64,12 @@ function escapeHtml(str = '') {
 }
 
 /**
- * Helper function to format the user's answer based on question type.
- * @param {object} q The question object from the payload.
- * @returns {string} HTML formatted string of the user's answer.
+ * Helper function to format the user's answer.
  */
 function formatUserAnswer(q) {
   const userAnswer = q.userAnswer || {};
   if (Object.keys(userAnswer).length === 0) return '<i>(vide)</i>';
-  
+ 
   if (typeof userAnswer === 'object' && userAnswer !== null) {
       return Object.entries(userAnswer)
           .map(([key, value]) => `<b>${key}:</b> ${escapeHtml(value || '')}`)
@@ -37,7 +84,7 @@ exports.handler = async (event) => {
       return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL } = process.env;
+    const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL, GEMINI_API_KEY } = process.env;
     if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
       return { statusCode: 500, body: JSON.stringify({ message: 'Missing env vars for Gmail' }) };
     }
@@ -49,8 +96,11 @@ exports.handler = async (event) => {
       endTime,
       totalTimeSeconds = 0,
       questions = [],
-      aiFeedback = '', 
+      incorrectAnswers = [], // Get incorrect answers from payload
     } = payload;
+
+    // AI Feedback is now generated here in the backend
+    const aiFeedback = await getAIFeedback(incorrectAnswers, GEMINI_API_KEY);
 
     const attachments = questions.flatMap((q) => {
       if (q?.recording?.base64) {
@@ -92,7 +142,7 @@ exports.handler = async (event) => {
     const aiFeedbackHtml = aiFeedback ? `
       <div style="background:#e0e7ff; border-left: 5px solid #4f46e5; padding:15px; border-radius:8px; margin:25px 0;">
           <h3 style="margin:0 0 10px 0; font-size:20px; color:#3730a3;">💡 Analyse et conseils de l'IA</h3>
-          <p style="margin:0; font-size:16px; color:#333; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(aiFeedback)}</p>
+          <p style="margin:0; font-size:16px; color:#333; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(aiFeedback).replace(/\n/g, '<br>')}</p>
       </div>
     ` : '';
 
@@ -137,3 +187,4 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ message: err.message }) };
   }
 };
+
