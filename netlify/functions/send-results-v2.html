@@ -1,0 +1,137 @@
+const nodemailer = require('nodemailer');
+
+/**
+ * Helper function to safely escape HTML entities.
+ * @param {string} str The string to escape.
+ * @returns {string} The escaped string.
+ */
+function escapeHtml(str = '') {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[&<>"']/g, (s) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[s]));
+}
+
+/**
+ * Helper function to format the user's answer based on question type.
+ * @param {object} q The question object from the payload.
+ * @returns {string} HTML formatted string of the user's answer.
+ */
+function formatUserAnswer(q) {
+  const userAnswer = q.userAnswer || {};
+  if (Object.keys(userAnswer).length === 0) return '<i>(vide)</i>';
+  
+  if (typeof userAnswer === 'object' && userAnswer !== null) {
+      return Object.entries(userAnswer)
+          .map(([key, value]) => `<b>${key}:</b> ${escapeHtml(value || '')}`)
+          .join('<br>');
+  }
+  return escapeHtml(userAnswer);
+}
+
+exports.handler = async (event) => {
+  try {
+    if (event.httpMethod !== 'POST') {
+      return { statusCode: 405, body: 'Method Not Allowed' };
+    }
+
+    const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL } = process.env;
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
+      return { statusCode: 500, body: JSON.stringify({ message: 'Missing env vars for Gmail' }) };
+    }
+
+    const payload = JSON.parse(event.body || '{}');
+    const {
+      studentName = 'Élève',
+      startTime,
+      endTime,
+      totalTimeSeconds = 0,
+      questions = [],
+      aiFeedback = '', 
+    } = payload;
+
+    const attachments = questions.flatMap((q) => {
+      if (q?.recording?.base64) {
+        return [{
+          filename: `rec_q${q.number}_${studentName.replace(/\s/g, '_')}.webm`,
+          content: Buffer.from(q.recording.base64, 'base64'),
+          contentType: 'audio/webm',
+        }];
+      }
+      return [];
+    });
+
+    const gradableQuestions = questions.filter(q => q.type !== 'explanation');
+    const correctCount = gradableQuestions.filter(q => q.isCorrect).length;
+    const totalGraded = gradableQuestions.length;
+    const score = totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 0;
+    
+    const mins = Math.floor(totalTimeSeconds / 60);
+    const secs = Math.round(totalTimeSeconds % 60);
+
+    const rowHtml = gradableQuestions.map((q) => {
+        const answered = formatUserAnswer(q);
+        const ok = q.isCorrect ? '✔️' : '❌';
+        const audioHtml = q?.recording?.base64 ? `<div style="margin-top:6px; font-size:12px; color:#666;">* Fichier audio joint</div>` : '';
+
+        return `
+          <tr>
+            <td style="border:1px solid #eee;padding:6px;text-align:center">${q.number ?? ''}</td>
+            <td style="border:1px solid #eee;padding:6px">${escapeHtml(q.fr || '')}</td>
+            <td style="border:1px solid #eee;padding:6px">${escapeHtml(q.ko || '')}</td>
+            <td style="border:1px solid #eee;padding:6px">${answered} ${audioHtml}</td>
+            <td style="border:1px solid #eee;padding:6px;text-align:center">${ok}</td>
+            <td style="border:1px solid #eee;padding:6px;text-align:center">${q.listenCount || 0}</td>
+            <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint1Count || 0}</td>
+            <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint2Count || 0}</td>
+          </tr>`;
+      }).join('');
+      
+    const aiFeedbackHtml = aiFeedback ? `
+      <div style="background:#e0e7ff; border-left: 5px solid #4f46e5; padding:15px; border-radius:8px; margin:25px 0;">
+          <h3 style="margin:0 0 10px 0; font-size:20px; color:#3730a3;">💡 Analyse et conseils de l'IA</h3>
+          <p style="margin:0; font-size:16px; color:#333; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(aiFeedback)}</p>
+      </div>
+    ` : '';
+
+    const html = `
+      <div style="font-family:Arial, sans-serif; color:#333;">
+        <h2>Résultats du test de coréen (v2)</h2>
+        <p><b>Élève:</b> ${escapeHtml(studentName)}</p>
+        <div style="background:#f0f4f8; padding:15px; border-radius:8px; margin:15px 0; text-align:center;">
+          <h3 style="margin:0; font-size:24px;">Score Final: ${score} / 100</h3>
+          <p style="margin:5px 0 0; font-size:16px; color:#555;">(${correctCount} / ${totalGraded} bonnes réponses)</p>
+        </div>
+        ${aiFeedbackHtml}
+        <p><b>Début:</b> ${escapeHtml(String(startTime || ''))}<br/>
+           <b>Fin:</b> ${escapeHtml(String(endTime || ''))}<br/>
+           <b>Temps total:</b> ${mins}m ${secs}s</p>
+        <table style="border-collapse:collapse;width:100%;font-size:14px">
+          <thead>
+            <tr style="background:#f0f4f8">
+              <th style="border:1px solid #eee;padding:6px">#</th><th style="border:1px solid #eee;padding:6px">Français</th><th style="border:1px solid #eee;padding:6px">Coréen</th>
+              <th style="border:1px solid #eee;padding:6px">Réponse élève</th><th style="border:1px solid #eee;padding:6px">OK?</th>
+              <th style="border:1px solid #eee;padding:6px">Écoutes</th><th style="border:1px solid #eee;padding:6px">Indice 1</th><th style="border:1px solid #eee;padding:6px">Indice 2</th>
+            </tr>
+          </thead>
+          <tbody>${rowHtml}</tbody>
+        </table>
+      </div>`;
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com', port: 465, secure: true,
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    });
+
+    await transporter.sendMail({
+      from: `Korean Pondang <${GMAIL_USER}>`, to: RECIPIENT_EMAIL,
+      subject: `Résultats v2 – ${studentName} – Score: ${score}/100`,
+      html, attachments,
+    });
+
+    return { statusCode: 200, body: JSON.stringify({ message: 'OK' }) };
+  } catch (err) {
+    console.error('Error in send-results-v2 function:', err);
+    return { statusCode: 500, body: JSON.stringify({ message: err.message }) };
+  }
+};
