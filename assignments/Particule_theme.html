@@ -1,434 +1,214 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exercice Coréen: Le Sens Caché de 은/는</title>
-    <script src="https://cdn.tailwindcss.com/"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Noto Sans KR', sans-serif; }
-        .made-by { font-size: 0.8rem; color: #888; text-align: center; padding: 15px; }
-        .question-card { scroll-margin-top: 80px; }
-        .correct { border: 2px solid #22c55e; background-color: #f0fdf4; }
-        .incorrect { border: 2px solid #ef4444; background-color: #fef2f2; }
-        [type="radio"]:checked { background-image: url("data:image/svg+xml,%3csvg viewBox='0' 0 16 16' fill='%234f46e5' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e"); }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #6366f1;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800">
+const nodemailer = require('nodemailer');
+const fetch = require('node-fetch');
 
-    <div class="made-by">Made by 성일, Pongdang</div>
+/**
+ * Calls the Gemini API to get personalized feedback on incorrect answers.
+ * @param {Array} incorrectAnswersData Array of objects with incorrect answers.
+ * @param {string} apiKey The Gemini API key.
+ * @returns {Promise<string|null>} The AI-generated feedback text or null.
+ */
+async function getAIFeedback(incorrectAnswersData, apiKey) {
+  if (!apiKey) {
+    console.log("GEMINI_API_KEY is not set. Skipping AI feedback.");
+    return null;
+  }
+  if (!incorrectAnswersData || incorrectAnswersData.length === 0) {
+    return null; // No incorrect answers to analyze.
+  }
 
-    <div class="max-w-4xl mx-auto p-5">
-        <header class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-700">Exercice: Le Sens Caché de 은/는</h1>
-                <p class="text-slate-500">연습문제: 조사의 숨은 뜻 '은/는'</p>
-            </div>
-            <button onclick="window.print()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                Imprimer / 프린트
-            </button>
-        </header>
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
-        <!-- Student Info -->
-        <div id="student-info" class="mb-8 bg-white p-6 rounded-xl shadow-md">
-            <label for="studentName" class="block text-lg font-semibold mb-2">Entrez votre nom / 이름을 입력하세요:</label>
-            <input type="text" id="studentName" class="w-full p-3 border rounded-lg" placeholder="">
-            <button id="start-btn" class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-lg text-lg font-bold hover:bg-indigo-700 transition">Commencer l'exercice (시작)</button>
-        </div>
+  const systemPrompt = `Vous êtes un professeur de coréen sympathique et encourageant pour des débutants francophones.
+Analysez les erreurs suivantes de l'étudiant sur les particules coréennes 은/는, 이/가, 을/를.
+Identifiez la principale faiblesse ou le point de confusion de l'étudiant (par ex: confusion entre contraste et sujet, ou erreur de 받침).
+Fournissez une explication concise (3-4 phrases max) et simple en français, suivie de la même explication en coréen.
+Utilisez un langage très simple et des exemples clairs pour aider l'étudiant à comprendre la nuance.
+Commencez par une analyse générale ("On dirait que tu confonds parfois..."), puis donnez un ou deux exemples corrigés tirés des erreurs de l'étudiant.
+Soyez positif et encourageant. Adressez-vous directement à l'étudiant.`;
 
-        <!-- Main Content -->
-        <main id="quiz-content" class="hidden">
-            
-            <!-- Explanation -->
-            <div class="bg-sky-100 border-l-4 border-sky-500 text-sky-800 p-6 rounded-lg mb-8 space-y-6">
-                <div>
-                    <h2 class="text-2xl font-bold mb-3">⭐ Pourquoi 은/는 est si spécial ?</h2>
-                    <p class="mb-2">En français, pour comparer, on doit souvent faire de longues phrases. Par exemple :</p>
-                    <p class="p-4 bg-white rounded-md italic text-gray-600">
-                        "J'aime les pommes, mais je n'aime pas les bananes, et je n'aime pas non plus les poires."
-                    </p>
-                    <p class="mt-2">En coréen, grâce à <strong>은/는</strong>, on peut dire tout ça de manière super efficace !</p>
-                    <p class="p-4 bg-white rounded-md font-bold text-indigo-700">
-                        저는 사과<span class="text-red-600">는</span> 좋아해요.
-                    </p>
-                    <p class="mt-2">En utilisant <span class="text-red-600 font-bold">는</span>, on met "la pomme" en avant et tout le monde comprend qu'on n'aime pas forcément les autres fruits. C'est un peu un "super-pouvoir" du coréen ! C'est difficile au début, mais suivons les étapes ensemble pour le maîtriser ! 💪</p>
-                </div>
-                
-                <div>
-                    <h2 class="text-2xl font-bold mb-3">🧐 Les bases à connaître</h2>
-                    <div class="space-y-4 mt-2">
-                        <div class="p-4 bg-white rounded-md">
-                            <h3 class="font-bold">C'est quoi un "받침" ? (batchim)</h3>
-                            <p>Le <strong>받침</strong> est la <strong>consonne finale</strong> d'une syllabe. C'est elle qui décide si on utilise <strong>은</strong> (avec 받침) ou <strong>는</strong> (sans 받침).<br>
-                            - Ex: <span class="font-bold">책</span> (chaek) → se termine par <span class="font-bold text-red-600">ㄱ</span> (k) → <strong>책<span class="text-red-600">은</span></strong>.<br>
-                            - Ex: <span class="font-bold">저</span> (jeo) → se termine par <span class="font-bold text-red-600">ㅓ</span> (eo) → <strong>저<span class="text-red-600">는</span></strong>.
-                            </p>
-                        </div>
-                         <div class="p-4 bg-white rounded-md">
-                            <h3 class="font-bold">⚠️ 은/는 vs 이/가 (Sujet)</h3>
-                            <p>
-                                <strong>이/가</strong> : Identifie le sujet. C'est lui et personne d'autre. Répond à "qui ?" ou "quoi ?".<br>
-                                <span class="text-gray-600">Ex: <strong>폴<span class="text-blue-600">이</span></strong> 왔어요. (C'est Paul qui est venu.)</span><br><br>
-                                <strong>은/는</strong> : Met le sujet en contraste avec d'autres. <br>
-                                <span class="text-gray-600">Ex: <strong>폴<span class="text-red-600">은</span></strong> 왔어요. (Paul, LUI, il est venu... les autres, non.)</span>
-                            </p>
-                        </div>
-                         <div class="p-4 bg-white rounded-md">
-                            <h3 class="font-bold">⚠️ 은/는 vs 을/를 (Objet)</h3>
-                            <p>
-                                <strong>을/를</strong> : Marque simplement l'objet de l'action.<br>
-                                <span class="text-gray-600">Ex: 저는 <strong>빵<span class="text-blue-600">을</span></strong> 먹었어요. (J'ai mangé du pain. - Simple constat.)</span><br><br>
-                                <strong>은/는</strong> : Met l'objet en contraste avec d'autres objets possibles.<br>
-                                <span class="text-gray-600">Ex: 저는 <strong>빵<span class="text-red-600">은</span></strong> 먹었어요. (J'ai mangé du pain [<em>...mais pas le reste</em>].)</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  const userQuery = `Voici les erreurs de l'étudiant. L'objectif est de comprendre si l'étudiant a du mal avec la règle du 받침 (consonne finale), ou s'il confond le rôle de 은/는 (contraste) avec 이/가 (identification du sujet) ou 을/를 (objet). Analysez ses réponses et donnez une explication personnalisée :\n\n${JSON.stringify(incorrectAnswersData, null, 2)}`;
+  
+  const payload = {
+      contents: [{ parts: [{ text: userQuery }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+  };
 
-            <form id="quiz-form"></form>
-
-            <div class="mt-8 flex justify-between items-center">
-                <a href="/" class="text-indigo-600 hover:underline">← Exercices précédents (이전)</a>
-            </div>
-        </main>
-        
-        <!-- Results -->
-        <div id="results" class="hidden mt-8 text-center bg-white p-8 rounded-xl shadow-lg">
-            <h2 class="text-3xl font-bold mb-4">Résultats / 결과</h2>
-            <div id="result-message" class="text-2xl font-semibold p-6 rounded-lg mb-4"></div>
-            <p class="text-lg">Votre score : <span id="score" class="font-bold"></span>%</p>
-            <p class="text-slate-600">Temps total : <span id="total-time"></span> secondes.</p>
-
-            <!-- AI Feedback Section -->
-            <div id="ai-feedback-container" class="mt-8 text-left hidden">
-                <h3 class="text-2xl font-bold mb-4 text-center">💡 Analyse et conseils de l'IA</h3>
-                <div id="ai-feedback-loader" class="text-center p-4">
-                    <div class="loader"></div>
-                    <p class="mt-2 text-slate-500">분석 중... 잠시만 기다려 주세요! (Analyse en cours...)</p>
-                </div>
-                <div id="ai-feedback-content" class="hidden p-5 bg-purple-50 border-l-4 border-purple-500 rounded-lg text-slate-700">
-                    <!-- AI content will be inserted here -->
-                </div>
-                 <div id="ai-feedback-perfect" class="hidden p-5 bg-green-50 border-l-4 border-green-500 rounded-lg">
-                    <p class="text-green-800">🎉 <strong>Score parfait !</strong><br>Vous avez tout compris. Aucune explication supplémentaire n'est nécessaire ! (만점이에요! 추가 설명이 필요 없네요!)</p>
-                </div>
-                 <div id="ai-feedback-error" class="hidden p-5 bg-red-50 border-l-4 border-red-500 rounded-lg">
-                    <p class="text-red-800"><strong>Oups !</strong><br>L'analyse IA n'a pas pu être effectuée. Les résultats ont tout de même été envoyés. (AI 분석에 실패했습니다. 결과는 정상적으로 전송되었습니다.)</p>
-                </div>
-            </div>
-
-            <button id="restart-btn" class="mt-8 bg-indigo-600 text-white py-3 px-8 rounded-lg text-lg font-bold hover:bg-indigo-700 transition">Recommencer (다시하기)</button>
-        </div>
-    </div>
-
-    <div class="made-by">Made by 성일, Pongdang</div>
-
-<script>
-    // --- DATA ---
-    const namePlaceholders = ['Super Cédou', 'Championne Julie', 'Génie Martin', 'As de Coréen Sophie', 'Légende Alex'];
-    let studentName = '', startTime, endTime, currentSectionIndex = 0, questions = [], userAnswers = [];
-
-    // --- DOM ELEMENTS ---
-    const studentInfoDiv = document.getElementById('student-info');
-    const studentNameInput = document.getElementById('studentName');
-    const quizContentDiv = document.getElementById('quiz-content');
-    const resultsDiv = document.getElementById('results');
-    const startBtn = document.getElementById('start-btn');
-    const quizForm = document.getElementById('quiz-form');
-    const restartBtn = document.getElementById('restart-btn');
-    const aiFeedbackContainer = document.getElementById('ai-feedback-container');
-    const aiFeedbackLoader = document.getElementById('ai-feedback-loader');
-    const aiFeedbackContent = document.getElementById('ai-feedback-content');
-    const aiFeedbackPerfect = document.getElementById('ai-feedback-perfect');
-    const aiFeedbackError = document.getElementById('ai-feedback-error');
+  try {
+      const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+          const errorBody = await response.text();
+          console.error(`Gemini API request failed with status ${response.status}:`, errorBody);
+          return null; // Return null on failure
+      }
+      const result = await response.json();
+      return result.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (error) {
+      console.error("Error fetching AI feedback:", error);
+      return null; // Return null on failure
+  }
+}
 
 
-    // --- FUNCTIONS ---
-    function generateQuestions() {
-        return [
-            // === PARTIE 1: Choisir la bonne particule (객관식) ===
-            { section: 'Partie 1: Choisir la bonne particule (조사 고르기)', type: 'multiple-choice', ko: '저는 개___ 좋아해요. (고양이는 안 좋아해요)', fr: 'J\'aime les chiens (mais pas les chats).', options: ['는', '가', '를'], answer: '는', vocab: [{ko:'개', fr:'chien'}], explanation: "On compare 'les chiens' et 'les chats'. La particule de contraste 은/는 est parfaite ici." },
-            { section: 'Partie 1: Choisir la bonne particule (조사 고르기)', type: 'multiple-choice', ko: '이 식당___ 비싸요. (다른 식당은 안 비싸요)', fr: 'Ce restaurant est cher (contrairement aux autres).', options: ['은', '이', '에'], answer: '은', vocab: [{ko:'식당', fr:'restaurant'}], explanation: "On met 'ce restaurant' en opposition aux autres. C'est une comparaison, donc on utilise 은/는." },
-            { section: 'Partie 1: Choisir la bonne particule (조사 고르기)', type: 'multiple-choice', ko: '오늘___ 날씨가 춥네요. (어제는 안 추웠어요)', fr: 'Aujourd\'hui il fait froid (contrairement à hier).', options: ['은', '이', '에'], answer: '은', vocab: [{ko:'오늘', fr:'aujourd\'hui'}], explanation: "On contraste la météo d'aujourd'hui avec celle d'hier. Le mot '오늘' se termine par un 받침 (ㄴ), donc on utilise 은." },
-            { section: 'Partie 1: Choisir la bonne particule (조사 고르기)', type: 'multiple-choice', ko: '한국어___ 재미있어요. (일본어는 재미없어요)', fr: 'Le coréen est amusant (contrairement au japonais).', options: ['는', '가', '를'], answer: '는', vocab: [{ko:'한국어', fr:'langue coréenne'}], explanation: "Le coréen est comparé au japonais. '한국어' n'a pas de 받침, donc on utilise 는." },
-            { section: 'Partie 1: Choisir la bonne particule (조사 고르기)', type: 'multiple-choice', ko: '이 영화___ 봤어요. (다른 영화는 못 봤어요)', fr: 'J\'ai vu ce film (mais pas les autres).', options: ['는', '가', '를'], answer: '는', vocab: [{ko:'영화', fr:'film'}], explanation: "On met en avant 'ce film' par rapport aux autres. '영화' n'a pas de 받침, donc on ajoute 는." },
+/**
+ * Helper function to safely escape HTML entities.
+ */
+function escapeHtml(str = '') {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[&<>"']/g, (s) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[s]));
+}
 
-            // === PARTIE 2: Deviner le sens caché (객관식) ===
-            { section: 'Partie 2: Deviner le sens caché (숨은 뜻 찾기)', type: 'multiple-choice', ko: '문장: "커피<span class="text-red-500 font-bold">는</span> 마셨어요."<br>이 문장의 숨은 뜻은 무엇일까요?', fr: 'Phrase: "J\'ai bu le café."<br>Quel est le sens caché de cette phrase ?', options: ['다른 것은 안 마셨어요 (Je n\'ai rien bu d\'autre)', '모든 것을 마셨어요 (J\'ai tout bu)', '커피가 맛없어요 (Le café n\'est pas bon)'], answer: '다른 것은 안 마셨어요 (Je n\'ai rien bu d\'autre)', vocab: [{ko:'커피', fr:'café'}], explanation: "L'utilisation de 는 suggère que vous avez bu le café, mais peut-être pas le thé ou le jus d'orange qui étaient aussi disponibles." },
-            { section: 'Partie 2: Deviner le sens caché (숨은 뜻 찾기)', type: 'multiple-choice', ko: '문장: "폴<span class="text-red-500 font-bold">은</span> 똑똑해요."<br>이 문장의 숨은 뜻은 무엇일까요?', fr: 'Phrase: "Paul est intelligent."<br>Quel est le sens caché de cette phrase ?', options: ['다른 사람은 안 똑똑해요 (Les autres ne sont pas intelligents)', '모두 똑똑해요 (Tout le monde est intelligent)', '폴은 안 똑똑해요 (Paul n\'est pas intelligent)'], answer: '다른 사람은 안 똑똑해요 (Les autres ne sont pas intelligents)', vocab: [{ko:'폴', fr:'Paul'}, {ko:'똑똑하다', fr:'intelligent'}], explanation: "En disant '폴은', on met Paul en avant. Cela sous-entend souvent une comparaison avec d'autres personnes qui, elles, ne le sont peut-être pas." },
-            { section: 'Partie 2: Deviner le sens caché (숨은 뜻 찾기)', type: 'multiple-choice', ko: '문장: "겨울<span class="text-red-500 font-bold">은</span> 추워요."<br>이 문장의 숨은 뜻은 무엇일까요?', fr: 'Phrase: "L\'hiver est froid."<br>Quel est le sens caché de cette phrase ?', options: ['다른 계절은 안 추워요 (Les autres saisons ne sont pas froides)', '모든 계절이 추워요 (Toutes les saisons sont froides)', '겨울은 따뜻해요 (L\'hiver est chaud)'], answer: '다른 계절은 안 추워요 (Les autres saisons ne sont pas froides)', vocab: [{ko:'겨울', fr:'hiver'}, {ko:'춥다', fr:'froid'}], explanation: "On décrit une caractéristique de l'hiver, en le contrastant implicitement avec les autres saisons comme l'été, qui est chaud." },
-            { section: 'Partie 2: Deviner le sens caché (숨은 뜻 찾기)', type: 'multiple-choice', ko: '문장: "책<span class="text-red-500 font-bold">은</span> 읽었어요."<br>이 문장의 숨은 뜻은 무엇일까요?', fr: 'Phrase: "J\'ai lu le livre."<br>Quel est le sens caché de cette phrase ?', options: ['숙제는 안 했어요 (Je n\'ai pas fait les devoirs)', '모든 것을 다 했어요 (J\'ai tout fait)', '책이 재미없어요 (Le livre n\'est pas amusant)'], answer: '숙제는 안 했어요 (Je n\'ai pas fait les devoirs)', vocab: [{ko:'책', fr:'livre'}, {ko:'숙제', fr:'devoirs'}], explanation: "Cela veut dire que l'action de 'lire le livre' a été faite, mais cela sous-entend que d'autres actions (comme faire les devoirs) n'ont pas été faites." },
-            { section: 'Partie 2: Deviner le sens caché (숨은 뜻 찾기)', type: 'multiple-choice', ko: '문장: "지하철<span class="text-red-500 font-bold">은</span> 빨라요."<br>이 문장의 숨은 뜻은 무엇일까요?', fr: 'Phrase: "Le métro est rapide."<br>Quel est le sens caché de cette phrase ?', options: ['버스는 느려요 (Le bus est lent)', '모든 교통수단이 빨라요 (Tous les transports sont rapides)', '지하철이 느려요 (Le métro est lent)'], answer: '버스는 느려요 (Le bus est lent)', vocab: [{ko:'지하철', fr:'métro'}, {ko:'버스', fr:'bus'}], explanation: "En mettant l'accent sur le métro, on le compare souvent à d'autres moyens de transport, comme le bus, qui est généralement plus lent." },
+/**
+ * Helper function to format the user's answer.
+ */
+function formatUserAnswer(q) {
+  const userAnswer = q.userAnswer || {};
+  if (Object.keys(userAnswer).length === 0) return '<i>(vide)</i>';
+ 
+  if (typeof userAnswer === 'object' && userAnswer !== null) {
+      return Object.entries(userAnswer)
+          .map(([key, value]) => `<b>${key}:</b> ${escapeHtml(value || '')}`)
+          .join('<br>');
+  }
+  return escapeHtml(userAnswer);
+}
 
-            // === PARTIE 3: Compléter avec un mot (단어 쓰기) ===
-            { section: 'Partie 3: Compléter avec un mot (단어 쓰기)', type: 'write-word', ko: '오늘은 덥지만, ___ 추웠어요.', fr: 'Situation: Aujourd\'hui il fait chaud. Mais hier il faisait froid.<br>Phrase: Aujourd\'hui il fait chaud, mais ___ il faisait froid.', answer: '어제는', vocab: [{ko:'어제', fr:'hier'}], explanation: "On oppose 'aujourd'hui' (오늘) à 'hier' (어제). Pour marquer ce contraste sur 'hier', on ajoute 는." },
-            { section: 'Partie 3: Compléter avec un mot (단어 쓰기)', type: 'write-word', ko: '저는 개는 좋아하지만, ___ 무서워요.', fr: 'Situation: J\'aime les chiens. Mais j\'ai peur des chats.<br>Phrase: J\'aime les chiens, mais j\'ai peur ___ .', answer: '고양이는', vocab: [{ko:'고양이', fr:'chat'}], explanation: "Ici, 'les chats' (고양이) sont mis en opposition aux chiens. Il faut donc ajouter 는." },
-            { section: 'Partie 3: Compléter avec un mot (단어 쓰기)', type: 'write-word', ko: '사과는 맛있지만, ___ 맛없어요.', fr: 'Situation: Les pommes sont délicieuses. Mais les bananes ne sont pas bonnes.<br>Phrase: Les pommes sont bonnes, mais ___ ne sont pas bonnes.', answer: '바나나는', vocab: [{ko:'바나나', fr:'banane'}], explanation: "La phrase compare les pommes et les bananes. Pour contraster 'banane' (바나나), on utilise 는." },
-            { section: 'Partie 3: Compléter avec un mot (단어 쓰기)', type: 'write-word', ko: '저는 한국어는 공부하지만, ___ 공부 안 해요.', fr: 'Situation: J\'étudie le coréen. Mais je n\'étudie pas le chinois.<br>Phrase: J\'étudie le coréen, mais je n\'étudie pas ___ .', answer: '중국어는', vocab: [{ko:'중국어', fr:'chinois'}], explanation: "Le mot à compléter est 'chinois' (중국어), qui est contrasté avec 'coréen'. On ajoute 는." },
-            { section: 'Partie 3: Compléter avec un mot (단어 쓰기)', type: 'write-word', ko: '저는 영화는 봤지만, ___ 못 읽었어요.', fr: 'Situation: J\'ai vu le film. Mais je n\'ai pas pu lire le livre.<br>Phrase: J\'ai vu le film, mais je n\'ai pas pu lire ___ .', answer: '책은', vocab: [{ko:'책', fr:'livre'}], explanation: "On oppose 'le film' et 'le livre' (책). '책' a un 받침, donc on utilise 은 pour le contraste." },
-
-            // === PARTIE 4: Traduire la situation (문장 쓰기) ===
-            { section: 'Partie 4: Traduire la situation (상황 번역하기)', type: 'translate-sentence', situation_fr: 'Situation : Vous aimez les pommes, mais pas les autres fruits.', prompt_fr: 'La phrase à traduire : J\'aime les pommes (mais...).', answer: '저는 사과는 좋아해요', vocab: [{ko:'사과', fr:'pomme'}, {ko:'좋아하다', fr:'aimer'}], explanation: "Pour dire que vous aimez 'les pommes' en particulier, mettez l'accent dessus avec 는. '사과' + '는'." },
-            { section: 'Partie 4: Traduire la situation (상황 번역하기)', type: 'translate-sentence', situation_fr: 'Situation : Vous parlez bien coréen, mais pas bien anglais.', prompt_fr: 'La phrase à traduire : Je parle bien coréen (mais...).', answer: '저는 한국어는 잘해요', vocab: [{ko:'한국어', fr:'coréen'}, {ko:'잘하다', fr:'bien faire'}], explanation: "On met 'le coréen' (한국어) en avant. Comme il n'y a pas de 받침, on utilise 는." },
-            { section: 'Partie 4: Traduire la situation (상황 번역하기)', type: 'translate-sentence', situation_fr: 'Situation : L\'été est chaud, mais l\'hiver est froid.', prompt_fr: 'La phrase à traduire : L\'été est chaud (contrairement à l\'hiver).', answer: '여름은 더워요', vocab: [{ko:'여름', fr:'été'}, {ko:'덥다', fr:'chaud'}], explanation: "Pour contraster 'l'été' (여름) avec les autres saisons, on utilise 은 car il y a un 받침 (ㅁ)." },
-            { section: 'Partie 4: Traduire la situation (상황 번역하기)', type: 'translate-sentence', situation_fr: 'Situation : Vous avez lu le livre, mais pas le journal.', prompt_fr: 'La phrase à traduire : J\'ai lu le livre (mais...).', answer: '저는 책은 읽었어요', vocab: [{ko:'책', fr:'livre'}, {ko:'읽다', fr:'lire'}], explanation: "On souligne l'action sur 'le livre' (책). Il y a un 받침 (ㄱ), donc on ajoute 은." },
-            { section: 'Partie 4: Traduire la situation (상황 번역하기)', type: 'translate-sentence', situation_fr: 'Situation : Le métro est rapide, mais le bus est lent.', prompt_fr: 'La phrase à traduire : Le métro est rapide (contrairement au bus).', answer: '지하철은 빨라요', vocab: [{ko:'지하철', fr:'métro'}, {ko:'빠르다', fr:'rapide'}], explanation: "On compare 'le métro' (지하철) au bus. '지하철' a un 받침 (ㄹ), donc on utilise 은." }
-        ];
+exports.handler = async (event) => {
+  try {
+    if (event.httpMethod !== 'POST') {
+      return { statusCode: 405, body: 'Method Not Allowed' };
     }
+
+    const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL, GEMINI_API_KEY } = process.env;
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
+      return { statusCode: 500, body: JSON.stringify({ message: 'Missing env vars for Gmail' }) };
+    }
+
+    const payload = JSON.parse(event.body || '{}');
+    const {
+      studentName = 'Élève',
+      startTime,
+      endTime,
+      totalTimeSeconds = 0,
+      questions = [],
+      incorrectAnswers = [],
+    } = payload;
+
+    // AI Feedback is generated first.
+    const aiFeedback = await getAIFeedback(incorrectAnswers, GEMINI_API_KEY);
+
+    // After getting feedback, send the email asynchronously (don't wait for it)
+    sendEmailWithFeedback(payload, aiFeedback);
     
-    function startQuiz() {
-        studentName = studentNameInput.value.trim();
-        if (studentName === '') {
-            alert('Veuillez entrer votre nom. / 이름을 입력해주세요.');
-            return;
-        }
-        startTime = new Date();
-        studentInfoDiv.classList.add('hidden');
-        quizContentDiv.classList.remove('hidden');
-        renderQuestions();
-        showSection(0);
-    }
+    // Return the feedback to the student immediately.
+    return { 
+        statusCode: 200, 
+        body: JSON.stringify({ 
+            message: 'OK',
+            aiFeedback: aiFeedback 
+        }) 
+    };
 
-    function renderQuestions() {
-        const sections = [...new Set(questions.map(q => q.section))];
-        let formHtml = '';
-        sections.forEach((sectionTitle, sectionIndex) => {
-            formHtml += `<div id="section-${sectionIndex}" class="section-wrapper" style="display: none;">
-                <h2 class="text-2xl font-bold mt-8 mb-4 border-b-2 pb-2 border-indigo-200">${sectionTitle}</h2>`;
-            
-            questions.forEach((q, questionIndex) => {
-                if (q.section === sectionTitle) {
-                    let questionHtml = `<div id="q-${questionIndex}" class="question-card bg-white p-6 rounded-xl shadow-md mb-6">`;
-                    
-                    if (q.type === 'translate-sentence') {
-                        questionHtml += `<p class="text-slate-500 mb-2">${q.situation_fr}</p>
-                                         <p class="text-lg font-semibold mb-1"><span class="text-indigo-600">La phrase à traduire :</span> ${q.prompt_fr}</p>`;
-                    } else {
-                         questionHtml += `<p class="text-lg font-semibold mb-1"><span class="text-indigo-600">Question ${questionIndex + 1}:</span> ${q.ko}</p>
-                                          <p class="text-slate-500 mb-4">${q.fr || ''}</p>`;
-                    }
-                    
-                    if (q.vocab && q.vocab.length > 0) {
-                        questionHtml += `<div class="mt-4 p-3 bg-slate-100 rounded-md text-sm">
-                            <h4 class="font-bold text-slate-600 mb-1">Vocabulaire (단어)</h4>
-                            <ul class="flex flex-wrap gap-x-4 gap-y-1">`;
-                        q.vocab.forEach(v => {
-                            questionHtml += `<li><span class="font-semibold text-indigo-700">${v.ko}</span>: ${v.fr}</li>`;
-                        });
-                        questionHtml += `</ul></div>`;
-                    }
+  } catch (err) {
+    console.error('Error in main handler function:', err);
+    return { statusCode: 500, body: JSON.stringify({ message: err.message }) };
+  }
+};
 
-                    if (q.type === 'multiple-choice') {
-                        questionHtml += `<div id="options-${questionIndex}" class="space-y-3 mt-4">`;
-                        q.options.forEach(option => {
-                            questionHtml += `<label class="p-4 border rounded-lg cursor-pointer hover:bg-indigo-50 transition block">
-                                <input type="radio" name="q${questionIndex}" value="${option}" class="mr-3 accent-indigo-600">
-                                <span>${option}</span>
-                            </label>`;
-                        });
-                        questionHtml += `</div>`;
-                    } else if (q.type === 'write-word' || q.type === 'translate-sentence') {
-                         questionHtml += `<input type="text" id="q${questionIndex}-input" class="w-full p-2 border rounded-lg mt-4" placeholder="Écrivez votre réponse ici...">`;
-                    }
-                    questionHtml += `<div id="feedback-${questionIndex}" class="mt-3 text-sm"></div>
-                                     <div class="mt-4"><a href="#" onclick="showHint(${questionIndex}); return false;" class="text-sm text-blue-600 hover:underline">Aidez moi ! 🙏 (도와주세요!)</a></div>
-                                     </div>`;
-                    formHtml += questionHtml;
-                }
-            });
 
-            formHtml += `<div class="mt-6 flex justify-end items-center space-x-3">`;
-            if (sectionIndex > 0) {
-                formHtml += `<button type="button" onclick="navigate(-1)" class="bg-slate-300 text-slate-700 px-5 py-2 rounded-lg hover:bg-slate-400 transition">Partie Précédente (이전)</button>`;
-            }
-            if (sectionIndex < sections.length - 1) {
-                formHtml += `<button type="button" onclick="navigate(1)" class="bg-indigo-500 text-white px-5 py-2 rounded-lg hover:bg-indigo-600 transition">Partie Suivante (다음)</button>`;
-            } else {
-                formHtml += `<button type="button" id="finish-btn-final" class="bg-green-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-700 transition">Terminer (끝내기)</button>`;
-            }
-            formHtml += `</div></div>`;
-        });
-        quizForm.innerHTML = formHtml;
-        document.getElementById('finish-btn-final').addEventListener('click', finishQuiz);
-    }
+// This function sends the email but doesn't need to be awaited by the main handler.
+async function sendEmailWithFeedback(payload, aiFeedback) {
+    try {
+        const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL } = process.env;
+        const { studentName, startTime, endTime, totalTimeSeconds, questions } = payload;
 
-    function showHint(index) {
-        const q = questions[index];
-        const feedbackDiv = document.getElementById(`feedback-${index}`);
-        let hintText = "🛟 Au secours ! (살려주세요!)<br>";
-        if (q.explanation) {
-            hintText += q.explanation;
-            feedbackDiv.innerHTML = `<p class="mt-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md">${hintText}</p>`;
-        }
-    }
-
-    function showSection(index) {
-        document.querySelectorAll('.section-wrapper').forEach(card => card.style.display = 'none');
-        const targetSection = document.getElementById(`section-${index}`);
-        if (targetSection) {
-            targetSection.style.display = 'block';
-            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-    
-    function navigate(direction) {
-        const sections = [...new Set(questions.map(q => q.section))];
-        const currentSectionTitle = sections[currentSectionIndex];
-        questions.forEach((q, index) => {
-            if (q.section === currentSectionTitle) {
-                saveAnswer(index);
-            }
-        });
-        currentSectionIndex += direction;
-        showSection(currentSectionIndex);
-    }
-
-    function saveAnswer(index) {
-        const q = questions[index];
-        if (q.type === 'multiple-choice') {
-            const selected = document.querySelector(`input[name="q${index}"]:checked`);
-            userAnswers[index] = selected ? selected.value : null;
-        } else {
-            const input = document.getElementById(`q${index}-input`);
-            userAnswers[index] = input ? input.value.trim() : null;
-        }
-    }
-
-    async function finishQuiz() {
-        const sections = [...new Set(questions.map(q => q.section))];
-        const lastSectionTitle = sections[currentSectionIndex];
-        questions.forEach((q, index) => {
-            if (q.section === lastSectionTitle) saveAnswer(index);
+        const attachments = questions.flatMap((q) => {
+          if (q?.recording?.base64) {
+            return [{
+              filename: `rec_q${q.number}_${studentName.replace(/\s/g, '_')}.webm`,
+              content: Buffer.from(q.recording.base64, 'base64'),
+              contentType: 'audio/webm',
+            }];
+          }
+          return [];
         });
 
-        endTime = new Date();
-        quizContentDiv.classList.add('hidden');
-        resultsDiv.classList.remove('hidden');
-        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        const gradableQuestions = questions.filter(q => q.type !== 'explanation');
+        const correctCount = gradableQuestions.filter(q => q.isCorrect).length;
+        const totalGraded = gradableQuestions.length;
+        const score = totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 0;
+        
+        const mins = Math.floor(totalTimeSeconds / 60);
+        const secs = Math.round(totalTimeSeconds % 60);
 
-        let correctCount = 0;
-        const incorrectAnswersForAI = [];
-        const questionsPayload = questions.map((q, i) => {
-            const userAnswer = userAnswers[i] || "";
-            let isCorrect = false;
-            
-            if (q.type === 'multiple-choice') {
-                isCorrect = userAnswer === q.answer;
-            } else { // write-word & translate-sentence
-                const cleanUserAnswer = userAnswer.replace(/[.?\s]/g, '');
-                const cleanAnswer = q.answer.replace(/[.?\s]/g, '');
-                isCorrect = cleanUserAnswer.includes(cleanAnswer);
-            }
+        const rowHtml = gradableQuestions.map((q) => {
+            const answered = formatUserAnswer(q);
+            const ok = q.isCorrect ? '✔️' : '❌';
+            const audioHtml = q?.recording?.base64 ? `<div style="margin-top:6px; font-size:12px; color:#666;">* Fichier audio joint</div>` : '';
 
-            if (isCorrect) {
-                correctCount++;
-            } else {
-                const ko_question = q.ko || `Traduire: ${q.prompt_fr}`;
-                incorrectAnswersForAI.push({
-                    question: ko_question.replace(/<[^>]*>?/gm, ''), 
-                    student_answer: userAnswer, 
-                    correct_answer: q.answer
-                });
-            }
-            
-            const payload_fr = q.fr || q.situation_fr;
-            const payload_ko = q.ko || q.prompt_fr;
+            return `
+              <tr>
+                <td style="border:1px solid #eee;padding:6px;text-align:center">${q.number ?? ''}</td>
+                <td style="border:1px solid #eee;padding:6px">${escapeHtml(q.fr || '')}</td>
+                <td style="border:1px solid #eee;padding:6px">${escapeHtml(q.ko || '')}</td>
+                <td style="border:1px solid #eee;padding:6px">${answered} ${audioHtml}</td>
+                <td style="border:1px solid #eee;padding:6px;text-align:center">${ok}</td>
+                <td style="border:1px solid #eee;padding:6px;text-align:center">${q.listenCount || 0}</td>
+                <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint1Count || 0}</td>
+                <td style="border:1px solid #eee;padding:6px;text-align:center">${q.hint2Count || 0}</td>
+              </tr>`;
+          }).join('');
+          
+        const aiFeedbackHtml = aiFeedback ? `
+          <div style="background:#e0e7ff; border-left: 5px solid #4f46e5; padding:15px; border-radius:8px; margin:25px 0;">
+              <h3 style="margin:0 0 10px 0; font-size:20px; color:#3730a3;">💡 Analyse et conseils de l'IA</h3>
+              <p style="margin:0; font-size:16px; color:#333; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(aiFeedback).replace(/\n/g, '<br>')}</p>
+          </div>
+        ` : '';
 
-            return { 
-                number: i + 1, 
-                ko: payload_ko.replace(/<[^>]*>?/gm, ''), 
-                fr: payload_fr.replace(/<[^>]*>?/gm, ''), 
-                userAnswer: { "Réponse": userAnswer }, 
-                isCorrect: isCorrect,
-                listenCount: 0, hint1Count: 0, hint2Count: 0 // Placeholder values
-            };
+        const html = `
+          <div style="font-family:Arial, sans-serif; color:#333;">
+            <h2>Résultats du test de coréen (v2)</h2>
+            <p><b>Élève:</b> ${escapeHtml(studentName)}</p>
+            <div style="background:#f0f4f8; padding:15px; border-radius:8px; margin:15px 0; text-align:center;">
+              <h3 style="margin:0; font-size:24px;">Score Final: ${score} / 100</h3>
+              <p style="margin:5px 0 0; font-size:16px; color:#555;">(${correctCount} / ${totalGraded} bonnes réponses)</p>
+            </div>
+            ${aiFeedbackHtml}
+            <p><b>Début:</b> ${escapeHtml(String(startTime || ''))}<br/>
+               <b>Fin:</b> ${escapeHtml(String(endTime || ''))}<br/>
+               <b>Temps total:</b> ${mins}m ${secs}s</p>
+            <table style="border-collapse:collapse;width:100%;font-size:14px">
+              <thead>
+                <tr style="background:#f0f4f8">
+                  <th style="border:1px solid #eee;padding:6px">#</th><th style="border:1px solid #eee;padding:6px">Français</th><th style="border:1px solid #eee;padding:6px">Coréen</th>
+                  <th style="border:1px solid #eee;padding:6px">Réponse élève</th><th style="border:1px solid #eee;padding:6px">OK?</th>
+                  <th style="border:1px solid #eee;padding:6px">Écoutes</th><th style="border:1px solid #eee;padding:6px">Indice 1</th><th style="border:1px solid #eee;padding:6px">Indice 2</th>
+                </tr>
+              </thead>
+              <tbody>${rowHtml}</tbody>
+            </table>
+          </div>`;
+
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com', port: 465, secure: true,
+          auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
         });
 
-        const score = (correctCount / questions.length) * 100;
-        document.getElementById('score').innerText = score.toFixed(0);
-        const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
-        document.getElementById('total-time').innerText = totalTimeSeconds;
-        
-        const resultMessageDiv = document.getElementById('result-message');
-        let message, frMessage, bgColor;
-        if (score === 100) { [frMessage, message, bgColor] = ["Parfait absolu ! 👑🎉", "완벽 그 자체! 👑🎉", 'bg-green-100 text-green-800']; }
-        else if (score >= 80) { [frMessage, message, bgColor] = ["Très bien joué ! 👍", "아주 잘했어요! 👍", 'bg-blue-100 text-blue-800']; }
-        else if (score >= 60) { [frMessage, message, bgColor] = ["Pas mal du tout ! 😎", "꽤 잘했어요! 😎", 'bg-yellow-100 text-yellow-800']; }
-        else { [frMessage, message, bgColor] = ["Allez, on repart ! ☕💪", "자, 다시 가자! ☕💪", 'bg-red-100 text-red-800']; }
-        resultMessageDiv.innerHTML = `${frMessage}<br>${message}`;
-        resultMessageDiv.className = `text-2xl font-semibold p-6 rounded-lg mb-4 ${bgColor}`;
+        await transporter.sendMail({
+          from: `Korean Pondang <${GMAIL_USER}>`, to: RECIPIENT_EMAIL,
+          subject: `Résultats v2 – ${studentName} – Score: ${score}/100`,
+          html, attachments,
+        });
 
-        const payload = { 
-            studentName, 
-            startTime: startTime.toISOString(), 
-            endTime: endTime.toISOString(), 
-            totalTimeSeconds, 
-            questions: questionsPayload,
-            incorrectAnswers: incorrectAnswersForAI
-        };
-        
-        // --- AI Feedback Logic ---
-        aiFeedbackContainer.classList.remove('hidden');
-        if (incorrectAnswersForAI.length > 0) {
-            aiFeedbackLoader.classList.remove('hidden');
-            aiFeedbackContent.classList.add('hidden');
-            aiFeedbackPerfect.classList.add('hidden');
-            aiFeedbackError.classList.add('hidden');
-        } else {
-            aiFeedbackLoader.classList.add('hidden');
-            aiFeedbackPerfect.classList.remove('hidden');
-        }
-        
-        try {
-            const response = await fetch('/.netlify/functions/send-results-v2', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                if (result.aiFeedback) {
-                    aiFeedbackLoader.classList.add('hidden');
-                    aiFeedbackContent.innerHTML = result.aiFeedback.replace(/\n/g, '<br>');
-                    aiFeedbackContent.classList.remove('hidden');
-                } else if (incorrectAnswersForAI.length > 0) {
-                    aiFeedbackError.classList.remove('hidden');
-                }
-            } else {
-                 throw new Error('Server response was not ok.');
-            }
-        } catch (error) {
-            console.error("Error during fetch for AI feedback:", error);
-            aiFeedbackLoader.classList.add('hidden');
-            aiFeedbackError.classList.remove('hidden');
-        }
+        console.log('Email sent successfully.');
+    } catch (err) {
+        console.error('Error in sendEmailWithFeedback function:', err);
     }
-    
-    // --- INIT ---
-    document.addEventListener('DOMContentLoaded', () => {
-        studentNameInput.placeholder = "Ex: Super Cédou, Championne Julie...";
-        questions = generateQuestions();
-        userAnswers = new Array(questions.length).fill(null);
-        currentSectionIndex = 0;
-    });
-    
-    startBtn.addEventListener('click', startQuiz);
-    restartBtn.addEventListener('click', () => window.location.reload());
-</script>
-</body>
-</html>
+}
 
