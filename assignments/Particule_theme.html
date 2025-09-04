@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice Coréen: Particule de Contraste 은/는</title>
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .made-by { font-size: 0.8rem; color: #888; text-align: center; padding: 15px; }
+        .question-card { scroll-margin-top: 80px; }
+        .correct { border: 2px solid #22c55e; background-color: #f0fdf4; }
+        .incorrect { border: 2px solid #ef4444; background-color: #fef2f2; }
+        [type="radio"]:checked { background-image: url("data:image/svg+xml,%3csvg viewBox='0' 0 16 16' fill='%234f46e5' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e"); }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6366f1;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="made-by">Made by 성일, Pongdang</div>
+
+    <div class="max-w-4xl mx-auto p-5">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-700">Exercice: La particule de Contraste 은/는</h1>
+                <p class="text-slate-500">연습문제: 대조/비교를 나타내는 조사 '은/는'</p>
+            </div>
+            <button onclick="window.print()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                Imprimer / 프린트
+            </button>
+        </header>
+
+        <!-- Student Info -->
+        <div id="student-info" class="mb-8 bg-white p-6 rounded-xl shadow-md">
+            <label for="studentName" class="block text-lg font-semibold mb-2">Entrez votre nom / 이름을 입력하세요:</label>
+            <input type="text" id="studentName" class="w-full p-3 border rounded-lg" placeholder="">
+            <button id="start-btn" class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-lg text-lg font-bold hover:bg-indigo-700 transition">Commencer l'exercice (시작)</button>
+        </div>
+
+        <!-- Main Content -->
+        <main id="quiz-content" class="hidden">
+            
+            <!-- Explanation -->
+            <div class="bg-sky-100 border-l-4 border-sky-500 text-sky-800 p-6 rounded-lg mb-8 space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold mb-3">🧐 Qu'est-ce qu'une particule ? (조사?)</h2>
+                    <p>En coréen, une particule est un petit mot qui se colle à un nom pour indiquer son rôle dans la phrase (sujet, objet, lieu, etc.). C'est super important !</p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-bold mb-2">C'est quoi un "받침" ? (batchim)</h3>
+                    <p class="p-4 bg-white rounded-md">
+                        Le <strong>받침</strong> (batchim) est la <strong>consonne finale</strong> d'une syllabe. C'est elle qui décide quelle particule utiliser !<br>
+                        - Ex: <span class="font-bold text-blue-600">책</span> (chaek) → la syllabe se termine par la consonne <span class="font-bold text-red-600">ㄱ</span> (k). Il y a un 받침.<br>
+                        - Ex: <span class="font-bold text-blue-600">저</span> (jeo) → la syllabe se termine par la voyelle <span class="font-bold text-red-600">ㅓ</span> (eo). Il n'y a pas de 받침.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-2">⭐ La particule de Contraste et Thème : 은/는</h3>
+                    <p><strong>C'est le point le plus important !</strong><br>
+                    La particule <strong>은/는</strong> ne sert pas seulement à indiquer le thème. Son rôle principal est de mettre en avant un nom pour le <strong>comparer</strong> ou le <strong>contraster</strong> avec d'autres éléments (qui peuvent être sous-entendus).</p>
+                     <ul class="list-disc list-inside space-y-1 mt-2">
+                        <li>On utilise <strong>은</strong> après un nom avec 받침 (consonne finale). Ex: 사람<span class="text-red-600 font-bold">은</span>.</li>
+                        <li>On utilise <strong>는</strong> après un nom sans 받침 (voyelle finale). Ex: 저<span class="text-red-600 font-bold">는</span>.</li>
+                    </ul>
+                </div>
+
+                <div>
+                     <h3 class="text-xl font-bold mb-2">⚠️ 은/는 vs 이/가 (Sujet)</h3>
+                     <p class="p-4 bg-white rounded-md">
+                        <strong>이/가</strong> : Identifie le sujet. C'est lui et personne d'autre. Répond à "qui ?" ou "quoi ?".<br>
+                        <span class="text-gray-600">Ex: <strong>폴<span class="text-blue-600">이</span></strong> 왔어요. (<strong>Paul</strong> est venu. → C'est Paul qui est venu, on l'identifie.)</span><br><br>
+                        <strong>은/는</strong> : Met le sujet en contraste. <br>
+                        <span class="text-gray-600">Ex: 다른 사람들은 안 왔어요. 하지만 <strong>폴<span class="text-red-600">은</span></strong> 왔어요. (Les autres ne sont pas venus. Mais <strong>Paul</strong>, lui, il est venu.)</span>
+                     </p>
+                </div>
+                 <div>
+                     <h3 class="text-xl font-bold mb-2">⚠️ 은/는 vs 을/를 (Objet)</h3>
+                     <p class="p-4 bg-white rounded-md">
+                        <strong>을/를</strong> : Marque simplement l'objet de l'action.<br>
+                        <span class="text-gray-600">Ex: 저는 <strong>빵<span class="text-blue-600">을</span></strong> 먹었어요. (J'ai mangé du pain. → Simple constat.)</span><br><br>
+                        <strong>은/는</strong> : Met l'objet en contraste avec d'autres objets possibles.<br>
+                        <span class="text-gray-600">Ex: 저는 <strong>빵<span class="text-red-600">은</span></strong> 먹었어요. (J'ai mangé du pain [<em>...mais pas le café, ni le jus d'orange</em>].)</span>
+                     </p>
+                </div>
+            </div>
+
+            <form id="quiz-form"></form>
+
+            <div class="mt-8 flex justify-between items-center">
+                <a href="/" class="text-indigo-600 hover:underline">← Exercices précédents (이전)</a>
+            </div>
+        </main>
+        
+        <!-- Results -->
+        <div id="results" class="hidden mt-8 text-center bg-white p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold mb-4">Résultats / 결과</h2>
+            <div id="result-message" class="text-2xl font-semibold p-6 rounded-lg mb-4"></div>
+            <p class="text-lg">Votre score : <span id="score" class="font-bold"></span>%</p>
+            <p class="text-slate-600">Temps total : <span id="total-time"></span> secondes.</p>
+            
+            <!-- AI Feedback Section -->
+            <div id="ai-feedback-container" class="mt-8 text-left hidden">
+                <h3 class="text-2xl font-bold mb-4 text-center">🤖 AI 맞춤 설명 / AI-Powered Feedback</h3>
+                <div id="ai-feedback-loader" class="text-center p-4">
+                    <div class="loader"></div>
+                    <p class="mt-2 text-slate-500">분석 중... 잠시만 기다려 주세요! (Analyse en cours...)</p>
+                </div>
+                <div id="ai-feedback-content" class="hidden p-5 bg-purple-50 border-l-4 border-purple-500 rounded-lg">
+                    <!-- AI content will be inserted here -->
+                </div>
+                 <div id="ai-feedback-perfect" class="hidden p-5 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                    <p class="text-green-800">🎉 <strong>만점이에요! (Score parfait !)</strong><br>모든 문제를 완벽하게 이해했어요. 추가 설명이 필요 없네요! (Vous avez tout compris. Aucune explication supplémentaire n'est nécessaire !)</p>
+                </div>
+            </div>
+            
+            <button id="restart-btn" class="mt-8 bg-indigo-600 text-white py-3 px-8 rounded-lg text-lg font-bold hover:bg-indigo-700 transition">Recommencer (다시하기)</button>
+        </div>
+    </div>
+
+    <div class="made-by">Made by 성일, Pongdang</div>
+
+<script>
+    // --- DATA ARRAYS (for random questions) ---
+    const namePlaceholders = ['Super Cédou', 'Championne Julie', 'Génie Martin', 'As de Coréen Sophie', 'Légende Alex'];
+    const subjectsVowel = [{ko: '저', fr: 'Je/Moi'}, {ko: '누나', fr: 'Grande soeur'}, {ko: '나무', fr: 'Arbre'}, {ko: '학교', fr: 'École'}, {ko: '의자', fr: 'Chaise'}, {ko: '마리', fr:'Marie'}, {ko: '어머니', fr:'Mère'}];
+    const subjectsConsonant = [{ko: '이 사람', fr: 'Cette personne'}, {ko: '가방', fr: 'Sac'}, {ko: '오늘', fr: 'Aujourd\'hui'}, {ko: '선생님', fr: 'Professeur'}, {ko: '폴', fr: 'Paul'}, {ko: '책', fr: 'Livre'}, {ko: '동생', fr: 'Petit frère/soeur'}];
+    const foodVowel = [{ko: '김치찌개', fr: 'Ragoût de kimchi'}, {ko: '된장찌개', fr: 'Ragoût de soja'}, {ko: '피자', fr: 'Pizza'}, {ko: '우유', fr: 'Lait'}, {ko: '커피', fr:'Café'}];
+    const foodConsonant = [{ko: '비빔밥', fr: 'Bibimbap'}, {ko: '불고기', fr: 'Bulgogi'}, {ko: '빵', fr: 'Pain'}, {ko: '라면', fr: 'Ramen'}, {ko: '김밥', fr: 'Kimbap'}];
+    
+    const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    // --- GLOBAL VARIABLES ---
+    let studentName = '', startTime, endTime, currentSectionIndex = 0, questions = [], userAnswers = [];
+
+    // --- DOM ELEMENTS ---
+    const studentInfoDiv = document.getElementById('student-info');
+    const studentNameInput = document.getElementById('studentName');
+    const quizContentDiv = document.getElementById('quiz-content');
+    const resultsDiv = document.getElementById('results');
+    const startBtn = document.getElementById('start-btn');
+    const quizForm = document.getElementById('quiz-form');
+    const restartBtn = document.getElementById('restart-btn');
+    const aiFeedbackContainer = document.getElementById('ai-feedback-container');
+    const aiFeedbackLoader = document.getElementById('ai-feedback-loader');
+    const aiFeedbackContent = document.getElementById('ai-feedback-content');
+    const aiFeedbackPerfect = document.getElementById('ai-feedback-perfect');
+
+    // --- FUNCTIONS ---
+    function generateQuestions() {
+        const items = {};
+        const selectUnique = (arr, key) => {
+            let item;
+            do { item = getRandomItem(arr); } while (Object.values(items).includes(item));
+            items[key] = item;
+            return item;
+        };
+
+        const fv1 = selectUnique(foodVowel, 'fv1');
+        const c2 = selectUnique(subjectsConsonant, 'c2');
+
+        return [
+            // === PARTIE 1: CHOIX DE BASE (5 questions) ===
+            { section: 'Partie 1: Choisir 은 ou 는 (기초 문제)', ko: `저___ 학생이에요.`, fr: `Moi, je suis étudiant(e).`, options: ['은', '는'], answer: '는', vocab: [{ko:'저', fr:'Moi/Je'}, {ko:'학생', fr:'étudiant(e)'}] },
+            { section: 'Partie 1: Choisir 은 ou 는 (기초 문제)', ko: `오늘___ 날씨가 좋아요.`, fr: `Aujourd'hui, le temps est beau. (en contraste avec hier/demain)`, options: ['은', '는'], answer: '은', vocab: [{ko:'오늘', fr:'Aujourd\'hui'}, {ko:'날씨', fr:'temps/météo'}, {ko:'좋다', fr:'être bon'}] },
+            { section: 'Partie 1: Choisir 은 ou 는 (기초 문제)', ko: `이 ${fv1.ko}___ 맛있어요.`, fr: `Ce ${fv1.fr} est délicieux.`, options: ['은', '는'], answer: '는', vocab: [{ko:'이', fr:'Ce/Cette'}, {ko: fv1.ko, fr: fv1.fr}, {ko:'맛있다', fr:'être délicieux'}] },
+            { section: 'Partie 1: Choisir 은 ou 는 (기초 문제)', ko: `제 ${c2.ko}___ 한국 사람이에요.`, fr: `Mon/Ma ${c2.fr} est coréen(ne).`, options: ['은', '는'], answer: '은', vocab: [{ko:'제', fr:'Mon/Ma'}, {ko: c2.ko, fr: c2.fr}, {ko:'한국 사람', fr:'personne coréenne'}] },
+            { section: 'Partie 1: Choisir 은 ou 는 (기초 문제)', ko: `어제___ 정말 더웠어요.`, fr: `Hier, il faisait vraiment chaud.`, options: ['은', '는'], answer: '는', vocab: [{ko:'어제', fr:'Hier'}, {ko:'정말', fr:'vraiment'}, {ko:'덥다', fr:'faire chaud'}] },
+            
+            // === PARTIE 2: COMPARAISON AVEC 이/가 (5 questions) ===
+            { section: 'Partie 2: 은/는 (Contraste) vs 이/가 (Identification)', ko: 'A: <strong>누가</strong> 마리예요? (Qui est Marie?)<br>B: 저 사람___ 마리예요.', fr: 'B: C\'est cette personne-là, Marie.', options: ['은', '이'], answer: '이', explanation: 'On répond à "누가" (Qui?), donc on identifie le sujet. On utilise "이/가".', vocab: [{ko:'누가', fr:'Qui'}, {ko:'저 사람', fr:'cette personne-là'}, {ko:'마리', fr:'Marie'}] },
+            { section: 'Partie 2: 은/는 (Contraste) vs 이/가 (Identification)', ko: '저는 개를 좋아해요. 하지만 고양이___ 무서워요.', fr: 'J\'aime les chiens. Mais les chats, j\'en ai peur.', options: ['는', '가'], answer: '는', explanation: 'On met "les chats" en contraste avec "les chiens". C\'est le rôle parfait pour "은/는".', vocab: [{ko:'저', fr:'Je'}, {ko:'개', fr:'chien'}, {ko:'좋아하다', fr:'aimer'}, {ko:'하지만', fr:'mais'}, {ko:'고양이', fr:'chat'}, {ko:'무섭다', fr:'avoir peur de'}] },
+            { section: 'Partie 2: 은/는 (Contraste) vs 이/가 (Identification)', ko: 'A: <strong>뭐가</strong> 맛있어요? (Qu\'est-ce qui est bon?)<br>B: 김밥___ 맛있어요.', fr: 'B: Le kimbap est bon.', options: ['은', '이'], answer: '이', explanation: 'On répond à "뭐가" (Quoi?), donc on identifie "le kimbap" comme la chose qui est bonne. On utilise "이/가".', vocab: [{ko:'뭐가', fr:'Quoi'}, {ko:'김밥', fr:'Kimbap'}, {ko:'맛있다', fr:'être délicieux'}] },
+            { section: 'Partie 2: 은/는 (Contraste) vs 이/가 (Identification)', ko: '이 식당___ 비싸지만 정말 맛있어요.', fr: 'Ce restaurant est cher, mais vraiment délicieux.', options: ['은', '이'], answer: '은', explanation: 'On contraste deux aspects du restaurant ("cher" vs "délicieux"). "은/는" est idéal pour ça.', vocab: [{ko:'이', fr:'Ce/Cette'}, {ko:'식당', fr:'restaurant'}, {ko:'비싸다', fr:'être cher'}, {ko:'-지만', fr:'mais'}, {ko:'맛있다', fr:'être délicieux'}] },
+            { section: 'Partie 2: 은/는 (Contraste) vs 이/가 (Identification)', ko: '옛날 옛적에, 공주님___ 살았어요.', fr: 'Il était une fois, une princesse vivait...', options: ['은', '이'], answer: '이', explanation: 'Pour introduire un nouveau personnage pour la première fois dans une histoire, on utilise "이/가".', vocab: [{ko:'옛날 옛적에', fr:'Il était une fois'}, {ko:'공주님', fr:'princesse'}, {ko:'살다', fr:'vivre'}] },
+
+            // === PARTIE 3: COMPARAISON AVEC 을/를 (5 questions) ===
+            { section: 'Partie 3: 은/는 (Contraste) vs 을/를 (Objet simple)', ko: '저는 매일 아침 주스___ 마셔요.', fr: 'Je bois du jus tous les matins. (Simple fait)', options: ['는', '를'], answer: '를', explanation: '"를" marque simplement "jus" comme l\'objet du verbe "boire".', vocab: [{ko:'저', fr:'Je'}, {ko:'매일 아침', fr:'chaque matin'}, {ko:'주스', fr:'jus'}, {ko:'마시다', fr:'boire'}] },
+            { section: 'Partie 3: 은/는 (Contraste) vs 을/를 (Objet simple)', ko: '저는 주스___ 안 마셔요. 보통 물을 마셔요.', fr: 'Je ne bois pas de jus. D\'habitude, je bois de l\'eau.', options: ['는', '를'], answer: '는', explanation: 'On met "jus" en contraste direct avec "eau". "는" est parfait pour souligner ce choix.', vocab: [{ko:'주스', fr:'jus'}, {ko:'안', fr:'ne...pas'}, {ko:'마시다', fr:'boire'}, {ko:'보통', fr:'d\'habitude'}, {ko:'물', fr:'eau'}] },
+            { section: 'Partie 3: 은/는 (Contraste) vs 을/를 (Objet simple)', ko: '어제 친구___ 만났어요.', fr: 'Hier, j\'ai vu un(e) ami(e). (Simple action)', options: ['는', '를'], answer: '를', explanation: 'C\'est une phrase simple sur l\'action de rencontrer un ami. "를" est le plus naturel.', vocab: [{ko:'어제', fr:'Hier'}, {ko:'친구', fr:'ami(e)'}, {ko:'만나다', fr:'rencontrer'}] },
+            { section: 'Partie 3: 은/는 (Contraste) vs 을/를 (Objet simple)', ko: '영화___ 봤지만, 책은 못 읽었어요.', fr: 'J\'ai vu le film, mais je n\'ai pas pu lire le livre.', options: ['는', '를'], answer: '는', explanation: 'On compare explicitement l\'action sur "le film" et "le livre". "는" est nécessaire pour marquer ce contraste.', vocab: [{ko:'영화', fr:'film'}, {ko:'보다', fr:'voir'}, {ko:'책', fr:'livre'}, {ko:'못', fr:'ne pas pouvoir'}, {ko:'읽다', fr:'lire'}] },
+            { section: 'Partie 3: 은/는 (Contraste) vs 을/를 (Objet simple)', ko: '고기___ 잘 먹지만, 생선은 안 좋아해요.', fr: 'Je mange bien de la viande, mais je n\'aime pas le poisson.', options: ['는', '를'], answer: '는', explanation: 'On met "la viande" en opposition avec "le poisson". Le contraste est la clé.', vocab: [{ko:'고기', fr:'viande'}, {ko:'잘 먹다', fr:'bien manger'}, {ko:'생선', fr:'poisson'}, {ko:'안 좋아하다', fr:'ne pas aimer'}] },
+            
+            // === PARTIE 4: ÉCRITURE (5 questions) ===
+            { section: 'Partie 4: Construire la phrase (문장 만들기)', type: 'writing', ko: 'Situation : La Corée (한국) est petite. La Chine (중국) est grande.', fr: 'Écrivez une phrase sur la Corée en la contrastant avec la Chine.', answer: '한국은 작아요', vocab: [{ko:'한국', fr:'Corée'}, {ko:'작다', fr:'être petit'}, {ko:'중국', fr:'Chine'}, {ko:'크다', fr:'être grand'}] },
+            { section: 'Partie 4: Construire la phrase (문장 만들기)', type: 'writing', ko: 'Situation : Vous étudiez le coréen (한국어), mais pas le japonais (일본어).', fr: 'Écrivez une phrase qui exprime cela, en commençant par "한국어는".', answer: '한국어는 배우지만 일본어는 안 배워요', vocab: [{ko:'한국어', fr:'coréen'}, {ko:'배우다', fr:'apprendre'}, {ko:'일본어', fr:'japonais'}] },
+            { section: 'Partie 4: Construire la phrase (문장 만들기)', type: 'writing', ko: 'Situation : Vous avez acheté les pommes (사과), mais vous n\'avez pas acheté les bananes (바나나).', fr: 'Écrivez une phrase pour dire "J\'ai acheté les pommes (mais...)"', answer: '사과는 샀어요', vocab: [{ko:'사과', fr:'pomme'}, {ko:'사다', fr:'acheter'}, {ko:'바나나', fr:'banane'}] },
+            { section: 'Partie 4: Construire la phrase (문장 만들기)', type: 'writing', ko: 'Situation : L\'été (여름) est chaud. L\'hiver (겨울) est froid.', fr: 'Écrivez une phrase sur l\'été en le contrastant avec l\'hiver.', answer: '여름은 더워요', vocab: [{ko:'여름', fr:'été'}, {ko:'덥다', fr:'faire chaud'}, {ko:'겨울', fr:'hiver'}, {ko:'춥다', fr:'faire froid'}] },
+            { section: 'Partie 4: Construire la phrase (문장 만들기)', type: 'writing', ko: 'Situation : Le bus (버스) est lent. Le métro (지하철) est rapide.', fr: 'Comparez les deux en commençant par "버스는".', answer: '버스는 느리지만 지하철은 빨라요', vocab: [{ko:'버스', fr:'bus'}, {ko:'느리다', fr:'être lent'}, {ko:'지하철', fr:'métro'}, {ko:'빠르다', fr:'être rapide'}] }
+        ];
+    }
+
+    function startQuiz() {
+        studentName = studentNameInput.value.trim();
+        if (studentName === '') {
+            alert('Veuillez entrer votre nom. / 이름을 입력해주세요.');
+            return;
+        }
+        startTime = new Date();
+        studentInfoDiv.classList.add('hidden');
+        quizContentDiv.classList.remove('hidden');
+        renderQuestions();
+        showSection(0);
+    }
+
+    function renderQuestions() {
+        const sections = [...new Set(questions.map(q => q.section))];
+
+        let formHtml = '';
+        sections.forEach((sectionTitle, sectionIndex) => {
+            formHtml += `<div id="section-${sectionIndex}" class="section-wrapper" style="display: none;">
+                <h2 class="text-2xl font-bold mt-8 mb-4 border-b-2 pb-2 border-indigo-200">${sectionTitle}</h2>`;
+            
+            questions.forEach((q, questionIndex) => {
+                if (q.section === sectionTitle) {
+                    let questionHtml = `<div id="q-${questionIndex}" class="question-card bg-white p-6 rounded-xl shadow-md mb-6">
+                        <p class="text-lg font-semibold mb-1"><span class="text-indigo-600">Question ${questionIndex + 1}:</span> ${q.ko}</p>
+                        <p class="text-slate-500 mb-4">${q.fr || ''}</p>`;
+                    
+                    if (q.vocab && q.vocab.length > 0) {
+                        questionHtml += `<div class="mt-4 p-3 bg-slate-100 rounded-md text-sm">
+                            <h4 class="font-bold text-slate-600 mb-1">Vocabulaire (단어)</h4>
+                            <ul class="flex flex-wrap gap-x-4 gap-y-1">`;
+                        q.vocab.forEach(v => {
+                            questionHtml += `<li><span class="font-semibold text-indigo-700">${v.ko}</span>: ${v.fr}</li>`;
+                        });
+                        questionHtml += `</ul></div>`;
+                    }
+
+                    if (q.type === 'writing') {
+                        questionHtml += `<textarea id="q${questionIndex}-input" rows="3" class="w-full p-2 border rounded-lg mt-4" placeholder="Écrivez votre phrase ici..."></textarea>`;
+                    } else {
+                        questionHtml += `<div id="options-${questionIndex}" class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">`;
+                        q.options.forEach(option => {
+                            questionHtml += `<label class="p-4 border rounded-lg cursor-pointer hover:bg-indigo-50 transition">
+                                <input type="radio" name="q${questionIndex}" value="${option}" class="mr-3 accent-indigo-600">
+                                <span>${option}</span>
+                            </label>`;
+                        });
+                        questionHtml += `</div>`;
+                    }
+                    questionHtml += `<div id="feedback-${questionIndex}" class="mt-3 text-sm"></div>
+                        <div class="mt-4"><a href="#" onclick="showHint(${questionIndex}); return false;" class="text-sm text-blue-600 hover:underline">Aidez moi ! 🙏 (도와주세요!)</a></div>
+                    </div>`;
+                    formHtml += questionHtml;
+                }
+            });
+
+            formHtml += `<div class="mt-6 flex justify-end items-center space-x-3">`;
+            if (sectionIndex > 0) {
+                formHtml += `<button type="button" onclick="navigate(-1)" class="bg-slate-300 text-slate-700 px-5 py-2 rounded-lg hover:bg-slate-400 transition">Partie Précédente (이전)</button>`;
+            }
+            if (sectionIndex < sections.length - 1) {
+                formHtml += `<button type="button" onclick="navigate(1)" class="bg-indigo-500 text-white px-5 py-2 rounded-lg hover:bg-indigo-600 transition">Partie Suivante (다음)</button>`;
+            } else {
+                formHtml += `<button type="button" id="finish-btn-final" class="bg-green-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-700 transition">Terminer (끝내기)</button>`;
+            }
+            formHtml += `</div></div>`;
+        });
+
+        quizForm.innerHTML = formHtml;
+        document.getElementById('finish-btn-final').addEventListener('click', finishQuiz);
+    }
+
+    function showHint(index) {
+        const q = questions[index];
+        const feedbackDiv = document.getElementById(`feedback-${index}`);
+        let hintText = "🛟 Au secours ! (살려주세요!)<br>";
+        if (q.explanation) {
+            hintText += q.explanation;
+        } else {
+            if(q.section.includes('Partie 1')) hintText += "Le mot se termine par une voyelle (sans 받침) -> 는, par une consonne (avec 받침) -> 은.";
+            else hintText += "Est-ce qu'on identifie quelque chose (이/가) ou on compare/contraste (은/는) ?";
+        }
+        feedbackDiv.innerHTML = `<p class="mt-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md">${hintText}</p>`;
+    }
+
+    function showSection(index) {
+        document.querySelectorAll('.section-wrapper').forEach(card => card.style.display = 'none');
+        const targetSection = document.getElementById(`section-${index}`);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+    
+    function navigate(direction) {
+        const sections = [...new Set(questions.map(q => q.section))];
+        const currentSectionTitle = sections[currentSectionIndex];
+        questions.forEach((q, index) => {
+            if (q.section === currentSectionTitle) {
+                saveAnswer(index);
+            }
+        });
+
+        currentSectionIndex += direction;
+        showSection(currentSectionIndex);
+    }
+
+    function saveAnswer(index) {
+        const q = questions[index];
+        if (q.type === 'writing') {
+            const input = document.getElementById(`q${index}-input`);
+            userAnswers[index] = input ? input.value : null;
+        } else {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            userAnswers[index] = selected ? selected.value : null;
+        }
+    }
+
+    async function getAIFeedback(incorrectAnswersData) {
+        const apiKey = ""; // Canvas will provide this
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const systemPrompt = `Vous êtes un professeur de coréen sympathique et encourageant pour des débutants francophones.
+Analysez les erreurs suivantes de l'étudiant sur les particules coréennes 은/는, 이/가, 을/를.
+Identifiez la principale faiblesse ou le point de confusion de l'étudiant.
+Fournissez une explication concise et simple en français, suivie de la même explication en coréen.
+Utilisez un langage très simple et des exemples clairs pour aider l'étudiant à comprendre la nuance.
+Commencez par une analyse générale, puis donnez un ou deux exemples corrigés.
+Soyez positif et encourageant. Adressez-vous directement à l'étudiant.`;
+
+        const userQuery = `Voici les erreurs de l'étudiant. Analysez-les et donnez une explication personnalisée :\n\n${JSON.stringify(incorrectAnswersData, null, 2)}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+            const result = await response.json();
+            const feedbackText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            aiFeedbackLoader.classList.add('hidden');
+            if (feedbackText) {
+                aiFeedbackContent.innerHTML = feedbackText.replace(/\n/g, '<br>');
+                aiFeedbackContent.classList.remove('hidden');
+            } else {
+                 aiFeedbackContent.innerHTML = "Désolé, une erreur est survenue lors de l'analyse. (분석 중 오류가 발생했습니다.)";
+                 aiFeedbackContent.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error("Error fetching AI feedback:", error);
+            aiFeedbackLoader.classList.add('hidden');
+            aiFeedbackContent.innerHTML = "Désolé, impossible de contacter le service d'analyse. (분석 서비스에 연결할 수 없습니다.)";
+            aiFeedbackContent.classList.remove('hidden');
+        }
+    }
+
+    function finishQuiz() {
+        // Save answers for the final section before finishing
+        const sections = [...new Set(questions.map(q => q.section))];
+        const lastSectionTitle = sections[currentSectionIndex];
+        questions.forEach((q, index) => {
+            if (q.section === lastSectionTitle) {
+                saveAnswer(index);
+            }
+        });
+
+        endTime = new Date();
+        quizContentDiv.classList.add('hidden');
+        resultsDiv.classList.remove('hidden');
+
+        let correctCount = 0;
+        const incorrectAnswersForAI = [];
+        const questionsPayload = questions.map((q, i) => {
+            const userAnswer = userAnswers[i] || "";
+            let isCorrect = false;
+
+            const feedbackContainer = document.getElementById(`feedback-${i}`);
+            
+            if (q.type === 'writing') {
+                 isCorrect = userAnswer.replace(/\s/g, '').includes(q.answer.replace(/\s/g, ''));
+                 const input = document.getElementById(`q${i}-input`);
+                 input.disabled = true;
+                 input.classList.add(isCorrect ? 'correct' : 'incorrect');
+                 if(!isCorrect) feedbackContainer.innerHTML = `<p class="mt-2 text-green-700">Oups, petit couac 😅 → comme ça, c’est parfait !<br>Exemple de réponse : <strong>${q.answer}</strong></p>`;
+            } else {
+                const optionsContainer = document.getElementById(`options-${i}`);
+                isCorrect = userAnswer === q.answer;
+                optionsContainer.querySelectorAll('label').forEach(label => {
+                    const radio = label.querySelector('input');
+                    if (radio.value === q.answer) {
+                        label.classList.add('correct');
+                    } else if (radio.checked) {
+                        label.classList.add('incorrect');
+                    }
+                    radio.disabled = true;
+                });
+                if(!isCorrect && q.explanation) {
+                    feedbackContainer.innerHTML = `<p class="mt-2 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md">💡 <strong>Astuce :</strong> ${q.explanation}</p>`;
+                }
+            }
+            if (isCorrect) {
+                correctCount++;
+            } else {
+                incorrectAnswersForAI.push({
+                    question_fr: q.fr,
+                    question_ko: q.ko.replace(/<[^>]*>?/gm, ''), // remove html tags
+                    student_answer: userAnswer,
+                    correct_answer: q.answer,
+                    question_type: q.section
+                });
+            }
+            
+            return { number: i + 1, ko: q.ko.replace(/<br>|<strong>|<\/strong>/g, ''), fr: q.fr, userAnswer: userAnswer, isCorrect: isCorrect };
+        });
+
+        const score = (correctCount / questions.length) * 100;
+        document.getElementById('score').innerText = score.toFixed(0);
+        const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
+        document.getElementById('total-time').innerText = totalTimeSeconds;
+        
+        const resultMessageDiv = document.getElementById('result-message');
+        let message, frMessage, bgColor;
+        if (score === 100) { [frMessage, message, bgColor] = ["Parfait absolu ! 👑🎉 Génie confirmé !", "완벽 그 자체! 👑🎉 천재 인증!", 'bg-green-100 text-green-800']; }
+        else if (score >= 80) { [frMessage, message, bgColor] = ["Très bien joué ! 👍 Presque un maître !", "아주 잘했어요! 👍 이 정도면 거의 마스터!", 'bg-blue-100 text-blue-800']; }
+        else if (score >= 60) { [frMessage, message, bgColor] = ["Pas mal du tout ! 😎 Encore un petit effort et c’est le top !", "꽤 잘했어요! 😎 조금만 더 가면 최고!", 'bg-yellow-100 text-yellow-800']; }
+        else { [frMessage, message, bgColor] = ["Allez, un petit café et on repart ! ☕💪", "자, 커피 한 잔 하고 다시 가자! ☕💪", 'bg-red-100 text-red-800']; }
+        resultMessageDiv.innerHTML = `${frMessage}<br>${message}`;
+        resultMessageDiv.className = `text-2xl font-semibold p-6 rounded-lg mb-4 ${bgColor}`;
+
+        // AI Feedback logic
+        aiFeedbackContainer.classList.remove('hidden');
+        if(incorrectAnswersForAI.length > 0) {
+            aiFeedbackLoader.classList.remove('hidden');
+            aiFeedbackContent.classList.add('hidden');
+            getAIFeedback(incorrectAnswersForAI);
+        } else {
+            aiFeedbackLoader.classList.add('hidden');
+            aiFeedbackPerfect.classList.remove('hidden');
+        }
+
+        quizContentDiv.classList.add('hidden'); // Hide original questions
+        // Or show them with answers
+        // quizContentDiv.classList.remove('hidden');
+        // document.querySelectorAll('.section-wrapper').forEach(card => card.style.display = 'block');
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        
+        // const finalNav = document.getElementById('finish-btn-final').parentElement;
+        // if(finalNav) finalNav.classList.add('hidden');
+
+        const payload = { studentName, startTime: startTime.toISOString(), endTime: endTime.toISOString(), totalTimeSeconds, questions: questionsPayload };
+        fetch('/.netlify/functions/send-results', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        }).catch(error => console.error("Error sending results:", error));
+    }
+    
+    // --- EVENT LISTENERS ---
+    document.addEventListener('DOMContentLoaded', () => {
+        studentNameInput.placeholder = getRandomItem(namePlaceholders);
+        questions = generateQuestions();
+        userAnswers = new Array(questions.length).fill(null);
+        currentSectionIndex = 0;
+    });
+    
+    startBtn.addEventListener('click', startQuiz);
+    restartBtn.addEventListener('click', () => window.location.reload());
+</script>
+</body>
+</html>
+
