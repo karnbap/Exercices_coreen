@@ -97,56 +97,76 @@
 
         studentNameInput.placeholder = ["Super Cédou", "Génie Julie", "Champion Léo", "Star Alice"][Math.floor(Math.random() * 4)];
 
-        const questionPools = {
-            afterVerb: [
-                { base: '밥을 먹다', answer: '먹은 후에', verb: 'Manger' },
-                { base: '숙제를 하다', answer: '한 후에', verb: 'Faire les devoirs' },
-                { base: '영화를 보다', answer: '본 후에', verb: 'Regarder un film' },
-                { base: '책을 읽다', answer: '읽은 후에', verb: 'Lire un livre' },
-                { base: '운동을 하다', answer: '운동한 후에', verb: 'Faire du sport'}
-            ],
-            beforeVerb: [
-                { base: '잠을 자다', answer: '자기 전에', verb: 'Dormir' },
-                { base: '수업에 들어가다', answer: '들어가기 전에', verb: 'Entrer en classe' },
-                { base: '손을 씻다', answer: '씻기 전에', verb: 'Se laver les mains' },
-                { base: '밖으로 나가다', answer: '나가기 전에', verb: 'Sortir' },
-                { base: '커피를 마시다', answer: '마시기 전에', verb: 'Boire du café'}
-            ],
-            sentences: [
-                { fr: "Après avoir fini le travail, je suis rentré chez moi.", ko: "일을 끝낸 후에 집에 돌아왔어요.", hint1: "ㅇㅇ ㄲㄴ ㅎㅇ ㅈㅇ ㄷㅇㅇㅇㅇ.", hint2: "일(travail), 끝내다(finir), 집(maison)"},
-                { fr: "Avant de sortir, j’ai pris mon parapluie.", ko: "나가기 전에 우산을 챙겼어요.", hint1: "ㄴㄱㄱ ㅈㅇ ㅇㅅㅇ ㅊㄱㅇㅇ.", hint2: "나가다(sortir), 우산(parapluie), 챙기다(prendre)"},
-                { fr: "Après avoir regardé le film, j’ai dormi.", ko: "영화를 본 후에 잠을 잤어요.", hint1: "ㅇㅎㄹ ㅂ ㅎㅇ ㅈㅇ ㅈㅇㅇ.", hint2: "영화(film), 보다(regarder), 잠을 자다(dormir)"},
-                { fr: "Avant de manger du pain, je bois du lait.", ko: "빵을 먹기 전에 우유를 마셔요.", hint1: "ㅃㅇ ㅁㄱ ㅈㅇ ㅇㅇㄹ ㅁㅅㅇ.", hint2: "빵(pain), 먹다(manger), 우유(lait), 마시다(boire)"},
-                { fr: "Après avoir fait du sport, j'ai pris une douche.", ko: "운동한 후에 샤워했어요.", hint1: "ㅇㄷㅎ ㅎㅇ ㅅㅇㅎㅇㅇ.", hint2: "운동하다(faire du sport), 샤워하다(prendre une douche)"},
-                { fr: "Avant de dormir, je lis un livre.", ko: "자기 전에 책을 읽어요.", hint1: "ㅈㄱ ㅈㅇ ㅊㅇ ㅇㅇㅇ.", hint2: "자다(dormir), 책(livre), 읽다(lire)"},
-            ]
-        };
+        // [FIXED] Changed data structure to prevent duplicate choices.
+        const verbPairs = [
+            { base: '밥을 먹다', verb: 'Manger', afterForm: '먹은 후에', beforeForm: '먹기 전에' },
+            { base: '숙제를 하다', verb: 'Faire les devoirs', afterForm: '한 후에', beforeForm: '하기 전에' },
+            { base: '영화를 보다', verb: 'Regarder un film', afterForm: '본 후에', beforeForm: '보기 전에' },
+            { base: '책을 읽다', verb: 'Lire un livre', afterForm: '읽은 후에', beforeForm: '읽기 전에' },
+            { base: '운동을 하다', verb: 'Faire du sport', afterForm: '운동한 후에', beforeForm: '운동하기 전에' },
+            { base: '잠을 자다', verb: 'Dormir', afterForm: '잔 후에', beforeForm: '자기 전에' },
+            { base: '수업에 들어가다', verb: 'Entrer en classe', afterForm: '들어간 후에', beforeForm: '들어가기 전에' },
+            { base: '손을 씻다', verb: 'Se laver les mains', afterForm: '씻은 후에', beforeForm: '씻기 전에' },
+            { base: '밖으로 나가다', verb: 'Sortir', afterForm: '나간 후에', beforeForm: '나가기 전에' },
+            { base: '커피를 마시다', verb: 'Boire du café', afterForm: '마신 후에', beforeForm: '마시기 전에' }
+        ];
+
+        const sentencePool = [
+            { fr: "Après avoir fini le travail, je suis rentré chez moi.", ko: "일을 끝낸 후에 집에 돌아왔어요.", hint1: "ㅇㅇ ㄲㄴ ㅎㅇ ㅈㅇ ㄷㅇㅇㅇㅇ.", hint2: "일(travail), 끝내다(finir), 집(maison)"},
+            { fr: "Avant de sortir, j’ai pris mon parapluie.", ko: "나가기 전에 우산을 챙겼어요.", hint1: "ㄴㄱㄱ ㅈㅇ ㅇㅅㅇ ㅊㄱㅇㅇ.", hint2: "나가다(sortir), 우산(parapluie), 챙기다(prendre)"},
+            { fr: "Après avoir regardé le film, j’ai dormi.", ko: "영화를 본 후에 잠을 잤어요.", hint1: "ㅇㅎㄹ ㅂ ㅎㅇ ㅈㅇ ㅈㅇㅇ.", hint2: "영화(film), 보다(regarder), 잠을 자다(dormir)"},
+            { fr: "Avant de manger du pain, je bois du lait.", ko: "빵을 먹기 전에 우유를 마셔요.", hint1: "ㅃㅇ ㅁㄱ ㅈㅇ ㅇㅇㄹ ㅁㅅㅇ.", hint2: "빵(pain), 먹다(manger), 우유(lait), 마시다(boire)"},
+            { fr: "Après avoir fait du sport, j'ai pris une douche.", ko: "운동한 후에 샤워했어요.", hint1: "ㅇㄷㅎ ㅎㅇ ㅅㅇㅎㅇㅇ.", hint2: "운동하다(faire du sport), 샤워하다(prendre une douche)"},
+            { fr: "Avant de dormir, je lis un livre.", ko: "자기 전에 책을 읽어요.", hint1: "ㅈㄱ ㅈㅇ ㅊㅇ ㅇㅇㅇ.", hint2: "자다(dormir), 책(livre), 읽다(lire)"},
+        ];
         
         const shuffleArray = (arr) => arr.sort(() => 0.5 - Math.random());
 
         function generateAndSetQuizData() {
             quizData = [];
             quizData.push({ type: 'explanation' });
-            const mcqPool = shuffleArray([...questionPools.afterVerb, ...questionPools.beforeVerb]);
-            mcqPool.slice(0, 5).forEach(q => {
-                const isAfter = q.answer.includes('후에');
-                const fr_instruction = isAfter ? `après avoir ${q.verb.toLowerCase()}` : `avant de ${q.verb.toLowerCase()}`;
-                const distractor = isAfter ? q.answer.replace(/(으|ㄴ|한) 후에/g, '기 전에') : q.answer.replace(/기 전에/g, 'ㄴ 후에');
-                quizData.push({ type: 'multiple-choice', fr: `Choisissez la forme correcte pour dire "${fr_instruction}".`, ko: `(${q.base}) 친구를 만나요.`, correctAnswer: q.answer, choices: shuffleArray([q.answer, distractor]) });
+            
+            const shuffledVerbPairs = shuffleArray([...verbPairs]);
+
+            // MCQ Questions (5)
+            shuffledVerbPairs.slice(0, 5).forEach(pair => {
+                const useAfterForm = Math.random() > 0.5;
+                const correctAnswer = useAfterForm ? pair.afterForm : pair.beforeForm;
+                const distractor = useAfterForm ? pair.beforeForm : pair.afterForm;
+                const fr_instruction = useAfterForm ? `après avoir ${pair.verb.toLowerCase()}` : `avant de ${pair.verb.toLowerCase()}`;
+                
+                quizData.push({ 
+                    type: 'multiple-choice', 
+                    fr: `Choisissez la forme correcte pour dire "${fr_instruction}".`, 
+                    ko: `(${pair.base}) 친구를 만나요.`, 
+                    correctAnswer: correctAnswer, 
+                    choices: shuffleArray([correctAnswer, distractor]) 
+                });
             });
-            shuffleArray(mcqPool).slice(0, 5).forEach(q => {
-                 const isAfter = q.answer.includes('후에');
-                 const fr_instruction = isAfter ? `après avoir ${q.verb.toLowerCase()}` : `avant de ${q.verb.toLowerCase()}`;
-                 quizData.push({ type: 'fill-in-the-blank', fr: `Écrivez la forme pour dire "${fr_instruction}".`, ko: `(${q.base}) ___ 친구를 만나요.`, correctAnswer: q.answer });
+
+            // Fill-in-the-blank Questions (5)
+            shuffledVerbPairs.slice(5, 10).forEach(pair => {
+                 const useAfterForm = Math.random() > 0.5;
+                 const correctAnswer = useAfterForm ? pair.afterForm : pair.beforeForm;
+                 const fr_instruction = useAfterForm ? `après avoir ${pair.verb.toLowerCase()}` : `avant de ${pair.verb.toLowerCase()}`;
+                 
+                 quizData.push({ 
+                     type: 'fill-in-the-blank', 
+                     fr: `Écrivez la forme pour dire "${fr_instruction}".`, 
+                     ko: `(${pair.base}) ___ 친구를 만나요.`, 
+                     correctAnswer: correctAnswer 
+                 });
             });
-            shuffleArray(questionPools.sentences).slice(0, 5).forEach(q => quizData.push({ type: 'translate-sentence', ...q }));
-            shuffleArray(questionPools.sentences).slice(0, 5).forEach(q => quizData.push({ type: 'listening-dictation', ...q }));
+
+            shuffleArray(sentencePool).slice(0, 5).forEach(q => quizData.push({ type: 'translate-sentence', ...q }));
+            shuffleArray(sentencePool).slice(0, 5).forEach(q => quizData.push({ type: 'listening-dictation', ...q }));
         }
 
         startBtn.addEventListener('click', startQuiz);
         retryBtn.addEventListener('click', () => location.reload());
 
-        async function playAudio(text, voice = 'alloy') {
+        // [FIXED] Audio playback function updated to work with generate-audio.js
+        async function playAudio(text, voice = 'woman') {
             const qData = questionsData.find(d => d.ko === text);
             if (qData) qData.listenCount++;
             
@@ -159,13 +179,18 @@
                 const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice }),
+                    body: JSON.stringify({ text, voice }), // Pass 'man' or 'woman'
                 });
                 if (!response.ok) throw new Error('Failed to generate audio');
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
+                
+                // The server returns JSON, not a direct audio blob.
+                const { audioData, mimeType } = await response.json();
+                if (!audioData) throw new Error('No audio data in response');
+                
+                // Create audio object from base64 data URI
+                const audio = new Audio(`data:${mimeType};base64,${audioData}`);
                 audio.play();
+
                 audio.onended = () => {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
@@ -233,7 +258,7 @@
                 if (q.type === 'listening-dictation') { content += `<p class="text-xl font-semibold text-slate-800 mb-2">Écoutez et écrivez. <br> Mots-clés : <span class="font-normal text-slate-600">${q.hint2}</span></p>`; } else { content += `<p class="text-xl font-semibold text-slate-800 mb-2">${q.fr}</p>`; }
                 
                 if (q.type === 'listening-dictation') {
-                    content += `<div class="flex items-center mt-2 mb-4"><button onclick="playAudio('${q.ko}', event)" class="btn btn-secondary">Écouter la phrase / 문장 듣기</button></div>`;
+                    content += `<div class="flex items-center mt-2 mb-4"><button onclick="playAudio('${q.ko}', 'man')" class="btn btn-secondary">Écouter la phrase / 문장 듣기</button></div>`;
                 } else if (q.type !== 'translate-sentence') {
                     content += `<p class="text-2xl font-bold text-indigo-600 mb-4">${q.ko}</p>`;
                 }
@@ -288,7 +313,7 @@
             questionsData.forEach(qData => {
                 if (qData.type === 'explanation') return;
                 const format = (str) => (str || '').replace(/[.\s+!?]/g, '').toLowerCase(); let isCorrect = false;
-                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { isCorrect = format(qData.userAnswer.main) === format(qData.correctAnswer); } else if (q.type === 'translate-sentence') { isCorrect = format(qData.userAnswer.main) === format(qData.ko); } else if (q.type === 'listening-dictation') { isCorrect = format(qData.userAnswer.dictation1) === format(qData.ko); }
+                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { isCorrect = format(qData.userAnswer.main) === format(qData.correctAnswer); } else if (qData.type === 'translate-sentence') { isCorrect = format(qData.userAnswer.main) === format(qData.ko); } else if (q.type === 'listening-dictation') { isCorrect = format(qData.userAnswer.dictation1) === format(qData.ko); }
                 qData.isCorrect = isCorrect;
             });
         }
