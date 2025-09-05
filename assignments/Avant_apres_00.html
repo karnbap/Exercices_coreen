@@ -13,10 +13,11 @@
         .made-by-bottom { border-top: 1px solid #e2e8f0; margin-top: 40px; }
         .print-button-container { display: flex; justify-content: flex-end; margin-bottom: 20px; }
         .btn { display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 0.5rem; transition: all 0.2s ease-in-out; cursor: pointer; padding: 0.75rem 1.5rem; }
+        .btn:disabled { background-color: #d1d5db; cursor: not-allowed; }
         .btn-primary { background-color: #4f46e5; color: white; }
-        .btn-primary:hover { background-color: #3730a3; }
+        .btn-primary:hover:not(:disabled) { background-color: #3730a3; }
         .btn-secondary { background-color: #e0e7ff; color: #3730a3; padding: 0.5rem 1rem; }
-        .btn-secondary:hover { background-color: #c7d2fe; }
+        .btn-secondary:hover:not(:disabled) { background-color: #c7d2fe; }
         .btn-choice { border: 2px solid #e5e7eb; width: 100%; justify-content: flex-start; text-align: left; padding: 1rem; font-size: 1.125rem; }
         .btn-choice:hover { border-color: #facc15; background-color: #fef9c3; }
         .btn-choice.selected { border-color: #fbbf24; background-color: #fef08a; }
@@ -58,19 +59,6 @@
              <h2 class="text-3xl font-bold mb-4">🎉 Bravo ! 🎉</h2>
              <p id="result-message" class="text-lg text-slate-700 mb-6"></p>
              
-             <!-- AI Feedback Section -->
-             <div id="ai-feedback-container" class="mt-8 text-left p-6 bg-indigo-50 border border-indigo-200 rounded-lg hidden">
-                <h3 class="text-xl font-bold text-indigo-800 mb-3 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.707.707M12 21v-1" /></svg>
-                    Analyse et conseils de l'IA
-                </h3>
-                <div id="ai-feedback-loading" class="text-center py-4">
-                    <p class="text-slate-600">Analyse de tes réponses en cours...</p>
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mt-4"></div>
-                </div>
-                <div id="ai-feedback-content" class="text-slate-700 space-y-2" style="white-space: pre-wrap;"></div>
-             </div>
-
              <div class="flex justify-center space-x-4 mt-8">
                 <button id="retry-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg">
                     다시하기 (Recommencer)
@@ -82,7 +70,6 @@
     <div class="made-by-bottom no-print">Made with ❤️ by 성일, Pongdang</div>
 
     <script>
-        // --- GRADING CRITERIA ---
         function getGradingMessage(percentage, lang = 'ko') {
             if (lang === 'fr') {
                 if (percentage >= 100) return "Parfait absolu ! 👑🎉 Génie confirmé !";
@@ -96,7 +83,6 @@
             return "자, 커피 한 잔 하고 다시 가자! ☕💪🇰🇷";
         }
 
-        // --- DOM ELEMENTS ---
         const startScreen = document.getElementById('start-screen');
         const quizContainer = document.getElementById('quiz-container');
         const resultScreen = document.getElementById('result-screen');
@@ -104,7 +90,6 @@
         const studentNameInput = document.getElementById('student-name');
         const retryBtn = document.getElementById('retry-btn');
 
-        // --- STATE VARIABLES ---
         let studentName = '', startTime, endTime;
         let currentQuestionIndex = 0;
         let questionsData = [], quizData = [];
@@ -112,7 +97,6 @@
 
         studentNameInput.placeholder = ["Super Cédou", "Génie Julie", "Champion Léo", "Star Alice"][Math.floor(Math.random() * 4)];
 
-        // --- QUESTION POOLS ---
         const questionPools = {
             afterVerb: [
                 { base: '밥을 먹다', answer: '먹은 후에', verb: 'Manger' },
@@ -138,10 +122,8 @@
             ]
         };
         
-        // --- HELPER FUNCTIONS ---
         const shuffleArray = (arr) => arr.sort(() => 0.5 - Math.random());
 
-        // --- QUIZ GENERATION ---
         function generateAndSetQuizData() {
             quizData = [];
             quizData.push({ type: 'explanation' });
@@ -161,15 +143,41 @@
             shuffleArray(questionPools.sentences).slice(0, 5).forEach(q => quizData.push({ type: 'listening-dictation', ...q }));
         }
 
-        // --- EVENT LISTENERS ---
         startBtn.addEventListener('click', startQuiz);
         retryBtn.addEventListener('click', () => location.reload());
 
-        // --- AUDIO & RECORDING LOGIC ---
         async function playAudio(text, voice = 'alloy') {
-            if(questionsData[currentQuestionIndex]) questionsData[currentQuestionIndex].listenCount++;
-            alert('Audio playback is simulated in this environment.');
+            const qData = questionsData.find(d => d.ko === text);
+            if (qData) qData.listenCount++;
+            
+            const btn = event.currentTarget;
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '로딩...';
+
+            try {
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice }),
+                });
+                if (!response.ok) throw new Error('Failed to generate audio');
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+                audio.onended = () => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                };
+            } catch (error) {
+                console.error('Audio playback error:', error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                alert('Désolé, une erreur est survenue lors de la lecture audio.');
+            }
         }
+
         async function toggleRecording() {
             const recordBtn = document.getElementById('record-btn');
             const player = document.getElementById('recording-player');
@@ -181,21 +189,21 @@
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     audioChunks = [];
-                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
                     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                     mediaRecorder.onstop = () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         const audioUrl = URL.createObjectURL(audioBlob);
                         player.src = audioUrl; player.hidden = false;
                         const reader = new FileReader(); reader.readAsDataURL(audioBlob);
-                        reader.onloadend = () => { questionsData[currentQuestionIndex].recording.base64 = reader.result.split(',')[1]; };
+                        reader.onloadend = () => { questionsData[currentQuestionIndex].recording = { base64: reader.result.split(',')[1] }; };
+                        stream.getTracks().forEach(track => track.stop());
                     };
                     mediaRecorder.start(); recordBtn.classList.add('recording'); recordBtn.textContent = 'Arrêter / 녹음 중지';
                 } catch (err) { console.error("Error recording:", err); alert("Le microphone est nécessaire. Veuillez autoriser l'accès. / 마이크 권한이 필요합니다."); }
             }
         }
         
-        // --- QUIZ FLOW ---
         function startQuiz() {
             studentName = studentNameInput.value.trim();
             if (!studentName) { alert('학생 이름을 입력해주세요! (Veuillez entrer votre nom)'); return; }
@@ -221,10 +229,24 @@
                  if(q.type === 'fill-in-the-blank') content += `<h2 class="section-title">Étape 2: Remplir le vide / 빈칸 채우기</h2>`;
                  if(q.type === 'translate-sentence') content += `<h2 class="section-title">Étape 3: Traduire la phrase / 문장 번역하기</h2>`;
                  if(q.type === 'listening-dictation') content += `<h2 class="section-title">Étape 4: Écouter et écrire / 듣고 받아쓰기</h2>`;
+                
                 if (q.type === 'listening-dictation') { content += `<p class="text-xl font-semibold text-slate-800 mb-2">Écoutez et écrivez. <br> Mots-clés : <span class="font-normal text-slate-600">${q.hint2}</span></p>`; } else { content += `<p class="text-xl font-semibold text-slate-800 mb-2">${q.fr}</p>`; }
-                if(q.type.startsWith('listening')){ content += `<div class="flex items-center mt-2 mb-4"><p class="text-2xl font-bold text-indigo-600 mr-3">Coréen : </p><button onclick="playAudio('${q.ko}')" class="btn btn-secondary">Écouter / 듣기</button></div>`; } else { content += `<p class="text-2xl font-bold text-indigo-600 mb-4">${q.ko}</p>`; }
-                if (q.type === 'multiple-choice') { content += `<div class="grid grid-cols-1 gap-3">${q.choices.map(c => `<button class="btn btn-choice" data-answer="${c}">${c}</button>`).join('')}</div>`; } else if (q.type === 'fill-in-the-blank') { content += q.ko.replace('___', `<input type="text" id="answer-input" class="p-2 border-2 border-slate-300 rounded-lg text-lg text-center mx-2" style="width: 200px;">`); } else if (q.type === 'translate-sentence') { content += `<textarea id="answer-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" rows="2" placeholder="Traduisez en coréen..."></textarea>`; } else if (q.type === 'listening-dictation') { content += `<p class="font-semibold mt-4 mb-2">1. Écrivez ce que vous entendez / 들은 내용을 적어보세요</p><input id="dictation1" class="w-full p-2 border-2 border-slate-300 rounded-lg"><p class="font-semibold mt-4 mb-2">2. Enregistrez votre voix / 목소리를 녹음하세요</p><div class="flex items-center gap-4"><button id="record-btn" class="btn btn-record" onclick="toggleRecording()">Enregistrer / 녹음하기</button><audio id="recording-player" controls hidden></audio></div><p class="font-semibold mt-4 mb-2">3. Écoutez votre voix et écrivez / 본인 목소리를 듣고 적어보세요</p><input id="dictation2" class="w-full p-2 border-2 border-slate-300 rounded-lg">`; }
-                if (q.hint1 && q.hint2 && q.type !== 'listening-dictation') { content += `<div class="mt-4 flex space-x-2"><button onclick="showHint(1, '${q.hint1}')" class="btn-hint bg-green-100 text-green-800">Aidez moi 🙏 (초성)</button><button onclick="showHint(2, '${q.hint2}')" class="btn-hint bg-blue-100 text-blue-800">Au secours 🛟 (단어)</button></div><div id="hint-display" class="mt-3 p-3 bg-slate-50 rounded-lg text-slate-600 min-h-[50px]"></div>`; }
+                
+                if (q.type === 'listening-dictation') {
+                    content += `<div class="flex items-center mt-2 mb-4"><button onclick="playAudio('${q.ko}', event)" class="btn btn-secondary">Écouter la phrase / 문장 듣기</button></div>`;
+                } else if (q.type !== 'translate-sentence') {
+                    content += `<p class="text-2xl font-bold text-indigo-600 mb-4">${q.ko}</p>`;
+                }
+
+                if (q.type === 'multiple-choice') { content += `<div class="grid grid-cols-1 gap-3">${q.choices.map(c => `<button class="btn btn-choice" data-answer="${c}">${c}</button>`).join('')}</div>`; } 
+                else if (q.type === 'fill-in-the-blank') { 
+                    content += q.ko.replace('___', `<input type="text" id="answer-input" class="p-2 border-2 border-slate-300 rounded-lg text-lg text-center mx-2" style="width: 200px;">`); 
+                    content += `<div class="mt-4 p-3 bg-slate-50 rounded-lg text-slate-600"><p class="font-bold">💡 Rappel (복습)</p><p><b class="text-green-700">-기 전에</b> (avant de) : Toujours après le radical du verbe.<br><b class="text-indigo-700">-(으)ㄴ 후에</b> (après avoir) : -은 후에 après une consonne, -ㄴ 후에 après une voyelle.</p></div>`;
+                }
+                else if (q.type === 'translate-sentence') { content += `<textarea id="answer-input" class="w-full p-3 border-2 border-slate-300 rounded-lg" rows="2" placeholder="Traduisez en coréen..."></textarea>`; } 
+                else if (q.type === 'listening-dictation') { content += `<p class="font-semibold mt-4 mb-2">1. Écrivez ce que vous entendez / 들은 내용을 적어보세요</p><input id="dictation1" class="w-full p-2 border-2 border-slate-300 rounded-lg"><p class="font-semibold mt-4 mb-2">2. Enregistrez votre voix / 목소리를 녹음하세요</p><div class="flex items-center gap-4"><button id="record-btn" class="btn btn-record" onclick="toggleRecording()">Enregistrer / 녹음하기</button><audio id="recording-player" controls hidden></audio></div><p class="font-semibold mt-4 mb-2">3. Écoutez votre voix et écrivez / 본인 목소리를 듣고 적어보세요</p><input id="dictation2" class="w-full p-2 border-2 border-slate-300 rounded-lg">`; }
+                
+                if (q.type === 'translate-sentence' && q.hint1 && q.hint2) { content += `<div class="mt-4 flex space-x-2"><button onclick="showHint(1, '${q.hint1}')" class="btn-hint bg-green-100 text-green-800">Aidez moi 🙏 (초성)</button><button onclick="showHint(2, '${q.hint2}')" class="btn-hint bg-blue-100 text-blue-800">Au secours 🛟 (단어)</button></div><div id="hint-display" class="mt-3 p-3 bg-slate-50 rounded-lg text-slate-600 min-h-[50px]"></div>`; }
             }
             content += `<div class="mt-6 flex justify-between items-center no-print"><button id="prev-btn" class="btn btn-primary ${currentQuestionIndex === 0 ? 'invisible' : ''}">Précédent / 이전</button><button id="next-btn" class="btn btn-primary">${currentQuestionIndex === quizData.length - 1 ? 'Terminer / 끝내기' : 'Suivant / 다음'}</button></div>`;
             card.innerHTML = content; quizContainer.appendChild(card); addQuestionEventListeners();
@@ -248,75 +270,42 @@
         function prevQuestion() { if (currentQuestionIndex > 0) { saveCurrentAnswer(); currentQuestionIndex--; renderQuestion(); } }
         function nextQuestion() { saveCurrentAnswer(); if (currentQuestionIndex < quizData.length - 1) { currentQuestionIndex++; renderQuestion(); } else { finishQuiz(); } }
 
-        async function finishQuiz() {
+        function finishQuiz() {
             endTime = new Date(); evaluateAnswers();
             quizContainer.classList.add('hidden'); resultScreen.classList.remove('hidden');
-            const score = questionsData.filter(q => q.isCorrect).length; const total = quizData.length - 1;
-            const percentage = Math.round((score / total) * 100);
+            const gradableQuestions = questionsData.filter(q => q.type !== 'explanation');
+            const score = gradableQuestions.filter(q => q.isCorrect).length; 
+            const total = gradableQuestions.length;
+            const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
             const resultMessage = getGradingMessage(percentage, 'fr');
             document.getElementById('result-message').innerHTML = `<strong class="text-2xl">${studentName}, ton score est de ${score} / ${total}</strong><br>${resultMessage}`;
             if(percentage === 100) confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
             
-            const aiFeedbackContainer = document.getElementById('ai-feedback-container');
-            const aiFeedbackContent = document.getElementById('ai-feedback-content');
-            const aiFeedbackLoading = document.getElementById('ai-feedback-loading');
-            aiFeedbackContainer.classList.remove('hidden'); aiFeedbackLoading.classList.remove('hidden'); aiFeedbackContent.classList.add('hidden');
-            
-            const incorrectAnswers = questionsData.filter(qData => !qData.isCorrect && qData.type !== 'explanation').map(qData => ({ q: quizData[qData.number], qData }));
-            const aiFeedback = await getAiFeedback(incorrectAnswers);
-            
-            aiFeedbackLoading.classList.add('hidden'); aiFeedbackContent.textContent = aiFeedback; aiFeedbackContent.classList.remove('hidden');
-            sendResults(aiFeedback);
+            sendResults();
         }
 
         function evaluateAnswers() {
             questionsData.forEach(qData => {
                 if (qData.type === 'explanation') return;
                 const format = (str) => (str || '').replace(/[.\s+!?]/g, '').toLowerCase(); let isCorrect = false;
-                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { isCorrect = format(qData.userAnswer.main) === format(qData.correctAnswer); } else if (qData.type === 'translate-sentence') { isCorrect = format(qData.userAnswer.main) === format(qData.ko); } else if (qData.type === 'listening-dictation') { isCorrect = format(qData.userAnswer.dictation1) === format(qData.ko); }
+                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { isCorrect = format(qData.userAnswer.main) === format(qData.correctAnswer); } else if (q.type === 'translate-sentence') { isCorrect = format(qData.userAnswer.main) === format(qData.ko); } else if (q.type === 'listening-dictation') { isCorrect = format(qData.userAnswer.dictation1) === format(qData.ko); }
                 qData.isCorrect = isCorrect;
             });
         }
-
-        async function getAiFeedback(incorrectAnswers) {
-            if (incorrectAnswers.length === 0) {
-                return "Félicitations ! Aucune erreur trouvée. Tu es sur la bonne voie ! 👍";
-            }
-            const mistakesText = incorrectAnswers.map(item => {
-                let userAnswerText = item.qData.userAnswer.main || item.qData.userAnswer.dictation1 || '';
-                let correctAnswerText = item.q.correctAnswer || item.q.ko;
-                return `Question Type: ${item.q.type}\nInstruction (FR): ${item.q.fr}\nStudent's Answer: "${userAnswerText}"\nCorrect Answer: "${correctAnswerText}"\n---`;
-            }).join('\n');
-
-            const systemPrompt = "Tu es un tuteur de coréen sympathique et encourageant. L'étudiant est un débutant complet francophone. Analyse les erreurs suivantes, identifie le principal point de confusion (par exemple, confusion entre -기 전에 et -(으)ㄴ 후에, ou des erreurs de conjugaison). Fournis une explication très simple, courte et positive en français. Utilise des emojis pour rendre le tout plus amical. Termine par une phrase d'encouragement. Ne sois pas trop long.";
-            const userQuery = `Voici les erreurs de l'étudiant :\n${mistakesText}\n\nAnalyse ces erreurs et donne une explication simple et encourageante.`;
-            const apiKey = ""; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, };
-
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
-                const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                return text || "Désolé, une erreur est survenue lors de l'analyse. Réessaye !";
-            } catch (error) {
-                console.error("Error fetching AI feedback:", error);
-                return "Impossible de contacter le service d'analyse. Vérifie ta connexion ou réessaye plus tard.";
-            }
-        }
-
-        async function sendResults(aiFeedback = '') {
+        
+        async function sendResults() {
             const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
-            const payload = { studentName, startTime: startTime.toISOString(), endTime: endTime.toISOString(), totalTimeSeconds, questions: questionsData, aiFeedback };
-            console.log("--- QUIZ RESULTS (with AI Feedback) ---");
-            console.log(JSON.stringify(payload, null, 2));
+            const payload = { studentName, startTime: startTime.toISOString(), endTime: endTime.toISOString(), totalTimeSeconds, questions: questionsData };
              try {
                 const response = await fetch('/.netlify/functions/send-results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`Failed to send results: ${response.statusText}`);
                 console.log('Results sent successfully!');
             } catch (error) { console.error('Error sending results:', error); }
         }
+
+        window.playAudio = playAudio;
+        window.toggleRecording = toggleRecording;
+        window.showHint = showHint;
 
     </script>
 </body>
