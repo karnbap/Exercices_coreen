@@ -14,15 +14,18 @@ try {
 
 const client = new textToSpeech.TextToSpeechClient({ credentials });
 
-// 프런트에서 오는 임의 보이스 토큰을 한국어 TTS로 매핑
+// 프런트 토큰 → 한국어 보이스 매핑
 function mapTokenToKoVoice(voiceToken = '') {
   const token = String(voiceToken).toLowerCase();
-  // Neural2 계열이 자연스럽습니다.
   if (['nova', 'fable'].includes(token)) return 'ko-KR-Neural2-A'; // 여성
   if (['alloy', 'echo'].includes(token)) return 'ko-KR-Neural2-B'; // 남성
   if (['shimmer'].includes(token))       return 'ko-KR-Neural2-C'; // 여성
-  if (token === 'man')                   return 'ko-KR-Neural2-B'; // 기존 호환
-  return 'ko-KR-Neural2-A'; // 기본
+  if (token === 'ko-kr-neural2-a') return 'ko-KR-Neural2-A';
+  if (token === 'ko-kr-neural2-b') return 'ko-KR-Neural2-B';
+  if (token === 'ko-kr-neural2-c') return 'ko-KR-Neural2-C';
+  if (token === 'ko-kr-neural2-d') return 'ko-KR-Neural2-D';
+  if (token === 'man')             return 'ko-KR-Neural2-B';
+  return 'ko-KR-Neural2-A';
 }
 
 exports.handler = async (event) => {
@@ -37,14 +40,37 @@ exports.handler = async (event) => {
       return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { text = '', voice = 'female', speakingRate = 1.0 } = JSON.parse(event.body || '{}');
-    if (!text.trim()) {
+    const {
+      text = '',
+      voice = 'female',
+      speakingRate = 1.0,
+      ssml = false,
+      insertBreakMs = 0
+    } = JSON.parse(event.body || '{}');
+
+    if (!String(text).trim()) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Text is required' }) };
     }
 
     const voiceName = mapTokenToKoVoice(voice);
+
+    // SSML 구성 (토큰 사이 <break time="Xms"/> 삽입)
+    const needsBreak = !!ssml || Number(insertBreakMs) > 0;
+    const br = Math.max(100, Math.min(2000, Number(insertBreakMs) || 300));
+
+    const input = !needsBreak
+      ? { text }
+      : {
+          ssml:
+            `<speak><s>` +
+            String(text)
+              .split(/[,\s]+/).filter(Boolean)
+              .map(tok => `${tok}<break time="${br}ms"/>`).join('') +
+            `</s></speak>`
+        };
+
     const request = {
-      input: { text },
+      input,
       voice: { languageCode: 'ko-KR', name: voiceName },
       audioConfig: {
         audioEncoding: 'MP3',
@@ -55,14 +81,14 @@ exports.handler = async (event) => {
     const [response] = await client.synthesizeSpeech(request);
     const audioBase64 = response.audioContent.toString('base64');
 
-    // ✅ 역호환 완벽지원: audioBase64 / audioContent / data: URL 모두 제공
+    // 역호환 완벽 지원
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       body: JSON.stringify({
-        audioBase64,                               // 최신 페이지(Blob 변환 재생)
-        audioContent: audioBase64,                 // Google 표준 키명 호환
-        audioUrl: `data:audio/mpeg;base64,${audioBase64}`, // 구형 페이지(new Audio(url))도 재생
+        audioBase64,                               // 최신(Blob 변환)
+        audioContent: audioBase64,                 // Google 표준 키명
+        audioUrl: `data:audio/mpeg;base64,${audioBase64}`, // 구형(new Audio(url))
         mimeType: 'audio/mpeg',
         voiceUsed: voiceName,
       }),
