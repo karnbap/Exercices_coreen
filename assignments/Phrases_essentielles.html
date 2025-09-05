@@ -147,7 +147,7 @@
                      <button onclick="switchSection('matching-game')" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors">
                         ← Étape précédente
                     </button>
-                    <button onclick="showResults()" class="theme-bg-secondary text-blue-900 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 transition-colors">
+                    <button id="finish-button" onclick="showResults()" class="theme-bg-secondary text-blue-900 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 transition-colors opacity-50 cursor-not-allowed" disabled>
                         Terminer et voir les résultats
                     </button>
                 </div>
@@ -185,9 +185,24 @@
         // --- 데이터 설정 ---
         const matchingData = [
             { id: 1, fr: "Entendre", ko: "들리다" }, { id: 2, fr: "Voir", ko: "보이다" }, { id: 3, fr: "Oui", ko: "네" }, { id: 4, fr: "Non", ko: "아니요" }, { id: 5, fr: "Comprendre", ko: "이해하다" }, { id: 6, fr: "Se souvenir", ko: "기억나다" }, { id: 7, fr: "Semaine", ko: "주" }, { id: 8, fr: "Prochain(e)", ko: "다음" }, { id: 9, fr: "Comment", ko: "어떻게" }, { id: 10, fr: "Coréen", ko: "한국어" }, { id: 11, fr: "Français", ko: "프랑스어" }, { id: 12, fr: "Bon travail", ko: "수고했어요" }, { id: 13, fr: "Au revoir (l'autre reste)", ko: "안녕히 계세요" }, { id: 14, fr: "Au revoir (l'autre part)", ko: "안녕히 가세요" },
+            { id: 15, fr: "Finir", ko: "마무리하다" }, { id: 16, fr: "Week-end", ko: "주말" }, { id: 17, fr: "Lundi", ko: "월요일" }, { id: 18, fr: "Samedi", ko: "토요일" }, { id: 19, fr: "Dimanche", ko: "일요일" },
+            { id: 20, fr: "Au revoir (restez bien)", ko: "안녕히 계세요" }, { id: 21, fr: "Au revoir (moins formel)", ko: "잘 있어요" }
         ];
         const dictationData = [
-            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", initial: "ㅈ ㄷㄹㅇ?", hint: "entendre: 들리다", voice: "FEMALE" }, { id: 2, fr: "Tu me vois bien ?", ko: "잘 보여요?", initial: "ㅈ ㅂㅇㅇ?", hint: "voir: 보이다", voice: "MALE" }, { id: 3, fr: "Oui, je t’entends bien.", ko: "네, 잘 들려요.", initial: "ㄴ, ㅈ ㄷㄹㅇ.", hint: "oui: 네", voice: "FEMALE" }, { id: 4, fr: "Oui, je te vois bien.", ko: "네, 잘 보여요.", initial: "ㄴ, ㅈ ㅂㅇㅇ.", hint: "oui: 네", voice: "Puck" }, { id: 5, fr: "Non, je ne t’entends pas.", ko: "아니요, 안 들려요.", initial: "ㅇㄴㅇ, ㅇ ㄷㄹㅇ.", hint: "non: 아니요", voice: "FEMALE" }, { id: 6, fr: "Non, je ne te vois pas.", ko: "아니요, 안 보여요.", initial: "ㅇㄴㅇ, ㅇ ㅂㅇㅇ.", hint: "non: 아니요", voice: "MALE" }, { id: 7, fr: "J'ai compris.", ko: "이해했어요.", initial: "ㅇㅎㅎㅇㅇ.", hint: "comprendre: 이해하다", voice: "FEMALE" }, { id: 8, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", initial: "ㅇㅎ ㅁㅎㅇㅇ.", hint: "ne pas pouvoir: 못하다", voice: "MALE" }, { id: 9, fr: "Tu peux répéter, s'il te plaît ?", ko: "한번 더 말해주세요.", initial: "ㅎㅂ ㄷ ㅁㅎㅈㅅㅇ.", hint: "une fois de plus: 한번 더", voice: "FEMALE" }, { id: 10, fr: "Je me souviens.", ko: "기억나요.", initial: "ㄱㅇㄴㅇ.", hint: "se souvenir: 기억나다", voice: "MALE" }, { id: 11, fr: "Je ne me souviens pas.", ko: "기억 안나요.", initial: "ㄱㅇ ㅇㄴㅇ.", hint: "ne pas se souvenir: 기억 안나다", voice: "FEMALE" }, { id: 12, fr: "Comment dit-on ça en coréen ?", ko: "한국어로 어떻게 말해요?", initial: "ㅎㄱㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "comment: 어떻게", voice: "MALE" }, { id: 13, fr: "Comment dit-on ça en français ?", ko: "프랑스어로 어떻게 말해요?", initial: "ㅍㄹㅅㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "français: 프랑스어", voice: "FEMALE" }, { id: 14, fr: "Passe une bonne semaine.", ko: "좋은 한 주 보내세요.", initial: "ㅈㅇ ㅎ ㅈ ㅂㄴㅅㅇ.", hint: "semaine: 주", voice: "MALE" }, { id: 15, fr: "On se voit la semaine prochaine !", ko: "다음 주에 봐요!", initial: "ㄷㅇ ㅈㅇ ㅂㅇ!", hint: "prochaine: 다음", voice: "FEMALE" }, { id: 16, fr: "Au revoir (quand l'autre reste)", ko: "안녕히 계세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "rester: 계시다", voice: "MALE" }, { id: 17, fr: "Au revoir (quand l'autre part)", ko: "안녕히 가세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "partir: 가시다", voice: "FEMALE" }, { id: 18, fr: "Vous avez bien travaillé / Bon travail !", ko: "수고하셨어요!", initial: "ㅅㄱㅎㅅㅇㅇ!", hint: "travailler dur: 수고하다", voice: "MALE" }
+            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", initial: "ㅈ ㄷㄹㅇ?", hint: "entendre: 들리다", voice: "FEMALE" }, { id: 2, fr: "Tu me vois bien ?", ko: "잘 보여요?", initial: "ㅈ ㅂㅇㅇ?", hint: "voir: 보이다", voice: "MALE" }, { id: 3, fr: "Oui, je t’entends bien.", ko: "네, 잘 들려요.", initial: "ㄴ, ㅈ ㄷㄹㅇ.", hint: "oui: 네", voice: "FEMALE" }, { id: 4, fr: "Oui, je te vois bien.", ko: "네, 잘 보여요.", initial: "ㄴ, ㅈ ㅂㅇㅇ.", hint: "oui: 네", voice: "Puck" }, { id: 5, fr: "Non, je ne t’entends pas.", ko: "아니요, 안 들려요.", initial: "ㅇㄴㅇ, ㅇ ㄷㄹㅇ.", hint: "non: 아니요", voice: "FEMALE" }, { id: 6, fr: "Non, je ne te vois pas.", ko: "아니요, 안 보여요.", initial: "ㅇㄴㅇ, ㅇ ㅂㅇㅇ.", hint: "non: 아니요", voice: "MALE" }, { id: 7, fr: "J'ai compris.", ko: "이해했어요.", initial: "ㅇㅎㅎㅇㅇ.", hint: "comprendre: 이해하다", voice: "FEMALE" }, { id: 8, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", initial: "ㅇㅎ ㅁㅎㅇㅇ.", hint: "ne pas pouvoir: 못하다", voice: "MALE" }, { id: 9, fr: "Tu peux répéter, s'il te plaît ?", ko: "한번 더 말해주세요.", initial: "ㅎㅂ ㄷ ㅁㅎㅈㅅㅇ.", hint: "une fois de plus: 한번 더", voice: "FEMALE" }, { id: 10, fr: "Je me souviens.", ko: "기억나요.", initial: "ㄱㅇㄴㅇ.", hint: "se souvenir: 기억나다", voice: "MALE" }, { id: 11, fr: "Je ne me souviens pas.", ko: "기억 안나요.", initial: "ㄱㅇ ㅇㄴㅇ.", hint: "ne pas se souvenir: 기억 안나다", voice: "FEMALE" }, { id: 12, fr: "Comment dit-on ça en coréen ?", ko: "한국어로 어떻게 말해요?", initial: "ㅎㄱㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "comment: 어떻게", voice: "MALE" }, { id: 13, fr: "Comment dit-on ça en français ?", ko: "프랑스어로 어떻게 말해요?", initial: "ㅍㄹㅅㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "français: 프랑스어", voice: "FEMALE" }, 
+            { id: 14, fr: "On va finir ? (Il y a une dernière étape)", ko: "이거 마무리 할까요?", initial: "ㅇㄱ ㅁㅁㄹ ㅎㄲㅇ?", hint: "finir: 마무리하다", voice: "FEMALE" }, 
+            { id: 15, fr: "Oui, très bien, on va finir.", ko: "네, 좋아요. 마무리 해요.", initial: "ㄴ, ㅈㅇㅇ. ㅁㅁㄹ ㅎㅇ.", hint: "finir: 마무리하다", voice: "MALE" }, 
+            { id: 16, fr: "C'est vous qui allez finir.", ko: "마무리 하세요.", initial: "ㅁㅁㄹ ㅎㅅㅇ.", hint: "finir: 마무리하다", voice: "FEMALE" }, 
+            { id: 17, fr: "Oui, je vais terminer.", ko: "네, 마무리 할게요.", initial: "ㄴ, ㅁㅁㄹ ㅎㄲㅇ.", hint: "terminer: 할게요", voice: "MALE" }, 
+            { id: 18, fr: "Passez une bonne semaine.", ko: "좋은 한 주 보내세요.", initial: "ㅈㅇ ㅎ ㅈ ㅂㄴㅅㅇ.", hint: "semaine: 주", voice: "FEMALE" }, 
+            { id: 19, fr: "Passez un bon week-end.", ko: "좋은 주말 보내세요.", initial: "ㅈㅇ ㅈㅁ ㅂㄴㅅㅇ.", hint: "week-end: 주말", voice: "MALE" }, 
+            { id: 20, fr: "On se voit la semaine prochaine.", ko: "다음 주에 만나요.", initial: "ㄷㅇ ㅈㅇ ㅁㄴㅇ.", hint: "prochaine: 다음", voice: "FEMALE" }, 
+            { id: 21, fr: "On se voit lundi.", ko: "월요일에 만나요.", initial: "ㅇㅇㅇㅇ ㅁㄴㅇ.", hint: "lundi: 월요일", voice: "MALE" },
+            { id: 22, fr: "Les jours de la semaine sont : lundi, mardi, mercredi, jeudi, vendredi.", ko: "평일은 월요일, 화요일, 수요일, 목요일, 금요일이에요.", initial: "ㅍㅇㅇ ㅇㅇㅇ, ㅎㅇㅇ, ㅅㅇㅇ, ㅁㅇㅇ, ㄱㅇㅇㅇㅇ.", hint: "jours de la semaine: 평일", voice: "FEMALE" },
+            { id: 23, fr: "Le week-end, c'est samedi et dimanche.", ko: "주말은 토요일과 일요일이에요.", initial: "ㅈㅁㅇ ㅌㅇㅇㄱ ㅇㅇㅇㅇㅇ.", hint: "week-end: 주말", voice: "MALE" },
+            { id: 24, fr: "Lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche (à lire vite)", ko: "월화수목금토일", initial: "ㅇㅎㅅㅁㄱㅌㅇ", hint: "jours: 요일", voice: "FEMALE" },
+            { id: 25, fr: "Au revoir (quand l'autre reste)", ko: "안녕히 계세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "rester: 계시다", voice: "MALE" },
+            { id: 26, fr: "Au revoir (moins formel, plus sympa)", ko: "잘 있어요.", initial: "ㅈ ㅇㅇㅇ.", hint: "être bien: 잘 있다", voice: "FEMALE" }
         ];
 
         // --- 상태 관리 변수 ---
@@ -196,6 +211,7 @@
         let selectedFrench = null;
         let selectedKorean = null;
         let correctMatches = 0;
+        let resultsAlreadySent = false;
         let trackingData = {
             studentName: '',
             startTime: null, 
@@ -338,6 +354,21 @@
             initDictationGame();
             switchSection('dictation-game');
         }
+        
+        function updateFinishButtonState() {
+            const finishButton = document.getElementById('finish-button');
+            const inputs = document.querySelectorAll('#dictation-container input[type="text"]');
+            const isAnyInputFilled = Array.from(inputs).some(input => input.value.trim() !== '');
+
+            if (isAnyInputFilled) {
+                finishButton.disabled = false;
+                finishButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                finishButton.disabled = true;
+                finishButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
         function initDictationGame() {
             const container = document.getElementById('dictation-container');
             container.innerHTML = '';
@@ -372,6 +403,14 @@
                 
                 container.appendChild(questionDiv);
             });
+            
+            // Add event listeners to all new inputs
+            const inputs = container.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', updateFinishButtonState);
+            });
+            // Set initial state of the button
+            updateFinishButtonState();
         }
 
         // --- 오디오 재생 관련 함수들 ---
@@ -487,26 +526,26 @@
                     };
 
                     mediaRecorder.onstop = () => {
-                      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // webm가 용량/호환성 무난
-                      const reader = new FileReader();
-                      reader.readAsDataURL(audioBlob);
-                      reader.onloadend = () => {
-                        const base64String = reader.result.split(',')[1];
-                        const duration = Math.round((new Date() - recordingStartTime) / 1000);
-                        const fname = `rec_q${id}_${Date.now()}.webm`;
-                    
-                        trackingData.dictationDetails[id].recording = {
-                          base64: base64String,
-                          duration,
-                          mimeType: 'audio/webm',
-                          filename: fname,
-                          sentenceKo: dictationData.find(x=>x.id===id).ko,
-                          sentenceFr: dictationData.find(x=>x.id===id).fr,
-                          number: id
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // webm가 용량/호환성 무난
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => {
+                            const base64String = reader.result.split(',')[1];
+                            const duration = Math.round((new Date() - recordingStartTime) / 1000);
+                            const fname = `rec_q${id}_${Date.now()}.webm`;
+                        
+                            trackingData.dictationDetails[id].recording = {
+                                base64: base64String,
+                                duration,
+                                mimeType: 'audio/webm',
+                                filename: fname,
+                                sentenceKo: dictationData.find(x=>x.id===id).ko,
+                                sentenceFr: dictationData.find(x=>x.id===id).fr,
+                                number: id
+                            };
+                            statusEl.textContent = `Enregistré (${duration}s) 👍`;
                         };
-                        statusEl.textContent = `Enregistré (${duration}s) 👍`;
-                      };
-                      stream.getTracks().forEach(t=>t.stop());
+                        stream.getTracks().forEach(t=>t.stop());
                     };
                     
                     recordingStartTime = new Date();
@@ -541,181 +580,186 @@
 
         // --- 결과 처리 로직 ---
         // 간단한 🎺 팬파레 (Web Audio API)
-function playFanfare() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = freq;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      const t0 = now + i * 0.12;
-      gain.gain.setValueAtTime(0.0001, t0);
-      gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
-      osc.start(t0);
-      osc.stop(t0 + 0.26);
-    });
-  } catch (e) {
-    /* 사운드 못써도 무시 */
-  }
-}
+        function playFanfare() {
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = ctx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+            notes.forEach((freq, i) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'square';
+              osc.frequency.value = freq;
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              const t0 = now + i * 0.12;
+              gain.gain.setValueAtTime(0.0001, t0);
+              gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+              osc.start(t0);
+              osc.stop(t0 + 0.26);
+            });
+          } catch (e) {
+            /* 사운드 못써도 무시 */
+          }
+        }
 
-function showResults() {
-  trackingData.endTime = new Date();
-  trackingData.totalTimeSeconds = Math.round((trackingData.endTime - trackingData.startTime) / 1000);
+        function showResults() {
+          trackingData.endTime = new Date();
+          trackingData.totalTimeSeconds = Math.round((trackingData.endTime - trackingData.startTime) / 1000);
 
-  let correctCount = 0;
-  const results = []; // 문항별 결과 저장(오답 하이라이트/이메일용)
+          let correctCount = 0;
+          const results = []; // 문항별 결과 저장(오답 하이라이트/이메일용)
 
-  // 문항별 정오 판정 + 통계 업데이트
-  dictationData.forEach((item) => {
-    const userAnswer = (document.getElementById(`answer-${item.id}`)?.value || '').trim();
-    const cleanUser = userAnswer.replace(/[.,!?]/g, '');
-    const cleanCorrect = item.ko.replace(/[.,!?]/g, '');
+          // 문항별 정오 판정 + 통계 업데이트
+          dictationData.forEach((item) => {
+            const userAnswer = (document.getElementById(`answer-${item.id}`)?.value || '').trim();
+            const cleanUser = userAnswer.replace(/[.,!?]/g, '');
+            const cleanCorrect = item.ko.replace(/[.,!?]/g, '');
 
-    const detail = trackingData.dictationDetails[item.id];
-    detail.userAnswer = userAnswer;
-    detail.isCorrect = cleanUser === cleanCorrect;
+            const detail = trackingData.dictationDetails[item.id];
+            detail.userAnswer = userAnswer;
+            detail.isCorrect = cleanUser === cleanCorrect;
 
-    if (detail.isCorrect) correctCount++;
+            if (detail.isCorrect) correctCount++;
 
-    results.push({
-      id: item.id,
-      fr: item.fr,
-      ko: item.ko,
-      userAnswer,
-      isCorrect: detail.isCorrect,
-      plays: detail.plays || 0,
-      hint1: detail.hint1Clicks || 0,
-      hint2: detail.hint2Clicks || 0,
-    });
-  });
+            results.push({
+              id: item.id,
+              fr: item.fr,
+              ko: item.ko,
+              userAnswer,
+              isCorrect: detail.isCorrect,
+              plays: detail.plays || 0,
+              hint1: detail.hint1Clicks || 0,
+              hint2: detail.hint2Clicks || 0,
+            });
+          });
 
-  const total = dictationData.length;
-  const pct = Math.round((correctCount / total) * 100);
+          const total = dictationData.length;
+          const pct = Math.round((correctCount / total) * 100);
 
-  // 상단 총평 영역: 점수 + 조건별 멘트/이모지
-  const resultMessage = document.getElementById('result-message');
-  let topHTML = `<div class="p-4 rounded-lg border">
-    <div class="text-3xl font-extrabold mb-2">${pct}%</div>`;
+          // 상단 총평 영역: 점수 + 조건별 멘트/이모지
+          const resultMessage = document.getElementById('result-message');
+          let topHTML = `<div class="p-4 rounded-lg border">
+            <div class="text-3xl font-extrabold mb-2">${pct}%</div>`;
 
-  if (pct === 100) {
-    topHTML += `<div class="text-green-700 text-2xl font-bold">완벽해요!! 👑🎺👍</div>`;
-    // 축하 이펙트
-    confetti({ particleCount: 220, spread: 90, origin: { y: 0.6 } });
-    playFanfare();
-  } else if (pct >= 80) {
-    topHTML += `<div class="text-blue-700 text-2xl font-bold">잘했어요!! 🎺👍</div>`;
-    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-  } else if (pct >= 60) {
-    topHTML += `<div class="text-yellow-700 text-xl font-bold">이해할 수 있어요. 꽤 잘했어요 (이해 못할 수도 있어요ㅋㅋ) 👍</div>`;
-  } else {
-    topHTML += `<div class="text-red-700 text-xl font-bold">땡!! 틀렸어요!!</div>`;
-  }
-  topHTML += `<div class="text-slate-600 mt-1">점수: ${correctCount}/${total}</div></div>`;
-  resultMessage.innerHTML = topHTML;
+          if (pct === 100) {
+            topHTML += `<div class="text-green-700 text-2xl font-bold">완벽해요!! 👑🎺👍</div>`;
+            // 축하 이펙트
+            confetti({ particleCount: 220, spread: 90, origin: { y: 0.6 } });
+            playFanfare();
+          } else if (pct >= 80) {
+            topHTML += `<div class="text-blue-700 text-2xl font-bold">잘했어요!! 🎺👍</div>`;
+            confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+          } else if (pct >= 60) {
+            topHTML += `<div class="text-yellow-700 text-xl font-bold">이해할 수 있어요. 꽤 잘했어요 (이해 못할 수도 있어요ㅋㅋ) 👍</div>`;
+          } else {
+            topHTML += `<div class="text-red-700 text-xl font-bold">땡!! 틀렸어요!!</div>`;
+          }
+          topHTML += `<div class="text-slate-600 mt-1">점수: ${correctCount}/${total}</div></div>`;
+          resultMessage.innerHTML = topHTML;
 
-  // 상세 영역: 모든 문장 리스트 + 오답 하이라이트 + 정답 표시
-  const wrongItems = results.filter(r => !r.isCorrect);
-  let detailHTML = `
-    <h3 class="text-xl font-bold mb-3 theme-text-primary">문장별 결과</h3>
-    <ul class="space-y-3">`;
+          // 상세 영역: 모든 문장 리스트 + 오답 하이라이트 + 정답 표시
+          const wrongItems = results.filter(r => !r.isCorrect);
+          let detailHTML = `
+            <h3 class="text-xl font-bold mb-3 theme-text-primary">문장별 결과</h3>
+            <ul class="space-y-3">`;
 
-  results.forEach(r => {
-    if (r.isCorrect) {
-      detailHTML += `
-        <li class="p-3 rounded-lg border border-emerald-200 bg-emerald-50">
-          <div class="font-semibold text-emerald-700">✔️ ${r.id}. ${r.fr}</div>
-          <div class="mt-1">내 답: ${r.userAnswer || '<i>(빈칸)</i>'}</div>
-        </li>`;
-    } else {
-      detailHTML += `
-        <li class="p-3 rounded-lg border border-red-200 wrong-block">
-          <div class="font-semibold text-red-700">❌ ${r.id}. ${r.fr}</div>
-          <div class="mt-1"><span class="line-through">${r.userAnswer || '<i>(빈칸)</i>'}</span></div>
-          <div class="mt-1"><b>정답:</b> ${r.ko}</div>
-          <div class="mt-1 text-sm text-slate-600">듣기: ${r.plays}회 · Indice 1: ${r.hint1}회 · Indice 2: ${r.hint2}회</div>
-        </li>`;
-    }
-  });
-  detailHTML += `</ul>`;
-
-  // 100%가 아니면 맨 위에 오답 요약 박스 추가
-  if (pct < 100 && wrongItems.length) {
-    detailHTML =
-      `<div class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50">
-         <div class="font-bold text-red-700">❗오답(${wrongItems.length}개): ${wrongItems.map(w => w.id).join(', ')}</div>
-         <div class="text-sm text-slate-700 mt-1">아래 리스트에서 <b>정답</b>을 확인하세요.</div>
-       </div>` + detailHTML;
-  }
-
-  document.getElementById('detailed-results').innerHTML = detailHTML;
-
-  // 이메일/인쇄 등에 쓰일 통계는 기존 구조 유지
-  switchSection('results-screen');
-}
-
-  
-        // --- 이메일 및 인쇄 기능 ---
-            // 결과 전송 payload (핵심 필드 추가)
-            async function sendResultsByEmail() {
-              const btn = document.getElementById('send-email-btn');
-              btn.disabled = true; btn.textContent = 'Envoi en cours...';
-            
-              // 최신 값 갱신
-              Object.values(trackingData.dictationDetails).forEach(d=>{
-                if (d && typeof d.userAnswer !== 'string') d.userAnswer = '';
-              });
-            
-              const questions = dictationData.map(item=>{
-                const d = trackingData.dictationDetails[item.id] || {};
-                return {
-                  number: item.id,
-                  fr: item.fr,
-                  ko: item.ko,
-                  userAnswer: d.userAnswer || '',
-                  isCorrect: !!d.isCorrect,
-                  listenCount: d.plays || 0,
-                  hint1Count: d.hint1Clicks || 0,
-                  hint2Count: d.hint2Clicks || 0,
-                  recording: d.recording && d.recording.base64 ? {
-                    filename: d.recording.filename || `rec_q${item.id}.webm`,
-                    mimeType: d.recording.mimeType || 'audio/webm',
-                    base64: d.recording.base64,
-                    duration: d.recording.duration || 0
-                  } : null
-                };
-              });
-            
-              const emailPayload = {
-                studentName: trackingData.studentName || studentName,
-                startTime: trackingData.startTime,
-                endTime: new Date(),
-                totalTimeSeconds: Math.round((new Date() - trackingData.startTime)/1000),
-                questions
-              };
-            
-              try {
-                const res = await fetch('/.netlify/functions/send-results', {
-                  method:'POST',
-                  headers:{'Content-Type':'application/json'},
-                  body: JSON.stringify(emailPayload)
-                });
-                if(!res.ok) throw new Error(await res.text());
-                alert('✅ Résultats envoyés avec succès !');
-                btn.textContent = '✅ Envoyé !';
-              } catch(e){
-                console.error(e);
-                alert('메일 전송 오류: ' + e.message);
-                btn.disabled = false;
-                btn.textContent = '📧 Envoyer les résultats par e-mail';
-              }
+          results.forEach(r => {
+            if (r.isCorrect) {
+              detailHTML += `
+                <li class="p-3 rounded-lg border border-emerald-200 bg-emerald-50">
+                  <div class="font-semibold text-emerald-700">✔️ ${r.id}. ${r.fr}</div>
+                  <div class="mt-1">내 답: ${r.userAnswer || '<i>(빈칸)</i>'}</div>
+                </li>`;
+            } else {
+              detailHTML += `
+                <li class="p-3 rounded-lg border border-red-200 wrong-block">
+                  <div class="font-semibold text-red-700">❌ ${r.id}. ${r.fr}</div>
+                  <div class="mt-1"><span class="line-through">${r.userAnswer || '<i>(빈칸)</i>'}</span></div>
+                  <div class="mt-1"><b>정답:</b> ${r.ko}</div>
+                  <div class="mt-1 text-sm text-slate-600">듣기: ${r.plays}회 · Indice 1: ${r.hint1}회 · Indice 2: ${r.hint2}회</div>
+                </li>`;
             }
+          });
+          detailHTML += `</ul>`;
+
+          // 100%가 아니면 맨 위에 오답 요약 박스 추가
+          if (pct < 100 && wrongItems.length) {
+            detailHTML =
+              `<div class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50">
+                  <div class="font-bold text-red-700">❗오답(${wrongItems.length}개): ${wrongItems.map(w => w.id).join(', ')}</div>
+                  <div class="text-sm text-slate-700 mt-1">아래 리스트에서 <b>정답</b>을 확인하세요.</div>
+                </div>` + detailHTML;
+          }
+
+          document.getElementById('detailed-results').innerHTML = detailHTML;
+
+          switchSection('results-screen');
+          
+          // --- 자동 결과 전송 ---
+          if (!resultsAlreadySent) {
+            sendResultsByEmail();
+            resultsAlreadySent = true;
+          }
+        }
+
+        
+            // --- 이메일 및 인쇄 기능 ---
+                // 결과 전송 payload (핵심 필드 추가)
+                async function sendResultsByEmail() {
+                  const btn = document.getElementById('send-email-btn');
+                  btn.disabled = true; btn.textContent = 'Envoi en cours...';
+                
+                  // 최신 값 갱신
+                  Object.values(trackingData.dictationDetails).forEach(d=>{
+                    if (d && typeof d.userAnswer !== 'string') d.userAnswer = '';
+                  });
+                
+                  const questions = dictationData.map(item=>{
+                    const d = trackingData.dictationDetails[item.id] || {};
+                    return {
+                      number: item.id,
+                      fr: item.fr,
+                      ko: item.ko,
+                      userAnswer: d.userAnswer || '',
+                      isCorrect: !!d.isCorrect,
+                      listenCount: d.plays || 0,
+                      hint1Count: d.hint1Clicks || 0,
+                      hint2Count: d.hint2Clicks || 0,
+                      recording: d.recording && d.recording.base64 ? {
+                        filename: d.recording.filename || `rec_q${item.id}.webm`,
+                        mimeType: d.recording.mimeType || 'audio/webm',
+                        base64: d.recording.base64,
+                        duration: d.recording.duration || 0
+                      } : null
+                    };
+                  });
+                
+                  const emailPayload = {
+                    studentName: trackingData.studentName || studentName,
+                    startTime: trackingData.startTime,
+                    endTime: new Date(),
+                    totalTimeSeconds: Math.round((new Date() - trackingData.startTime)/1000),
+                    questions
+                  };
+                
+                  try {
+                    const res = await fetch('/.netlify/functions/send-results', {
+                      method:'POST',
+                      headers:{'Content-Type':'application/json'},
+                      body: JSON.stringify(emailPayload)
+                    });
+                    if(!res.ok) throw new Error(await res.text());
+                    // alert('✅ Résultats envoyés avec succès !'); // 자동 전송이므로 alert는 생략
+                    btn.textContent = '✅ Envoyé !';
+                  } catch(e){
+                    console.error(e);
+                    alert('메일 전송 오류: ' + e.message);
+                    btn.disabled = false;
+                    btn.textContent = '📧 Envoyer les résultats par e-mail';
+                  }
+                }
 
         function printQuiz() {
             const printableArea = document.getElementById('printable-area');
@@ -757,3 +801,4 @@ function showResults() {
     </script>
 </body>
 </html>
+
