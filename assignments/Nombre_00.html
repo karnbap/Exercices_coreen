@@ -146,7 +146,7 @@
 
         <div class="space-y-6 text-slate-700">
             <div>
-                <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication </h3>
+                <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication</h3>
                 <p class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non !</p>
                 <ul class="list-disc list-inside mt-3 space-y-2">
                     <li><strong>한자 (Hanja)</strong> = C'est un système d’écriture (comme l’alphabet latin), basé sur les caractères Han.</li>
@@ -296,6 +296,16 @@
         Made by 성일, Pongdang
     </div>
 
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <h3 class="text-xl font-bold text-red-600 mb-2">Oops ! Une erreur est survenue.</h3>
+            <p id="error-message" class="text-gray-700 mb-4"></p>
+            <p class="text-sm text-gray-500">Cela peut se produire si vous exécutez le fichier localement. Ces fonctionnalités nécessitent d'être sur le serveur de test. L'erreur a été signalée.</p>
+            <button id="close-error-modal-btn" class="btn btn-primary w-full mt-4">J'ai compris</button>
+        </div>
+    </div>
+
     <script src="../assets/grading-criteria.js"></script>
     <script>
         // --- Global State & Config ---
@@ -308,28 +318,12 @@
 
         const placeholders = ["Napoléon", "Marie Curie", "Louis XIV", "Jeanne d'Arc"];
         
-        // --- Netlify Serverless Functions ---
-        async function playAudio(text, voice = 'alloy') {
-            if (questions.length > 0 && questions[currentQuestionIndex]) {
-                 questions[currentQuestionIndex].listenCount++;
-            }
-            try {
-                const response = await fetch('/.netlify/functions/generate-audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice })
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const { audioUrl } = await response.json();
-                const audio = new Audio(audioUrl);
-                audio.play();
-            } catch (error) {
-                console.error("Erreur lors de la lecture audio :", error);
-                logError(error, 'playAudio', { text, voice });
-                alert("Désolé, une erreur est survenue lors de la lecture du son. L'erreur a été signalée.");
-            }
+        // --- Error Handling ---
+        function showErrorModal(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-modal').classList.remove('hidden');
         }
-        
+
         async function logError(error, functionName, context) {
             try {
                 await fetch('/.netlify/functions/log-error', {
@@ -346,6 +340,28 @@
             }
         }
 
+        // --- Netlify Serverless Functions ---
+        async function playAudio(text, voice = 'alloy') {
+            if (questions.length > 0 && questions[currentQuestionIndex]) {
+                 questions[currentQuestionIndex].listenCount++;
+            }
+            try {
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice })
+                });
+                if (!response.ok) throw new Error(`Erreur du serveur: ${response.statusText}`);
+                const { audioUrl } = await response.json();
+                const audio = new Audio(audioUrl);
+                audio.play();
+            } catch (error) {
+                console.error("Erreur lors de la lecture audio :", error);
+                logError(error, 'playAudio', { text, voice });
+                showErrorModal("Impossible de jouer le son. L'erreur a été signalée.");
+            }
+        }
+        
         async function sendResults() {
             endTime = new Date();
             const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
@@ -356,9 +372,16 @@
                 endTime: endTime.toISOString(),
                 totalTimeSeconds: totalTimeSeconds,
                 questions: questions.map(q => ({
-                    number: q.number, type: q.type, context: q.context, fr: q.fr, ko: q.ko, userAnswer: q.userAnswer,
-                    isCorrect: q.isCorrect, listenCount: q.listenCount, hint1Count: q.hint1Count,
-                    hint2Count: q.hint2Count, recording: q.recording || null,
+                    number: q.number,
+                    type: q.type,
+                    ko: q.ko || q.answer || '',
+                    fr: q.fr || q.context || '',
+                    userAnswer: q.userAnswer,
+                    isCorrect: q.isCorrect,
+                    listenCount: q.listenCount,
+                    hint1Count: q.hint1Count,
+                    hint2Count: q.hint2Count,
+                    recording: q.recording || null,
                     pronunciationFeedback: q.pronunciationFeedback || null
                 }))
             };
@@ -374,7 +397,7 @@
             } catch (error) {
                 console.error("Erreur lors de l'envoi des résultats :", error);
                 logError(error, 'sendResults', payload);
-                alert("Une erreur est survenue lors de l'envoi de vos résultats. L'erreur a été signalée.");
+                showErrorModal("Impossible d'envoyer les résultats. L'erreur a été signalée.");
             }
         }
         
@@ -533,18 +556,32 @@
                         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                         mediaRecorder.onstop = () => {
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                            playback.src = URL.createObjectURL(audioBlob);
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            playback.src = audioUrl;
                             playback.classList.remove('hidden');
-                            const reader = new FileReader();
-                            reader.readAsDataURL(audioBlob);
-                            reader.onloadend = () => { questions[currentQuestionIndex].recording = { base64: reader.result, filename: `rec_q${questions[currentQuestionIndex].number}.webm`, mimeType: 'audio/webm' }; };
+
+                            const tempAudioForDuration = document.createElement('audio');
+                            tempAudioForDuration.src = audioUrl;
+                            tempAudioForDuration.addEventListener('loadedmetadata', () => {
+                                const duration = tempAudioForDuration.duration;
+                                const reader = new FileReader();
+                                reader.readAsDataURL(audioBlob);
+                                reader.onloadend = () => { 
+                                    questions[currentQuestionIndex].recording = { 
+                                        base64: reader.result, 
+                                        filename: `rec_q${questions[currentQuestionIndex].number}.webm`, 
+                                        mimeType: 'audio/webm',
+                                        duration: duration
+                                    }; 
+                                };
+                            });
                             stream.getTracks().forEach(track => track.stop());
                         };
                         mediaRecorder.start();
                         recordBtn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
                         indicator.style.display = 'flex';
                         recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
-                    } catch (err) { logError(err, 'setupRecording'); alert("Impossible d'accéder au microphone."); }
+                    } catch (err) { logError(err, 'setupRecording'); showErrorModal("Impossible d'accéder au microphone."); }
                 }
             };
         }
@@ -552,7 +589,10 @@
         // --- Quiz Flow ---
         function startQuiz() {
             studentName = document.getElementById('student-name').value;
-            if (!studentName) { alert("Veuillez entrer votre nom."); return; }
+            if (!studentName) { 
+                showErrorModal("Veuillez entrer votre nom pour commencer.");
+                return; 
+            }
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('explanation-screen').classList.remove('hidden');
         }
@@ -584,7 +624,8 @@
         }
 
         function showResults() {
-            checkAnswers(); sendResults();
+            checkAnswers(); 
+            sendResults();
             const correct = questions.filter(q => q.isCorrect).length, score = Math.round((correct / questions.length) * 100), time = Math.round((new Date() - startTime) / 1000);
             document.getElementById('final-score').textContent = `${score}% (${correct}/${questions.length})`;
             document.getElementById('total-time').textContent = `${time}`;
@@ -623,6 +664,10 @@
         document.getElementById('finish-btn').addEventListener('click', showResults);
         document.getElementById('restart-btn').addEventListener('click', restartQuiz);
         document.getElementById('print-btn').addEventListener('click', () => window.print());
+        document.getElementById('close-error-modal-btn').addEventListener('click', () => {
+            document.getElementById('error-modal').classList.add('hidden');
+        });
+
 
         // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
