@@ -162,7 +162,7 @@
         startBtn.addEventListener('click', startQuiz);
         retryBtn.addEventListener('click', () => location.reload());
 
-        async function playAudio(text, voice = 'woman') {
+        async function playAudio(event, text, voice = 'woman') {
             const qData = questionsData.find(d => d.ko === text);
             if (qData) qData.listenCount++;
             
@@ -252,7 +252,7 @@
                 if (q.type === 'listening-dictation') { content += `<p class="text-xl font-semibold text-slate-800 mb-2">Écoutez et écrivez. <br> Mots-clés : <span class="font-normal text-slate-600">${q.hint2}</span></p>`; } else { content += `<p class="text-xl font-semibold text-slate-800 mb-2">${q.fr}</p>`; }
                 
                 if (q.type === 'listening-dictation') {
-                    content += `<div class="flex items-center mt-2 mb-4"><button onclick="playAudio('${q.ko}', 'man')" class="btn btn-secondary">Écouter la phrase / 문장 듣기</button></div>`;
+                    content += `<div class="flex items-center mt-2 mb-4"><button onclick="playAudio(event, '${q.ko}', 'man')" class="btn btn-secondary">Écouter la phrase / 문장 듣기</button></div>`;
                 } else if (q.type !== 'translate-sentence') {
                     content += `<p class="text-2xl font-bold text-indigo-600 mb-4">${q.ko}</p>`;
                 }
@@ -284,7 +284,14 @@
         function showHint(num, text) { if(num === 1) questionsData[currentQuestionIndex].hint1Count++; else questionsData[currentQuestionIndex].hint2Count++; document.getElementById('hint-display').textContent = text; }
         function saveCurrentAnswer() {
             const q = quizData[currentQuestionIndex]; const qData = questionsData[currentQuestionIndex]; if (!q || !qData) return;
-            if (q.type === 'multiple-choice') { const selected = document.querySelector('.btn-choice.selected'); qData.userAnswer.main = selected ? selected.dataset.answer : ''; } else if (q.type === 'fill-in-the-blank' || q.type === 'translate-sentence') { qData.userAnswer.main = document.getElementById('answer-input')?.value.trim() || ''; } else if (q.type === 'listening-dictation') { qData.userAnswer.dictation1 = document.getElementById('dictation1')?.value.trim() || ''; qData.userAnswer.dictation2 = document.getElementById('dictation2')?.value.trim() || ''; }
+            if (q.type === 'multiple-choice') { const selected = document.querySelector('.btn-choice.selected'); qData.userAnswer = selected ? selected.dataset.answer : ''; } 
+            else if (q.type === 'fill-in-the-blank' || q.type === 'translate-sentence') { qData.userAnswer = document.getElementById('answer-input')?.value.trim() || ''; } 
+            else if (q.type === 'listening-dictation') { 
+                qData.userAnswer = {
+                    dictation1: document.getElementById('dictation1')?.value.trim() || '', 
+                    dictation2: document.getElementById('dictation2')?.value.trim() || '' 
+                };
+            }
         }
         function prevQuestion() { if (currentQuestionIndex > 0) { saveCurrentAnswer(); currentQuestionIndex--; renderQuestion(); } }
         function nextQuestion() { saveCurrentAnswer(); if (currentQuestionIndex < quizData.length - 1) { currentQuestionIndex++; renderQuestion(); } else { finishQuiz(); } }
@@ -307,24 +314,35 @@
             questionsData.forEach(qData => {
                 if (qData.type === 'explanation') return;
                 const format = (str) => (str || '').replace(/[.\s+!?]/g, '').toLowerCase(); let isCorrect = false;
-                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { isCorrect = format(qData.userAnswer.main) === format(qData.correctAnswer); } else if (qData.type === 'translate-sentence') { isCorrect = format(qData.userAnswer.main) === format(qData.ko); } else if (q.type === 'listening-dictation') { isCorrect = format(qData.userAnswer.dictation1) === format(qData.ko); }
+                
+                // [FIXED] Check different answer structures
+                let answerToEvaluate = '';
+                if (typeof qData.userAnswer === 'string') {
+                    answerToEvaluate = qData.userAnswer;
+                } else if (typeof qData.userAnswer === 'object' && qData.userAnswer !== null && qData.userAnswer.dictation1) {
+                    answerToEvaluate = qData.userAnswer.dictation1; // For listening questions, only dictation1 is graded.
+                }
+
+                if (qData.type === 'multiple-choice' || qData.type === 'fill-in-the-blank' ) { 
+                    isCorrect = format(answerToEvaluate) === format(qData.correctAnswer); 
+                } else if (qData.type === 'translate-sentence') { 
+                    isCorrect = format(answerToEvaluate) === format(qData.ko); 
+                } else if (qData.type === 'listening-dictation') { 
+                    isCorrect = format(answerToEvaluate) === format(qData.ko); 
+                }
                 qData.isCorrect = isCorrect;
             });
         }
         
-        // [FIXED] This function now converts answer objects to strings before sending.
         async function sendResults() {
             const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
-            
-            // Create a deep copy to avoid modifying the original data used for retries.
             const questionsForPayload = JSON.parse(JSON.stringify(questionsData));
 
-            // Convert userAnswer objects to a simple string for the old send-results.js
+            // [FIXED] Convert userAnswer objects to a simple string for the old send-results.js
             questionsForPayload.forEach(q => {
                 if (typeof q.userAnswer === 'object' && q.userAnswer !== null) {
-                    // Combine object values into a readable string
                     const answerString = Object.values(q.userAnswer).filter(val => val).join(' / ');
-                    q.userAnswer = answerString;
+                    q.userAnswer = answerString || ''; // Ensure it's always a string
                 }
             });
 
@@ -349,8 +367,6 @@
                 console.log('Results sent successfully!');
             } catch (error) { 
                 console.error('Error sending results:', error); 
-                // Optionally, inform the user that results could not be sent.
-                // alert("Une erreur est survenue lors de l'envoi des résultats.");
             }
         }
 
