@@ -97,7 +97,6 @@
 
         studentNameInput.placeholder = ["Super Cédou", "Génie Julie", "Champion Léo", "Star Alice"][Math.floor(Math.random() * 4)];
 
-        // [FIXED] Changed data structure to prevent duplicate choices.
         const verbPairs = [
             { base: '밥을 먹다', verb: 'Manger', afterForm: '먹은 후에', beforeForm: '먹기 전에' },
             { base: '숙제를 하다', verb: 'Faire les devoirs', afterForm: '한 후에', beforeForm: '하기 전에' },
@@ -128,7 +127,6 @@
             
             const shuffledVerbPairs = shuffleArray([...verbPairs]);
 
-            // MCQ Questions (5)
             shuffledVerbPairs.slice(0, 5).forEach(pair => {
                 const useAfterForm = Math.random() > 0.5;
                 const correctAnswer = useAfterForm ? pair.afterForm : pair.beforeForm;
@@ -144,7 +142,6 @@
                 });
             });
 
-            // Fill-in-the-blank Questions (5)
             shuffledVerbPairs.slice(5, 10).forEach(pair => {
                  const useAfterForm = Math.random() > 0.5;
                  const correctAnswer = useAfterForm ? pair.afterForm : pair.beforeForm;
@@ -165,7 +162,6 @@
         startBtn.addEventListener('click', startQuiz);
         retryBtn.addEventListener('click', () => location.reload());
 
-        // [FIXED] Audio playback function updated to work with generate-audio.js
         async function playAudio(text, voice = 'woman') {
             const qData = questionsData.find(d => d.ko === text);
             if (qData) qData.listenCount++;
@@ -179,15 +175,13 @@
                 const response = await fetch('/.netlify/functions/generate-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice }), // Pass 'man' or 'woman'
+                    body: JSON.stringify({ text, voice }),
                 });
                 if (!response.ok) throw new Error('Failed to generate audio');
                 
-                // The server returns JSON, not a direct audio blob.
                 const { audioData, mimeType } = await response.json();
                 if (!audioData) throw new Error('No audio data in response');
                 
-                // Create audio object from base64 data URI
                 const audio = new Audio(`data:${mimeType};base64,${audioData}`);
                 audio.play();
 
@@ -318,14 +312,46 @@
             });
         }
         
+        // [FIXED] This function now converts answer objects to strings before sending.
         async function sendResults() {
             const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
-            const payload = { studentName, startTime: startTime.toISOString(), endTime: endTime.toISOString(), totalTimeSeconds, questions: questionsData };
+            
+            // Create a deep copy to avoid modifying the original data used for retries.
+            const questionsForPayload = JSON.parse(JSON.stringify(questionsData));
+
+            // Convert userAnswer objects to a simple string for the old send-results.js
+            questionsForPayload.forEach(q => {
+                if (typeof q.userAnswer === 'object' && q.userAnswer !== null) {
+                    // Combine object values into a readable string
+                    const answerString = Object.values(q.userAnswer).filter(val => val).join(' / ');
+                    q.userAnswer = answerString;
+                }
+            });
+
+            const payload = { 
+                studentName, 
+                startTime: startTime.toISOString(), 
+                endTime: endTime.toISOString(), 
+                totalTimeSeconds, 
+                questions: questionsForPayload 
+            };
+            
              try {
-                const response = await fetch('/.netlify/functions/send-results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`Failed to send results: ${response.statusText}`);
+                const response = await fetch('/.netlify/functions/send-results', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to send results: ${response.status} ${errorText}`);
+                }
                 console.log('Results sent successfully!');
-            } catch (error) { console.error('Error sending results:', error); }
+            } catch (error) { 
+                console.error('Error sending results:', error); 
+                // Optionally, inform the user that results could not be sent.
+                // alert("Une erreur est survenue lors de l'envoi des résultats.");
+            }
         }
 
         window.playAudio = playAudio;
