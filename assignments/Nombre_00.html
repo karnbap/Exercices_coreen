@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+        body {
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #f9fafb;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease-in-out;
+        }
+        .question-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .question-text {
+            font-size: 1.1rem;
+            color: #4b5563;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: none;
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+        .btn-sound {
+            background-color: #10b981;
+            color: white;
+            font-size: 1.2rem;
+        }
+        .btn-sound:hover {
+            background-color: #059669;
+        }
+        .option-btn, .choice-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+        .option-btn:hover, .choice-btn:hover {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+        }
+        .option-btn.selected, .choice-btn.selected {
+            background-color: #bfdbfe;
+            border-color: #3b82f6;
+            font-weight: 600;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+        }
+        .hidden {
+            display: none;
+        }
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .recording-dot {
+            width: 12px;
+            height: 12px;
+            background-color: red;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="absolute top-4 left-4 text-sm text-gray-400">
+        Made by 성일, Pongdang
+    </div>
+
+    <div id="start-screen" class="min-h-screen flex flex-col items-center justify-center text-center p-4">
+        <h1 class="text-4xl font-bold text-slate-800 mb-2">Exercice : Les Nombres Coréens 🔢</h1>
+        <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (sino-coréens)</p>
+        <div class="w-full max-w-sm">
+            <input type="text" id="student-name" class="w-full p-3 text-center border-2 border-slate-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Quel est ton nom ? (이름이 뭐예요?)">
+            <button id="start-btn" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">
+                Commencer ! (시작!)
+            </button>
+        </div>
+    </div>
+
+    <div id="explanation-screen" class="quiz-container hidden">
+        <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">📘 Apprendre les nombres coréens !</h2>
+        <p class="text-center text-slate-600 mb-8">(Ft. 한자 vs chinois?!)</p>
+
+        <div class="space-y-6 text-slate-700">
+            <div>
+                <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication marrante</h3>
+                <p class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non !</p>
+                <ul class="list-disc list-inside mt-3 space-y-2">
+                    <li><strong>한자 (Hanja)</strong> = C'est un système d’écriture (comme l’alphabet latin), basé sur les caractères Han.</li>
+                    <li><strong>Chinois</strong> = C'est une langue (comme l’italien ou le français).</li>
+                </ul>
+            </div>
+
+            <div>
+                 <p class="mb-4">En coréen, on utilise <strong>deux systèmes de nombres</strong> :</p>
+                 <div class="grid md:grid-cols-2 gap-4">
+                     <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                         <h4 class="font-bold text-lg text-blue-800">Nombres Coréens Natifs (순수 한국어)</h4>
+                         <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
+                         <p><strong>Pour :</strong> Compter des choses concrètes (qu'on peut toucher ou voir). Ex: âge, personnes, objets.</p>
+                     </div>
+                     <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                         <h4 class="font-bold text-lg text-green-800">Nombres Hanja-Coréens (한자어 수)</h4>
+                         <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
+                         <p><strong>Pour :</strong> Les unités et les nombres abstraits (souvent déjà écrits). Ex: dates, argent, minutes, numéros.</p>
+                     </div>
+                 </div>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance</h3>
+                 <ul class="list-disc list-inside space-y-2">
+                    <li><strong>L'heure (시간) :</strong> C'est une exception ! On utilise les nombres <strong>natifs</strong> pour les heures (한 시, 두 시...) mais les nombres <strong>Hanja</strong> pour les minutes (일 분, 이 분...).</li>
+                    <li><strong>Mots récents :</strong> Les mots traditionnels coréens utilisent les nombres natifs. Les mots venus de l'étranger utilisent souvent l'anglais (와이파이 = wifi) ou un mélange.</li>
+                 </ul>
+            </div>
+
+             <div>
+                <h3 class="font-bold text-xl mb-3">✅ Résumé facile</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-3 border">Système</th>
+                                <th class="p-3 border">Usage principal</th>
+                                <th class="p-3 border">Exemples</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="p-3 border font-semibold">순수 한국어 (하나, 둘, 셋...)</td>
+                                <td class="p-3 border">Compter des choses concrètes</td>
+                                <td class="p-3 border">Âge (살), Personnes (명), Objets (개), Heures (시)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 border font-semibold">한자어 (일, 이, 삼...)</td>
+                                <td class="p-3 border">Unités, nombres déjà "nommés"</td>
+                                <td class="p-3 border">Dates (년, 월, 일), Argent (원), Minutes (분), Numéros</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+             </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button id="explanation-next-btn" class="btn btn-primary text-lg">
+                C'est compris, à l'échauffement ! <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div id="warmup-screen" class="quiz-container hidden">
+        <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Échauffement : Répétition Rapide 🗣️</h2>
+        <p class="text-lg text-slate-600 mb-8 text-center">Écoutez et répétez à voix haute plusieurs fois pour vous entraîner. <br> (듣고 여러 번 소리 내어 따라 읽으며 연습하세요.)</p>
+
+        <div class="space-y-4">
+            <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+                <p class="font-semibold text-lg text-slate-700">Nombres Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
+                <button class="btn btn-sound" onclick="playAudio('하나둘셋넷다섯', 'nova')"><i class="fas fa-play"></i></button>
+            </div>
+            <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+                <p class="font-semibold text-lg text-slate-700">Nombres Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
+                <button class="btn btn-sound" onclick="playAudio('여섯일곱여덟아홉열', 'nova')"><i class="fas fa-play"></i></button>
+            </div>
+            <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+                <p class="font-semibold text-lg text-slate-700">Nombres Hanja-Coréens (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
+                <button class="btn btn-sound" onclick="playAudio('일이삼사오', 'alloy')"><i class="fas fa-play"></i></button>
+            </div>
+            <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+                <p class="font-semibold text-lg text-slate-700">Nombres Hanja-Coréens (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
+                <button class="btn btn-sound" onclick="playAudio('육칠팔구십', 'alloy')"><i class="fas fa-play"></i></button>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button id="start-quiz-btn" class="btn btn-primary text-lg">
+                Commencer l'exercice ! (연습문제 시작!) <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="quiz-container hidden">
+        <div class="flex justify-between items-center mb-4">
+            <span id="progress-text" class="text-sm font-semibold text-gray-600"></span>
+            <button id="print-btn" class="text-gray-500 hover:text-blue-500">
+                <i class="fas fa-print"></i> Imprimer / 프린트
+            </button>
+        </div>
+        <div class="progress-bar mb-6">
+            <div id="progress-bar-inner" class="progress-bar-inner"></div>
+        </div>
+
+        <div id="question-area">
+            <!-- Question content will be dynamically inserted here -->
+        </div>
+
+        <div id="navigation-btns" class="mt-8 flex justify-between items-center">
+            <button id="prev-btn" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Précédent (이전)
+            </button>
+            <button id="next-btn" class="btn btn-primary">
+                Suivant (다음) <i class="fas fa-arrow-right"></i>
+            </button>
+            <button id="finish-btn" class="btn btn-primary hidden">
+                Terminer ! (끝내기!)
+            </button>
+        </div>
+    </div>
+    
+    <div id="result-screen" class="quiz-container hidden text-center">
+        <h2 class="text-3xl font-bold text-slate-800 mb-4">Résultats du test</h2>
+        <div id="result-feedback" class="text-2xl font-semibold mb-6"></div>
+        <p class="text-slate-600 mb-2">Score final : <span id="final-score" class="font-bold"></span></p>
+        <p class="text-slate-600 mb-6">Temps total : <span id="total-time" class="font-bold"></span> secondes</p>
+        
+        <div id="review-section">
+            <h3 class="text-xl font-bold text-slate-700 mt-8 mb-4">Révision des questions</h3>
+            <div id="review-content" class="text-left space-y-4"></div>
+        </div>
+
+        <div class="mt-8 flex justify-center gap-4">
+            <button id="restart-btn" class="btn btn-primary">
+                <i class="fas fa-redo"></i> Recommencer (다시하기)
+            </button>
+            <a href="../index.html" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour aux exercices (연습문제로 돌아가기)
+            </a>
+        </div>
+    </div>
+    
+    <div class="absolute bottom-4 right-4 text-sm text-gray-400">
+        Made by 성일, Pongdang
+    </div>
+
+    <script src="../assets/grading-criteria.js"></script>
+    <script>
+        // --- Global State & Config ---
+        let studentName = "";
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let startTime, endTime;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        const placeholders = ["Napoléon", "Marie Curie", "Louis XIV", "Jeanne d'Arc"];
+        
+        // --- Netlify Serverless Functions ---
+        async function playAudio(text, voice = 'alloy') {
+            if (questions.length > 0 && questions[currentQuestionIndex]) {
+                 questions[currentQuestionIndex].listenCount++;
+            }
+            try {
+                const response = await fetch('/.netlify/functions/generate-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice })
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const { audioUrl } = await response.json();
+                const audio = new Audio(audioUrl);
+                audio.play();
+            } catch (error) {
+                console.error("Erreur lors de la lecture audio :", error);
+                logError(error, 'playAudio', { text, voice });
+                alert("Désolé, une erreur est survenue lors de la lecture du son. L'erreur a été signalée.");
+            }
+        }
+        
+        async function logError(error, functionName, context) {
+            try {
+                await fetch('/.netlify/functions/log-error', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentName: studentName || "Non défini",
+                        error: { message: error.message, stack: error.stack },
+                        functionName, context, pageUrl: window.location.href,
+                    }),
+                });
+            } catch (loggingError) {
+                console.error("Échec de l'envoi du rapport d'erreur:", loggingError);
+            }
+        }
+
+        async function sendResults() {
+            endTime = new Date();
+            const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
+            
+            const payload = {
+                studentName: studentName,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                totalTimeSeconds: totalTimeSeconds,
+                questions: questions.map(q => ({
+                    number: q.number, type: q.type, context: q.context, fr: q.fr, ko: q.ko, userAnswer: q.userAnswer,
+                    isCorrect: q.isCorrect, listenCount: q.listenCount, hint1Count: q.hint1Count,
+                    hint2Count: q.hint2Count, recording: q.recording || null,
+                    pronunciationFeedback: q.pronunciationFeedback || null
+                }))
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results-v2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`Le serveur a répondu avec le statut : ${response.status}`);
+                console.log("Résultats envoyés avec succès !");
+            } catch (error) {
+                console.error("Erreur lors de l'envoi des résultats :", error);
+                logError(error, 'sendResults', payload);
+                alert("Une erreur est survenue lors de l'envoi de vos résultats. L'erreur a été signalée.");
+            }
+        }
+        
+        // --- Question Data ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getQuestions() {
+            const choiceData = [
+                { context: "Pour la date '1일', on dit :", options: ["일일", "하나일"], answer: "일일", hint: "La date est déjà écrite sur un calendrier. On utilise donc les nombres Hanja ! (달력에 이미 쓰여있는 이름)" },
+                { context: "Pour l'heure '1시', on dit :", options: ["한 시", "일 시"], answer: "한 시", hint: "Attention, l'heure est l'exception ! On utilise les nombres natifs. (시간은 예외!)" },
+                { context: "Pour l'âge '3살', on dit :", options: ["세 살", "삼 살"], answer: "세 살", hint: "L'âge se 'compte' chaque année. Pour compter, on utilise les nombres natifs. (나이는 매년 다시 세는 것)" },
+                { context: "Pour l'argent '10 euro', on dit :", options: ["십 유로", "열 유로"], answer: "십 유로", hint: "Le prix est déjà écrit sur l'étiquette ou le billet. On utilise donc les nombres Hanja. (돈에 가격이 쓰여있음)" },
+                { context: "Pour compter 5 livres (책 5권), on dit :", options: ["책 다섯 권", "책 오 권"], answer: "책 다섯 권", hint: "On 'compte' les livres un par un. Pour compter, on utilise les nombres natifs. (물건을 직접 세는 것)" },
+                { context: "Pour 30 minutes (30분), on dit :", options: ["삼십 분", "서른 분"], answer: "삼십 분", hint: "Les minutes sont comme des unités déjà écrites sur une horloge. On utilise les nombres Hanja. (시계에 이미 쓰여있는 이름)" }
+            ];
+            const fillData = [
+                { fr: "J'ai trois ans. (저는 ___ 살이에요.)", ko: "세", hint: "L'âge se 'compte' chaque année. Pour compter, on utilise les nombres natifs. (나이는 매년 다시 세는 것)" },
+                { fr: "Il y a cinq livres. (책이 ___ 권 있어요.)", ko: "다섯", hint: "On 'compte' les livres un par un. Pour compter, on utilise les nombres natifs. (물건을 직접 세는 것)" },
+                { fr: "Aujourd'hui, c'est le 2 septembre. (오늘은 9월 __일이에요.)", ko: "이", hint: "La date est déjà écrite sur un calendrier. On utilise donc les nombres Hanja ! (달력에 이미 쓰여있는 이름)" },
+                { fr: "Nous sommes quatre personnes. (우리는 ___ 명이에요.)", ko: "네", hint: "On 'compte' les gens un par un. Pour compter, on utilise les nombres natifs. (사람을 직접 세는 것)" },
+                { fr: "J'ai 10 euros. (저는 ___ 유로 있어요.)", ko: "십", hint: "Le prix est déjà écrit sur l'étiquette. On utilise donc les nombres Hanja. (돈에 가격이 쓰여있음)" },
+            ];
+            const translateKoData = [
+                 { fr: "J'ai trois ans.", ko: "저는 세 살이에요.", hint: "L'âge se 'compte' chaque année. Pour compter, on utilise les nombres natifs. (나이는 매년 다시 세는 것)" },
+                 { fr: "Nous sommes quatre personnes.", ko: "우리는 네 명이에요.", hint: "On 'compte' les gens un par un. Pour compter, on utilise les nombres natifs. (사람을 직접 세는 것)" },
+                 { fr: "Il y a cinq livres.", ko: "책이 다섯 권 있어요.", hint: "On 'compte' les livres un par un. Pour compter, on utilise les nombres natifs. (물건을 직접 세는 것)" },
+                 { fr: "Aujourd'hui, c'est le 2 septembre.", ko: "오늘은 9월 2일이에요.", hint: "La date est déjà écrite sur un calendrier. On utilise donc les nombres Hanja ! (달력에 이미 쓰여있는 이름)" },
+                 { fr: "Il est trois heures.", ko: "지금은 세 시예요.", hint: "Attention, l'heure est l'exception ! On utilise les nombres natifs. (시간은 예외!)" }
+            ];
+            const dictationData = [
+                { ko: "사과 두 개 주세요.", fr: "Donnez-moi deux pommes, s'il vous plaît.", hint1: "ㅅㄱ ㄷ ㄱ ㅈㅅㅇ", hint2: "사과 (pomme), 주세요 (donnez-moi)", conceptualHint: "On 'compte' les pommes une par une. Pour compter, on utilise les nombres natifs. (물건을 직접 세는 것)", voice: 'shimmer' },
+                { ko: "이거는 오천 원이에요.", fr: "Ceci coûte 5000 won.", hint1: "ㅇㄱㄴ ㅇㅊ ㅇㅇㅇㅇ", hint2: "이거 (ceci), 원 (won)", conceptualHint: "Le prix est déjà écrit. On utilise donc les nombres Hanja. (돈에 가격이 쓰여있음)", voice: 'nova' },
+                { ko: "제 생일은 십이월 십일이에요.", fr: "Mon anniversaire est le 10 décembre.", hint1: "ㅈ ㅅㅇㅇ ㅅㅇㅇ ㅅㅇㅇㅇㅇ", hint2: "생일 (anniversaire), 십이월 (décembre)", conceptualHint: "La date est déjà écrite sur un calendrier. On utilise donc les nombres Hanja ! (달력에 이미 쓰여있는 이름)", voice: 'alloy' },
+                { ko: "학생 여덟 명이 있어요.", fr: "Il y a huit étudiants.", hint1: "ㅎㅅ ㅇㄷ ㅁㅇ ㅇㅇㅇ", hint2: "학생 (étudiant), 명 (compteur de personnes)", conceptualHint: "On 'compte' les étudiants un par un. Pour compter, on utilise les nombres natifs. (사람을 직접 세는 것)", voice: 'echo' },
+                { ko: "지금은 오후 네 시 삼십 분이에요.", fr: "Il est 16h30.", hint1: "ㅈㄱㅇ ㅇㅎ ㄴ ㅅ ㅅㅅ ㅂㅇㅇㅇ", hint2: "지금 (maintenant), 오후 (après-midi), 시 (heure), 분 (minute)", conceptualHint: "L'heure (시) est une exception (natif), mais les minutes (분) sont des unités (Hanja). (시간은 예외, 분은 단위!)", voice: 'fable' }
+            ];
+
+            const choice = shuffleArray(choiceData).slice(0, 5).map((q, i) => ({ number: i + 1, type: 'choice', context: q.context, answer: q.answer, options: shuffleArray(q.options), hint: q.hint, userAnswer: null, isCorrect: null, listenCount: 0, hint1Count: 0, hint2Count: 0 }));
+            const fill = shuffleArray(fillData).slice(0, 5).map((q, i) => ({ number: choice.length + i + 1, type: 'fill', fr: q.fr, ko: q.ko, hint: q.hint, userAnswer: "", isCorrect: null, listenCount: 0, hint1Count: 0, hint2Count: 0 }));
+            const translate = shuffleArray(translateKoData).slice(0, 5).map((q, i) => ({ number: choice.length + fill.length + i + 1, type: 'translate', fr: q.fr, ko: q.ko, hint: q.hint, userAnswer: "", isCorrect: null, listenCount: 0, hint1Count: 0, hint2Count: 0 }));
+            const dictation = shuffleArray(dictationData).slice(0, 5).map((q, i) => ({ number: choice.length + fill.length + translate.length + i + 1, type: 'dictation', ko: q.ko, fr: q.fr, hint1: q.hint1, hint2: q.hint2, conceptualHint: q.conceptualHint, voice: q.voice, userAnswer: { ko: "", fr: "", selfDictation: "" }, isCorrect: null, listenCount: 0, hint1Count: 0, hint2Count: 0, recording: null, pronunciationFeedback: null }));
+            return [...choice, ...fill, ...translate, ...dictation];
+        }
+
+        // --- UI Rendering ---
+        function renderQuestion() {
+            const q = questions[currentQuestionIndex];
+            const area = document.getElementById('question-area');
+            const explanationMap = { 'choice': 'Choisissez la bonne prononciation. / 올바른 발음을 고르세요.', 'fill': 'Remplissez le champ vide. / 빈칸을 채우세요.', 'translate': 'Traduisez la phrase en coréen. / 문장을 한국어로 번역하세요.', 'dictation': 'Écoutez et écrivez la phrase. / 듣고 문장을 받아쓰세요.' };
+            let content = `<h2 class="question-title">${q.type.toUpperCase()} - Question ${q.number}</h2><p class="question-text">${explanationMap[q.type]}</p>`;
+
+            switch (q.type) {
+                case 'choice':
+                    content += `<p class="text-lg font-semibold mb-4">${q.context}</p>
+                                <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Pourquoi ce nombre ? 🤔 (힌트)</button>
+                                <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
+                                <div>`;
+                    q.options.forEach(opt => { content += `<button class="choice-btn ${q.userAnswer === opt ? 'selected' : ''}" onclick="selectChoiceAnswer('${opt}')">${opt}</button>`; });
+                    content += '</div>';
+                    break;
+                case 'fill':
+                    content += `<p class="text-lg font-semibold mb-4">${q.fr}</p>
+                                <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Pourquoi ce nombre ? 🤔 (힌트)</button>
+                                <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
+                                <input type="text" class="input-field" value="${q.userAnswer || ''}" oninput="updateFillAnswer(this.value)" placeholder="Écrivez en hangeul...">`;
+                    break;
+                case 'translate':
+                    content += `<p class="text-lg font-semibold mb-4">${q.fr}</p>
+                                <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Pourquoi ce nombre ? 🤔 (힌트)</button>
+                                <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
+                                <input type="text" class="input-field" value="${q.userAnswer || ''}" oninput="updateTranslateAnswer(this.value)" placeholder="Traduisez en coréen...">`;
+                    break;
+                case 'dictation':
+                    content += `<div class="space-y-4">
+                        <button class="btn btn-sound w-full text-lg" onclick="playAudio('${q.ko}', '${q.voice}')"><i class="fas fa-play"></i> Écouter la phrase (문장 듣기)</button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="btn btn-secondary" onclick="showHint(1)">Aidez moi 🙏 (초성)</button>
+                            <button class="btn btn-secondary" onclick="showHint(2)">Au secours 🛟 (단어)</button>
+                            <button class="col-span-2 btn btn-secondary mt-2" onclick="showHint(3)">Pourquoi ce nombre ? 🤔 (숫자 힌트)</button>
+                        </div>
+                        <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden"></div>
+                        <div><label class="block mb-1 font-semibold">1. Dictée (받아쓰기)</label><input type="text" class="input-field" value="${q.userAnswer.ko || ''}" oninput="updateDictationAnswer('ko', this.value)"></div>
+                        <div><label class="block mb-1 font-semibold">2. Traduction (번역)</label><input type="text" class="input-field" value="${q.userAnswer.fr || ''}" oninput="updateDictationAnswer('fr', this.value)"></div>
+                        <div><label class="block mb-1 font-semibold">3. Enregistrez votre voix (발음 녹음)</label><div class="flex items-center gap-2"><button id="record-btn" class="btn btn-primary"><i class="fas fa-microphone"></i> Démarrer</button><div id="recording-indicator" class="hidden items-center gap-2 text-red-500 font-semibold"><div class="recording-dot"></div> Enregistrement...</div></div><audio id="audio-playback" controls class="mt-2 w-full hidden"></audio></div>
+                        <div><label class="block mb-1 font-semibold">4. Écrivez ce que vous entendez de votre enregistrement</label><input type="text" class="input-field" value="${q.userAnswer.selfDictation || ''}" oninput="updateDictationAnswer('selfDictation', this.value)"></div>
+                    </div>`;
+                    break;
+            }
+            area.innerHTML = content;
+            if (q.type === 'dictation') setupRecording();
+            updateNavigation();
+        }
+
+        function updateNavigation() {
+            document.getElementById('prev-btn').classList.toggle('disabled', currentQuestionIndex === 0);
+            document.getElementById('next-btn').classList.toggle('hidden', currentQuestionIndex === questions.length - 1);
+            document.getElementById('finish-btn').classList.toggle('hidden', currentQuestionIndex < questions.length - 1);
+        }
+        
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progress-bar-inner').style.width = `${progress}%`;
+            document.getElementById('progress-text').textContent = `Question ${currentQuestionIndex + 1} sur ${questions.length}`;
+        }
+        
+        // --- Answer Handling ---
+        function selectChoiceAnswer(answer) { questions[currentQuestionIndex].userAnswer = answer; renderQuestion(); }
+        function updateFillAnswer(answer) { questions[currentQuestionIndex].userAnswer = answer; }
+        function updateTranslateAnswer(answer) { questions[currentQuestionIndex].userAnswer = answer; }
+        function updateDictationAnswer(part, value) { questions[currentQuestionIndex].userAnswer[part] = value; }
+        
+        function showGeneralHint() {
+            const q = questions[currentQuestionIndex];
+            const display = document.getElementById('hint-display');
+            q.hint1Count++;
+            display.textContent = q.hint;
+            display.classList.remove('hidden');
+        }
+
+        function showHint(type) {
+            const q = questions[currentQuestionIndex], display = document.getElementById('hint-display');
+            if (type === 1) {
+                q.hint1Count++;
+                display.textContent = `Indice 1: ${q.hint1}`;
+            } else if (type === 2) {
+                q.hint2Count++;
+                display.textContent = `Indice 2: ${q.hint2}`;
+            } else if (type === 3) {
+                // Pour la data, on réutilise hint2Count pour le 3ème type de hint de la dictée
+                q.hint2Count++;
+                display.textContent = q.conceptualHint;
+            }
+            display.classList.remove('hidden');
+        }
+
+        // --- Recording Logic ---
+        function setupRecording() {
+            const recordBtn = document.getElementById('record-btn'), indicator = document.getElementById('recording-indicator'), playback = document.getElementById('audio-playback');
+            recordBtn.onclick = async () => {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    mediaRecorder.stop();
+                    recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Démarrer';
+                    indicator.classList.add('hidden');
+                    recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                } else {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                        audioChunks = [];
+                        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                        mediaRecorder.onstop = () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            playback.src = URL.createObjectURL(audioBlob);
+                            playback.classList.remove('hidden');
+                            const reader = new FileReader();
+                            reader.readAsDataURL(audioBlob);
+                            reader.onloadend = () => { questions[currentQuestionIndex].recording = { base64: reader.result, filename: `rec_q${questions[currentQuestionIndex].number}.webm`, mimeType: 'audio/webm' }; };
+                            stream.getTracks().forEach(track => track.stop());
+                        };
+                        mediaRecorder.start();
+                        recordBtn.innerHTML = '<i class="fas fa-stop"></i> Arrêter';
+                        indicator.style.display = 'flex';
+                        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                    } catch (err) { logError(err, 'setupRecording'); alert("Impossible d'accéder au microphone."); }
+                }
+            };
+        }
+
+        // --- Quiz Flow ---
+        function startQuiz() {
+            studentName = document.getElementById('student-name').value;
+            if (!studentName) { alert("Veuillez entrer votre nom."); return; }
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('explanation-screen').classList.remove('hidden');
+        }
+
+        function showWarmupScreen() {
+             document.getElementById('explanation-screen').classList.add('hidden');
+             document.getElementById('warmup-screen').classList.remove('hidden');
+        }
+
+        function startRealQuiz() {
+            startTime = new Date(); questions = getQuestions(); currentQuestionIndex = 0;
+            document.getElementById('warmup-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion(); updateProgressBar();
+        }
+        
+        function nextQuestion() { if (currentQuestionIndex < questions.length - 1) { currentQuestionIndex++; renderQuestion(); updateProgressBar(); } }
+        function prevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); updateProgressBar(); } }
+        
+        function checkAnswers() {
+            questions.forEach(q => {
+                switch(q.type) {
+                    case 'choice': q.isCorrect = q.userAnswer === q.answer; break;
+                    case 'fill': q.isCorrect = q.userAnswer?.trim() === q.ko; break;
+                    case 'translate': q.isCorrect = q.userAnswer?.trim().replace(/\s/g, '').replace(/[.,!?]/g, "") === q.ko.replace(/\s/g, '').replace(/[.,!?]/g, ""); break;
+                    case 'dictation': q.isCorrect = q.userAnswer.ko?.trim().replace(/\s/g, '') === q.ko.replace(/\s/g, ''); break;
+                }
+            });
+        }
+
+        function showResults() {
+            checkAnswers(); sendResults();
+            const correct = questions.filter(q => q.isCorrect).length, score = Math.round((correct / questions.length) * 100), time = Math.round((new Date() - startTime) / 1000);
+            document.getElementById('final-score').textContent = `${score}% (${correct}/${questions.length})`;
+            document.getElementById('total-time').textContent = `${time}`;
+            const feedback = getFeedback(score);
+            const fbDiv = document.getElementById('result-feedback');
+            fbDiv.innerHTML = `${feedback.fr}<br>${feedback.ko}`;
+            fbDiv.className = `text-2xl font-semibold mb-6 ${feedback.className}`;
+            const review = document.getElementById('review-content');
+            review.innerHTML = '';
+            questions.forEach(q => {
+                const icon = q.isCorrect ? '<i class="fas fa-check-circle text-green-500"></i>' : '<i class="fas fa-times-circle text-red-500"></i>';
+                let html = `<div class="p-4 border rounded-lg ${q.isCorrect ? 'bg-green-50' : 'bg-red-50'}"><p class="font-bold text-lg">${icon} Q${q.number} (${q.type})</p>`;
+                let uAns = '', cAns = '';
+                if (q.type === 'choice') { html += `<p><strong>Q:</strong> ${q.context}</p>`; uAns = q.userAnswer || "N/A"; cAns = q.answer; }
+                else if (q.type === 'fill') { html += `<p><strong>Q:</strong> ${q.fr.replace('___', `<strong>${q.userAnswer||'...'}</strong>`)}</p>`; uAns = q.userAnswer||"N/A"; cAns = q.ko; }
+                else if (q.type === 'translate') { html += `<p><strong>À traduire:</strong> ${q.fr}</p>`; uAns = q.userAnswer||"N/A"; cAns = q.ko; }
+                else if (q.type === 'dictation') { html += `<p><strong>À écouter:</strong> ${q.ko}</p>`; uAns = `<strong>KR:</strong> ${q.userAnswer.ko||'vide'}<br><strong>FR:</strong> ${q.userAnswer.fr||'vide'}`; cAns = `<strong>KR:</strong> ${q.ko}<br><strong>FR:</strong> ${q.fr}`; }
+                html += q.isCorrect ? `<p><strong>Réponse:</strong> ${uAns || cAns}</p>` : `<p><strong>Votre réponse:</strong> <span class="text-red-700">${uAns}</span></p><p><strong>Réponse correcte:</strong> <span class="text-green-700">${cAns}</span></p>`;
+                review.insertAdjacentHTML('beforeend', html + '</div>');
+            });
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+        
+        function restartQuiz() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('start-btn').addEventListener('click', startQuiz);
+        document.getElementById('explanation-next-btn').addEventListener('click', showWarmupScreen);
+        document.getElementById('start-quiz-btn').addEventListener('click', startRealQuiz);
+        document.getElementById('next-btn').addEventListener('click', nextQuestion);
+        document.getElementById('prev-btn').addEventListener('click', prevQuestion);
+        document.getElementById('finish-btn').addEventListener('click', showResults);
+        document.getElementById('restart-btn').addEventListener('click', restartQuiz);
+        document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('student-name');
+            nameInput.placeholder = `Ex: ${placeholders[Math.floor(Math.random() * placeholders.length)]}`;
+        });
+    </script>
+</body>
+</html>
+
