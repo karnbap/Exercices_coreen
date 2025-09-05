@@ -185,6 +185,10 @@
     let startTime, endTime;
     let mediaRecorder, audioChunks = [];
     let currentAudio = null, currentBlobUrl = null;
+    +let currentFetchAbort = null;      // 최신 요청만 유효하게
+    +let audioClickLocked = false;      // 더블클릭 방지 소프트 락
++function tinyDelay(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
 
     const placeholders = ["Camille","Lucas","Zoé","Arthur","Élise","Léa","Hugo","Théo","Oscar","Chloé","Jeanne d'Arc","Napoléon","Marie Curie","Louis XIV"];
 
@@ -217,58 +221,95 @@
     }
 
     // ===== TTS =====
-    async function playAudio(text, voice='alloy', opts = {}){
-      try{
-        if(questions.length>0 && questions[currentQuestionIndex]) questions[currentQuestionIndex].listenCount++;
-        cleanupAudio();
-
-        const res = await fetch('/.netlify/functions/generate-audio',{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ text, voice, ...opts })
-        });
-        if(!res.ok) throw new Error(`generate-audio: ${res.status} ${res.statusText}`);
-        const data = await res.json();
-
-        let srcUrl = null;
-        if(data.audioUrl){
-          srcUrl = data.audioUrl;
-        }else if(data.audioBase64 || data.audioContent){
-          const b64 = data.audioBase64 || data.audioContent;
-          const blob = base64ToBlob(b64, data.mimeType||'audio/mpeg');
-          srcUrl = URL.createObjectURL(blob); currentBlobUrl = srcUrl;
-        }else{
-          throw new Error('Invalid TTS response: missing audio');
-        }
-
-        const audio = new Audio(srcUrl);
-        currentAudio = audio;
-        let endedNaturally = false;  // ✅ 재생 종료 후 에러 무시
-
-        audio.addEventListener('error', () => {
-          if (endedNaturally) return; // ✅ ended 이후 에러는 무시
-          const code = audio.error?.code ?? 0; // 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
-          if(code === 1) return; // 사용자가 중단/재생 전환 → 모달 X
-          console.error('Audio element fatal error', audio.error);
-          showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
-          cleanupAudio();
-        });
-        audio.addEventListener('ended', () => { endedNaturally = true; cleanupAudio(); });
-
-        try{
-          await audio.play();
-        }catch(err){
-          if(err?.name === 'AbortError' || err?.name === 'NotAllowedError') return;
-          console.error('audio.play() failed', err);
-          showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
-          cleanupAudio();
-        }
-      }catch(error){
-        console.error('playAudio error', error);
-        logError(error,'playAudio',{text,voice,opts});
-        showErrorModal("Impossible de jouer le son. L'erreur a été signalée.");
-        cleanupAudio();
-      }
-    }
+   +async function playAudio(text, voice='alloy', opts = {}){
++  // 0) 더블클릭/연속 클릭 폭주 방지 (짧은 락)
++  if (audioClickLocked) return;
++  audioClickLocked = true; setTimeout(()=>audioClickLocked=false, 250);
++
++  try{
++    if(questions.length>0 && questions[currentQuestionIndex]){
++      questions[currentQuestionIndex].listenCount++;
++    }
++
++    // 1) 이전 재생/요청 정리
++    cleanupAudio();
++    if (currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
++    const ac = new AbortController();
++    currentFetchAbort = ac;
++
++    // 2) 요청
++    const res = await fetch('/.netlify/functions/generate-audio',{
++      method:'POST',
++      headers:{'Content-Type':'application/json'},
++      body:JSON.stringify({ text, voice, ...opts }),
++      signal: ac.signal
++    });
++    if(!res.ok) throw new Error(`generate-audio: ${res.status} ${res.statusText}`);
++
++    // 3) 응답 파싱
++    const data = await res.json().catch(e=>{ throw new Error('Invalid JSON from TTS') });
++    if (ac.signal.aborted) return;  // 중도 취소되었으면 종료
++
++    // 4) 오디오 소스 생성 (항상 Blob 우선)
++    let srcUrl = null;
++    if(data.audioBase64 || data.audioContent){
++      const b64 = data.audioBase64 || data.audioContent;
++      const blob = base64ToBlob(b64, data.mimeType||'audio/mpeg');
++      srcUrl = URL.createObjectURL(blob);
++      currentBlobUrl = srcUrl;
++    }else if(data.audioUrl){
++      // data URL도 지원 (백업)
++      srcUrl = data.audioUrl;
++    }else{
++      throw new Error('Invalid TTS response: missing audio');
++    }
++
++    // 5) 재생
++    const audio = new Audio(srcUrl);
++    currentAudio = audio;
++    let endedNaturally = false;
++
++    // 일부 브라우저에서 decode 전 play 호출이 실패하는 경우가 있어 canplay 이벤트까지 짧게 대기
++    const canPlay = new Promise(resolve=>{
++      const ready = () => { audio.removeEventListener('canplaythrough', ready); resolve(); };
++      audio.addEventListener('canplaythrough', ready, { once:true });
++      // 혹시 이벤트가 안 오면 최대 300ms 대기 후 진행
++      setTimeout(resolve, 300);
++    });
++
++    audio.addEventListener('error', () => {
++      if (endedNaturally) return;
++      const code = audio.error?.code ?? 0; // 1 ABORTED, 2 NETWORK, 3 DECODE, 4 SRC_NOT_SUPPORTED
++      if(code === 1) return; // 사용자가 중단
++      console.error('Audio element error', audio.error);
++      showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
++      cleanupAudio();
++    });
++    audio.addEventListener('ended', () => { endedNaturally = true; cleanupAudio(); });
++
++    await canPlay;
++    try{
++      await audio.play();
++    }catch(err){
++      // 드물게 DECODE 문제로 첫 play 실패 → 1회 재시도
++      await tinyDelay(120);
++      try{
++        await audio.play();
++      }catch(err2){
++        if(err2?.name === 'AbortError' || err2?.name === 'NotAllowedError') return;
++        console.error('audio.play() failed', err2);
++        showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
++        cleanupAudio();
++      }
++    }
++  }catch(error){
++    if (error?.name === 'AbortError') return; // 새 요청으로 취소된 경우
++    console.error('playAudio error', error);
++    logError(error,'playAudio',{text,voice,opts});
++    showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
++    cleanupAudio();
++  }
++}
 
     // ===== Results =====
     async function sendResults(){
