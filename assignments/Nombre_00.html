@@ -111,13 +111,13 @@
     <div class="space-y-4">
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-        <!-- 더 자연스러운 남성 D + 단어 사이 쉬기 + 느리게 -->
-        <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','ko-KR-Neural2-D',{ ssml:true, insertBreakMs:350, speakingRate:0.92 })"><i class="fas fa-play"></i></button>
+        <!-- OpenAI: alloy, 느리게 -->
+        <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-        <!-- 밝고 자연스러운 여성 A + 단어 사이 쉬기 + 느리게 -->
-        <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','ko-KR-Neural2-A',{ ssml:true, insertBreakMs:350, speakingRate:0.92 })"><i class="fas fa-play"></i></button>
+        <!-- OpenAI: shimmer, 느리게 -->
+        <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Hanja (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
@@ -176,6 +176,11 @@
     </div>
   </div>
 
+  <!-- 이 페이지는 기본을 OpenAI 로 사용 -->
+  <script>
+    window.PONGDANG_TTS = { provider: 'openai' };
+  </script>
+
   <script src="../assets/grading-criteria.js"></script>
   <script>
     // ===== Global =====
@@ -188,7 +193,6 @@
     let currentFetchAbort = null;      // 최신 요청만 유효하게
     let audioClickLocked = false;      // 더블클릭 방지 소프트 락
     function tinyDelay(ms){ return new Promise(r=>setTimeout(r, ms)); }
-
 
     const placeholders = ["Camille","Lucas","Zoé","Arthur","Élise","Léa","Hugo","Théo","Oscar","Chloé","Jeanne d'Arc","Napoléon","Marie Curie","Louis XIV"];
 
@@ -221,94 +225,95 @@
     }
 
     // ===== TTS =====
-async function playAudio(text, voice='alloy', opts = {}){
-  // 연속 클릭 폭주 방지
-  if (audioClickLocked) return;
-  audioClickLocked = true;
-  setTimeout(()=>audioClickLocked=false, 250);
+    async function playAudio(text, voice='alloy', opts = {}){
+      if (audioClickLocked) return;
+      audioClickLocked = true;
+      setTimeout(()=>audioClickLocked=false, 250);
 
-  try{
-    if(questions.length>0 && questions[currentQuestionIndex]){
-      questions[currentQuestionIndex].listenCount++;
-    }
-
-    // 이전 재생/요청 정리
-    cleanupAudio();
-    if (currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
-    const ac = new AbortController();
-    currentFetchAbort = ac;
-
-    // 서버 호출
-    const res = await fetch('/.netlify/functions/generate-audio',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ text, voice, ...opts }),
-      signal: ac.signal
-    });
-    if(!res.ok) throw new Error(`generate-audio: ${res.status} ${res.statusText}`);
-
-    // 응답 파싱
-    const data = await res.json().catch(()=>{ throw new Error('Invalid JSON from TTS'); });
-    if (ac.signal.aborted) return;
-
-    // 소스 생성 (Blob 우선)
-    let srcUrl = null;
-    if(data.audioBase64 || data.audioContent){
-      const b64 = data.audioBase64 || data.audioContent;
-      const blob = base64ToBlob(b64, data.mimeType||'audio/mpeg');
-      srcUrl = URL.createObjectURL(blob);
-      currentBlobUrl = srcUrl;
-    }else if(data.audioUrl){
-      srcUrl = data.audioUrl;
-    }else{
-      throw new Error('Invalid TTS response: missing audio');
-    }
-
-    const audio = new Audio(srcUrl);
-    currentAudio = audio;
-    let endedNaturally = false;
-
-    // 재생 준비 대기(일부 브라우저 디코드 타이밍 이슈 대비)
-    const canPlay = new Promise(resolve=>{
-      const ready = () => { audio.removeEventListener('canplaythrough', ready); resolve(); };
-      audio.addEventListener('canplaythrough', ready, { once:true });
-      setTimeout(resolve, 300); // 백업 타임아웃
-    });
-
-    audio.addEventListener('error', () => {
-      if (endedNaturally) return;
-      const code = audio.error?.code ?? 0; // 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
-      if(code === 1) return; // 사용자 중단은 무시
-      console.error('Audio element error', audio.error);
-      showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
-      cleanupAudio();
-    });
-    audio.addEventListener('ended', () => { endedNaturally = true; cleanupAudio(); });
-
-    await canPlay;
-    try{
-      await audio.play();
-    }catch(err){
-      // 드물게 첫 재생 실패 시 1회 재시도
-      await tinyDelay(120);
       try{
-        await audio.play();
-      }catch(err2){
-        if(err2?.name === 'AbortError' || err2?.name === 'NotAllowedError') return;
-        console.error('audio.play() failed', err2);
+        if(questions.length>0 && questions[currentQuestionIndex]){
+          questions[currentQuestionIndex].listenCount++;
+        }
+
+        cleanupAudio();
+        if (currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
+        const ac = new AbortController();
+        currentFetchAbort = ac;
+
+        // ✅ provider 결정: 버튼 opts > 전역(window.PONGDANG_TTS) > auto
+        const provider = opts.provider || (window.PONGDANG_TTS && window.PONGDANG_TTS.provider) || 'auto';
+
+        const res = await fetch('/.netlify/functions/generate-audio',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          // OpenAI는 speed, Google은 speakingRate 사용 → 둘 다 전달
+          body:JSON.stringify({
+            text, voice,
+            provider,
+            speed: (opts.speed ?? opts.speakingRate),
+            speakingRate: opts.speakingRate
+          }),
+          signal: ac.signal
+        });
+        if(!res.ok) throw new Error(`generate-audio: ${res.status} ${res.statusText}`);
+
+        const data = await res.json().catch(()=>{ throw new Error('Invalid JSON from TTS'); });
+        if (ac.signal.aborted) return;
+
+        let srcUrl = null;
+        if(data.audioBase64 || data.audioContent){
+          const b64 = data.audioBase64 || data.audioContent;
+          const blob = base64ToBlob(b64, data.mimeType||'audio/mpeg');
+          srcUrl = URL.createObjectURL(blob);
+          currentBlobUrl = srcUrl;
+        }else if(data.audioUrl){
+          srcUrl = data.audioUrl;
+        }else{
+          throw new Error('Invalid TTS response: missing audio');
+        }
+
+        const audio = new Audio(srcUrl);
+        currentAudio = audio;
+        let endedNaturally = false;
+
+        const canPlay = new Promise(resolve=>{
+          const ready = () => { audio.removeEventListener('canplaythrough', ready); resolve(); };
+          audio.addEventListener('canplaythrough', ready, { once:true });
+          setTimeout(resolve, 300);
+        });
+
+        audio.addEventListener('error', () => {
+          if (endedNaturally) return;
+          const code = audio.error?.code ?? 0;
+          if(code === 1) return; // 사용자 중단은 무시
+          console.error('Audio element error', audio.error);
+          showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
+          cleanupAudio();
+        });
+        audio.addEventListener('ended', () => { endedNaturally = true; cleanupAudio(); });
+
+        await canPlay;
+        try{
+          await audio.play();
+        }catch(err){
+          await tinyDelay(120);
+          try{
+            await audio.play();
+          }catch(err2){
+            if(err2?.name === 'AbortError' || err2?.name === 'NotAllowedError') return;
+            console.error('audio.play() failed', err2);
+            showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
+            cleanupAudio();
+          }
+        }
+      }catch(error){
+        if (error?.name === 'AbortError') return;
+        console.error('playAudio error', error);
+        logError(error,'playAudio',{text,voice,opts});
         showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
         cleanupAudio();
       }
     }
-  }catch(error){
-    if (error?.name === 'AbortError') return; // 새 요청으로 취소된 경우
-    console.error('playAudio error', error);
-    logError(error,'playAudio',{text,voice,opts});
-    showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
-    cleanupAudio();
-  }
-}
-
 
     // ===== Results =====
     async function sendResults(){
@@ -397,7 +402,7 @@ async function playAudio(text, voice='alloy', opts = {}){
         q.options.forEach(opt=>{ html+=`<button class="choice-btn ${q.userAnswer===opt?'selected':''}" onclick="selectChoiceAnswer('${opt}')">${opt}</button>`; });
       }else if(q.type==='fill'){
         html+=`<p class="text-lg font-semibold mb-4">${q.fr}</p>
-               <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
+               <button class="btn btn-secondary w_full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
                <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
                <input class="input-field" value="${q.userAnswer||''}" oninput="updateFillAnswer(this.value)" placeholder="Écrivez en hangeul...">`;
       }else if(q.type==='translate'){
