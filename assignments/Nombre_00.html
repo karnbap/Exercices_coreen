@@ -32,13 +32,13 @@
 
   <!-- 상단 제작자/팀/메일 -->
   <div class="absolute top-4 left-4 text-sm text-gray-400">
-    made by 성일, Pondant · Lapeace29@gmail.com
+    made by 성일, Pongdang · Lapeace29@gmail.com
   </div>
 
   <!-- 시작 화면 -->
   <div id="start-screen" class="min-h-screen flex flex-col items-center justify-center text-center p-4">
     <h1 class="text-4xl font-bold text-slate-800 mb-2">Exercice : Les Nombres Coréens 🔢</h1>
-    <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (Hanja-coréens)</p>
+    <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (sino-coréens)</p>
     <div class="w-full max-w-sm">
       <input id="student-name" class="w-full p-3 text-center border-2 border-slate-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Quel est ton nom ? (이름이 뭐예요?)">
       <button id="start-btn" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Commencer ! (시작!)</button>
@@ -79,7 +79,7 @@
       <div>
         <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance</h3>
         <ul class="list-disc list-inside space-y-2">
-          <li>Heures(시) → **natifs**, Minutes(분) → **Hanja**</li>
+          <li>Heures(시) → <b>natifs</b>, Minutes(분) → <b>Hanja</b></li>
           <li>Mots récents: parfois anglais mélangé</li>
         </ul>
       </div>
@@ -111,13 +111,13 @@
     <div class="space-y-4">
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-        <!-- 더 자연스러운 남성 D -->
-        <button class="btn btn-sound" onclick="playAudio('하나둘셋넷다섯','ko-KR-Neural2-D')"><i class="fas fa-play"></i></button>
+        <!-- 더 자연스러운 남성 D + 단어 사이 쉬기 + 느리게 -->
+        <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','ko-KR-Neural2-D',{ ssml:true, insertBreakMs:350, speakingRate:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-        <!-- 밝고 자연스러운 여성 A -->
-        <button class="btn btn-sound" onclick="playAudio('여섯일곱여덟아홉열','ko-KR-Neural2-A')"><i class="fas fa-play"></i></button>
+        <!-- 밝고 자연스러운 여성 A + 단어 사이 쉬기 + 느리게 -->
+        <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','ko-KR-Neural2-A',{ ssml:true, insertBreakMs:350, speakingRate:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Hanja (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
@@ -164,7 +164,7 @@
 
   <!-- 하단 제작자/팀/메일 -->
   <div class="absolute bottom-4 right-4 text-sm text-gray-400">
-    made by 성일, Pondant · Lapeace29@gmail.com
+    made by 성일, Pongdang · Lapeace29@gmail.com
   </div>
 
   <!-- 오류 모달 -->
@@ -218,14 +218,14 @@
     }
 
     // ===== TTS =====
-    async function playAudio(text, voice='alloy'){
+    async function playAudio(text, voice='alloy', opts = {}){
       try{
         if(questions.length>0 && questions[currentQuestionIndex]) questions[currentQuestionIndex].listenCount++;
         cleanupAudio();
 
         const res = await fetch('/.netlify/functions/generate-audio',{
           method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ text, voice })
+          body:JSON.stringify({ text, voice, ...opts })
         });
         if(!res.ok) throw new Error(`generate-audio: ${res.status} ${res.statusText}`);
         const data = await res.json();
@@ -243,16 +243,17 @@
 
         const audio = new Audio(srcUrl);
         currentAudio = audio;
+        let endedNaturally = false;  // ✅ 재생 종료 후 에러 무시
 
-        // 치명적일 때만 모달
         audio.addEventListener('error', () => {
+          if (endedNaturally) return; // ✅ ended 이후 에러는 무시
           const code = audio.error?.code ?? 0; // 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
           if(code === 1) return; // 사용자가 중단/재생 전환 → 모달 X
           console.error('Audio element fatal error', audio.error);
           showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
           cleanupAudio();
         });
-        audio.addEventListener('ended', cleanupAudio);
+        audio.addEventListener('ended', () => { endedNaturally = true; cleanupAudio(); });
 
         try{
           await audio.play();
@@ -264,7 +265,7 @@
         }
       }catch(error){
         console.error('playAudio error', error);
-        logError(error,'playAudio',{text,voice});
+        logError(error,'playAudio',{text,voice,opts});
         showErrorModal("Impossible de jouer le son. L'erreur a été signalée.");
         cleanupAudio();
       }
