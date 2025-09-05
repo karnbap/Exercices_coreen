@@ -127,25 +127,27 @@
     <div id="warmup-screen" class="quiz-container hidden">
         <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Échauffement : Répétition Rapide 🗣️</h2>
         <p class="text-lg text-slate-600 mb-8 text-center">Écoutez et répétez plusieurs fois. <br>(듣고 여러 번 소리 내어 따라 읽으세요.)</p>
-
         <div class="space-y-4">
             <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
                 <p class="font-semibold text-lg text-slate-700">Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-                <button class="btn btn-sound" onclick="playAudio('하나둘셋넷다섯','nova')"><i class="fas fa-play"></i></button>
+-                <button class="btn btn-sound" onclick="playAudio('하나둘셋넷다섯','nova')"><i class="fas fa-play"></i></button>
++                <button class="btn btn-sound" onclick="playAudio('하나둘셋넷다섯','ko-KR-Neural2-D')"><i class="fas fa-play"></i></button>
             </div>
             <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
                 <p class="font-semibold text-lg text-slate-700">Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-                <button class="btn btn-sound" onclick="playAudio('여섯일곱여덟아홉열','nova')"><i class="fas fa-play"></i></button>
+-                <button class="btn btn-sound" onclick="playAudio('여섯일곱여덟아홉열','nova')"><i class="fas fa-play"></i></button>
++                <button class="btn btn-sound" onclick="playAudio('여섯일곱여덟아홉열','ko-KR-Neural2-A')"><i class="fas fa-play"></i></button>
             </div>
             <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-                <p class="font-semibold text-lg text-slate-700">Hanja (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
+                <p class="font-semibold text-lg text-slate-700">Nombres Hanja-Coréens (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
                 <button class="btn btn-sound" onclick="playAudio('일이삼사오','alloy')"><i class="fas fa-play"></i></button>
             </div>
             <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-                <p class="font-semibold text-lg text-slate-700">Hanja (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
+                <p class="font-semibold text-lg text-slate-700">Nombres Hanja-Coréens (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
                 <button class="btn btn-sound" onclick="playAudio('육칠팔구십','alloy')"><i class="fas fa-play"></i></button>
             </div>
         </div>
+
 
         <div class="mt-8 text-center">
             <button id="start-quiz-btn" class="btn btn-primary text-lg">
