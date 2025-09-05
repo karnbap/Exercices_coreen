@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>OpenAI 보이스 테스트</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:system-ui, sans-serif; max-width:720px; margin:40px auto; padding:0 16px;}
+    label{display:block; margin:14px 0 6px;}
+    input,select,textarea,button{font-size:16px; padding:10px; width:100%;}
+    button{cursor:pointer;}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    .hint{color:#666; font-size:14px;}
+    .error{color:#c00; margin-top:10px;}
+  </style>
+</head>
+<body>
+  <h1>🎙️ OpenAI 보이스 간단 테스트</h1>
+  <p class="hint">※ 기존 연습문제와 완전히 분리된 테스트 페이지입니다.</p>
+
+  <label>보이스</label>
+  <select id="voice">
+    <option>alloy</option>
+    <option>shimmer</option>
+    <option>nova</option>
+    <option>echo</option>
+    <option>fable</option>
+  </select>
+
+  <div class="row">
+    <div>
+      <label>속도 (0.5 ~ 2.0)</label>
+      <input id="speed" type="number" value="1.0" step="0.1" min="0.5" max="2.0">
+    </div>
+    <div>
+      <label>샘플 문장 길이</label>
+      <select id="preset">
+        <option value="short">짧게</option>
+        <option value="medium" selected>보통</option>
+        <option value="long">길게</option>
+      </select>
+    </div>
+  </div>
+
+  <label>텍스트(수정 가능)</label>
+  <textarea id="text" rows="4">안녕하세요, 오늘은 숫자를 배워봅시다. 하나, 둘, 셋, 넷—천천히 따라 읽어 보세요.</textarea>
+
+  <button id="play">재생 ▶</button>
+  <div id="msg" class="error"></div>
+  <audio id="player" controls style="margin-top:12px; width:100%; display:none;"></audio>
+
+  <script>
+    const voiceEl = document.getElementById('voice');
+    const speedEl = document.getElementById('speed');
+    const presetEl = document.getElementById('preset');
+    const textEl  = document.getElementById('text');
+    const btn     = document.getElementById('play');
+    const player  = document.getElementById('player');
+    const msg     = document.getElementById('msg');
+
+    const samples = {
+      short:  '안녕하세요. 반갑습니다.',
+      medium: '안녕하세요, 오늘은 숫자를 배워봅시다. 하나, 둘, 셋, 넷—천천히 따라 읽어 보세요.',
+      long:   '안녕하세요, 오늘은 한국어 숫자를 자연스럽게 듣고 따라 하는 연습을 해 봅시다. 먼저 하나, 둘, 셋, 넷, 다섯—호흡을 가다듬고, 또박또박 소리 내어 읽어 보세요.'
+    };
+
+    presetEl.addEventListener('change', () => {
+      textEl.value = samples[presetEl.value];
+    });
+
+    let lock = false;
+    btn.addEventListener('click', async () => {
+      if (lock) return;
+      lock = true; setTimeout(()=>lock=false, 600); // 과도한 연타 방지
+
+      msg.textContent = '';
+      player.style.display = 'none';
+      player.pause();
+      player.src = '';
+
+      try {
+        const payload = {
+          text: textEl.value.trim(),
+          voice: voiceEl.value,
+          speed: Number(speedEl.value) || 1.0
+        };
+
+        const res = await fetch('/.netlify/functions/tts-openai', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(()=>({ error:{ message:'Invalid JSON' }}));
+        if (data?.error) throw new Error(data.error.message || 'TTS error');
+
+        const b64 = data.audioBase64;
+        const mime = data.mimeType || 'audio/mpeg';
+        const blob = b64ToBlob(b64, mime);
+        const url  = URL.createObjectURL(blob);
+
+        player.src = url;
+        player.style.display = 'block';
+        await player.play().catch(()=>{ /* 첫 재생 실패는 무시 */ });
+
+      } catch (e) {
+        msg.textContent = '오류: ' + (e.message || e);
+      }
+    });
+
+    function b64ToBlob(base64, mime='audio/mpeg'){
+      const byteChars = atob(base64);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i=0; i<byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }
+  </script>
+</body>
+</html>
