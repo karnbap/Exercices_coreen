@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어)</title>
+  <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어) – Final</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,7 +18,7 @@
     .btn{padding:.75rem 1.5rem;border-radius:.5rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
     .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
     .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
-    .btn-sound{background:#10b981;color:#fff;font-size:1.2rem}.btn-sound:hover{background:#059669}
+    .btn-sound{background:#10b981;color:#fff;font-size:1.05rem}.btn-sound:hover{background:#059669}
     .choice-btn{display:block;width:100%;text-align:left;padding:1rem;margin-bottom:.75rem;background:#fff;border:1px solid #d1d5db;border-radius:.5rem;font-size:1.1rem;transition:all .2s}
     .choice-btn:hover{background:#eff6ff;border-color:#3b82f6}
     .choice-btn.selected{background:#bfdbfe;border-color:#3b82f6;font-weight:600}
@@ -190,7 +190,13 @@
     let currentAudio = null, currentBlobUrl = null;
     let currentFetchAbort = null;      // 최신 요청만 유효
     let audioClickLocked = false;      // 더블클릭 방지
+    let isPlayingOrFetching = false;   // 동시 요청/재생 보호
     function tinyDelay(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+    // 현재 컨트롤바(받아쓰기 섹션)의 버튼 참조 & 메타
+    let currentAudioMeta = { text: null, voice: null };
+    let currentAudioUI   = { playBtn: null, loopBtn: null };
+    let isLooping = false;
 
     const placeholders = ["Camille","Lucas","Zoé","Arthur","Élise","Léa","Hugo","Théo","Oscar","Chloé","Jeanne d'Arc","Napoléon","Marie Curie","Louis XIV"];
 
@@ -226,9 +232,32 @@
       if(currentBlobUrl){ URL.revokeObjectURL(currentBlobUrl); currentBlobUrl=null; }
     }
 
-    // ==============================
-    // ✅ 쉬운 불어+한글 개념 힌트
-    // ==============================
+    function updatePlayButtonUI(isPlaying){
+      const btn = currentAudioUI.playBtn;
+      if(!btn) return;
+      if(isPlaying){
+        btn.innerHTML = '<i class="fas fa-pause"></i> Pause (일시정지)';
+        btn.classList.remove('bg-emerald-600');
+        btn.classList.add('bg-emerald-700');
+      }else{
+        btn.innerHTML = '<i class="fas fa-play"></i> Écouter (듣기)';
+        btn.classList.remove('bg-emerald-700');
+        btn.classList.add('bg-emerald-600');
+      }
+    }
+    function updateLoopButtonUI(){
+      const btn = currentAudioUI.loopBtn;
+      if(!btn) return;
+      if(isLooping){
+        btn.innerHTML = '<i class="fas fa-redo"></i> Répéter On';
+        btn.classList.add('bg-yellow-200');
+      }else{
+        btn.innerHTML = '<i class="fas fa-redo"></i> Répéter Off';
+        btn.classList.remove('bg-yellow-200');
+      }
+    }
+
+    // ===== 쉬운 불어+한글 개념 힌트 =====
     function buildConceptHint(forWhat){
       const lines = {
         age: [
@@ -269,7 +298,6 @@
       return lines[forWhat].concat(lines.time_history || []).join("\n");
     }
 
-    // ✅ 일반 힌트(문항 공통): “왜 이 숫자 쓰나요?”를 자동으로
     function showGeneralHint(){
       const q = questions[currentQuestionIndex];
       const d = document.getElementById('hint-display');
@@ -279,8 +307,7 @@
 
       if (text.includes("살") || /Âge|age/i.test(text))       msg = buildConceptHint("age");
       else if (text.includes("명") || /Personnes/i.test(text)) msg = buildConceptHint("people");
-      else if (text.includes("권") || text.includes("개") ||
-               /Objets|livres|책/i.test(text))                 msg = buildConceptHint("objects");
+      else if (text.includes("권") || text.includes("개") || /Objets|livres|책/i.test(text)) msg = buildConceptHint("objects");
       else if (text.includes("일") || /Date|septembre|월/i.test(text))  msg = buildConceptHint("date");
       else if (/유로|원|Prix|Argent/i.test(text))               msg = buildConceptHint("money");
       else if (text.includes("분") || /Minutes/i.test(text))    msg = buildConceptHint("minutes");
@@ -291,7 +318,6 @@
       d.classList.remove('hidden');
     }
 
-    // ✅ 받아쓰기 힌트(초성/단어/왜 이 숫자?)
     function showHint(type){
       const q=questions[currentQuestionIndex], d=document.getElementById('hint-display');
       if(type===1){ q.hint1Count++; d.textContent=`Indice 1: ${q.hint1}`; }
@@ -309,46 +335,45 @@
       d.classList.remove('hidden');
     }
 
-    // ===== TTS 제공자별 음성 매핑 + 폴백 =====
+    // ===== 제공자별 음성 매핑 =====
     const VOICE_MAP = {
-      openai: {
-        default: "alloy",
-        alloy: "alloy",
-        shimmer: "verse",
-        nova: "alloy",
-        echo: "alloy",
-        fable: "verse"
-      },
-      google: {
-        default: "ko-KR-Standard-A",
-        alloy: "ko-KR-Standard-A",   // 남성 느낌
-        shimmer: "ko-KR-Standard-B", // 여성 느낌
-        nova: "ko-KR-Standard-C",
-        echo: "ko-KR-Standard-D",
-        fable: "ko-KR-Neural2-A"
-      }
+      openai: { default: "alloy", alloy: "alloy", shimmer: "verse", nova: "alloy", echo: "alloy", fable: "verse" },
+      google: { default: "ko-KR-Standard-A", alloy: "ko-KR-Standard-A", shimmer: "ko-KR-Standard-B", nova: "ko-KR-Standard-C", echo: "ko-KR-Standard-D", fable: "ko-KR-Neural2-A" }
     };
     function mapVoice(provider, reqName){
       const table = VOICE_MAP[provider] || {};
       return table[reqName] || table.default || reqName || "ko-KR-Standard-A";
     }
-    // 재생/요청 동시 보호
-    let isPlayingOrFetching = false;
 
-    // ===== TTS =====
+    // ===== TTS: Play / Pause 토글, Stop, Loop, 오류 폴백 =====
     async function playAudio(text, voice='alloy', opts = {}){
-      if (audioClickLocked || isPlayingOrFetching) return;
-      audioClickLocked = true;
-      setTimeout(()=>audioClickLocked=false, 250);
-      isPlayingOrFetching = true;
+      // 이미 처리 중인 클릭이면: 같은 소스일 땐 토글만
+      if (audioClickLocked || isPlayingOrFetching) {
+        if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice){
+          try{
+            if (!currentAudio.paused) { currentAudio.pause(); updatePlayButtonUI(false); }
+            else { await currentAudio.play(); updatePlayButtonUI(true); }
+          }catch(_){/* ignore */}
+        }
+        return;
+      }
+      audioClickLocked = true; setTimeout(()=>audioClickLocked=false, 220);
 
       try{
-        if(questions.length>0 && questions[currentQuestionIndex]){
-          questions[currentQuestionIndex].listenCount++;
+        // 같은 소스면 서버 재요청 없이 토글
+        if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice && currentAudio.src){
+          if(!currentAudio.paused){ currentAudio.pause(); updatePlayButtonUI(false); }
+          else { await currentAudio.play(); updatePlayButtonUI(true); }
+          return;
         }
 
-        cleanupAudio();
-        if (currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
+        isPlayingOrFetching = true;
+        if(questions.length>0 && questions[currentQuestionIndex]){ questions[currentQuestionIndex].listenCount++; }
+
+        // 이전 소스 정리 (완전 정지 아님)
+        if(currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
+        if(currentAudio){ try{ currentAudio.pause(); }catch(_){} }
+
         const ac = new AbortController();
         currentFetchAbort = ac;
 
@@ -356,24 +381,17 @@
         const primary   = opts.provider || configured;
         const secondary = (primary === 'openai') ? 'google' : 'openai';
 
-        const basePayload = {
-          text, voice,
-          provider: primary,
-          speed: (opts.speed ?? opts.speakingRate),
-          speakingRate: opts.speakingRate
-        };
+        const basePayload = { text, voice, provider: primary, speed:(opts.speed ?? opts.speakingRate), speakingRate:opts.speakingRate };
 
-        const tryFetch = async (providerName) => {
-          const payload = { ...basePayload, provider: providerName, voice: mapVoice(providerName, voice) };
+        const tryFetch = async (prov) => {
+          const payload = { ...basePayload, provider: prov, voice: mapVoice(prov, voice) };
           const res = await fetch('/.netlify/functions/generate-audio',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
-            body:JSON.stringify(payload),
-            signal: ac.signal
+            method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+            body:JSON.stringify(payload), signal: ac.signal
           });
           if(!res.ok){
-            const msg = `generate-audio ${providerName}: ${res.status}`;
-            if (res.status===402 || res.status===429 || (res.status>=500 && res.status<=599)) throw new Error("RETRY:"+msg);
+            const msg = `generate-audio ${prov}: ${res.status}`;
+            if (res.status===402 || res.status===429 || (res.status>=500 && res.status<=599)) throw new Error('RETRY:'+msg);
             throw new Error(msg);
           }
           const data = await res.json().catch(()=>{ throw new Error('Invalid JSON from TTS'); });
@@ -382,68 +400,62 @@
 
         let data;
         try { data = await tryFetch(primary); }
-        catch(e){
-          if(String(e.message).startsWith("RETRY:")){
-            data = await tryFetch(secondary);
-          } else { throw e; }
-        }
-        if (ac.signal.aborted || !data) return;
+        catch(e){ if(String(e.message).startsWith('RETRY:')) data = await tryFetch(secondary); else throw e; }
+        if(ac.signal.aborted || !data) return;
 
         let srcUrl = null;
         if(data.audioBase64 || data.audioContent){
           const b64 = data.audioBase64 || data.audioContent;
           const blob = base64ToBlob(b64, data.mimeType||'audio/mpeg');
-          srcUrl = URL.createObjectURL(blob);
-          currentBlobUrl = srcUrl;
-        }else if(data.audioUrl){
-          srcUrl = data.audioUrl;
-        }else{
-          throw new Error('Invalid TTS response: missing audio');
-        }
+          srcUrl = URL.createObjectURL(blob); currentBlobUrl = srcUrl;
+        }else if(data.audioUrl){ srcUrl = data.audioUrl; }
+        else { throw new Error('Invalid TTS response: missing audio'); }
 
         const audio = new Audio(srcUrl);
         currentAudio = audio;
-        let endedNaturally = false;
+        currentAudioMeta = { text, voice };
+        audio.loop = isLooping; // 반복 상태 반영
 
+        let endedNaturally = false;
         const canPlay = new Promise(resolve=>{
           const ready = () => { audio.removeEventListener('canplaythrough', ready); resolve(); };
           audio.addEventListener('canplaythrough', ready, { once:true });
-          setTimeout(resolve, 400);
+          setTimeout(resolve, 380);
         });
 
-        audio.addEventListener('error', () => {
-          if (endedNaturally) return;
-          const code = audio.error?.code ?? 0;
-          if(code === 1) return;
-          console.error('Audio element error', audio.error);
-          showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
-          cleanupAudio();
-        });
-        audio.addEventListener('ended', () => { endedNaturally = true; cleanupAudio(); });
+        audio.addEventListener('playing', ()=> updatePlayButtonUI(true));
+        audio.addEventListener('pause',   ()=> updatePlayButtonUI(false));
+        audio.addEventListener('ended',   ()=> { endedNaturally = true; updatePlayButtonUI(false); cleanupAudio(); });
+        audio.addEventListener('error',   ()=> { if(endedNaturally) return; showErrorModal('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.'); });
 
         await canPlay;
-        try{
-          await audio.play();
-        }catch(err){
-          await tinyDelay(160);
-          try{ await audio.play(); }
-          catch(err2){
-            if(err2?.name === 'AbortError' || err2?.name === 'NotAllowedError') return;
-            console.error('audio.play() failed', err2);
-            showErrorModal("오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.");
-            cleanupAudio();
-          }
-        }
+        try{ await audio.play(); }
+        catch(err){ await tinyDelay(150); try{ await audio.play(); }catch(_){ showErrorModal('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.'); }}
       }catch(error){
         if (error?.name !== 'AbortError'){
           console.error('playAudio error', error);
           logError(error,'playAudio',{text,voice,opts});
-          showErrorModal("오디오 생성/재생 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-          cleanupAudio();
+          showErrorModal('오디오 생성/재생 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
         }
-      }finally{
-        isPlayingOrFetching = false;
-      }
+      }finally{ isPlayingOrFetching = false; }
+    }
+
+    // 받아쓰기 컨트롤 핸들러
+    function onPlayPause(text, voice, btnEl){
+      currentAudioUI.playBtn = btnEl; // 현재 컨트롤바의 재생 버튼 참조
+      updatePlayButtonUI(currentAudio && !currentAudio.paused); // 초기 UI 정렬
+      return playAudio(text, voice); // 내부에서 토글 처리
+    }
+    function onStop(){
+      if(!currentAudio) return;
+      try{ currentAudio.pause(); currentAudio.currentTime = 0; }catch(_){ }
+      updatePlayButtonUI(false);
+    }
+    function onToggleLoop(btnEl){
+      currentAudioUI.loopBtn = btnEl;
+      isLooping = !isLooping;
+      if(currentAudio){ currentAudio.loop = isLooping; }
+      updateLoopButtonUI();
     }
 
     // ===== Results =====
@@ -543,7 +555,17 @@
                <input class="input-field" value="${q.userAnswer||''}" oninput="updateTranslateAnswer(this.value)" placeholder="Traduisez en coréen...">`;
       }else if(q.type==='dictation'){
         html+=`<div class="space-y-4">
-          <button class="btn btn-sound w-full text-lg" onclick="playAudio('${q.ko}','${q.voice}')"><i class="fas fa-play"></i> Écouter la phrase (문장 듣기)</button>
+          <div class="flex gap-2">
+            <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${q.ko}','${q.voice}', this)">
+              <i class="fas fa-play"></i> Écouter (듣기)
+            </button>
+            <button id="stop-btn" class="btn btn-secondary" onclick="onStop()">
+              <i class="fas fa-square"></i> Stop (처음)
+            </button>
+            <button id="loop-btn" class="btn btn-secondary" onclick="onToggleLoop(this)">
+              <i class="fas fa-redo"></i> Répéter Off
+            </button>
+          </div>
           <div class="grid grid-cols-2 gap-2">
             <button class="btn btn-secondary" onclick="showHint(1)">Aidez moi 🙏 (초성)</button>
             <button class="btn btn-secondary" onclick="showHint(2)">Au secours 🛟 (단어)</button>
@@ -629,40 +651,17 @@
 
     // ===== Flow =====
     function startQuiz(){
-studentName = document.getElementById('student-name').value.trim();
-if(!studentName){
-showErrorModal("이름을 입력해 주세요. (Entrez votre nom.)");
-return;
-}
-
-
-const start = document.getElementById('start-screen');
-const explain = document.getElementById('explanation-screen');
-if(!start || !explain){
-console.error('[startQuiz] Missing #start-screen or #explanation-screen');
-return;
-}
-
-
-// 화면 전환
-start.classList.add('hidden');
-explain.classList.remove('hidden');
-
-
-// UX: 다음 버튼 포커스 및 상단으로 스크롤
-const next = document.getElementById('explanation-next-btn');
-if(next){ try{ next.focus({ preventScroll:true }); }catch(_){} }
-try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){}
-}
-
-
-// 🛡️ 안전장치(선택): DOMContentLoaded 시 getElementById가 함수인지 확인
-// (다른 곳에서 다시 덮어쓰는 실수를 빠르게 발견하기 위함)
-document.addEventListener('DOMContentLoaded', ()=>{
-if(typeof document.getElementById !== 'function'){
-console.error('document.getElementById was overridden unexpectedly!');
-}
-});
+      studentName=document.getElementById('student-name').value.trim();
+      if(!studentName){ showErrorModal("이름을 입력해 주세요. (Entrez votre nom.)"); return; }
+      const start = document.getElementById('start-screen');
+      const explain = document.getElementById('explanation-screen');
+      if(!start || !explain){ console.error('[startQuiz] Missing screens'); return; }
+      start.classList.add('hidden');
+      explain.classList.remove('hidden');
+      const next = document.getElementById('explanation-next-btn');
+      if(next){ try{ next.focus({ preventScroll:true }); }catch(_){} }
+      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){}
+    }
     function showWarmupScreen(){
       document.getElementById('explanation-screen').classList.add('hidden');
       document.getElementById('warmup-screen').classList.remove('hidden');
@@ -745,6 +744,10 @@ console.error('document.getElementById was overridden unexpectedly!');
     document.addEventListener('DOMContentLoaded', ()=>{
       const nameInput=document.getElementById('student-name');
       nameInput.placeholder=`Ex: ${placeholders[Math.floor(Math.random()*placeholders.length)]}`;
+      // 안전장치: 기본 API가 덮어쓰이지 않았는지 확인
+      if(typeof document.getElementById !== 'function'){
+        console.error('document.getElementById was overridden unexpectedly!');
+      }
     });
   </script>
 </body>
