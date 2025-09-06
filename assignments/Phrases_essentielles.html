@@ -1,804 +1,473 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>한국어 연습 문제 | Exercice de Coréen</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        .wrong-block { background:#fff0f0; border-left:4px solid #ef4444; }
-
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #f0f4f8;
-        }
-        /* 테마 색상 */
-        .theme-bg-primary { background-color: #0033a0; }
-        .theme-text-primary { color: #0033a0; }
-        .theme-bg-secondary { background-color: #ffd700; }
-        .theme-text-secondary { color: #ffd700; }
-        .theme-border-primary { border-color: #0033a0; }
-        .theme-border-secondary { border-color: #ffd700; }
-
-        .card {
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            cursor: pointer;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .selected {
-            border: 3px solid #ffd700 !important;
-            transform: scale(1.05);
-        }
-        .correct-match {
-            background-color: #c8e6c9 !important;
-            border-color: #4caf50 !important;
-            pointer-events: none;
-        }
-        .incorrect-match {
-            animation: shake 0.5s;
-            background-color: #ffcdd2 !important;
-            border-color: #f44336 !important;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .quiz-section {
-            display: none;
-        }
-        .active-section {
-            display: block;
-        }
-        #result-message .icon {
-            font-size: 4rem;
-        }
-        
-        /* 인쇄 스타일 수정 */
-        #printable-area {
-            display: none;
-        }
-
-        @media print {
-            body > #app-container, .no-print {
-                display: none;
-            }
-            #printable-area {
-                display: block;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>한국어 연습문제 | Exercice de Coréen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    .wrong-block{background:#fff0f0;border-left:4px solid #ef4444}
+    body{font-family:'Noto Sans KR',sans-serif;background-color:#f0f4f8}
+    .theme-bg-primary{background-color:#0033a0}.theme-text-primary{color:#0033a0}
+    .theme-bg-secondary{background-color:#ffd700}.theme-text-secondary{color:#ffd700}
+    .theme-border-primary{border-color:#0033a0}.theme-border-secondary{border-color:#ffd700}
+    .card{transition:transform .3s,box-shadow .3s;cursor:pointer}
+    .card:hover{transform:translateY(-5px);box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05)}
+    .selected{border:3px solid #ffd700!important;transform:scale(1.05)}
+    .correct-match{background:#c8e6c9!important;border-color:#4caf50!important;pointer-events:none}
+    .incorrect-match{animation:shake .5s;background:#ffcdd2!important;border-color:#f44336!important}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+    .quiz-section{display:none}.active-section{display:block}
+    #result-message .icon{font-size:4rem}
+    #printable-area{display:none}
+    @media print{
+      body>#app-container,.no-print{display:none}
+      #printable-area{display:block;position:absolute;left:0;top:0;width:100%}
+    }
+  </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+  <div id="app-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <header class="theme-bg-primary text-white p-6 text-center">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h1 class="text-3xl font-bold">Leçon de Coréen Interactive 🇰🇷🇫🇷</h1>
+        <div class="no-print flex gap-2">
+          <button onclick="printPreparationSheet()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm">🖨️ Imprimer (준비 목록)</button>
+          <button onclick="printQuiz()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm">🖨️ Imprimer (전체)</button>
+        </div>
+      </div>
+      <p class="mt-2 text-lg">한국어 실력을 키워 보아요! (Améliorons notre coréen !)</p>
+      <p class="mt-2 text-xs opacity-80">made by 성일, Pongdang · Lapeace29@gmail.com</p>
+    </header>
 
-    <div id="app-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <header class="theme-bg-primary text-white p-6 text-center">
-            <h1 class="text-3xl font-bold">Leçon de Coréen Interactive 🇰🇷🇫🇷</h1>
-            <p class="mt-2 text-lg">한국어 실력을 키워보아요! (Améliorons notre coréen !)</p>
-        </header>
+    <main class="p-4 sm:p-8">
+      <!-- 1. 이름 입력 -->
+      <div id="welcome-screen" class="text-center active-section">
+        <h2 class="text-2xl font-bold theme-text-primary mb-4">Bienvenue ! 이름을 입력해 주세요.</h2>
+        <form id="name-form">
+          <input id="student-name" type="text" placeholder="Ex: Cédric" class="w-full max-w-sm mx-auto p-3 border-2 theme-border-primary rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-yellow-400" required>
+          <button type="submit" class="mt-4 w-full max-w-sm mx-auto theme-bg-secondary text-blue-900 font-bold py-3 px-6 rounded-lg text-lg hover:bg-yellow-500 transition-colors">학습 시작! (Commencer)</button>
+        </form>
+      </div>
 
-        <main class="p-4 sm:p-8">
-            <!-- 1. 이름 입력 화면 -->
-            <div id="welcome-screen" class="text-center active-section">
-                <h2 class="text-2xl font-bold theme-text-primary mb-4">Bienvenue ! 이름을 입력해주세요.</h2>
-                <form id="name-form">
-                    <input type="text" id="student-name" placeholder="Ex: Cédric" class="w-full max-w-sm mx-auto p-3 border-2 theme-border-primary rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-yellow-400" required>
-                    <button type="submit" class="mt-4 w-full max-w-sm mx-auto theme-bg-secondary text-blue-900 font-bold py-3 px-6 rounded-lg text-lg hover:bg-yellow-500 transition-colors">
-                        학습 시작! (Commencer)
-                    </button>
-                </form>
-            </div>
+      <!-- Étape 0: Préparation -->
+      <div id="preparation-step" class="quiz-section">
+        <h2 class="text-2xl font-bold theme-text-primary mb-2 text-center">Étape 0: Préparation (준비 학습)</h2>
+        <p class="text-slate-600 mb-6 text-center">Lisez les phrases et mémorisez le vocabulaire. Vous pouvez imprimer cette liste.</p>
+        <div id="preparation-list" class="space-y-4 max-h-96 overflow-y-auto p-4 bg-slate-50 rounded-lg border"></div>
+        <div class="mt-8 flex justify-center gap-4 no-print">
+          <button onclick="printPreparationSheet()" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">🖨️ Imprimer cette feuille</button>
+          <button onclick="switchSection('matching-game')" class="theme-bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-800 transition-colors">Commencer l'exercice →</button>
+        </div>
+      </div>
 
-            <!-- Étape 0: Préparation -->
-            <div id="preparation-step" class="quiz-section">
-                <h2 class="text-2xl font-bold theme-text-primary mb-2 text-center">Étape 0: Préparation (준비 학습)</h2>
-                <p class="text-slate-600 mb-6 text-center">Lisez les phrases et mémorisez le vocabulaire. Vous pouvez imprimer cette liste.</p>
-                <div id="preparation-list" class="space-y-4 max-h-96 overflow-y-auto p-4 bg-slate-50 rounded-lg border">
-                    <!-- 학습 내용이 동적으로 추가될 영역 -->
-                </div>
-                <div class="mt-8 flex justify-center gap-4 no-print">
-                    <button onclick="printPreparationSheet()" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
-                        🖨️ Imprimer cette feuille
-                    </button>
-                    <button onclick="switchSection('matching-game')" class="theme-bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-800 transition-colors">
-                        Commencer l'exercice →
-                    </button>
-                </div>
-            </div>
+      <!-- Étape 1: 단어 짝맞추기 -->
+      <div id="matching-game" class="quiz-section text-center">
+        <h2 class="text-2xl font-bold theme-text-primary mb-2">Étape 1: Associez les mots ! (단어 짝맞추기)</h2>
+        <p class="text-slate-600 mb-6">Cliquez sur un mot en français, puis sur sa traduction en coréen.</p>
+        <div id="matching-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div id="french-list"></div>
+          <div id="korean-list"></div>
+        </div>
+        <div class="mt-8 flex flex-wrap justify-center gap-2 no-print">
+          <button onclick="switchSection('preparation-step')" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors">← Étape précédente</button>
+          <button onclick="initMatchingGame()" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors">🔄 Mélanger</button>
+          <button onclick="startDictation()" class="theme-bg-primary text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-800 transition-colors">Étape suivante →</button>
+        </div>
+        <p class="mt-4 text-xs text-slate-400">Astuce: vous pouvez aussi utiliser la touche Tab pour naviguer. (탭으로 이동 가능)</p>
+      </div>
 
-            <!-- Étape 1: 단어 짝 맞추기 -->
-            <div id="matching-game" class="quiz-section text-center">
-                <h2 class="text-2xl font-bold theme-text-primary mb-2">Étape 1: Associez les mots ! (단어 짝 맞추기)</h2>
-                <p class="text-slate-600 mb-6">Cliquez sur un mot en français, puis sur sa traduction en coréen.</p>
-                <div id="matching-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div id="french-list"></div>
-                    <div id="korean-list"></div>
-                </div>
-                <div class="mt-8 flex justify-center gap-4 no-print">
-                    <button onclick="switchSection('preparation-step')" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors">
-                        ← Étape précédente
-                    </button>
-                    <button onclick="initMatchingGame()" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors">
-                        🔄 Mélanger les cartes
-                    </button>
-                    <button onclick="startDictation()" class="theme-bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-800 transition-colors">
-                        Étape suivante →
-                    </button>
-                </div>
-            </div>
+      <!-- Étape 2: 받아쓰기 -->
+      <div id="dictation-game" class="quiz-section">
+        <h2 class="text-2xl font-bold theme-text-primary mb-2 text-center">Étape 2: Dictée ! (받아쓰기)</h2>
+        <p class="text-slate-600 mb-6 text-center">Écoutez la phrase et écrivez-la en coréen.</p>
+        <div id="dictation-container" class="space-y-6"></div>
+        <div class="text-center mt-8 flex justify-center gap-4 no-print">
+          <button onclick="switchSection('matching-game')" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors">← Étape précédente</button>
+          <button id="finish-button" onclick="showResults()" class="theme-bg-secondary text-blue-900 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 transition-colors opacity-50 cursor-not-allowed" disabled>Terminer et voir les résultats</button>
+        </div>
+      </div>
 
-            <!-- Étape 2: 받아쓰기 -->
-            <div id="dictation-game" class="quiz-section">
-                <h2 class="text-2xl font-bold theme-text-primary mb-2 text-center">Étape 2: Dictée ! (받아쓰기)</h2>
-                <p class="text-slate-600 mb-6 text-center">Écoutez la phrase et écrivez-la en coréen.</p>
-                <div id="dictation-container" class="space-y-6">
-                    <!-- 문제들이 동적으로 추가될 영역 -->
-                </div>
-                <div class="text-center mt-8 flex justify-center gap-4 no-print">
-                     <button onclick="switchSection('matching-game')" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors">
-                        ← Étape précédente
-                    </button>
-                    <button id="finish-button" onclick="showResults()" class="theme-bg-secondary text-blue-900 font-bold py-3 px-8 rounded-lg hover:bg-yellow-500 transition-colors opacity-50 cursor-not-allowed" disabled>
-                        Terminer et voir les résultats
-                    </button>
-                </div>
-            </div>
+      <!-- 결과 -->
+      <div id="results-screen" class="quiz-section text-center">
+        <h2 class="text-2xl font-bold theme-text-primary mb-4">Résultats du test (테스트 결과)</h2>
+        <div id="result-message" class="mb-6 p-6 rounded-lg"></div>
+        <div id="detailed-results" class="text-left bg-slate-50 p-4 rounded-lg"></div>
+        <div class="mt-8 flex flex-wrap justify-center gap-4 no-print">
+          <button onclick="sendResultsByEmail()" id="send-email-btn" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors">📧 Envoyer les résultats par e-mail</button>
+          <button onclick="printQuiz()" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">🖨️ Imprimer les exercices</button>
+          <button onclick="location.reload()" class="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors">🔄 Recommencer</button>
+        </div>
+        <p class="mt-6 text-xs text-slate-400">made by 성일, Pongdang · Lapeace29@gmail.com</p>
+      </div>
+    </main>
+  </div>
 
-            <!-- 4. 결과 화면 -->
-            <div id="results-screen" class="quiz-section text-center">
-                <h2 class="text-2xl font-bold theme-text-primary mb-4">Résultats du test (테스트 결과)</h2>
-                <div id="result-message" class="mb-6 p-6 rounded-lg">
-                    <!-- 결과 메시지 표시 -->
-                </div>
-                <div id="detailed-results" class="text-left bg-slate-50 p-4 rounded-lg">
-                    <!-- 상세 결과 표시 -->
-                </div>
-                <div class="mt-8 flex flex-wrap justify-center gap-4 no-print">
-                    <button onclick="sendResultsByEmail()" id="send-email-btn" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors">
-                        📧 Envoyer les résultats par e-mail
-                    </button>
-                    <button onclick="printQuiz()" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
-                        🖨️ Imprimer les exercices
-                    </button>
-                    <button onclick="location.reload()" class="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors">
-                        🔄 Recommencer
-                    </button>
-                </div>
-            </div>
-        </main>
-    </div>
+  <!-- 인쇄용 영역 -->
+  <div id="printable-area"></div>
 
-    <!-- 인쇄용 영역 -->
-    <div id="printable-area"></div>
+  <script>
+    // --- 데이터 ---
+    const matchingData = [
+      { id:1, fr:"Entendre", ko:"들리다" }, { id:2, fr:"Voir", ko:"보이다" }, { id:3, fr:"Oui", ko:"네" },
+      { id:4, fr:"Non", ko:"아니요" }, { id:5, fr:"Comprendre", ko:"이해하다" }, { id:6, fr:"Se souvenir", ko:"기억나다" },
+      { id:7, fr:"Semaine", ko:"주" }, { id:8, fr:"Prochain(e)", ko:"다음" }, { id:9, fr:"Comment", ko:"어떻게" },
+      { id:10, fr:"Coréen", ko:"한국어" }, { id:11, fr:"Français", ko:"프랑스어" }, { id:12, fr:"Bon travail", ko:"수고했어요" },
+      { id:13, fr:"Au revoir (l'autre reste)", ko:"안녕히 계세요" }, { id:14, fr:"Au revoir (l'autre part)", ko:"안녕히 가세요" },
+      { id:15, fr:"Finir", ko:"마무리하다" }, { id:16, fr:"Week-end", ko:"주말" }, { id:17, fr:"Lundi", ko:"월요일" },
+      { id:18, fr:"Samedi", ko:"토요일" }, { id:19, fr:"Dimanche", ko:"일요일" }, { id:20, fr:"Au revoir (restez bien)", ko:"안녕히 계세요" },
+      { id:21, fr:"Au revoir (moins formel)", ko:"잘 있어요" }
+    ];
 
+    const dictationData = [
+      { id:1, fr:"Tu m’entends bien ?", ko:"잘 들려요?", initial:"ㅈ ㄷㄹㅇ?", hint:"entendre: 들리다", voice:"FEMALE" },
+      { id:2, fr:"Tu me vois bien ?", ko:"잘 보여요?", initial:"ㅈ ㅂㅇㅇ?", hint:"voir: 보이다", voice:"MALE" },
+      { id:3, fr:"Oui, je t’entends bien.", ko:"네, 잘 들려요.", initial:"ㄴ, ㅈ ㄷㄹㅇ.", hint:"oui: 네", voice:"FEMALE" },
+      { id:4, fr:"Oui, je te vois bien.", ko:"네, 잘 보여요.", initial:"ㄴ, ㅈ ㅂㅇㅇ.", hint:"oui: 네", voice:"Puck" },
+      { id:5, fr:"Non, je ne t’entends pas.", ko:"아니요, 안 들려요.", initial:"ㅇㄴㅇ, ㅇ ㄷㄹㅇ.", hint:"non: 아니요", voice:"FEMALE" },
+      { id:6, fr:"Non, je ne te vois pas.", ko:"아니요, 안 보여요.", initial:"ㅇㄴㅇ, ㅇ ㅂㅇㅇ.", hint:"non: 아니요", voice:"MALE" },
+      { id:7, fr:"J'ai compris.", ko:"이해했어요.", initial:"ㅇㅎㅎㅇㅇ.", hint:"comprendre: 이해하다", voice:"FEMALE" },
+      { id:8, fr:"Je n'ai pas compris.", ko:"이해 못했어요.", initial:"ㅇㅎ ㅁㅎㅇㅇ.", hint:"ne pas pouvoir: 못하다", voice:"MALE" },
+      { id:9, fr:"Tu peux répéter, s'il te plaît ?", ko:"한 번 더 말해 주세요.", initial:"ㅎㅂ ㄷ ㅁㅎㅈㅅㅇ.", hint:"une fois de plus: 한번 더", voice:"FEMALE" },
+      { id:10, fr:"Je me souviens.", ko:"기억나요.", initial:"ㄱㅇㄴㅇ.", hint:"se souvenir: 기억나다", voice:"MALE" },
+      { id:11, fr:"Je ne me souviens pas.", ko:"기억 안 나요.", initial:"ㄱㅇ ㅇㄴㅇ.", hint:"ne pas se souvenir: 기억 안나다", voice:"FEMALE" },
+      { id:12, fr:"Comment dit-on ça en coréen ?", ko:"한국어로 어떻게 말해요?", initial:"ㅎㄱㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint:"comment: 어떻게", voice:"MALE" },
+      { id:13, fr:"Comment dit-on ça en français ?", ko:"프랑스어로 어떻게 말해요?", initial:"ㅍㄹㅅㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint:"français: 프랑스어", voice:"FEMALE" },
+      { id:14, fr:"On va finir ? (Il y a une dernière étape)", ko:"이거 마무리할까요?", initial:"ㅇㄱ ㅁㅁㄹ ㅎㄲㅇ?", hint:"finir: 마무리하다", voice:"FEMALE" },
+      { id:15, fr:"Oui, très bien, on va finir.", ko:"네, 좋아요. 마무리해요.", initial:"ㄴ, ㅈㅇㅇ. ㅁㅁㄹ ㅎㅇ.", hint:"finir: 마무리하다", voice:"MALE" },
+      { id:16, fr:"C'est vous qui allez finir.", ko:"마무리하세요.", initial:"ㅁㅁㄹ ㅎㅅㅇ.", hint:"finir: 마무리하다", voice:"FEMALE" },
+      { id:17, fr:"Oui, je vais terminer.", ko:"네, 마무리할게요.", initial:"ㄴ, ㅁㅁㄹ ㅎㄲㅇ.", hint:"terminer: 할게요", voice:"MALE" },
+      { id:18, fr:"Passez une bonne semaine.", ko:"좋은 한 주 보내세요.", initial:"ㅈㅇ ㅎ ㅈ ㅂㄴㅅㅇ.", hint:"semaine: 주", voice:"FEMALE" },
+      { id:19, fr:"Passez un bon week-end.", ko:"좋은 주말 보내세요.", initial:"ㅈㅇ ㅈㅁ ㅂㄴㅅㅇ.", hint:"week-end: 주말", voice:"MALE" },
+      { id:20, fr:"On se voit la semaine prochaine.", ko:"다음 주에 만나요.", initial:"ㄷㅇ ㅈㅇ ㅁㄴㅇ.", hint:"prochaine: 다음", voice:"FEMALE" },
+      { id:21, fr:"On se voit lundi.", ko:"월요일에 만나요.", initial:"ㅇㅇㅇㅇ ㅁㄴㅇ.", hint:"lundi: 월요일", voice:"MALE" },
+      { id:22, fr:"Les jours de la semaine sont : lundi, mardi, mercredi, jeudi, vendredi.", ko:"평일은 월요일, 화요일, 수요일, 목요일, 금요일이에요.", initial:"ㅍㅇㅇ ㅇㅇㅇ, ㅎㅇㅇ, ㅅㅇㅇ, ㅁㅇㅇ, ㄱㅇㅇㅇㅇ.", hint:"jours de la semaine: 평일", voice:"FEMALE" },
+      { id:23, fr:"Le week-end, c'est samedi et dimanche.", ko:"주말은 토요일과 일요일이에요.", initial:"ㅈㅁㅇ ㅌㅇㅇㄱ ㅇㅇㅇㅇㅇ.", hint:"week-end: 주말", voice:"MALE" },
+      { id:24, fr:"Lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche (à lire vite)", ko:"월화수목금토일", initial:"ㅇㅎㅅㅁㄱㅌㅇ", hint:"jours: 요일", voice:"FEMALE" },
+      { id:25, fr:"Au revoir (quand l'autre reste)", ko:"안녕히 계세요.", initial:"ㅇㄴㅎ ㄱㅅㅇ.", hint:"rester: 계시다", voice:"MALE" },
+      { id:26, fr:"Au revoir (moins formel, plus sympa)", ko:"잘 있어요.", initial:"ㅈ ㅇㅇㅇ.", hint:"être bien: 잘 있다", voice:"FEMALE" }
+    ];
 
-    <script>
-        // --- 데이터 설정 ---
-        const matchingData = [
-            { id: 1, fr: "Entendre", ko: "들리다" }, { id: 2, fr: "Voir", ko: "보이다" }, { id: 3, fr: "Oui", ko: "네" }, { id: 4, fr: "Non", ko: "아니요" }, { id: 5, fr: "Comprendre", ko: "이해하다" }, { id: 6, fr: "Se souvenir", ko: "기억나다" }, { id: 7, fr: "Semaine", ko: "주" }, { id: 8, fr: "Prochain(e)", ko: "다음" }, { id: 9, fr: "Comment", ko: "어떻게" }, { id: 10, fr: "Coréen", ko: "한국어" }, { id: 11, fr: "Français", ko: "프랑스어" }, { id: 12, fr: "Bon travail", ko: "수고했어요" }, { id: 13, fr: "Au revoir (l'autre reste)", ko: "안녕히 계세요" }, { id: 14, fr: "Au revoir (l'autre part)", ko: "안녕히 가세요" },
-            { id: 15, fr: "Finir", ko: "마무리하다" }, { id: 16, fr: "Week-end", ko: "주말" }, { id: 17, fr: "Lundi", ko: "월요일" }, { id: 18, fr: "Samedi", ko: "토요일" }, { id: 19, fr: "Dimanche", ko: "일요일" },
-            { id: 20, fr: "Au revoir (restez bien)", ko: "안녕히 계세요" }, { id: 21, fr: "Au revoir (moins formel)", ko: "잘 있어요" }
-        ];
-        const dictationData = [
-            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", initial: "ㅈ ㄷㄹㅇ?", hint: "entendre: 들리다", voice: "FEMALE" }, { id: 2, fr: "Tu me vois bien ?", ko: "잘 보여요?", initial: "ㅈ ㅂㅇㅇ?", hint: "voir: 보이다", voice: "MALE" }, { id: 3, fr: "Oui, je t’entends bien.", ko: "네, 잘 들려요.", initial: "ㄴ, ㅈ ㄷㄹㅇ.", hint: "oui: 네", voice: "FEMALE" }, { id: 4, fr: "Oui, je te vois bien.", ko: "네, 잘 보여요.", initial: "ㄴ, ㅈ ㅂㅇㅇ.", hint: "oui: 네", voice: "Puck" }, { id: 5, fr: "Non, je ne t’entends pas.", ko: "아니요, 안 들려요.", initial: "ㅇㄴㅇ, ㅇ ㄷㄹㅇ.", hint: "non: 아니요", voice: "FEMALE" }, { id: 6, fr: "Non, je ne te vois pas.", ko: "아니요, 안 보여요.", initial: "ㅇㄴㅇ, ㅇ ㅂㅇㅇ.", hint: "non: 아니요", voice: "MALE" }, { id: 7, fr: "J'ai compris.", ko: "이해했어요.", initial: "ㅇㅎㅎㅇㅇ.", hint: "comprendre: 이해하다", voice: "FEMALE" }, { id: 8, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", initial: "ㅇㅎ ㅁㅎㅇㅇ.", hint: "ne pas pouvoir: 못하다", voice: "MALE" }, { id: 9, fr: "Tu peux répéter, s'il te plaît ?", ko: "한번 더 말해주세요.", initial: "ㅎㅂ ㄷ ㅁㅎㅈㅅㅇ.", hint: "une fois de plus: 한번 더", voice: "FEMALE" }, { id: 10, fr: "Je me souviens.", ko: "기억나요.", initial: "ㄱㅇㄴㅇ.", hint: "se souvenir: 기억나다", voice: "MALE" }, { id: 11, fr: "Je ne me souviens pas.", ko: "기억 안나요.", initial: "ㄱㅇ ㅇㄴㅇ.", hint: "ne pas se souvenir: 기억 안나다", voice: "FEMALE" }, { id: 12, fr: "Comment dit-on ça en coréen ?", ko: "한국어로 어떻게 말해요?", initial: "ㅎㄱㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "comment: 어떻게", voice: "MALE" }, { id: 13, fr: "Comment dit-on ça en français ?", ko: "프랑스어로 어떻게 말해요?", initial: "ㅍㄹㅅㅇㄹ ㅇㄸㅎ ㅁㅎㅇ?", hint: "français: 프랑스어", voice: "FEMALE" }, 
-            { id: 14, fr: "On va finir ? (Il y a une dernière étape)", ko: "이거 마무리 할까요?", initial: "ㅇㄱ ㅁㅁㄹ ㅎㄲㅇ?", hint: "finir: 마무리하다", voice: "FEMALE" }, 
-            { id: 15, fr: "Oui, très bien, on va finir.", ko: "네, 좋아요. 마무리 해요.", initial: "ㄴ, ㅈㅇㅇ. ㅁㅁㄹ ㅎㅇ.", hint: "finir: 마무리하다", voice: "MALE" }, 
-            { id: 16, fr: "C'est vous qui allez finir.", ko: "마무리 하세요.", initial: "ㅁㅁㄹ ㅎㅅㅇ.", hint: "finir: 마무리하다", voice: "FEMALE" }, 
-            { id: 17, fr: "Oui, je vais terminer.", ko: "네, 마무리 할게요.", initial: "ㄴ, ㅁㅁㄹ ㅎㄲㅇ.", hint: "terminer: 할게요", voice: "MALE" }, 
-            { id: 18, fr: "Passez une bonne semaine.", ko: "좋은 한 주 보내세요.", initial: "ㅈㅇ ㅎ ㅈ ㅂㄴㅅㅇ.", hint: "semaine: 주", voice: "FEMALE" }, 
-            { id: 19, fr: "Passez un bon week-end.", ko: "좋은 주말 보내세요.", initial: "ㅈㅇ ㅈㅁ ㅂㄴㅅㅇ.", hint: "week-end: 주말", voice: "MALE" }, 
-            { id: 20, fr: "On se voit la semaine prochaine.", ko: "다음 주에 만나요.", initial: "ㄷㅇ ㅈㅇ ㅁㄴㅇ.", hint: "prochaine: 다음", voice: "FEMALE" }, 
-            { id: 21, fr: "On se voit lundi.", ko: "월요일에 만나요.", initial: "ㅇㅇㅇㅇ ㅁㄴㅇ.", hint: "lundi: 월요일", voice: "MALE" },
-            { id: 22, fr: "Les jours de la semaine sont : lundi, mardi, mercredi, jeudi, vendredi.", ko: "평일은 월요일, 화요일, 수요일, 목요일, 금요일이에요.", initial: "ㅍㅇㅇ ㅇㅇㅇ, ㅎㅇㅇ, ㅅㅇㅇ, ㅁㅇㅇ, ㄱㅇㅇㅇㅇ.", hint: "jours de la semaine: 평일", voice: "FEMALE" },
-            { id: 23, fr: "Le week-end, c'est samedi et dimanche.", ko: "주말은 토요일과 일요일이에요.", initial: "ㅈㅁㅇ ㅌㅇㅇㄱ ㅇㅇㅇㅇㅇ.", hint: "week-end: 주말", voice: "MALE" },
-            { id: 24, fr: "Lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche (à lire vite)", ko: "월화수목금토일", initial: "ㅇㅎㅅㅁㄱㅌㅇ", hint: "jours: 요일", voice: "FEMALE" },
-            { id: 25, fr: "Au revoir (quand l'autre reste)", ko: "안녕히 계세요.", initial: "ㅇㄴㅎ ㄱㅅㅇ.", hint: "rester: 계시다", voice: "MALE" },
-            { id: 26, fr: "Au revoir (moins formel, plus sympa)", ko: "잘 있어요.", initial: "ㅈ ㅇㅇㅇ.", hint: "être bien: 잘 있다", voice: "FEMALE" }
-        ];
+    // --- 상태 변수 ---
+    let studentName=''; let currentSection='welcome-screen';
+    let selectedFrench=null, selectedKorean=null, correctMatches=0;
+    let resultsAlreadySent=false;
+    let trackingData={studentName:'',startTime:null,endTime:null,totalTimeSeconds:0,dictationDetails:{}};
+    const audioCache={}; let mediaRecorder; let audioChunks=[]; let recordingStartTime;
 
-        // --- 상태 관리 변수 ---
-        let studentName = '';
-        let currentSection = 'welcome-screen';
-        let selectedFrench = null;
-        let selectedKorean = null;
-        let correctMatches = 0;
-        let resultsAlreadySent = false;
-        let trackingData = {
-            studentName: '',
-            startTime: null, 
-            endTime: null, 
-            totalTimeSeconds: 0, 
-            dictationDetails: {}
-        };
-        const audioCache = {};
-        let mediaRecorder;
-        let audioChunks = [];
-        let recordingStartTime;
+    // DOM
+    const nameForm=document.getElementById('name-form');
+    const studentNameInput=document.getElementById('student-name');
 
-        // --- DOM 요소 ---
-        const nameForm = document.getElementById('name-form');
-        const studentNameInput = document.getElementById('student-name');
-
-        // --- 초기화 및 이벤트 리스너 ---
-        document.addEventListener('DOMContentLoaded', () => {
-            nameForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                studentName = studentNameInput.value.trim();
-                if (studentName) {
-                    trackingData.studentName = studentName;
-                    trackingData.startTime = new Date();
-                    initPreparationStep();
-                    initMatchingGame();
-                    switchSection('preparation-step');
-                }
-            });
-        });
-
-        // --- 섹션 전환 함수 ---
-        function switchSection(sectionId) {
-            document.getElementById(currentSection).classList.remove('active-section');
-            document.getElementById(sectionId).classList.add('active-section');
-            currentSection = sectionId;
+    document.addEventListener('DOMContentLoaded',()=>{
+      nameForm.addEventListener('submit',(e)=>{
+        e.preventDefault();
+        studentName=studentNameInput.value.trim();
+        if(studentName){
+          trackingData.studentName=studentName;
+          trackingData.startTime=new Date();
+          initPreparationStep(); initMatchingGame(); switchSection('preparation-step');
         }
-        
-        // --- Étape 0: 준비 단계 로직 ---
-        function initPreparationStep() {
-            const listContainer = document.getElementById('preparation-list');
-            listContainer.innerHTML = '';
-            let contentHTML = '';
-            dictationData.forEach((item, index) => {
-                contentHTML += `
-                    <div class="p-3 border-b">
-                        <p class="font-semibold text-slate-800">${index + 1}. ${item.fr}</p>
-                        <p class="text-lg text-blue-700">${item.ko}</p>
-                        <p class="text-sm text-slate-500 mt-1">Vocabulaire: ${item.hint}</p>
-                    </div>`;
-            });
-            listContainer.innerHTML = contentHTML;
+      });
+    });
+
+    function switchSection(id){
+      document.getElementById(currentSection).classList.remove('active-section');
+      document.getElementById(id).classList.add('active-section');
+      currentSection=id;
+    }
+
+    // 준비 단계
+    function initPreparationStep(){
+      const list=document.getElementById('preparation-list');
+      list.innerHTML='';
+      let html='';
+      dictationData.forEach((item,idx)=>{
+        html+=`<div class="p-3 border-b">
+          <p class="font-semibold text-slate-800">${idx+1}. ${item.fr}</p>
+          <p class="text-lg text-blue-700">${item.ko}</p>
+          <p class="text-sm text-slate-500 mt-1">Vocabulaire: ${item.hint}</p>
+        </div>`;
+      });
+      list.innerHTML=html;
+    }
+    function printPreparationSheet(){
+      const area=document.getElementById('printable-area');
+      let html=`<h1 style="font-family:sans-serif;color:#0033a0;text-align:center;">Fiche de Préparation pour ${studentName}</h1><div style="font-family:sans-serif;margin-top:20px;">`;
+      dictationData.forEach((item,idx)=>{
+        html+=`<div style="margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+          <p style="font-size:16px;"><strong>${idx+1}. ${item.fr}</strong></p>
+          <p style="font-size:18px;color:#0033a0;">${item.ko}</p>
+          <p style="font-size:14px;color:#555;"><em>Vocabulaire:</em> ${item.hint}</p>
+        </div>`;
+      });
+      html+=`</div>`; area.innerHTML=html; window.print();
+    }
+
+    // 짝맞추기
+    function initMatchingGame(){
+      const fr=document.getElementById('french-list');
+      const ko=document.getElementById('korean-list');
+      fr.innerHTML=''; ko.innerHTML='';
+      correctMatches=0; selectedFrench=null; selectedKorean=null;
+      const sf=[...matchingData].sort(()=>Math.random()-.5);
+      const sk=[...matchingData].sort(()=>Math.random()-.5);
+      sf.forEach(item=>{const c=createCard(item.fr,'fr',item.id); c.addEventListener('click',()=>selectCard(c,'fr',item.id)); fr.appendChild(c);});
+      sk.forEach(item=>{const c=createCard(item.ko,'ko',item.id); c.addEventListener('click',()=>selectCard(c,'ko',item.id)); ko.appendChild(c);});
+    }
+    function createCard(text,type,id){
+      const d=document.createElement('div');
+      d.className='card p-4 border-2 theme-border-primary rounded-lg bg-white text-lg';
+      d.textContent=text; d.dataset.type=type; d.dataset.id=id; return d;
+    }
+    function selectCard(card,type,id){
+      if(card.classList.contains('correct-match')) return;
+      if(type==='fr'){ if(selectedFrench) selectedFrench.classList.remove('selected'); selectedFrench=card; card.classList.add('selected'); }
+      else { if(selectedKorean) selectedKorean.classList.remove('selected'); selectedKorean=card; card.classList.add('selected'); }
+      if(selectedFrench&&selectedKorean) checkMatch();
+    }
+    function checkMatch(){
+      const ok=selectedFrench.dataset.id===selectedKorean.dataset.id;
+      if(ok){
+        selectedFrench.classList.add('correct-match'); selectedKorean.classList.add('correct-match');
+        selectedFrench.classList.remove('selected'); selectedKorean.classList.remove('selected'); correctMatches++;
+      }else{
+        selectedFrench.classList.add('incorrect-match'); selectedKorean.classList.add('incorrect-match');
+        setTimeout(()=>{selectedFrench.classList.remove('incorrect-match','selected'); selectedKorean.classList.remove('incorrect-match','selected');},500);
+      }
+      selectedFrench=null; selectedKorean=null;
+      if(correctMatches===matchingData.length){ setTimeout(()=>alert("Bravo ! Vous avez trouvé tous les mots ! On passe à la dictée."),300); }
+    }
+
+    // 받아쓰기
+    function startDictation(){ initDictationGame(); switchSection('dictation-game'); }
+    function updateFinishButtonState(){
+      const btn=document.getElementById('finish-button');
+      const inputs=document.querySelectorAll('#dictation-container input[type="text"]');
+      const any=Array.from(inputs).some(i=>i.value.trim()!=='');
+      btn.disabled=!any; btn.classList.toggle('opacity-50',!any); btn.classList.toggle('cursor-not-allowed',!any);
+    }
+    function initDictationGame(){
+      const c=document.getElementById('dictation-container'); c.innerHTML='';
+      dictationData.forEach((item,idx)=>{
+        if(!trackingData.dictationDetails[item.id]){
+          trackingData.dictationDetails[item.id]={question:item.ko,plays:0,hint1Clicks:0,hint2Clicks:0,isCorrect:null,userAnswer:'',recording:{base64:null,duration:0,sentence:item.ko}};
         }
+        const div=document.createElement('div');
+        div.className='p-5 border-2 theme-border-primary rounded-lg bg-slate-50';
+        div.innerHTML=`
+          <p class="text-lg font-semibold mb-3 text-slate-700">${idx+1}. ${item.fr}</p>
+          <div class="flex items-center gap-4 flex-wrap">
+            <button onclick="playAudio('${item.ko}',${item.id},'${item.voice}')" class="theme-bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">🔊 Écouter</button>
+            <input id="answer-${item.id}" type="text" class="flex-grow p-2 border rounded-md focus:ring-2 focus:ring-yellow-400 focus:outline-none" placeholder="Écrivez en coréen ici...">
+          </div>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button onclick="showHint('hint-initial-${item.id}',${item.id},1)" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Aidez-moi 🙏 (초성)</button>
+            <button onclick="showHint('hint-word-${item.id}',${item.id},2)" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Au secours 🦺 (핵심 단어)</button>
+            <button id="record-btn-${item.id}" onclick="toggleRecording(${item.id})" class="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">🎤 Enregistrer</button>
+            <p id="record-status-${item.id}" class="text-sm text-slate-600 self-center"></p>
+          </div>
+          <p id="hint-initial-${item.id}" class="hidden mt-2 text-blue-600">${item.initial}</p>
+          <p id="hint-word-${item.id}" class="hidden mt-2 text-blue-600">${item.hint}</p>`;
+        c.appendChild(div);
+      });
+      c.querySelectorAll('input[type="text"]').forEach(i=>i.addEventListener('input',updateFinishButtonState));
+      updateFinishButtonState();
+    }
 
-        function printPreparationSheet() {
-            const printableArea = document.getElementById('printable-area');
-            let html = `<h1 style="font-family: sans-serif; color: #0033a0; text-align: center;">Fiche de Préparation pour ${studentName}</h1>`;
-            html += `<div style="font-family: sans-serif; margin-top: 20px;">`;
-            dictationData.forEach((item, index) => {
-                html += `
-                    <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                        <p style="font-size: 16px;"><strong>${index + 1}. ${item.fr}</strong></p>
-                        <p style="font-size: 18px; color: #0033a0;">${item.ko}</p>
-                        <p style="font-size: 14px; color: #555;"><em>Vocabulaire:</em> ${item.hint}</p>
-                    </div>`;
-            });
-            html += `</div>`;
-            printableArea.innerHTML = html;
-            window.print();
+    // 오디오 유틸
+    function base64ToArrayBuffer(base64){const bs=window.atob(base64);const len=bs.length;const bytes=new Uint8Array(len);for(let i=0;i<len;i++){bytes[i]=bs.charCodeAt(i)}return bytes.buffer}
+    function pcmToWav(pcmData,sampleRate){
+      const pcm16=new Int16Array(pcmData); const header=new ArrayBuffer(44); const v=new DataView(header);
+      function w(v,o,s){for(let i=0;i<s.length;i++){v.setUint8(o+i,s.charCodeAt(i))}}
+      w(v,0,'RIFF'); v.setUint32(4,36+pcm16.byteLength,true); w(v,8,'WAVE'); w(v,12,'fmt ');
+      v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+      v.setUint32(24,sampleRate,true); v.setUint32(28,sampleRate*2,true);
+      v.setUint16(32,2,true); v.setUint16(34,16,true); w(v,36,'data'); v.setUint32(40,pcm16.byteLength,true);
+      return new Blob([v,pcm16],{type:'audio/wav'});
+    }
+
+    async function playAudio(text,id,voice){
+      trackingData.dictationDetails[id].plays++;
+      const button=event.target; button.disabled=true; button.textContent='🔊 Chargement...';
+      if(audioCache[text]){
+        const audio=new Audio(audioCache[text]); audio.play();
+        audio.onended=()=>{button.disabled=false; button.textContent='🔊 Écouter'};
+        return;
+      }
+      try{
+        const res=await fetch('/.netlify/functions/generate-audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice})});
+        if(!res.ok){const e=await res.json().catch(()=>({error:res.statusText})); throw new Error(`Erreur du serveur (${res.status}): ${e.error||'Erreur inconnue'}`);}
+        const result=await res.json(); const audioData=result?.audioData; const mimeType=result?.mimeType;
+        if(audioData && mimeType && mimeType.startsWith('audio/')){
+          const m=mimeType.match(/rate=(\d+)/); const sr=m?parseInt(m[1],10):24000;
+          const pcm=base64ToArrayBuffer(audioData); const wavBlob=pcmToWav(pcm,sr);
+          const url=URL.createObjectURL(wavBlob); audioCache[text]=url;
+          const audio=new Audio(url); audio.play();
+          audio.onended=()=>{URL.revokeObjectURL(url); button.disabled=false; button.textContent='🔊 Écouter'};
+        }else{
+          throw new Error("Les données audio (audioData) ou le type MIME (mimeType) n'ont pas été trouvés dans la réponse.");
         }
+      }catch(err){
+        console.error('Erreur de lecture audio:',err);
+        logError('playAudio',{id,text,voice,error:String(err)});
+        alert("Désolé, impossible de jouer l'audio. "+err.message);
+      }finally{
+        button.disabled=false; button.textContent='🔊 Écouter';
+      }
+    }
 
-        // --- 짝 맞추기 게임 로직 ---
-        function initMatchingGame() {
-            const frenchList = document.getElementById('french-list');
-            const koreanList = document.getElementById('korean-list');
-            frenchList.innerHTML = '';
-            koreanList.innerHTML = '';
-            correctMatches = 0;
-            selectedFrench = null;
-            selectedKorean = null;
-            const shuffledFrench = [...matchingData].sort(() => Math.random() - 0.5);
-            const shuffledKorean = [...matchingData].sort(() => Math.random() - 0.5);
-            shuffledFrench.forEach(item => {
-                const frCard = createCard(item.fr, 'fr', item.id);
-                frCard.addEventListener('click', () => selectCard(frCard, 'fr', item.id));
-                frenchList.appendChild(frCard);
-            });
-            shuffledKorean.forEach(item => {
-                const koCard = createCard(item.ko, 'ko', item.id);
-                koCard.addEventListener('click', () => selectCard(koCard, 'ko', item.id));
-                koreanList.appendChild(koCard);
-            });
+    // 녹음
+    async function toggleRecording(id){
+      const btn=document.getElementById(`record-btn-${id}`);
+      const status=document.getElementById(`record-status-${id}`);
+      if(mediaRecorder && mediaRecorder.state==='recording'){
+        mediaRecorder.stop(); btn.textContent='🎤 Enregistrer'; status.textContent='Traitement...';
+      }else{
+        try{
+          const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+          audioChunks=[]; mediaRecorder=new MediaRecorder(stream);
+          mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
+          mediaRecorder.onstop=()=>{
+            const blob=new Blob(audioChunks,{type:'audio/webm'});
+            const reader=new FileReader(); reader.readAsDataURL(blob);
+            reader.onloadend=()=>{
+              const b64=reader.result.split(',')[1];
+              const dur=Math.round((new Date()-recordingStartTime)/1000);
+              const fname=`rec_q${id}_${Date.now()}.webm`;
+              const item=dictationData.find(x=>x.id===id);
+              trackingData.dictationDetails[id].recording={base64:b64,duration:dur,mimeType:'audio/webm',filename:fname,sentenceKo:item.ko,sentenceFr:item.fr,number:id};
+              status.textContent=`Enregistré (${dur}s) 👍`;
+            };
+            stream.getTracks().forEach(t=>t.stop());
+          };
+          recordingStartTime=new Date(); mediaRecorder.start();
+          btn.textContent='■ Arrêter'; status.textContent='Enregistrement...';
+        }catch(err){
+          console.error("Erreur d'enregistrement:",err);
+          logError('recording',{id,error:String(err)});
+          status.textContent='Accès micro refusé.'; alert("L'accès au microphone est nécessaire pour enregistrer.");
         }
-        function createCard(text, type, id) {
-            const card = document.createElement('div');
-            card.className = 'card p-4 border-2 theme-border-primary rounded-lg bg-white text-lg';
-            card.textContent = text;
-            card.dataset.type = type;
-            card.dataset.id = id;
-            return card;
+      }
+    }
+
+    function showHint(elId,qid,type){
+      const el=document.getElementById(elId);
+      const hidden=el.classList.contains('hidden');
+      if(hidden){ el.classList.remove('hidden'); if(type===1) trackingData.dictationDetails[qid].hint1Clicks++; else if(type===2) trackingData.dictationDetails[qid].hint2Clicks++; }
+      else{ el.classList.add('hidden'); }
+    }
+
+    // 결과 + 80% 유사도 채점
+    function showResults(){
+      trackingData.endTime=new Date();
+      trackingData.totalTimeSeconds=Math.round((trackingData.endTime-trackingData.startTime)/1000);
+      let correct=0; const results=[];
+      dictationData.forEach(item=>{
+        const user=(document.getElementById(`answer-${item.id}`)?.value||'').trim();
+        const detail=trackingData.dictationDetails[item.id]; detail.userAnswer=user;
+        const a=normalizeKo(user), b=normalizeKo(item.ko);
+        const ratio=similarity(a,b);
+        detail.isCorrect = (a===b) || (ratio>=0.8);
+        if(detail.isCorrect) correct++;
+        results.push({id:item.id,fr:item.fr,ko:item.ko,userAnswer:user,isCorrect:detail.isCorrect,plays:detail.plays||0,hint1:detail.hint1Clicks||0,hint2:detail.hint2Clicks||0});
+      });
+      const total=dictationData.length; const pct=Math.round((correct/total)*100);
+
+      const box=document.getElementById('result-message');
+      let top=`<div class="p-4 rounded-lg border"><div class="text-3xl font-extrabold mb-2">${pct}%</div>`;
+      if(pct===100){ top+=`<div class="text-green-700 text-2xl font-bold">완벽해요!! 👑🎺👍</div>`; confetti({particleCount:220,spread:90,origin:{y:0.6}}); playFanfare(); }
+      else if(pct>=80){ top+=`<div class="text-blue-700 text-2xl font-bold">잘했어요!! 🎺👍</div>`; confetti({particleCount:120,spread:70,origin:{y:0.6}}); }
+      else if(pct>=60){ top+=`<div class="text-yellow-700 text-xl font-bold">이해할 수 있어요. 꽤 잘했어요 (이해 못할 수도 있어요ㅋㅋ) 👍</div>`; }
+      else{ top+=`<div class="text-red-700 text-xl font-bold">땡!! 틀렸어요!!</div>`; }
+      top+=`<div class="text-slate-600 mt-1">점수: ${correct}/${total}</div></div>`; box.innerHTML=top;
+
+      const wrong=results.filter(r=>!r.isCorrect);
+      let detail=`<h3 class="text-xl font-bold mb-3 theme-text-primary">문장별 결과</h3><ul class="space-y-3">`;
+      results.forEach(r=>{
+        if(r.isCorrect){
+          detail+=`<li class="p-3 rounded-lg border border-emerald-200 bg-emerald-50"><div class="font-semibold text-emerald-700">✔️ ${r.id}. ${r.fr}</div><div class="mt-1">내 답: ${r.userAnswer||'<i>(빈칸)</i>'}</div></li>`;
+        }else{
+          detail+=`<li class="p-3 rounded-lg border border-red-200 wrong-block"><div class="font-semibold text-red-700">❌ ${r.id}. ${r.fr}</div><div class="mt-1"><span class="line-through">${r.userAnswer||'<i>(빈칸)</i>'}</span></div><div class="mt-1"><b>정답:</b> ${r.ko}</div><div class="mt-1 text-sm text-slate-600">듣기: ${r.plays}회 · Aidez-moi: ${r.hint1}회 · Au secours: ${r.hint2}회</div></li>`;
         }
-        function selectCard(card, type, id) {
-            if (card.classList.contains('correct-match')) return;
-            if (type === 'fr') {
-                if (selectedFrench) selectedFrench.classList.remove('selected');
-                selectedFrench = card;
-                card.classList.add('selected');
-            } else {
-                if (selectedKorean) selectedKorean.classList.remove('selected');
-                selectedKorean = card;
-                card.classList.add('selected');
-            }
-            if (selectedFrench && selectedKorean) checkMatch();
-        }
-        function checkMatch() {
-            const isMatch = selectedFrench.dataset.id === selectedKorean.dataset.id;
-            if (isMatch) {
-                selectedFrench.classList.add('correct-match');
-                selectedKorean.classList.add('correct-match');
-                selectedFrench.classList.remove('selected');
-                selectedKorean.classList.remove('selected');
-                correctMatches++;
-            } else {
-                selectedFrench.classList.add('incorrect-match');
-                selectedKorean.classList.add('incorrect-match');
-                setTimeout(() => {
-                    selectedFrench.classList.remove('incorrect-match', 'selected');
-                    selectedKorean.classList.remove('incorrect-match', 'selected');
-                }, 500);
-            }
-            selectedFrench = null;
-            selectedKorean = null;
-            if (correctMatches === matchingData.length) {
-                setTimeout(() => alert('Bravo ! Vous avez trouvé tous les mots ! On passe à la dictée.'), 300);
-            }
-        }
-        
-        // --- 받아쓰기 게임 로직 ---
-        function startDictation() {
-            initDictationGame();
-            switchSection('dictation-game');
-        }
-        
-        function updateFinishButtonState() {
-            const finishButton = document.getElementById('finish-button');
-            const inputs = document.querySelectorAll('#dictation-container input[type="text"]');
-            const isAnyInputFilled = Array.from(inputs).some(input => input.value.trim() !== '');
+      });
+      detail+=`</ul>`;
+      if(pct<100 && wrong.length){
+        detail = `<div class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50"><div class="font-bold text-red-700">❗오답(${wrong.length}개): ${wrong.map(w=>w.id).join(', ')}</div><div class="text-sm text-slate-700 mt-1">아래 리스트에서 <b>정답</b>을 확인하세요.</div></div>` + detail;
+      }
+      document.getElementById('detailed-results').innerHTML=detail;
+      switchSection('results-screen');
 
-            if (isAnyInputFilled) {
-                finishButton.disabled = false;
-                finishButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                finishButton.disabled = true;
-                finishButton.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        }
+      if(!resultsAlreadySent){ sendResultsByEmail(); resultsAlreadySent=true; }
+    }
 
-        function initDictationGame() {
-            const container = document.getElementById('dictation-container');
-            container.innerHTML = '';
-            dictationData.forEach((item, index) => {
-                if (!trackingData.dictationDetails[item.id]) {
-                    trackingData.dictationDetails[item.id] = { 
-                        question: item.ko, 
-                        plays: 0, 
-                        hint1Clicks: 0,
-                        hint2Clicks: 0,
-                        isCorrect: null,
-                        userAnswer: '',
-                        recording: { base64: null, duration: 0, sentence: item.ko }
-                    };
-                }
-                const questionDiv = document.createElement('div');
-                questionDiv.className = 'p-5 border-2 theme-border-primary rounded-lg bg-slate-50';
-                questionDiv.innerHTML = `
-                    <p class="text-lg font-semibold mb-3 text-slate-700">${index + 1}. ${item.fr}</p>
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <button onclick="playAudio('${item.ko}', ${item.id}, '${item.voice}')" class="theme-bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">🔊 Écouter</button>
-                        <input type="text" id="answer-${item.id}" class="flex-grow p-2 border rounded-md focus:ring-2 focus:ring-yellow-400 focus:outline-none" placeholder="Écrivez en coréen ici...">
-                    </div>
-                    <div class="mt-3 flex gap-2 flex-wrap">
-                        <button onclick="showHint('hint-initial-${item.id}', ${item.id}, 1)" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 1 (초성)</button>
-                        <button onclick="showHint('hint-word-${item.id}', ${item.id}, 2)" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">💡 Indice 2 (Mot-clé)</button>
-                        <button id="record-btn-${item.id}" onclick="toggleRecording(${item.id})" class="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">🎤 Enregistrer</button>
-                        <p id="record-status-${item.id}" class="text-sm text-slate-600 self-center"></p>
-                    </div>
-                    <p id="hint-initial-${item.id}" class="hidden mt-2 text-blue-600">${item.initial}</p>
-                    <p id="hint-word-${item.id}" class="hidden mt-2 text-blue-600">${item.hint}</p>`;
-                
-                container.appendChild(questionDiv);
-            });
-            
-            // Add event listeners to all new inputs
-            const inputs = container.querySelectorAll('input[type="text"]');
-            inputs.forEach(input => {
-                input.addEventListener('input', updateFinishButtonState);
-            });
-            // Set initial state of the button
-            updateFinishButtonState();
-        }
+    // 이메일/인쇄/에러 로깅
+    async function sendResultsByEmail(){
+      const btn=document.getElementById('send-email-btn');
+      btn.disabled=true; btn.textContent='Envoi en cours...';
+      Object.values(trackingData.dictationDetails).forEach(d=>{if(d && typeof d.userAnswer!=='string') d.userAnswer='';});
+      const questions=dictationData.map(item=>{
+        const d=trackingData.dictationDetails[item.id]||{};
+        return { number:item.id, fr:item.fr, ko:item.ko, userAnswer:d.userAnswer||'', isCorrect:!!d.isCorrect,
+          listenCount:d.plays||0, hint1Count:d.hint1Clicks||0, hint2Count:d.hint2Clicks||0,
+          recording: d.recording && d.recording.base64 ? { filename:d.recording.filename||`rec_q${item.id}.webm`, mimeType:d.recording.mimeType||'audio/webm', base64:d.recording.base64, duration:d.recording.duration||0 } : null };
+      });
+      const payload={ studentName:trackingData.studentName||studentName, startTime:trackingData.startTime, endTime:new Date(), totalTimeSeconds:Math.round((new Date()-trackingData.startTime)/1000), questions };
+      try{
+        const res=await fetch('/.netlify/functions/send-results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(!res.ok) throw new Error(await res.text());
+        btn.textContent='✅ Envoyé !';
+      }catch(e){
+        console.error(e); logError('send-results',{error:String(e),payload});
+        alert('메일 전송 오류: '+e.message); btn.disabled=false; btn.textContent='📧 Envoyer les résultats par e-mail';
+      }
+    }
 
-        // --- 오디오 재생 관련 함수들 ---
-        function base64ToArrayBuffer(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
+    function printQuiz(){
+      const area=document.getElementById('printable-area');
+      let html=`<h1 style="font-family:sans-serif;color:#0033a0;text-align:center;">Exercices de Coréen pour ${studentName}</h1>`;
+      html+=`<h2 style="font-family:sans-serif;color:#0033a0;margin-top:30px;">Fiche de Révision - Phrases Complètes</h2><div style="font-family:sans-serif;margin-top:10px;">`;
+      dictationData.forEach((item,idx)=>{ html+=`<div style="margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;"><p style="font-size:16px;"><strong>${idx+1}. ${item.fr}</strong></p><p style="font-size:18px;color:#0033a0;">${item.ko}</p></div>`; });
+      html+=`</div><h2 style="font-family:sans-serif;color:#0033a0;margin-top:30px;page-break-before:always;">Vocabulaire</h2>`;
+      html+=`<table style="width:100%;border-collapse:collapse;font-family:sans-serif;"><thead><tr style="background-color:#f0f4f8;"><th style="padding:8px;border:1px solid #ddd;text-align:left;">Français</th><th style="padding:8px;border:1px solid #ddd;text-align:left;">Coréen</th></tr></thead><tbody>`;
+      matchingData.forEach(it=>{ html+=`<tr><td style="padding:8px;border:1px solid #ddd;">${it.fr}</td><td style="padding:8px;border:1px solid #ddd;">${it.ko}</td></tr>`; });
+      html+=`</tbody></table>`;
+      if(Object.keys(trackingData.dictationDetails).some(k=>(trackingData.dictationDetails[k].userAnswer||'')!=='')){
+        html+=`<h2 style="font-family:sans-serif;color:#0033a0;margin-top:30px;page-break-before:always;">Résultats de la Dictée</h2><div style="font-family:sans-serif;margin-top:10px;">`;
+        dictationData.forEach((item,idx)=>{ const d=trackingData.dictationDetails[item.id];
+          html+=`<div style="margin-bottom:20px;padding:10px;border:1px solid #ccc;border-radius:8px;background-color:${d.isCorrect?'#f0fff0':'#fff0f0'};">
+            <p><strong>Question ${idx+1}:</strong> ${item.fr}</p>
+            <p><strong>Réponse correcte:</strong> ${item.ko}</p>
+            <p style="color:${d.isCorrect?'green':'red'};"><strong>Votre réponse:</strong> ${d.userAnswer||"<i>(Pas de réponse)</i>"}</p>
+          </div>`;
+        }); html+=`</div>`;
+      }
+      area.innerHTML=html; window.print();
+    }
 
-        function pcmToWav(pcmData, sampleRate) {
-            const pcm16 = new Int16Array(pcmData);
-            const header = new ArrayBuffer(44);
-            const view = new DataView(header);
-            function writeString(view, offset, string) {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
-            }
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + pcm16.byteLength, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, 1, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * 2, true);
-            view.setUint16(32, 2, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, pcm16.byteLength, true);
-            return new Blob([view, pcm16], { type: 'audio/wav' });
-        }
+    // ===== 유사도/정규화/로깅 유틸 =====
+    function normalizeKo(s){ return (s||'').toLowerCase().replace(/[\s.,!?~\-]/g,'').replace(/\u00A0/g,''); }
+    function similarity(a,b){
+      const la=a.length, lb=b.length; if(!la && !lb) return 1; if(!la||!lb) return 0;
+      const dp=Array.from({length:la+1},()=>Array(lb+1).fill(0));
+      for(let i=0;i<=la;i++) dp[i][0]=i; for(let j=0;j<=lb;j++) dp[0][j]=j;
+      for(let i=1;i<=la;i++){ for(let j=1;j<=lb;j++){ const cost=a[i-1]===b[j-1]?0:1; dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);} }
+      const dist=dp[la][lb]; return 1 - dist/Math.max(la,lb);
+    }
+    async function logError(context,payload){
+      try{ await fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context,payload})}); }
+      catch(_e){}
+    }
 
-        async function playAudio(text, id, voice) {
-            trackingData.dictationDetails[id].plays++;
-            const button = event.target;
-            button.disabled = true;
-            button.textContent = '🔊 Chargement...';
-
-            if (audioCache[text]) {
-                const audio = new Audio(audioCache[text]);
-                audio.play();
-                audio.onended = () => {
-                    button.disabled = false;
-                    button.textContent = '🔊 Écouter';
-                };
-                return;
-            }
-
-            try {
-                const response = await fetch('/.netlify/functions/generate-audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text, voice: voice })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ error: response.statusText }));
-                    throw new Error(`Erreur du serveur (${response.status}): ${errorData.error || 'Erreur inconnue'}`);
-                }
-                
-                const result = await response.json();
-                const audioData = result?.audioData;
-                const mimeType = result?.mimeType;
-
-                if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
-
-                    const pcmData = base64ToArrayBuffer(audioData);
-                    const wavBlob = pcmToWav(pcmData, sampleRate);
-                    const audioUrl = URL.createObjectURL(wavBlob);
-                    
-                    audioCache[text] = audioUrl;
-
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                } else {
-                    console.error("Réponse invalide du serveur:", result);
-                    throw new Error("Les données audio (audioData) ou le type MIME (mimeType) n'ont pas été trouvés dans la réponse.");
-                }
-            } catch (error) {
-                console.error("Erreur de lecture audio:", error);
-                alert("Désolé, impossible de jouer l'audio. " + error.message);
-            } finally {
-                button.disabled = false;
-                button.textContent = '🔊 Écouter';
-            }
-        }
-
-        // --- 녹음 기능 ---
-        async function toggleRecording(id) {
-            const recordBtn = document.getElementById(`record-btn-${id}`);
-            const statusEl = document.getElementById(`record-status-${id}`);
-
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-                mediaRecorder.stop();
-                recordBtn.textContent = '🎤 Enregistrer';
-                statusEl.textContent = 'Traitement...';
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioChunks = [];
-                    mediaRecorder = new MediaRecorder(stream);
-
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // webm가 용량/호환성 무난
-                        const reader = new FileReader();
-                        reader.readAsDataURL(audioBlob);
-                        reader.onloadend = () => {
-                            const base64String = reader.result.split(',')[1];
-                            const duration = Math.round((new Date() - recordingStartTime) / 1000);
-                            const fname = `rec_q${id}_${Date.now()}.webm`;
-                        
-                            trackingData.dictationDetails[id].recording = {
-                                base64: base64String,
-                                duration,
-                                mimeType: 'audio/webm',
-                                filename: fname,
-                                sentenceKo: dictationData.find(x=>x.id===id).ko,
-                                sentenceFr: dictationData.find(x=>x.id===id).fr,
-                                number: id
-                            };
-                            statusEl.textContent = `Enregistré (${duration}s) 👍`;
-                        };
-                        stream.getTracks().forEach(t=>t.stop());
-                    };
-                    
-                    recordingStartTime = new Date();
-                    mediaRecorder.start();
-                    recordBtn.textContent = '■ Arrêter';
-                    statusEl.textContent = 'Enregistrement...';
-
-                } catch (err) {
-                    console.error("Erreur d'enregistrement:", err);
-                    statusEl.textContent = "Accès micro refusé.";
-                    alert("L'accès au microphone est nécessaire pour enregistrer.");
-                }
-            }
-        }
-
-
-        function showHint(elementId, questionId, hintType) {
-            const hintElement = document.getElementById(elementId);
-            const wasHidden = hintElement.classList.contains('hidden');
-
-            if (wasHidden) {
-                hintElement.classList.remove('hidden');
-                if (hintType === 1) {
-                    trackingData.dictationDetails[questionId].hint1Clicks++;
-                } else if (hintType === 2) {
-                    trackingData.dictationDetails[questionId].hint2Clicks++;
-                }
-            } else {
-                hintElement.classList.add('hidden');
-            }
-        }
-
-        // --- 결과 처리 로직 ---
-        // 간단한 🎺 팬파레 (Web Audio API)
-        function playFanfare() {
-          try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const now = ctx.currentTime;
-            const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
-            notes.forEach((freq, i) => {
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = 'square';
-              osc.frequency.value = freq;
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              const t0 = now + i * 0.12;
-              gain.gain.setValueAtTime(0.0001, t0);
-              gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.01);
-              gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
-              osc.start(t0);
-              osc.stop(t0 + 0.26);
-            });
-          } catch (e) {
-            /* 사운드 못써도 무시 */
-          }
-        }
-
-        function showResults() {
-          trackingData.endTime = new Date();
-          trackingData.totalTimeSeconds = Math.round((trackingData.endTime - trackingData.startTime) / 1000);
-
-          let correctCount = 0;
-          const results = []; // 문항별 결과 저장(오답 하이라이트/이메일용)
-
-          // 문항별 정오 판정 + 통계 업데이트
-          dictationData.forEach((item) => {
-            const userAnswer = (document.getElementById(`answer-${item.id}`)?.value || '').trim();
-            const cleanUser = userAnswer.replace(/[.,!?]/g, '');
-            const cleanCorrect = item.ko.replace(/[.,!?]/g, '');
-
-            const detail = trackingData.dictationDetails[item.id];
-            detail.userAnswer = userAnswer;
-            detail.isCorrect = cleanUser === cleanCorrect;
-
-            if (detail.isCorrect) correctCount++;
-
-            results.push({
-              id: item.id,
-              fr: item.fr,
-              ko: item.ko,
-              userAnswer,
-              isCorrect: detail.isCorrect,
-              plays: detail.plays || 0,
-              hint1: detail.hint1Clicks || 0,
-              hint2: detail.hint2Clicks || 0,
-            });
-          });
-
-          const total = dictationData.length;
-          const pct = Math.round((correctCount / total) * 100);
-
-          // 상단 총평 영역: 점수 + 조건별 멘트/이모지
-          const resultMessage = document.getElementById('result-message');
-          let topHTML = `<div class="p-4 rounded-lg border">
-            <div class="text-3xl font-extrabold mb-2">${pct}%</div>`;
-
-          if (pct === 100) {
-            topHTML += `<div class="text-green-700 text-2xl font-bold">완벽해요!! 👑🎺👍</div>`;
-            // 축하 이펙트
-            confetti({ particleCount: 220, spread: 90, origin: { y: 0.6 } });
-            playFanfare();
-          } else if (pct >= 80) {
-            topHTML += `<div class="text-blue-700 text-2xl font-bold">잘했어요!! 🎺👍</div>`;
-            confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-          } else if (pct >= 60) {
-            topHTML += `<div class="text-yellow-700 text-xl font-bold">이해할 수 있어요. 꽤 잘했어요 (이해 못할 수도 있어요ㅋㅋ) 👍</div>`;
-          } else {
-            topHTML += `<div class="text-red-700 text-xl font-bold">땡!! 틀렸어요!!</div>`;
-          }
-          topHTML += `<div class="text-slate-600 mt-1">점수: ${correctCount}/${total}</div></div>`;
-          resultMessage.innerHTML = topHTML;
-
-          // 상세 영역: 모든 문장 리스트 + 오답 하이라이트 + 정답 표시
-          const wrongItems = results.filter(r => !r.isCorrect);
-          let detailHTML = `
-            <h3 class="text-xl font-bold mb-3 theme-text-primary">문장별 결과</h3>
-            <ul class="space-y-3">`;
-
-          results.forEach(r => {
-            if (r.isCorrect) {
-              detailHTML += `
-                <li class="p-3 rounded-lg border border-emerald-200 bg-emerald-50">
-                  <div class="font-semibold text-emerald-700">✔️ ${r.id}. ${r.fr}</div>
-                  <div class="mt-1">내 답: ${r.userAnswer || '<i>(빈칸)</i>'}</div>
-                </li>`;
-            } else {
-              detailHTML += `
-                <li class="p-3 rounded-lg border border-red-200 wrong-block">
-                  <div class="font-semibold text-red-700">❌ ${r.id}. ${r.fr}</div>
-                  <div class="mt-1"><span class="line-through">${r.userAnswer || '<i>(빈칸)</i>'}</span></div>
-                  <div class="mt-1"><b>정답:</b> ${r.ko}</div>
-                  <div class="mt-1 text-sm text-slate-600">듣기: ${r.plays}회 · Indice 1: ${r.hint1}회 · Indice 2: ${r.hint2}회</div>
-                </li>`;
-            }
-          });
-          detailHTML += `</ul>`;
-
-          // 100%가 아니면 맨 위에 오답 요약 박스 추가
-          if (pct < 100 && wrongItems.length) {
-            detailHTML =
-              `<div class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50">
-                  <div class="font-bold text-red-700">❗오답(${wrongItems.length}개): ${wrongItems.map(w => w.id).join(', ')}</div>
-                  <div class="text-sm text-slate-700 mt-1">아래 리스트에서 <b>정답</b>을 확인하세요.</div>
-                </div>` + detailHTML;
-          }
-
-          document.getElementById('detailed-results').innerHTML = detailHTML;
-
-          switchSection('results-screen');
-          
-          // --- 자동 결과 전송 ---
-          if (!resultsAlreadySent) {
-            sendResultsByEmail();
-            resultsAlreadySent = true;
-          }
-        }
-
-        
-            // --- 이메일 및 인쇄 기능 ---
-                // 결과 전송 payload (핵심 필드 추가)
-                async function sendResultsByEmail() {
-                  const btn = document.getElementById('send-email-btn');
-                  btn.disabled = true; btn.textContent = 'Envoi en cours...';
-                
-                  // 최신 값 갱신
-                  Object.values(trackingData.dictationDetails).forEach(d=>{
-                    if (d && typeof d.userAnswer !== 'string') d.userAnswer = '';
-                  });
-                
-                  const questions = dictationData.map(item=>{
-                    const d = trackingData.dictationDetails[item.id] || {};
-                    return {
-                      number: item.id,
-                      fr: item.fr,
-                      ko: item.ko,
-                      userAnswer: d.userAnswer || '',
-                      isCorrect: !!d.isCorrect,
-                      listenCount: d.plays || 0,
-                      hint1Count: d.hint1Clicks || 0,
-                      hint2Count: d.hint2Clicks || 0,
-                      recording: d.recording && d.recording.base64 ? {
-                        filename: d.recording.filename || `rec_q${item.id}.webm`,
-                        mimeType: d.recording.mimeType || 'audio/webm',
-                        base64: d.recording.base64,
-                        duration: d.recording.duration || 0
-                      } : null
-                    };
-                  });
-                
-                  const emailPayload = {
-                    studentName: trackingData.studentName || studentName,
-                    startTime: trackingData.startTime,
-                    endTime: new Date(),
-                    totalTimeSeconds: Math.round((new Date() - trackingData.startTime)/1000),
-                    questions
-                  };
-                
-                  try {
-                    const res = await fetch('/.netlify/functions/send-results', {
-                      method:'POST',
-                      headers:{'Content-Type':'application/json'},
-                      body: JSON.stringify(emailPayload)
-                    });
-                    if(!res.ok) throw new Error(await res.text());
-                    // alert('✅ Résultats envoyés avec succès !'); // 자동 전송이므로 alert는 생략
-                    btn.textContent = '✅ Envoyé !';
-                  } catch(e){
-                    console.error(e);
-                    alert('메일 전송 오류: ' + e.message);
-                    btn.disabled = false;
-                    btn.textContent = '📧 Envoyer les résultats par e-mail';
-                  }
-                }
-
-        function printQuiz() {
-            const printableArea = document.getElementById('printable-area');
-            let html = `<h1 style="font-family: sans-serif; color: #0033a0; text-align: center;">Exercices de Coréen pour ${studentName}</h1>`;
-            html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px;">Fiche de Révision - Phrases Complètes</h2>`;
-            html += `<div style="font-family: sans-serif; margin-top: 10px;">`;
-            dictationData.forEach((item, index) => {
-                html += `
-                    <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                        <p style="font-size: 16px;"><strong>${index + 1}. ${item.fr}</strong></p>
-                        <p style="font-size: 18px; color: #0033a0;">${item.ko}</p>
-                    </div>`;
-            });
-            html += `</div>`;
-            html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px; page-break-before: always;">Vocabulaire</h2>`;
-            html += `<table style="width: 100%; border-collapse: collapse; font-family: sans-serif;"><thead><tr style="background-color: #f0f4f8;"><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Français</th><th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Coréen</th></tr></thead><tbody>`;
-            matchingData.forEach(item => {
-                html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${item.fr}</td><td style="padding: 8px; border: 1px solid #ddd;">${item.ko}</td></tr>`;
-            });
-            html += `</tbody></table>`;
-            if (Object.keys(trackingData.dictationDetails).some(k => trackingData.dictationDetails[k].userAnswer !== '')) {
-                html += `<h2 style="font-family: sans-serif; color: #0033a0; margin-top: 30px; page-break-before: always;">Résultats de la Dictée</h2>`;
-                html += `<div style="font-family: sans-serif; margin-top: 10px;">`;
-                dictationData.forEach((item, index) => {
-                    const detail = trackingData.dictationDetails[item.id];
-                    html += `
-                        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: ${detail.isCorrect ? '#f0fff0' : '#fff0f0'};">
-                            <p><strong>Question ${index + 1}:</strong> ${item.fr}</p>
-                            <p><strong>Réponse correcte:</strong> ${item.ko}</p>
-                            <p style="color: ${detail.isCorrect ? 'green' : 'red'};"><strong>Votre réponse:</strong> ${detail.userAnswer || "<i>(Pas de réponse)</i>"}</p>
-                        </div>`;
-                });
-                html += `</div>`;
-            }
-            printableArea.innerHTML = html;
-            window.print();
-        }
-
-    </script>
+    // 팬파레
+    function playFanfare(){
+      try{
+        const ctx=new (window.AudioContext||window.webkitAudioContext)(); const now=ctx.currentTime;
+        [523.25,659.25,783.99,1046.5].forEach((f,i)=>{const o=ctx.createOscillator(), g=ctx.createGain(); o.type='square'; o.frequency.value=f; o.connect(g); g.connect(ctx.destination); const t0=now+i*0.12; g.gain.setValueAtTime(.0001,t0); g.gain.exponentialRampToValueAtTime(.4,t0+.01); g.gain.exponentialRampToValueAtTime(.0001,t0+.25); o.start(t0); o.stop(t0+.26);});
+      }catch(e){}
+    }
+  </script>
 </body>
 </html>
-
