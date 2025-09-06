@@ -114,19 +114,19 @@
     <div class="space-y-4">
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-        <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.92 })"><i class="fas fa-play"></i></button>
+        <button class="btn btn-sound" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-        <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.92 })"><i class="fas fa-play"></i></button>
+        <button class="btn btn-sound" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Hanja-coréen (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
-        <button class="btn btn-sound" onclick="playAudio('일, 이, 삼, 사, 오','alloy')"><i class="fas fa-play"></i></button>
+        <button class="btn btn-sound" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy')"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
         <p class="font-semibold text-lg text-slate-700">Hanja-coréen (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
-        <button class="btn btn-sound" onclick="playAudio('육, 칠, 팔, 구, 십','alloy')"><i class="fas fa-play"></i></button>
+        <button class="btn btn-sound" onclick="onPlayPause('육, 칠, 팔, 구, 십','alloy')"><i class="fas fa-play"></i></button>
       </div>
     </div>
 
@@ -548,7 +548,7 @@
         q.options.forEach(opt=>{ html+=`<button class="choice-btn ${q.userAnswer===opt?'selected':''}" onclick="selectChoiceAnswer('${opt}')">${opt}</button>`; });
       }else if(q.type==='fill'){
         html+=`<p class="text-lg font-semibold mb-4">${q.fr}</p>
-               <button class="btn btn-secondary w_full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
+               <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
                <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
                <input class="input-field" value="${q.userAnswer||''}" oninput="updateFillAnswer(this.value)" placeholder="Écrivez en hangeul...">`;
       }else if(q.type==='translate'){
@@ -698,21 +698,103 @@
       if(score>=50) return {fr:"Pas mal ! On révise encore 👍",ko:"나쁘지 않아요! 조금만 더!",className:"text-yellow-600"};
       return {fr:"Courage ! On va y arriver 👊",ko:"괜찮아요! 같이 다시 해봐요!",className:"text-orange-600"};
     }
-    function showResults(){
-      if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} }
-      cleanupAudio();
-      checkAnswers(); sendResults();
 
-      const correct=questions.filter(q=>q.isCorrect).length;
-      const score=Math.round((correct/questions.length)*100);
-      const time=Math.round((new Date()-startTime)/1000);
-      document.getElementById('final-score').textContent=`${score}% (${correct}/${questions.length})`;
-      document.getElementById('total-time').textContent=`${time}`;
-      const fb=getFeedback(score);
-      const fbDiv=document.getElementById('result-feedback');
-      fbDiv.innerHTML=`${fb.fr}<br>${fb.ko}`; fbDiv.className=`text-2xl font-semibold mb-6 ${fb.className}`;
+<script>
+  function showResults(){
+    if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} }
+    cleanupAudio();
+    checkAnswers(); sendResults();
 
-      const review=document.getElementById('review-content'); review.innerHTML='';
-      questions.forEach(q=>{
-        const icon=q.isCorrect?'<i class="fas fa-check-circle text-green-500"></i>':'<i class="fas fa-times-circle text-red-500"></i>';
-        let html=`<div class="p-4 border rounded-lg ${q.isCorrect?'bg-green-50':'bg-red-50'}"><p class="font-bold text-lg"
+    const correct = questions.filter(q=>q.isCorrect).length;
+    const score   = Math.round((correct/questions.length)*100);
+    const time    = Math.round((new Date()-startTime)/1000);
+
+    document.getElementById('final-score').textContent = `${score}% (${correct}/${questions.length})`;
+    document.getElementById('total-time').textContent  = `${time}`;
+
+    const fb   = getFeedback(score);
+    const fbEl = document.getElementById('result-feedback');
+    fbEl.innerHTML = `${fb.fr}<br>${fb.ko}`;
+    fbEl.className = `text-2xl font-semibold mb-6 ${fb.className}`;
+
+    const review = document.getElementById('review-content');
+    review.innerHTML = '';
+
+    questions.forEach(q=>{
+      const icon = q.isCorrect
+        ? '<i class="fas fa-check-circle text-green-500"></i>'
+        : '<i class="fas fa-times-circle text-red-500"></i>';
+
+      let html = `<div class="p-4 border rounded-lg ${q.isCorrect?'bg-green-50':'bg-red-50'}">`;
+      html += `<p class="font-bold text-lg">${icon} Q${q.number} (${q.type})</p>`;
+
+      let uAns = '', cAns = '';
+
+      if(q.type==='choice'){
+        html += `<p><strong>Q:</strong> ${q.context}</p>`;
+        uAns = q.userAnswer || "N/A";
+        cAns = q.answer;
+      }else if(q.type==='fill'){
+        const shown = (q.userAnswer||'...') || '...';
+        html += `<p><strong>Q:</strong> ${q.fr.replace('___', `<strong>${shown}</strong>`)}</p>`;
+        uAns = q.userAnswer || "N/A";
+        cAns = q.ko;
+      }else if(q.type==='translate'){
+        html += `<p><strong>À traduire:</strong> ${q.fr}</p>`;
+        uAns = q.userAnswer || "N/A";
+        cAns = q.ko;
+      }else if(q.type==='dictation'){
+        html += `<p><strong>À écouter:</strong> ${q.ko}</p>`;
+        uAns = `<strong>KR:</strong> ${q.userAnswer.ko||'vide'}<br><strong>FR:</strong> ${q.userAnswer.fr||'vide'}`;
+        cAns = `<strong>KR:</strong> ${q.ko}<br><strong>FR:</strong> ${q.fr}`;
+      }
+
+      if(q.isCorrect){
+        html += `<p><strong>Réponse:</strong> ${uAns || cAns}</p>`;
+      }else{
+        html += `<p><strong>Votre réponse:</strong> <span class="text-red-700">${uAns}</span></p>`;
+        html += `<p><strong>Réponse correcte:</strong> <span class="text-green-700">${cAns}</span></p>`;
+      }
+
+      html += `</div>`;
+      review.insertAdjacentHTML('beforeend', html);
+    });
+
+    document.getElementById('quiz-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.remove('hidden');
+  }
+
+  function restartQuiz(){
+    if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} }
+    cleanupAudio();
+    questions = [];
+    currentQuestionIndex = 0;
+    startTime = null;
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.remove('hidden');
+  }
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', ()=>{
+    // 이름 placeholder 랜덤
+    const nameInput = document.getElementById('student-name');
+    if (nameInput) {
+      nameInput.placeholder = `Ex: ${placeholders[Math.floor(Math.random()*placeholders.length)]}`;
+    }
+
+    // 핵심 버튼 연결
+    document.getElementById('start-btn')?.addEventListener('click', startQuiz);
+    document.getElementById('explanation-next-btn')?.addEventListener('click', showWarmupScreen);
+    document.getElementById('start-quiz-btn')?.addEventListener('click', startRealQuiz);
+
+    document.getElementById('next-btn')?.addEventListener('click', nextQuestion);
+    document.getElementById('prev-btn')?.addEventListener('click', prevQuestion);
+    document.getElementById('finish-btn')?.addEventListener('click', showResults);
+
+    document.getElementById('restart-btn')?.addEventListener('click', restartQuiz);
+    document.getElementById('print-btn')?.addEventListener('click', ()=>window.print());
+    document.getElementById('close-error-modal-btn')?.addEventListener('click', ()=>{
+      document.getElementById('error-modal')?.classList.add('hidden');
+    });
+  });
+</script>
