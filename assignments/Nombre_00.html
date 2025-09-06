@@ -45,39 +45,114 @@
     </div>
   </div>
 
-  <!-- 설명 -->
-  <div id="explanation-screen" class="quiz-container hidden">
-    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">📘 Apprendre les nombres coréens ! / 한국어 숫자 배우기!</h2>
-    <p class="text-center text-slate-600 mb-8">(Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)</p>
+ <!-- 설명 (구버전의 더 정확한 텍스트로 업데이트) -->
+<div id="explanation-screen" class="quiz-container hidden">
+  <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">📘 Apprendre les nombres coréens ! / 한국어 숫자 배우기!</h2>
+  <p class="text-center text-slate-600 mb-8">(Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)</p>
 
-    <div class="space-y-6 text-slate-700">
-      <div>
-        <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication / 간단 설명</h3>
-        <p class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! / 많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!</p>
-        <ul class="list-disc list-inside mt-3 space-y-2">
-          <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자(문자) 체계</li>
-          <li><strong>Chinois</strong> = langue / 중국어(언어)</li>
-        </ul>
-        <div class="mt-3 p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
-          <p><strong>Astuce (analogie) / 비유</strong> : En Europe, on écrit avec <b>l'alphabet latin</b> (pas « alphabet italien »).<br>→ <b>Italien</b> = une <u>langue</u> / <b>lettres</b> = alphabet <u>latin</u>.<br>🇰🇷 <b>Le coréen aussi</b> : <b>langue</b> = coréen / <b>nombres</b> = <u>2 jeux</u> (순수 한국어 / natifs, 한자어 / Hanja‑coréens).<br>한국어도 비슷해요: <b>언어</b>=한국어, <b>숫자 읽기</b>= 두 세트(순수 한국어 / natifs, 한자어 / Hanja‑coréens).<br><em>Hanja ≠ chinois (la langue)</em> → « <b>caractères han</b> » = écriture, pas la langue chinoise.</p>
+  <div class="space-y-6 text-slate-700">
+    <!-- 1) Petite explication -->
+    <div>
+      <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication / 간단 설명</h3>
+      <p class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">
+        👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! /
+        많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!
+      </p>
+      <ul class="list-disc list-inside mt-3 space-y-2">
+        <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자(문자) 체계</li>
+        <li><strong>Chinois</strong> = langue / 중국어(언어)</li>
+      </ul>
+
+      <div class="mt-3 p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
+        <p>
+          <strong>Astuce (analogie) / 비유</strong> :
+          En Europe, on écrit avec <b>l'alphabet latin</b> (pas « alphabet italien »).<br>
+          → <b>Italien</b> = une <u>langue</u> / <b>lettres</b> = alphabet <u>latin</u>.<br>
+          🇰🇷 <b>Le coréen aussi</b> : <b>langue</b> = coréen / <b>nombres</b> = <u>2 jeux</u>
+          (순수 한국어 / natifs, 한자어 / Hanja-coréens).<br>
+          <em>Hanja ≠ chinois (la langue)</em> → « <b>caractères han</b> » = écriture, pas la langue chinoise.
+        </p>
+      </div>
+    </div>
+
+    <!-- 2) Deux systèmes -->
+    <div>
+      <p class="mb-4">
+        En coréen, on utilise <strong>deux systèmes</strong> de nombres /
+        한국어에는 숫자 체계가 <strong>두 가지</strong> 있어요:
+      </p>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 class="font-bold text-lg text-blue-800">순수 한국어 / Natifs</h4>
+          <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
+          <p>
+            <strong>Pour / 용도:</strong>
+            compter des choses qu’on voit (âge, personnes, objets…) /
+            눈앞에서 세는 것(나이, 사람 수, 물건 개수…)
+          </p>
+        </div>
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h4 class="font-bold text-lg text-green-800">한자어 / Hanja-coréens</h4>
+          <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
+          <p>
+            <strong>Pour / 용도:</strong>
+            noms/unités déjà <u>écrits</u> (dates, argent, minutes…) /
+            이미 적혀 있는 이름·단위(날짜, 돈, 분 등)
+          </p>
         </div>
       </div>
+    </div>
 
-      <div>
-        <p class="mb-4">En coréen, on utilise <strong>deux systèmes</strong> de nombres / 한국어에는 숫자 체계가 <strong>두 가지</strong> 있어요:</p>
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 class="font-bold text-lg text-blue-800">순수 한국어 / Natifs</h4>
-            <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
-            <p><strong>Pour / 용도:</strong> compter des choses qu’on voit (âge, personnes, objets…) / 눈앞에서 세는 것(나이, 사람 수, 물건 개수…)</p>
-          </div>
-          <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 class="font-bold text-lg text-green-800">한자어 / Hanja‑coréens</h4>
-            <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
-            <p><strong>Pour / 용도:</strong> noms/unités déjà <u>écrits</u> (dates, argent, minutes…) / 이미 적혀 있는 이름·단위(날짜, 돈, 분 등)</p>
-          </div>
-        </div>
+    <!-- 3) Exception & Tendance -->
+    <div>
+      <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance / 예외와 경향</h3>
+      <ul class="list-disc list-inside space-y-2">
+        <li>Heures(시) → <b>순수 한국어 / natifs</b> · Minutes(분) → <b>한자어 / Hanja-coréens</b></li>
+        <li>
+          Pourquoi ? Autrefois, on utilisait des unités comme « 1각 ≈ 15 min ». Puis, à l’époque moderne,
+          le système <b>1 h = 60 min</b> s’est imposé.
+          ⇒ Aujourd’hui : <b>시 (heures) = 순수 한국어 / natifs</b> · <b>분 (minutes) = 한자어 / Hanja-coréens</b>.<br>
+          왜? 예전엔 ‘1각(약 15분)’ 같은 전통 단위를 썼고, 근대에 ‘1시간=60분’ 체계가 자리 잡았어요.
+          그래서 지금은 <b>시=고유 / 분=한자</b>.
+        </li>
+      </ul>
+    </div>
+
+    <!-- 4) Résumé -->
+    <div>
+      <h3 class="font-bold text-xl mb-3">✅ Résumé facile / 요약</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-3 border">Système / 체계</th>
+              <th class="p-3 border">Usage / 용도</th>
+              <th class="p-3 border">Exemples / 예</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="p-3 border font-semibold">순수 한국어 / Natifs</td>
+              <td class="p-3 border">Compter / 세기</td>
+              <td class="p-3 border">Âge(살), Personnes(명), Objets(개), Heures(시)</td>
+            </tr>
+            <tr>
+              <td class="p-3 border font-semibold">한자어 / Hanja-coréens</td>
+              <td class="p-3 border">Noms/Unités écrits / 이름·단위</td>
+              <td class="p-3 border">Dates, Argent, Minutes, Numéros</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </div>
+  </div>
+
+  <div class="mt-8 text-center">
+    <button id="explanation-next-btn" class="btn btn-primary text-lg">
+      C'est compris, on s'échauffe ! (워밍업) <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+</div>
 
       <div>
         <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance / 예외와 경향</h3>
@@ -260,8 +335,9 @@
       }
     }
 
-    // ===== 쉬운 불어+한글 개념 힌트 =====
-    function buildConceptHint(forWhat){
+   <script>
+/* ===== 쉬운 불어+한글 개념 힌트 (정밀 버전) ===== */
+function buildConceptHint(forWhat){
   const lines = {
     age: [
       "👶 Âge → nombres natifs coréens (한/두/세 살).",
@@ -269,45 +345,91 @@
     ],
     people: [
       "🧑‍🤝‍🧑 Personnes → natifs coréens (… 명/분).",
-      "On compte des personnes devant soi."
+      "On compte des personnes devant soi (눈앞의 사람 수 세기)."
     ],
     objects: [
       "📦 Objets → natifs coréens (… 개/권/장…).",
-      "On compte le nombre d'objets visibles."
+      "On compte le nombre d'objets visibles (눈앞의 사물 개수)."
     ],
     date: [
-      "📅 Dates (…일) → Hanja‑coréen (sino‑coréen).",
-      "Ce sont des noms/unités écrits sur le calendrier."
+      "📅 Dates (…일) → Hanja-coréen (sino-coréen).",
+      "Ce sont des noms/unités écrits sur le calendrier (이미 적힌 날짜 단위)."
     ],
     money: [
-      "💶 Prix/Argent → Hanja‑coréen (십 유로, 오천 원…).",
-      "Unités fixes (euro, won) et montants → Hanja‑coréen."
+      "💶 Prix/Argent → Hanja-coréen (십 유로, 오천 원…).",
+      "Unités fixes et montants affichés → Hanja-coréen."
     ],
     minutes: [
-      "⏱️ Minutes(분) → Hanja‑coréen.",
-      "‘분’ est une unité de temps standard écrite."
+      "⏱️ Minutes(분) → Hanja-coréen.",
+      "‘분’ est une unité de temps standard écrite (표준 시간 단위)."
     ],
     hours: [
       "🕒 Heures(시) → natifs (한/두/세 시…).",
-      "Aujourd’hui : heures(시)=natifs, minutes(분)=Hanja‑coréen."
+      "Aujourd’hui : heures(시)=natifs, minutes(분)=Hanja-coréen."
     ],
     time_history: [
       "🕰️ Petit rappel historique",
       "Autrefois : unités traditionnelles (ex. 1각 ≈ 15 min).",
       "Époque moderne : le système « 1 h = 60 min » s’impose.",
-      "Aujourd’hui : 시 (heures) = natifs / 분 (minutes) = Hanja‑coréen."
+      "Aujourd’hui : 시 (heures) = natifs / 분 (minutes) = Hanja-coréen."
     ]
   };
-  const core = lines[forWhat] || [];
+  const core  = lines[forWhat] || [];
   const extra = lines.time_history || [];
-  return [...core, ...extra].join('
-');
-};
-  const core = lines[forWhat] || [];
-  const extra = lines.time_history || [];
-  return [...core, ...extra].join("
-");
+  return [...core, ...extra].join("\n");
 }
+
+function showGeneralHint(){
+  const q = questions[currentQuestionIndex];
+  const d = document.getElementById('hint-display');
+  q.hint1Count++;
+  let msg = "";
+  const text = (q.context || q.fr || q.ko || "").toString();
+
+  if (text.includes("살") || /Âge|age/i.test(text))               msg = buildConceptHint("age");
+  else if (text.includes("명") || /Personnes/i.test(text))         msg = buildConceptHint("people");
+  else if (text.includes("권") || text.includes("개") || /Objets|livres|책/i.test(text)) msg = buildConceptHint("objects");
+  else if (text.includes("일") || /Date|septembre|월/i.test(text)) msg = buildConceptHint("date");
+  else if (/유로|원|Prix|Argent/i.test(text))                      msg = buildConceptHint("money");
+  else if (text.includes("분") || /Minutes/i.test(text))           msg = buildConceptHint("minutes");
+  else if (text.includes("시") || /Heures/i.test(text))            msg = buildConceptHint("hours");
+  else {
+    msg = "ℹ️ Deux systèmes :\n"
+        + "- Pour compter des choses → natifs coréens\n"
+        + "- Pour les noms/unités écrits (date, prix, numéro…) → Hanja-coréen (sino-coréen)\n"
+        + "(Temps : heures(시)=natifs, minutes(분)=Hanja-coréen)";
+  }
+  d.textContent = msg;
+  d.classList.remove('hidden');
+}
+
+function showHint(type){
+  const q = questions[currentQuestionIndex];
+  const d = document.getElementById('hint-display');
+
+  if(type===1){
+    q.hint1Count++;
+    d.textContent = `Indice 1: ${q.hint1 || ''}`;
+  }else if(type===2){
+    q.hint2Count++;
+    d.textContent = `Indice 2: ${q.hint2 || ''}`;
+  }else{
+    q.hint2Count++;
+    let extra = "";
+    const ko = (q.ko || "");
+    if (ko.includes("시"))                 extra += "\n" + buildConceptHint("hours");
+    if (ko.includes("분"))                 extra += "\n" + buildConceptHint("minutes");
+    if (ko.includes("원") || ko.includes("유로")) extra += "\n" + buildConceptHint("money");
+    if (ko.includes("살"))                 extra += "\n" + buildConceptHint("age");
+    if (ko.includes("명"))                 extra += "\n" + buildConceptHint("people");
+
+    const base = q.conceptualHint || "Pourquoi ce nombre ?";
+    d.textContent = base + (extra ? "\n\n" + extra : "");
+  }
+  d.classList.remove('hidden');
+}
+</script>
+
 
     function showGeneralHint(){
       const q = questions[currentQuestionIndex];
@@ -502,33 +624,138 @@
     function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
 
     function getQuestions(){
-      const choiceData = [
-  { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hint:"Date écrite ⇒ Hanja‑coréen (sur le calendrier)." },
-  { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hint:"Heures ⇒ natifs (exception)." },
-  { context:"Pour l'âge '3살', on dit :", options:["세 살","삼 살"], answer:"세 살", hint:"Âge ⇒ natifs." },
-  { context:"Pour l'argent '10 euro', on dit :", options:["십 유로","열 유로"], answer:"십 유로", hint:"Prix affiché ⇒ Hanja‑coréen (unités/montants)." },
-  { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hint:"Minutes ⇒ Hanja‑coréen." }
+     // ===== Questions =====
+// getQuestions() 함수 안에서 아래 4개 배열만 교체하세요.
+const choiceData = [
+  {
+    context:"Pour la date '1일', on dit :",
+    options:["일일","하나일"],
+    answer:"일일",
+    hint:"Règle/규칙: Dates ⇒ Hanja-coréen (sino-coréen) · 달력에 적힌 날짜 단위 ‘…일’은 한자어 체계"
+  },
+  {
+    context:"Pour l'heure '1시', on dit :",
+    options:["한 시","일 시"],
+    answer:"한 시",
+    hint:"Règle/규칙: Heures(시) ⇒ Natifs(고유어, 예외) · 오늘날 시=고유어 / 분=한자어"
+  },
+  {
+    context:"Pour l'âge '3살', on dit :",
+    options:["세 살","삼 살"],
+    answer:"세 살",
+    hint:"Règle/규칙: Âge ⇒ Natifs(고유어) · 나이는 한/두/세 살"
+  },
+  {
+    context:"Pour l'argent '10 euro', on dit :",
+    options:["십 유로","열 유로"],
+    answer:"십 유로",
+    hint:"Règle/규칙: Prix/Argent ⇒ Hanja-coréen · 화폐/금액 표기는 한자어"
+  },
+  {
+    context:"Pour 30 minutes (30분), on dit :",
+    options:["삼십 분","서른 분"],
+    answer:"삼십 분",
+    hint:"Règle/규칙: Minutes(분) ⇒ Hanja-coréen · 표준 시간 단위"
+  }
 ];
-      const fillData = [
-  { fr:"J'ai trois ans. (저는 ___ 살이에요.)", ko:"세", hint:"Âge ⇒ natifs." },
-  { fr:"Il y a cinq livres. (책이 ___ 권 있어요.)", ko:"다섯", hint:"Objets ⇒ natifs." },
-  { fr:"Aujourd'hui, c'est le 2 septembre. (오늘은 9월 __일이에요.)", ko:"이", hint:"Date ⇒ Hanja‑coréen." },
-  { fr:"Nous sommes quatre personnes. (우리는 ___ 명이에요.)", ko:"네", hint:"Personnes ⇒ natifs." },
-  { fr:"J'ai 10 euros. (저는 ___ 유로 있어요.)", ko:"십", hint:"Prix ⇒ Hanja‑coréen." }
+
+const fillData = [
+  {
+    fr:"J'ai trois ans. (저는 ___ 살이에요.)",
+    ko:"세",
+    hint:"Règle/규칙: Âge ⇒ Natifs(고유어) · 한/두/세 살"
+  },
+  {
+    fr:"Il y a cinq livres. (책이 ___ 권 있어요.)",
+    ko:"다섯",
+    hint:"Règle/규칙: Objets ⇒ Natifs(고유어) · 눈앞의 사물 개수 세기"
+  },
+  {
+    fr:"Aujourd'hui, c'est le 2 septembre. (오늘은 9월 __일이에요.)",
+    ko:"이",
+    hint:"Règle/규칙: Date(…일) ⇒ Hanja-coréen · 달력 표기 단위"
+  },
+  {
+    fr:"Nous sommes quatre personnes. (우리는 ___ 명이에요.)",
+    ko:"네",
+    hint:"Règle/규칙: Personnes ⇒ Natifs(고유어) · 사람 수 세기(…명/분)"
+  },
+  {
+    fr:"J'ai 10 euros. (저는 ___ 유로 있어요.)",
+    ko:"십",
+    hint:"Règle/규칙: Prix/Argent ⇒ Hanja-coréen · 금액/단위 표기"
+  }
 ];
-      const translateKoData = [
-  { fr:"J'ai trois ans.", ko:"저는 세 살이에요.", hint:"Âge ⇒ natifs." },
-  { fr:"Nous sommes quatre personnes.", ko:"우리는 네 명이에요.", hint:"Personnes ⇒ natifs." },
-  { fr:"Il y a cinq livres.", ko:"책이 다섯 권 있어요.", hint:"Objets ⇒ natifs." },
-  { fr:"Aujourd'hui, c'est le 2 septembre.", ko:"오늘은 9월 2일이에요.", hint:"Date ⇒ Hanja‑coréen." },
-  { fr:"Il est trois heures.", ko:"지금은 세 시예요.", hint:"Heures ⇒ natifs (exception)." }
+
+const translateKoData = [
+  {
+    fr:"J'ai trois ans.",
+    ko:"저는 세 살이에요.",
+    hint:"Règle/규칙: Âge ⇒ Natifs(고유어)"
+  },
+  {
+    fr:"Nous sommes quatre personnes.",
+    ko:"우리는 네 명이에요.",
+    hint:"Règle/규칙: Personnes ⇒ Natifs(고유어)"
+  },
+  {
+    fr:"Il y a cinq livres.",
+    ko:"책이 다섯 권 있어요.",
+    hint:"Règle/규칙: Objets ⇒ Natifs(고유어)"
+  },
+  {
+    fr:"Aujourd'hui, c'est le 2 septembre.",
+    ko:"오늘은 9월 2일이에요.",
+    hint:"Règle/규칙: Date(…일) ⇒ Hanja-coréen"
+  },
+  {
+    fr:"Il est trois heures.",
+    ko:"지금은 세 시예요.",
+    hint:"Règle/규칙: Heures(시) ⇒ Natifs(고유어, 예외) · 시=고유/분=한자"
+  }
 ];
-      const dictationData = [
-  { ko:"사과 두 개 주세요.", fr:"Donnez-moi deux pommes, s'il vous plaît.", hint1:"ㅅㄱ ㄷ ㄱ ㅈㅅㅇ", hint2:"사과 (pomme), 두 개 (deux + classificateur), 주세요 (s'il vous plaît)", conceptualHint:"Compter → natifs (on compte des objets).", voice:'shimmer' },
-  { ko:"이거는 오천 원이에요.", fr:"Ceci coûte 5000 won.", hint1:"ㅇㄱㄴ ㅇㅊ ㅇㅇㅇㅇ", hint2:"이거 (ceci), 오천 (cinq-mille), 원 (won)", conceptualHint:"Prix → Hanja‑coréen (unités et montants).", voice:'nova' },
-  { ko:"제 생일은 십이월 십일이에요.", fr:"Mon anniversaire est le 10 décembre.", hint1:"ㅈ ㅅㅇㅇ ㅅㅇㅇ ㅅㅇㅇㅇㅇ", hint2:"생일 (anniversaire), 십이월 (décembre), 십일 (le 10)", conceptualHint:"Date → Hanja‑coréen (nom de date).", voice:'alloy' },
-  { ko:"학생 여덟 명이 있어요.", fr:"Il y a huit étudiants.", hint1:"ㅎㅅ ㅇㄷ ㅁㅇ ㅇㅇㅇ", hint2:"학생 (étudiant), 여덟 (huit), 명 (class. personnes)", conceptualHint:"Personnes → natifs (compteur de personnes).", voice:'echo' },
-  { ko:"지금은 오후 네 시 삼십 분이에요.", fr:"Il est 16h30.", hint1:"ㅈㄱㅇ ㅇㅎ ㄴ ㅅ ㅅㅅ ㅂㅇㅇㅇ", hint2:"시 (heures), 분 (minutes), 오후 (après‑midi)", conceptualHint:"Temps : heures(시)=natifs, minutes(분)=Hanja‑coréen.", voice:'fable' }
+
+const dictationData = [
+  {
+    ko:"사과 두 개 주세요.",
+    fr:"Donnez-moi deux pommes, s'il vous plaît.",
+    hint1:"ㅅㄱ ㄷ ㄱ ㅈㅅㅇ",
+    hint2:"단어: 사과 · 두 · 개 · 주세요 | mots: pomme · deux · classificateur · s'il vous plaît",
+    conceptualHint:"Règle/규칙: Objets ⇒ Natifs(고유어) · 눈앞의 사물 개수 세기",
+    voice:'shimmer'
+  },
+  {
+    ko:"이거는 오천 원이에요.",
+    fr:"Ceci coûte 5000 won.",
+    hint1:"ㅇㄱㄴ ㅇㅊ ㅇㅇㅇㅇ",
+    hint2:"단어: 이거 · 오천 · 원 | mots: ceci · cinq-mille · won",
+    conceptualHint:"Règle/규칙: Prix/Argent ⇒ Hanja-coréen · 금액/단위 표기",
+    voice:'nova'
+  },
+  {
+    ko:"제 생일은 십이월 십일이에요.",
+    fr:"Mon anniversaire est le 10 décembre.",
+    hint1:"ㅈ ㅅㅇㅇ ㅅㅇㅇ ㅅㅇㅇㅇㅇ",
+    hint2:"단어: 생일 · 십이월 · 십일 | mots: anniversaire · décembre · le 10",
+    conceptualHint:"Règle/규칙: Date(…일/월) ⇒ Hanja-coréen · 달력 표기 단위",
+    voice:'alloy'
+  },
+  {
+    ko:"학생 여덟 명이 있어요.",
+    fr:"Il y a huit étudiants.",
+    hint1:"ㅎㅅ ㅇㄷ ㅁㅇ ㅇㅇㅇ",
+    hint2:"단어: 학생 · 여덟 · 명 | mots: étudiant · huit · class. personnes",
+    conceptualHint:"Règle/규칙: Personnes ⇒ Natifs(고유어) · 사람 수(…명/분)",
+    voice:'echo'
+  },
+  {
+    ko:"지금은 오후 네 시 삼십 분이에요.",
+    fr:"Il est 16h30.",
+    hint1:"ㅈㄱㅇ ㅇㅎ ㄴ ㅅ ㅅㅅ ㅂㅇㅇㅇ",
+    hint2:"단어: 시 · 분 · 오후 | mots: heures · minutes · après-midi",
+    conceptualHint:"Règle/규칙: Temps ⇒ 시(heures)=Natifs / 분(minutes)=Hanja-coréen",
+    voice:'fable'
+  }
 ];
 
       const choice = shuffleArray(choiceData).slice(0,5).map((q,i)=>({number:i+1,type:'choice',context:q.context,answer:q.answer,options:shuffleArray(q.options),hint:q.hint,userAnswer:null,isCorrect:null,listenCount:0,hint1Count:0,hint2Count:0}));
