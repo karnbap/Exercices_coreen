@@ -484,11 +484,16 @@ function semanticMatchKR(userKR, goldKR, frPrompt){
     }
 
     function prevQuestion(){ if(currentQuestionIndex>0){ saveCurrentAnswer(); currentQuestionIndex--; renderQuestion(); } }
-    function nextQuestion(){
-      saveCurrentAnswer();
-      if(currentQuestionIndex < quizData.length - 1){ currentQuestionIndex++; renderQuestion(); }
-      else { finishQuiz(); }
-    }
+   function nextQuestion(){
+  saveCurrentAnswer();
+  // 마지막 문제면 바로 finishQuiz 실행
+  if(currentQuestionIndex >= quizData.length - 1){ 
+    finishQuiz(); 
+  } else { 
+    currentQuestionIndex++; 
+    renderQuestion(); 
+  }
+}
 
     // ✅ fuzzy 채점 적용
 function evaluateAnswers(){
