@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어) – Final</title>
+  <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어) – Final v2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -103,27 +103,54 @@
     </div>
   </div>
 
-  <!-- 워밍업 -->
+  <!-- 워밍업 (버튼 3종: ▶/⏸, ⏹, 🔁) -->
   <div id="warmup-screen" class="quiz-container hidden">
     <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center"> Méthode 5 par 5 🗣️</h2>
     <p class="text-lg text-slate-600 mb-8 text-center">Écouter & Répéter plusieurs fois ! / 여러 번 듣고 따라해요!</p>
 
     <div class="space-y-4">
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-        <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.92 })"><i class="fas fa-play"></i></button>
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <p class="font-semibold text-lg text-slate-700 mb-2">Natifs (1-5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
+        <div class="flex gap-2">
+          <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy', this, { speed:0.92 })">
+            <i class="fas fa-play"></i> Écouter (듣기)
+          </button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+        </div>
       </div>
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-        <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.92 })"><i class="fas fa-play"></i></button>
+
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <p class="font-semibold text-lg text-slate-700 mb-2">Natifs (6-10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
+        <div class="flex gap-2">
+          <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer', this, { speed:0.92 })">
+            <i class="fas fa-play"></i> Écouter (듣기)
+          </button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+        </div>
       </div>
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">Hanja (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
-        <button class="btn btn-sound" onclick="playAudio('일, 이, 삼, 사, 오','alloy')"><i class="fas fa-play"></i></button>
+
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <p class="font-semibold text-lg text-slate-700 mb-2">Hanja (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
+        <div class="flex gap-2">
+          <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy', this)">
+            <i class="fas fa-play"></i> Écouter (듣기)
+          </button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+        </div>
       </div>
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">Hanja (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
-        <button class="btn btn-sound" onclick="playAudio('육, 칠, 팔, 구, 십','alloy')"><i class="fas fa-play"></i></button>
+
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <p class="font-semibold text-lg text-slate-700 mb-2">Hanja (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
+        <div class="flex gap-2">
+          <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('육, 칠, 팔, 구, 십','alloy', this)">
+            <i class="fas fa-play"></i> Écouter (듣기)
+          </button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+        </div>
       </div>
     </div>
 
@@ -193,7 +220,7 @@
     let isPlayingOrFetching = false;   // 동시 요청/재생 보호
     function tinyDelay(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
-    // 현재 컨트롤바(받아쓰기 섹션)의 버튼 참조 & 메타
+    // 현재 컨트롤바(받아쓰기·워밍업 공용)의 버튼 참조 & 메타
     let currentAudioMeta = { text: null, voice: null };
     let currentAudioUI   = { playBtn: null, loopBtn: null };
     let isLooping = false;
@@ -347,7 +374,6 @@
 
     // ===== TTS: Play / Pause 토글, Stop, Loop, 오류 폴백 =====
     async function playAudio(text, voice='alloy', opts = {}){
-      // 이미 처리 중인 클릭이면: 같은 소스일 땐 토글만
       if (audioClickLocked || isPlayingOrFetching) {
         if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice){
           try{
@@ -360,7 +386,6 @@
       audioClickLocked = true; setTimeout(()=>audioClickLocked=false, 220);
 
       try{
-        // 같은 소스면 서버 재요청 없이 토글
         if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice && currentAudio.src){
           if(!currentAudio.paused){ currentAudio.pause(); updatePlayButtonUI(false); }
           else { await currentAudio.play(); updatePlayButtonUI(true); }
@@ -370,7 +395,6 @@
         isPlayingOrFetching = true;
         if(questions.length>0 && questions[currentQuestionIndex]){ questions[currentQuestionIndex].listenCount++; }
 
-        // 이전 소스 정리 (완전 정지 아님)
         if(currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
         if(currentAudio){ try{ currentAudio.pause(); }catch(_){} }
 
@@ -414,7 +438,7 @@
         const audio = new Audio(srcUrl);
         currentAudio = audio;
         currentAudioMeta = { text, voice };
-        audio.loop = isLooping; // 반복 상태 반영
+        audio.loop = isLooping;
 
         let endedNaturally = false;
         const canPlay = new Promise(resolve=>{
@@ -440,11 +464,11 @@
       }finally{ isPlayingOrFetching = false; }
     }
 
-    // 받아쓰기 컨트롤 핸들러
-    function onPlayPause(text, voice, btnEl){
-      currentAudioUI.playBtn = btnEl; // 현재 컨트롤바의 재생 버튼 참조
-      updatePlayButtonUI(currentAudio && !currentAudio.paused); // 초기 UI 정렬
-      return playAudio(text, voice); // 내부에서 토글 처리
+    // 받아쓰기·워밍업 공용 컨트롤 핸들러
+    function onPlayPause(text, voice, btnEl, opts){
+      currentAudioUI.playBtn = btnEl;
+      updatePlayButtonUI(currentAudio && !currentAudio.paused);
+      return playAudio(text, voice, opts || {});
     }
     function onStop(){
       if(!currentAudio) return;
@@ -545,7 +569,7 @@
         q.options.forEach(opt=>{ html+=`<button class="choice-btn ${q.userAnswer===opt?'selected':''}" onclick="selectChoiceAnswer('${opt}')">${opt}</button>`; });
       }else if(q.type==='fill'){
         html+=`<p class="text-lg font-semibold mb-4">${q.fr}</p>
-               <button class="btn btn-secondary w_full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
+               <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
                <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
                <input class="input-field" value="${q.userAnswer||''}" oninput="updateFillAnswer(this.value)" placeholder="Écrivez en hangeul...">`;
       }else if(q.type==='translate'){
@@ -660,7 +684,7 @@
       explain.classList.remove('hidden');
       const next = document.getElementById('explanation-next-btn');
       if(next){ try{ next.focus({ preventScroll:true }); }catch(_){} }
-      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){}
+      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
     }
     function showWarmupScreen(){
       document.getElementById('explanation-screen').classList.add('hidden');
@@ -744,7 +768,6 @@
     document.addEventListener('DOMContentLoaded', ()=>{
       const nameInput=document.getElementById('student-name');
       nameInput.placeholder=`Ex: ${placeholders[Math.floor(Math.random()*placeholders.length)]}`;
-      // 안전장치: 기본 API가 덮어쓰이지 않았는지 확인
       if(typeof document.getElementById !== 'function'){
         console.error('document.getElementById was overridden unexpectedly!');
       }
