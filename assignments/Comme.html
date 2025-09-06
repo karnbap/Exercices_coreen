@@ -1,173 +1,490 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comment dire "Comme" en Coréen</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Gowun+Dodum&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .korean-font {
-            font-family: 'Gowun Dodum', sans-serif;
-        }
-        .card {
-            background-color: white;
-            border-radius: 1.5rem; /* Bords plus arrondis */
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e5e7eb;
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        h1, h2, h3 {
-             font-family: 'Inter', sans-serif;
-             font-weight: 900;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comment dire « Comme » en coréen | 같아요 · 처럼 · 같이 · 같은</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--ink:#0f172a}
+    body{font-family:'Inter','Noto Sans KR',sans-serif;background:#f8fafc;color:var(--ink)}
+    .korean{font-family:'Noto Sans KR',sans-serif}
+    .card{background:#fff;border-radius:1rem;padding:1.25rem;box-shadow:0 4px 14px rgba(0,0,0,.06);border:1px solid #e5e7eb}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1rem;border-radius:.75rem;font-weight:700;border:2px solid transparent;transition:.2s}
+    .btn-gray{background:#f3f4f6;color:#374151;border-color:#e5e7eb}
+    .btn-gray:hover{background:#e5e7eb}
+    .btn-blue{background:#2563eb;color:#fff}
+    .btn-blue:hover{filter:brightness(.95)}
+    .tag{font-size:.8rem;border:1px solid #e2e8f0;border-radius:.5rem;padding:.2rem .5rem;background:#f8fafc}
+    .choice.correct{border-color:#22c55e;background:#dcfce7;color:#166534}
+    .choice.incorrect{border-color:#ef4444;background:#fee2e2;color:#991b1b}
+    .exercise{border:1px solid #e5e7eb;border-radius:1rem;padding:1rem;background:#fff}
+    .exercise.solved{background:#f0fdf4;border-color:#bbf7d0}
+    .feedback{border-radius:.75rem;padding:1rem;margin-top:.75rem}
+    .feedback.ok{background:#dcfce7;color:#166534}
+    .feedback.no{background:#fee2e2;color:#991b1b}
+    .results-enter{animation:pop .25s ease}
+    @keyframes pop{from{transform:scale(.98);opacity:0}to{transform:scale(1);opacity:1}}
+    .creator{font-size:.85rem;color:#64748b}
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 p-4 sm:p-6 md:p-10">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto">
-
-        <!-- Titre Principal -->
-        <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-black text-indigo-600 mb-2">Comment dire "COMME" en Coréen ? 🇰🇷</h1>
-            <p class="text-lg text-slate-500">Le guide pour ne plus jamais se tromper !</p>
-        </header>
-
-        <!-- La Règle d'Or -->
-        <div class="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-6 rounded-2xl mb-12">
-            <h2 class="text-2xl font-bold mb-2">La Règle d'Or 🔑</h2>
-            <p class="text-lg">Pour savoir quel mot utiliser, pose-toi cette question : est-ce que "comme" est lié à un <strong>verbe (une action)</strong> ou à un <strong>nom (un objet)</strong> ?</p>
-        </div>
-
-        <!-- Section 1: 같아요 -->
-        <div class="card" id="gatayo">
-            <div class="flex items-start">
-                <div class="text-5xl mr-6">🙋‍♀️</div>
-                <div>
-                    <h3 class="text-3xl font-bold text-cyan-600 mb-2 korean-font">같아요 </h3>
-                    <p class="text-slate-500 text-lg mb-4">On l'utilise pour dire <strong>"Être comme..."</strong>, quand on fait une simple comparaison.</p>
-                    <div class="bg-cyan-50 p-4 rounded-xl">
-                        <p class="font-semibold text-lg">Exemple :</p>
-                        <p class="text-md text-slate-600">"Elle est comme un ange."</p>
-                        <p class="korean-font text-xl text-cyan-700 font-semibold mt-1">→ 천사 같아요.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 2: 처럼 / 같이 -->
-        <div class="card" id="cheoreom-gachi">
-             <div class="flex items-start">
-                <div class="text-5xl mr-6">🏃‍♂️</div>
-                <div>
-                    <h3 class="text-3xl font-bold text-orange-600 mb-2 korean-font">처럼 / 같이 </h3>
-                    <p class="text-slate-500 text-lg mb-4">On les utilise pour décrire la <strong>manière de faire une action (avec un verbe)</strong>. Ils sont souvent interchangeables.</p>
-                    <div class="bg-orange-50 p-4 rounded-xl mb-6">
-                        <p class="font-semibold text-lg">Exemple :</p>
-                        <p class="text-md text-slate-600">"Je mange comme une vache."</p>
-                        <p class="korean-font text-xl text-orange-700 font-semibold mt-1">→ 소처럼 먹어요 / 소같이 먹어요.</p>
-                    </div>
-                     <div class="bg-red-100 border border-red-200 p-4 rounded-xl">
-                        <p class="font-bold text-red-800 text-lg">⚠️ Attention avec <span class="korean-font">같이</span> !</p>
-                        <p class="text-red-700 mt-1"><span class="korean-font">같이</span> peut aussi vouloir dire <strong>"ensemble"</strong>. <span class="korean-font">처럼</span> ne peut pas !</p>
-                        <p class="text-md text-slate-600 mt-2">"Je suis allé avec mon ami."</p>
-                        <p class="korean-font text-xl text-red-800 font-semibold mt-1">→ 친구랑 같이 갔어요. (Correct)</p>
-                        <p class="korean-font text-md text-slate-500 line-through mt-1">→ 친구처럼 갔어요. (Faux)</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 3: 같은 -->
-        <div class="card" id="gateun">
-            <div class="flex items-start">
-                <div class="text-5xl mr-6">✍️</div>
-                <div>
-                    <h3 class="text-3xl font-bold text-violet-600 mb-2 korean-font">같은 </h3>
-                    <p class="text-slate-500 text-lg mb-4">On l'utilise pour décrire <strong>un nom</strong>. C'est comme dire "qui est comme...".</p>
-                    <div class="bg-violet-50 p-4 rounded-xl">
-                        <p class="font-semibold text-lg">Exemple :</p>
-                        <p class="text-md text-slate-600">"C'est une amie comme ma famille."</p>
-                        <p class="korean-font text-xl text-violet-700 font-semibold mt-1">→ 가족 같은 친구예요.</p>
-                        <p class="text-sm text-slate-500 italic mt-1">(Une amie QUI EST COMME ma famille)</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 4: Cas Difficile -->
-        <div class="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-6 mb-12" id="difficile">
-            <h3 class="text-2xl font-bold text-slate-800 mb-4">🤔 Un cas un peu plus difficile : La danse !</h3>
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-blue-50 p-4 rounded-xl">
-                    <p class="font-bold text-blue-800 korean-font">별 같은 춤</p>
-                    <p class="text-blue-700">Ici, <strong class="korean-font">같은</strong> décrit le <strong>nom</strong> "danse" (춤).</p>
-                    <p class="mt-2">→ "Une danse <strong>qui est comme</strong> une étoile." (On parle du type de danse).</p>
-                </div>
-                <div class="bg-green-50 p-4 rounded-xl">
-                    <p class="font-bold text-green-800 korean-font">별 같이 춤을 춰요</p>
-                    <p class="text-green-700">Ici, <strong class="korean-font">같이</strong> décrit le <strong>verbe</strong> "danser" (춤을 춰요).</p>
-                    <p class="mt-2">→ "Elle danse <strong>à la manière d'une</strong> étoile." (On parle de la façon de danser).</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tableau Récapitulatif -->
-        <div class="mb-12">
-             <h2 class="text-3xl font-black text-center mb-6 text-slate-700">En Résumé 📝</h2>
-            <div class="overflow-x-auto bg-white rounded-2xl shadow-md">
-                <table class="w-full text-left text-sm sm:text-base">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            <th class="p-4 font-bold text-slate-600">Phrase française</th>
-                            <th class="p-4 font-bold text-slate-600">Verbe ou Nom ?</th>
-                            <th class="p-4 font-bold text-slate-600">Traduction Coréenne</th>
-                            <th class="p-4 font-bold text-slate-600">Explication</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="border-b">
-                            <td class="p-4 font-semibold">Je mange comme une vache</td>
-                            <td class="p-4 text-orange-600 font-semibold">Verbe</td>
-                            <td class="p-4 korean-font text-lg">소처럼 / 소같이 먹어요</td>
-                            <td class="p-4">Manière de faire l'action</td>
-                        </tr>
-                        <tr class="bg-slate-50 border-b">
-                            <td class="p-4 font-semibold">Une amie comme ma famille</td>
-                            <td class="p-4 text-violet-600 font-semibold">Nom</td>
-                            <td class="p-4 korean-font text-lg">가족 같은 친구예요</td>
-                            <td class="p-4">Type de nom (qui est comme...)</td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="p-4 font-semibold">Elle est comme un ange</td>
-                            <td class="p-4 text-cyan-600 font-semibold">Être comme</td>
-                            <td class="p-4 korean-font text-lg">천사 같아요</td>
-                            <td class="p-4">Simple identification</td>
-                        </tr>
-                        <tr class="bg-slate-50">
-                            <td class="p-4 font-semibold">Je vais avec mon ami</td>
-                            <td class="p-4 text-red-600 font-semibold">"Ensemble"</td>
-                            <td class="p-4 korean-font text-lg">친구랑 같이 갔어요</td>
-                            <td class="p-4">Sens "ensemble"</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+  <!-- Top Bar -->
+  <div class="max-w-5xl mx-auto mb-4 flex items-center justify-between">
+    <div class="creator">
+      <span class="font-semibold">made by 성일, Pongdang</span> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
     </div>
+    <div class="flex gap-2">
+      <button onclick="window.print()" class="btn btn-gray" title="Imprimer / 인쇄">🖨️ Imprimer · 인쇄</button>
+      <a href="../index.html" class="btn btn-gray">⟵ Page d’accueil</a>
+    </div>
+  </div>
 
+  <main class="max-w-5xl mx-auto space-y-10">
+    <!-- Title -->
+    <header class="text-center">
+      <h1 class="text-4xl md:text-5xl font-black text-indigo-600 mb-2">Comment dire « COMME » en coréen ?</h1>
+      <p class="text-slate-600">Règle simple + 2 séries d’exercices (FR·KO). ✨</p>
+      <div class="mt-3 flex items-center justify-center gap-2">
+        <span class="tag">같아요</span>
+        <span class="tag">처럼</span>
+        <span class="tag">같이</span>
+        <span class="tag">같은</span>
+      </div>
+    </header>
+
+    <!-- Golden Rule -->
+    <section class="card">
+      <h2 class="text-2xl font-bold mb-2">La règle d’or 🔑</h2>
+      <p class="text-lg">Demande-toi si « comme » touche <b>un verbe (une action)</b> ➜ <span class="korean font-bold">처럼/같이</span>,
+        <br class="hidden sm:block"/>ou bien <b>un nom (un objet)</b> ➜ <span class="korean font-bold">같은</span>.
+        <br/>Pour une simple identité « être comme », on dit <span class="korean font-bold">같아요</span>.
+      </p>
+    </section>
+
+    <!-- Explanations combined (romanizations removed) -->
+    <section class="grid md:grid-cols-2 gap-6">
+      <div class="card">
+        <h3 class="text-2xl font-bold text-cyan-600 korean mb-2">같아요</h3>
+        <p class="text-slate-600 mb-3">« être comme » — comparaison simple.</p>
+        <div class="bg-cyan-50 border border-cyan-100 rounded-xl p-3">
+          <p class="text-sm text-slate-600">« Elle est comme un ange. »</p>
+          <p class="korean text-xl font-bold text-cyan-700">→ 천사 같아요.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="text-2xl font-bold text-orange-600 korean mb-2">처럼 / 같이</h3>
+        <p class="text-slate-600 mb-3">décrit la <b>manière</b> d’une action (verbe). Souvent interchangeables.</p>
+        <div class="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-3">
+          <p class="text-sm text-slate-600">« Je mange comme une vache. »</p>
+          <p class="korean text-xl font-bold text-orange-700">→ 소처럼 먹어요 / 소같이 먹어요.</p>
+        </div>
+        <div class="bg-red-50 border border-red-200 rounded-xl p-3">
+          <p class="font-bold text-red-700">⚠️ <span class="korean">같이</span> = « ensemble » aussi.</p>
+          <p class="text-sm text-slate-600 mt-1">« Je suis allé avec mon ami. »</p>
+          <p class="korean font-bold text-red-800">→ 친구랑 같이 갔어요. (✔)</p>
+          <p class="korean text-slate-500 line-through">→ 친구처럼 갔어요. (✘)</p>
+        </div>
+      </div>
+      <div class="card md:col-span-2">
+        <h3 class="text-2xl font-bold text-violet-600 korean mb-2">같은</h3>
+        <p class="text-slate-600 mb-3">décrit un <b>nom</b> : « qui est comme … »</p>
+        <div class="bg-violet-50 border border-violet-100 rounded-xl p-3">
+          <p class="text-sm text-slate-600">« C’est une amie comme ma famille. »</p>
+          <p class="korean text-xl font-bold text-violet-700">→ 가족 같은 친구예요.</p>
+          <p class="text-xs italic text-slate-500 mt-1">(Une amie qui est comme ma famille)</p>
+        </div>
+      </div>
+      <div class="card md:col-span-2">
+        <h3 class="text-xl font-bold mb-2">« Danse » : nom vs manière</h3>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="bg-blue-50 p-3 rounded-xl">
+            <p class="korean font-bold text-blue-800">별 같은 춤</p>
+            <p class="text-sm text-blue-800">같은 → nom « 춤 » : « une danse <b>qui est comme</b> une étoile »</p>
+          </div>
+          <div class="bg-green-50 p-3 rounded-xl">
+            <p class="korean font-bold text-green-800">별 같이 춤을 춰요</p>
+            <p class="text-sm text-green-800">같이 → verbe « 춤을 춰요 » : « danser <b>à la manière</b> d’une étoile »</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY TABLE -->
+    <section class="card">
+      <h2 class="text-2xl font-bold mb-3">En résumé 📝</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="p-3">Phrase FR</th>
+              <th class="p-3">Verbe / Nom</th>
+              <th class="p-3">Coréen</th>
+              <th class="p-3">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b">
+              <td class="p-3">Je mange comme une vache</td>
+              <td class="p-3 text-orange-600 font-semibold">Verbe</td>
+              <td class="p-3 korean">소처럼 / 소같이 먹어요</td>
+              <td class="p-3">manière (verbe)</td>
+            </tr>
+            <tr class="border-b bg-slate-50">
+              <td class="p-3">Une amie comme ma famille</td>
+              <td class="p-3 text-violet-600 font-semibold">Nom</td>
+              <td class="p-3 korean">가족 같은 친구예요</td>
+              <td class="p-3">type de nom</td>
+            </tr>
+            <tr class="border-b">
+              <td class="p-3">Elle est comme un ange</td>
+              <td class="p-3 text-cyan-600 font-semibold">Être comme</td>
+              <td class="p-3 korean">천사 같아요</td>
+              <td class="p-3">identité</td>
+            </tr>
+            <tr>
+              <td class="p-3">Je vais avec mon ami</td>
+              <td class="p-3 text-red-600 font-semibold">« Ensemble »</td>
+              <td class="p-3 korean">친구랑 같이 갔어요</td>
+              <td class="p-3">같이 = ensemble</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EXERCISES SET 1 (instant check) -->
+    <section id="set1" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-3xl font-bold">연습문제 1 · Exercices (20) — <span class="text-slate-500">choix immédiat</span></h2>
+        <button id="reset1" class="btn btn-gray">Recommencer</button>
+      </div>
+      <div id="list1" class="space-y-3"></div>
+    </section>
+
+    <!-- EXERCISES SET 2 (2-step) -->
+    <section id="set2" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-3xl font-bold">연습문제 2 · Exercices (20) — <span class="text-slate-500">2 étapes</span></h2>
+        <button id="reset2" class="btn btn-gray">Recommencer</button>
+      </div>
+      <div id="list2" class="space-y-3"></div>
+    </section>
+
+    <!-- Finish -->
+    <section class="flex flex-col items-center gap-3 pt-4">
+      <button id="finishBtn" class="btn btn-blue text-lg px-6">Terminer · 끝내기</button>
+      <p class="text-sm text-slate-500">Vous verrez votre score et la correction détaillée. / 점수와 해설을 볼 수 있어요.</p>
+      <div id="results" class="hidden results-enter w-full"></div>
+    </section>
+
+    <!-- Footer Nav -->
+    <footer class="pt-10">
+      <div class="flex items-center justify-between">
+        <a href="../index.html" class="btn btn-gray">⟵ Exercices précédents / 이전 연습으로</a>
+        <button onclick="window.print()" class="btn btn-gray">🖨️ Imprimer / 인쇄</button>
+      </div>
+      <div class="creator mt-6 text-center">
+        <span class="font-semibold">made by 성일, Pongdang</span> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+  // --------------------------
+  // Dataset (SET 1: instant check)
+  // --------------------------
+  const data1 = [
+    // 쉬운 레벨 (같아요)
+    { type:'id', fr:"Ce bébé est comme un ange.", ans:"etre", exp:"Simple comparaison d'identité (« être comme »)." },
+    { type:'id', fr:"Le temps est comme de l'or.", ans:"etre", exp:"Identité : le temps EST comme l'or." },
+    { type:'fill', parts:["이건 꿈", "."], ok:["같아요"], exp:"« Ceci est comme un rêve. »" },
+    { type:'fill', parts:["오늘은 어제", "."], ok:["같아요"], exp:"« Aujourd'hui est comme hier. »" },
+
+    // 중간 (같은 / Nom)
+    { type:'id', fr:"C'est un homme comme un lion.", ans:"nom", exp:"« Comme » décrit le nom ‘homme’." },
+    { type:'id', fr:"Je cherche une maison comme un château.", ans:"nom", exp:"Décrit le nom ‘maison’." },
+    { type:'id', fr:"C'est un cadeau comme un trésor.", ans:"nom", exp:"Décrit le nom ‘cadeau’." },
+    { type:'id', fr:"J'ai un ami comme un frère.", ans:"nom", exp:"Décrit le nom ‘ami’." },
+    { type:'fill', parts:["천사", " 아기예요."], ok:["같은"], exp:"On décrit le nom ‘아기’." },
+    { type:'fill', parts:["바다", " 넓은 마음"], ok:["같은"], exp:"On décrit le nom ‘마음’." },
+    { type:'fill', parts:["그녀는 여우", " 여자예요."], ok:["같은"], exp:"On décrit le nom ‘여자’." },
+
+    // 어려운 (처럼/같이)
+    { type:'id', fr:"Il court comme le vent.", ans:"verbe", exp:"« Comme » décrit l’action courir." },
+    { type:'id', fr:"Elle chante comme une sirène.", ans:"verbe", exp:"« Comme » décrit la manière de chanter." },
+    { type:'id', fr:"Il danse comme un professionnel.", ans:"verbe", exp:"« Comme » décrit la manière de danser." },
+    { type:'id', fr:"Elle parle comme un poète.", ans:"verbe", exp:"« Comme » décrit la manière de parler." },
+    { type:'fill', parts:["그는 바람", " 달려요."], ok:["처럼","같이"], exp:"Manière de courir." },
+    { type:'fill', parts:["우리 아빠는 곰", " 자요."], ok:["처럼","같이"], exp:"Manière de dormir." },
+    { type:'fill', parts:["가수", " 노래를 잘해요."], ok:["처럼","같이"], exp:"Manière de chanter." },
+    { type:'fill', parts:["아기가 어른", " 말해요."], ok:["처럼","같이"], exp:"Manière de parler." },
+    { type:'fill', parts:["그는 로봇", " 걸어요."], ok:["처럼","같이"], exp:"Manière de marcher." }
+  ];
+
+  // --------------------------
+  // Dataset (SET 2: two-step)
+  // --------------------------
+  const data2 = [
+    { fr:"Ce bébé est comme un ange.", vocab:[{fr:"bébé",ko:"아기"},{fr:"ange",ko:"천사"}], typeAns:"etre", parts:["이 아기는 천사", "."], fill:"같아요", cho:"ㅇ ㅇㄱㄴ ㅊㅅ ㄱㅇㅇ." },
+    { fr:"Le temps est comme de l'or.", vocab:[{fr:"temps",ko:"시간"},{fr:"or",ko:"금"}], typeAns:"etre", parts:["시간은 금", "."], fill:"같아요", cho:"ㅅㄱㅇ ㄱ ㄱㅇㅇ." },
+    { fr:"C'est une amie comme ma famille.", vocab:[{fr:"amie",ko:"친구"},{fr:"famille",ko:"가족"}], typeAns:"nom", parts:["가족", " 친구예요."], fill:"같은", cho:"ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ." },
+    { fr:"J'ai un ami comme un frère.", vocab:[{fr:"ami",ko:"친구"},{fr:"frère",ko:"형제"}], typeAns:"nom", parts:["형제", " 친구가 있어요."], fill:"같은", cho:"ㅎㅈ ㄱㅇ ㅊㄱㄱ ㅇㅇㅇ." },
+    { fr:"Il court comme le vent.", vocab:[{fr:"courir",ko:"달리다"},{fr:"vent",ko:"바람"}], typeAns:"verbe", parts:["그는 바람", " 달려요."], fill:"처럼/같이", cho:"ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ." },
+    { fr:"Elle chante comme une sirène.", vocab:[{fr:"chanter",ko:"노래하다"},{fr:"sirène",ko:"인어"}], typeAns:"verbe", parts:["그녀는 인어", " 노래해요."], fill:"처럼/같이", cho:"ㄱㄴㄴ ㅇㅇㅊㄹ ㄴㄹㅎㅇ." },
+    { fr:"Ceci est comme un rêve.", vocab:[{fr:"ceci",ko:"이것"},{fr:"rêve",ko:"꿈"}], typeAns:"etre", parts:["이건 꿈", "."], fill:"같아요", cho:"ㅇㄱ ㄲ ㄱㅇㅇ." },
+    { fr:"C'est une femme comme un renard.", vocab:[{fr:"femme",ko:"여자"},{fr:"renard",ko:"여우"}], typeAns:"nom", parts:["여우", " 여자예요."], fill:"같은", cho:"ㅇㅇ ㄱㅇ ㅇㅈㅇㅇ." },
+    { fr:"Il danse comme un professionnel.", vocab:[{fr:"danser",ko:"춤추다"},{fr:"professionnel",ko:"전문가"}], typeAns:"verbe", parts:["그는 전문가", " 춤을 춰요."], fill:"처럼/같이", cho:"ㄱㄴ ㅈㅁㄱㅊㄹ ㅊㅇ ㅊㅇ." },
+    { fr:"Aujourd'hui est comme hier.", vocab:[{fr:"aujourd'hui",ko:"오늘"},{fr:"hier",ko:"어제"}], typeAns:"etre", parts:["오늘은 어제", "."], fill:"같아요", cho:"ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ." },
+    { fr:"C'est un cadeau comme un trésor.", vocab:[{fr:"cadeau",ko:"선물"},{fr:"trésor",ko:"보물"}], typeAns:"nom", parts:["보물", " 선물이에요."], fill:"같은", cho:"ㅂㅁ ㄱㅇ ㅅㅁㅇㅇㅇ." },
+    { fr:"Elle parle comme un poète.", vocab:[{fr:"parler",ko:"말하다"},{fr:"poète",ko:"시인"}], typeAns:"verbe", parts:["그녀는 시인", " 말해요."], fill:"처럼/같이", cho:"ㄱㄴㄴ ㅅㅇㅊㄹ ㅁㅎㅇ." },
+    { fr:"Un coeur large comme la mer.", vocab:[{fr:"coeur",ko:"마음"},{fr:"mer",ko:"바다"}], typeAns:"nom", parts:["바다", " 넓은 마음."], fill:"같은", cho:"ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ." },
+    { fr:"Il dort comme un ours.", vocab:[{fr:"dormir",ko:"자다"},{fr:"ours",ko:"곰"}], typeAns:"verbe", parts:["그는 곰", " 자요."], fill:"처럼/같이", cho:"ㄱㄴ ㄱㅊㄹ ㅈㅇ." },
+    { fr:"Un enfant comme une poupée.", vocab:[{fr:"enfant",ko:"아이"},{fr:"poupée",ko:"인형"}], typeAns:"nom", parts:["인형", " 아이."], fill:"같은", cho:"ㅇㅎ ㄱㅇ ㅇㅇ." },
+    { fr:"Il marche comme un robot.", vocab:[{fr:"marcher",ko:"걷다"},{fr:"robot",ko:"로봇"}], typeAns:"verbe", parts:["그는 로봇", " 걸어요."], fill:"처럼/같이", cho:"ㄱㄴ ㄹㅂㄱㅇ ㄱㅇㅇ." },
+    { fr:"Une voix douce comme le sucre.", vocab:[{fr:"voix",ko:"목소리"},{fr:"sucre",ko:"설탕"}], typeAns:"nom", parts:["설탕", " 목소리."], fill:"같은", cho:"ㅅㅌ ㄱㅇ ㅁㅅㄹ." },
+    { fr:"Il est lent comme une tortue.", vocab:[{fr:"lent",ko:"느리다"},{fr:"tortue",ko:"거북이"}], typeAns:"verbe", parts:["거북이", " 느려요."], fill:"처럼/같이", cho:"ㄱㅂㅇㅊㄹ ㄴㄹㅇ." },
+    { fr:"Cette personne est comme un acteur.", vocab:[{fr:"personne",ko:"사람"},{fr:"acteur",ko:"배우"}], typeAns:"etre", parts:["그 사람은 배우", "."], fill:"같아요", cho:"ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ." },
+    { fr:"Il dépense de l'argent comme de l'eau.", vocab:[{fr:"dépenser",ko:"돈을 쓰다"},{fr:"eau",ko:"물"}], typeAns:"verbe", parts:["물", " 돈을 써요."], fill:"처럼/같이", cho:"ㅁㅊㄹ ㄷㅇ ㅆㅇ." }
+  ];
+
+  // Render helpers
+  const list1 = document.getElementById('list1');
+  const list2 = document.getElementById('list2');
+
+  function renderSet1(){
+    list1.innerHTML='';
+    data1.forEach((ex,i)=>{
+      const wrap=document.createElement('div');
+      wrap.className='exercise';
+      wrap.id=`s1-${i}`;
+      let inner=`
+        <div class="flex items-start gap-3">
+          <div class="text-xl font-bold text-blue-500">${i+1}.</div>
+          <div class="flex-1">
+      `;
+      if(ex.type==='id'){
+        inner+=`
+          <p class="text-slate-700 mb-3">Quel est le type de la phrase ?</p>
+          <p class="font-semibold text-lg mb-3">« ${ex.fr} »</p>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-gray choice" data-a="verbe">Action (Verbe) 🏃‍♂️</button>
+            <button class="btn btn-gray choice" data-a="nom">Objet (Nom) ✍️</button>
+            <button class="btn btn-gray choice" data-a="etre">Identification (Être comme) 🙋‍♀️</button>
+          </div>
+          <p class="hidden mt-3 text-sm text-slate-600 exp">Explication : ${ex.exp}</p>
+        `;
+      }else{
+        const opts=["같아요","처럼","같이","같은"].map(o=>`<button class="btn btn-gray choice korean" data-a="${o}">${o}</button>`).join('');
+        inner+=`
+          <p class="text-slate-700 mb-2">Complète la phrase :</p>
+          <p class="korean text-2xl font-semibold mb-3">${ex.parts[0]} <span class="inline-block bg-slate-200 rounded-md w-24 h-8 align-middle"></span> ${ex.parts[1]}</p>
+          <div class="flex flex-wrap gap-2">${opts}</div>
+          <p class="hidden mt-3 text-sm text-slate-600 exp">Explication : ${ex.exp}</p>
+        `;
+      }
+      inner+=`</div></div>`;
+      wrap.innerHTML=inner;
+      list1.appendChild(wrap);
+    });
+
+    // events
+    list1.querySelectorAll('.exercise').forEach((box,idx)=>{
+      const ex=data1[idx];
+      box.querySelectorAll('.choice').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const picked=btn.dataset.a;
+          const ok = ex.type==='id' ? (picked===ex.ans) : ex.ok.includes(picked);
+          // disable all
+          box.querySelectorAll('.choice').forEach(b=>b.disabled=true);
+          // mark
+          if(ok){ btn.classList.add('correct'); box.classList.add('solved'); }
+          else{
+            btn.classList.add('incorrect');
+            // show correct
+            box.querySelectorAll('.choice').forEach(b=>{
+              const isOk = ex.type==='id' ? (b.dataset.a===ex.ans) : ex.ok.includes(b.dataset.a);
+              if(isOk) b.classList.add('correct');
+            });
+          }
+          box.querySelector('.exp').classList.remove('hidden');
+          // store
+          box.dataset.correct = ok ? '1' : '0';
+        });
+      });
+    });
+  }
+
+  function renderSet2(){
+    list2.innerHTML='';
+    data2.forEach((ex,i)=>{
+      const wrap=document.createElement('div');
+      wrap.className='exercise';
+      wrap.id=`s2-${i}`;
+      const vocab = ex.vocab.map(v=>`<li class="text-sm"><b>${v.fr}</b> : <span class="korean">${v.ko}</span></li>`).join('');
+      wrap.innerHTML=`
+        <div class="flex items-start gap-3">
+          <div class="text-xl font-bold text-violet-600">${i+1}.</div>
+          <div class="flex-1">
+            <p class="font-semibold text-lg mb-2">« ${ex.fr} »</p>
+            <ul class="list-disc list-inside bg-slate-50 p-2 rounded-md mb-3">${vocab}</ul>
+            <div class="mb-3">
+              <p class="font-semibold mb-2">1) Type ?</p>
+              <div class="flex flex-wrap gap-2 type">
+                <button class="btn btn-gray" data-t="verbe">Action (Verbe) 🏃‍♂️</button>
+                <button class="btn btn-gray" data-t="nom">Objet (Nom) ✍️</button>
+                <button class="btn btn-gray" data-t="etre">Identification (Être) 🙋‍♀️</button>
+              </div>
+            </div>
+            <div>
+              <p class="font-semibold mb-2">2) Complétez en coréen.</p>
+              <div class="flex items-center gap-2 mb-2">
+                <span class="korean text-xl">${ex.parts[0]}</span>
+                <input class="korean text-xl p-2 border-2 border-slate-300 rounded-lg w-40 focus:border-blue-500" placeholder="Réponse"/>
+                <span class="korean text-xl">${ex.parts[1]}</span>
+              </div>
+              <button class="text-sm text-blue-600 underline hint">Indice (초성) / Astuce</button>
+              <p class="korean text-amber-700 mt-1 hidden hintText">${ex.cho}</p>
+            </div>
+            <div class="mt-4 border-t pt-3">
+              <button class="btn btn-blue w-full check">Vérifier</button>
+            </div>
+            <div class="feedback hidden"></div>
+          </div>
+        </div>
+      `;
+      list2.appendChild(wrap);
+    });
+
+    // events
+    list2.querySelectorAll('.exercise').forEach((box,idx)=>{
+      const ex=data2[idx];
+      // type buttons (single select)
+      box.querySelectorAll('.type .btn').forEach(b=>{
+        b.addEventListener('click',()=>{
+          box.querySelectorAll('.type .btn').forEach(x=>x.classList.remove('ring','ring-offset-2'));
+          b.classList.add('ring','ring-offset-2');
+          box.dataset.typePicked = b.dataset.t;
+        });
+      });
+      // hint
+      box.querySelector('.hint').addEventListener('click', (e)=>{
+        box.querySelector('.hintText').classList.remove('hidden');
+        e.currentTarget.disabled = true;
+      });
+      // check
+      box.querySelector('.check').addEventListener('click', ()=>{
+        const picked = box.dataset.typePicked || '';
+        const okType = picked === ex.typeAns;
+        const input = box.querySelector('input');
+        const val = (input.value||'').trim();
+        const okFill = ex.fill.split('/').map(s=>s.trim()).includes(val);
+        const fb = box.querySelector('.feedback');
+        if(okType && okFill){
+          fb.className='feedback ok';
+          fb.innerHTML=`<b>🥳 Bravo !</b> Tout est correct. <div class="mt-2 korean">문장: ${ex.parts[0]} <b>${ex.fill.split('/')[0]}</b> ${ex.parts[1]}</div>`;
+          box.classList.add('solved');
+          box.dataset.correct = '1';
+        }else{
+          fb.className='feedback no';
+          let html = `<b>🤔 Presque !</b><ul class="list-disc list-inside mt-2 text-sm">`;
+          html += okType ? `<li>Partie 1 (Type) : ✅</li>` : `<li>Partie 1 (Type) : ❌ → <b>${ex.typeAns}</b></li>`;
+          html += okFill ? `<li>Partie 2 (Phrase) : ✅</li>` : `<li>Partie 2 (Phrase) : ❌ → <b>${ex.fill.replace('/',' / ')}</b></li>`;
+          html += `</ul><div class="mt-2 korean">정답 문장: ${ex.parts[0]} <b>${ex.fill.split('/')[0]}</b> ${ex.parts[1]}</div>`;
+          fb.innerHTML = html;
+          box.dataset.correct = '0';
+        }
+        fb.classList.remove('hidden');
+      });
+    });
+  }
+
+  // Reset buttons
+  document.getElementById('reset1').addEventListener('click', renderSet1);
+  document.getElementById('reset2').addEventListener('click', renderSet2);
+
+  // Initial render
+  renderSet1();
+  renderSet2();
+
+  // --------------------------
+  // Finish & Results
+  // --------------------------
+  document.getElementById('finishBtn').addEventListener('click', ()=>{
+    // For set1: count boxes with dataset.correct set by click; unanswered count as 0
+    let s1Total = data1.length, s1Ok = 0;
+    document.querySelectorAll('#list1 .exercise').forEach((box)=>{
+      s1Ok += (box.dataset.correct==='1') ? 1 : 0;
+    });
+
+    // For set2: if user never clicked "Vérifier", we auto-check now
+    let s2Total = data2.length, s2Ok = 0;
+    document.querySelectorAll('#list2 .exercise').forEach((box,idx)=>{
+      const ex = data2[idx];
+      // if no dataset.correct, compute once
+      if(typeof box.dataset.correct === 'undefined'){
+        const picked = box.dataset.typePicked || '';
+        const okType = picked === ex.typeAns;
+        const val = (box.querySelector('input').value||'').trim();
+        const okFill = ex.fill.split('/').map(s=>s.trim()).includes(val);
+        box.dataset.correct = (okType && okFill) ? '1':'0';
+      }
+      s2Ok += (box.dataset.correct==='1') ? 1 : 0;
+    });
+
+    const total = s1Total + s2Total;
+    const ok = s1Ok + s2Ok;
+
+    const res = document.getElementById('results');
+    res.classList.remove('hidden');
+    res.innerHTML = `
+      <div class="card">
+        <h3 class="text-2xl font-bold mb-2">📊 Résultats / 결과</h3>
+        <p class="text-lg mb-4">Score : <b>${ok} / ${total}</b></p>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="card">
+            <h4 class="font-bold mb-2">연습문제 1</h4>
+            <p>Corrects : <b>${s1Ok} / ${s1Total}</b></p>
+            <details class="mt-2">
+              <summary class="cursor-pointer text-slate-700">Voir la correction</summary>
+              <ol class="list-decimal list-inside mt-2 space-y-1 text-sm">
+                ${data1.map((ex,i)=>{
+                  if(ex.type==='id'){
+                    return `<li>« ${ex.fr} » → <b>${ex.ans}</b> <span class="block text-slate-500">${ex.exp}</span></li>`;
+                  }else{
+                    return `<li class="korean">${ex.parts[0]} <b>${ex.ok.join(' / ')}</b> ${ex.parts[1]} <span class="block text-slate-500">${ex.exp}</span></li>`;
+                  }
+                }).join('')}
+              </ol>
+            </details>
+          </div>
+          <div class="card">
+            <h4 class="font-bold mb-2">연습문제 2</h4>
+            <p>Corrects : <b>${s2Ok} / ${s2Total}</b></p>
+            <details class="mt-2">
+              <summary class="cursor-pointer text-slate-700">Voir la correction</summary>
+              <ol class="list-decimal list-inside mt-2 space-y-1 text-sm">
+                ${data2.map(ex=>`
+                  <li>
+                    « ${ex.fr} » — Type : <b>${ex.typeAns}</b>
+                    <div class="korean">문장: ${ex.parts[0]} <b>${ex.fill.split('/')[0]}</b> ${ex.parts[1]}</div>
+                  </li>
+                ").join('')}
+              </ol>
+            </details>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button class="btn btn-gray" onclick="window.scrollTo({top:0,behavior:'smooth'})">Revoir la leçon</button>
+          <button class="btn btn-gray" onclick="location.reload()">다시하기 · Recommencer</button>
+        </div>
+      </div>
+    `;
+  });
+  </script>
 </body>
 </html>
-
-
