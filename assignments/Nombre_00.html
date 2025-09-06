@@ -629,12 +629,40 @@
 
     // ===== Flow =====
     function startQuiz(){
-      studentName=document.getElementById('student-name').value.trim();
-      if(!studentName){ showErrorModal("이름을 입력해 주세요. (Entrez votre nom.)"); return; }
-      document.getElementById('start-screen').classList.add('hidden');
-      document.getElementById=''; // no-op
-      document.getElementById('explanation-screen').classList.remove('hidden');
-    }
+studentName = document.getElementById('student-name').value.trim();
+if(!studentName){
+showErrorModal("이름을 입력해 주세요. (Entrez votre nom.)");
+return;
+}
+
+
+const start = document.getElementById('start-screen');
+const explain = document.getElementById('explanation-screen');
+if(!start || !explain){
+console.error('[startQuiz] Missing #start-screen or #explanation-screen');
+return;
+}
+
+
+// 화면 전환
+start.classList.add('hidden');
+explain.classList.remove('hidden');
+
+
+// UX: 다음 버튼 포커스 및 상단으로 스크롤
+const next = document.getElementById('explanation-next-btn');
+if(next){ try{ next.focus({ preventScroll:true }); }catch(_){} }
+try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){}
+}
+
+
+// 🛡️ 안전장치(선택): DOMContentLoaded 시 getElementById가 함수인지 확인
+// (다른 곳에서 다시 덮어쓰는 실수를 빠르게 발견하기 위함)
+document.addEventListener('DOMContentLoaded', ()=>{
+if(typeof document.getElementById !== 'function'){
+console.error('document.getElementById was overridden unexpectedly!');
+}
+});
     function showWarmupScreen(){
       document.getElementById('explanation-screen').classList.add('hidden');
       document.getElementById('warmup-screen').classList.remove('hidden');
