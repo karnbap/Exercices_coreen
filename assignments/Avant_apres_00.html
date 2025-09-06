@@ -265,7 +265,7 @@
 
         if(q.type==='listening-dictation'){
           html += `<div class="flex items-center mt-2 mb-4">
-            <button onclick="playAudio(event, '${q.ko.replace(/'/g,"\\'")}', 'man')" class="btn btn-secondary">Écouter / 문장 듣기</button>
+            <button onclick="playAudio(event, '${q.ko.replace(/'/g,"\\'")}', (currentQuestionIndex % 2 ? 'woman' : 'man'), 'auto')" class="btn btn-secondary">Écouter / 문장 듣기</button>
           </div>`;
         } else if(q.type!=='translate-sentence'){
           html += `<p class="text-2xl font-bold text-indigo-600 mb-4">${q.ko}</p>`;
@@ -402,8 +402,8 @@
       catch(e){ /* sendResults 내부에서 처리 */ }
     }
 
-    // ===== 오디오 재생 (Blob URL) =====
-    async function playAudio(event, text, voice='woman'){
+    // ===== 오디오 재생 (Blob URL) – OpenAI/Google 폴백 응답 호환 =====
+    async function playAudio(event, text, voice='woman', provider='auto'){
       const qd = questionsData.find(d=>d.ko===text);
       if(qd) qd.listenCount++;
 
@@ -416,21 +416,37 @@
         const res = await fetch('/.netlify/functions/generate-audio',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text, voice })
+          body: JSON.stringify({ text, voice, provider }) // 서버에서 OpenAI 우선→실패 시 Google 폴백
         });
         if(!res.ok){
-          const msg = await res.text();
+          const msg = await res.text().catch(()=> '');
           throw new Error(`generate-audio ${res.status}: ${msg}`);
         }
-        const { audioData, mimeType } = await res.json();
-        if(!audioData) throw new Error('No audio data returned');
 
-        const blob = base64ToBlob(audioData, mimeType || 'audio/mpeg');
+        const data = await res.json();
+        // 새 응답키(audioBase64)와 예전 응답키(audioData) 모두 지원
+        const b64 = data.audioBase64 || data.audioData;
+        const mimeType = data.mimeType || 'audio/mpeg';
+        if(!b64) throw new Error('No audio data returned');
+
+        const blob = base64ToBlob(b64, mimeType);
         url = URL.createObjectURL(blob);
 
-        const audio = new Audio(url);
-        await audio.play();
-        audio.onended = ()=>{ if(url) URL.revokeObjectURL(url); btn.disabled=false; btn.innerHTML=original; };
+        // 단일 오디오 엘리먼트 사용 (안정성↑)
+        const audioEl = document.getElementById('tts-player') || (()=> {
+          const a = document.createElement('audio');
+          a.id = 'tts-player';
+          a.className = 'hidden';
+          document.body.appendChild(a);
+          return a;
+        })();
+
+        audioEl.src = url;
+        await audioEl.play();
+        audioEl.onended = ()=>{
+          if(url) URL.revokeObjectURL(url);
+          btn.disabled=false; btn.innerHTML=original;
+        };
 
       } catch(err){
         console.error('Audio playback error:', err);
