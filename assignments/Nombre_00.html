@@ -38,7 +38,7 @@
   <!-- 시작 화면 -->
   <div id="start-screen" class="min-h-screen flex flex-col items-center justify-center text-center p-4">
     <h1 class="text-4xl font-bold text-slate-800 mb-2">Exercice : Les Nombres Coréens 🔢</h1>
-    <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (sino-coréen)</p>
+    <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (Hanja-coréen)</p>
     <div class="w-full max-w-sm">
       <input id="student-name" class="w-full p-3 text-center border-2 border-slate-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Quel est ton nom ? (이름이 뭐예요?)">
       <button id="start-btn" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Commencer ! (시작!)</button>
@@ -69,7 +69,7 @@
               <br>→ 눈앞에서 직접 세는 것(나이, 사람 수, 물건 개수…)</p>
           </div>
           <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 class="font-bold text-lg text-green-800">Sino-coréen (한자어)</h4>
+            <h4 class="font-bold text-lg text-green-800">Hanja-coréen (한자어)</h4>
             <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
             <p><strong>Pour :</strong> noms/unités déjà écrits (dates, argent, minutes…)
               <br>→ 이미 정해진 이름/단위(날짜, 돈, 분 등)</p>
@@ -80,9 +80,9 @@
       <div>
         <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance / 예외와 포인트</h3>
         <ul class="list-disc list-inside space-y-2">
-          <li><b>Heures(시)</b> → natifs / <b>Minutes(분)</b> → sino-coréen.
+          <li><b>Heures(시)</b> → natifs / <b>Minutes(분)</b> → Hanja-coréen.
             <br>→ <b>시=고유수 / 분=한자어</b></li>
-          <li>Petit mémo ⌛ : Avant, on avait d’autres unités (ex. ‘각’ ≈ 15 min). Maintenant : 1 h = 60 min → <b>시=natifs / 분=sino-coréen</b>.
+          <li>Petit mémo ⌛ : Avant, on avait d’autres unités (ex. ‘각’ ≈ 15 min). Maintenant : 1 h = 60 min → <b>시=natifs / 분=Hanja-coréen</b>.
             <br>간단 역사: 예전엔 ‘각(15분)’ 같은 전통 단위 → 지금은 1시간=60분, 그래서 <b>시=고유 / 분=한자</b>.</li>
         </ul>
       </div>
@@ -121,11 +121,11 @@
         <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.92 })"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">Sino-coréen (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
+        <p class="font-semibold text-lg text-slate-700">Hanja-coréen (1-5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
         <button class="btn btn-sound" onclick="playAudio('일, 이, 삼, 사, 오','alloy')"><i class="fas fa-play"></i></button>
       </div>
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">Sino-coréen (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
+        <p class="font-semibold text-lg text-slate-700">Hanja-coréen (6-10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
         <button class="btn btn-sound" onclick="playAudio('육, 칠, 팔, 구, 십','alloy')"><i class="fas fa-play"></i></button>
       </div>
     </div>
@@ -276,15 +276,15 @@
           "Pourquoi/이유: on compte des choses visibles → 고유한국어 수"
         ],
         date: [
-          "📅 Dates (…일) → sino-coréen (일/이/삼…).",
+          "📅 Dates (…일) → Hanja-coréen (일/이/삼…).",
           "Pourquoi/이유: c’est un nom écrit sur le calendrier → 한자어"
         ],
         money: [
-          "💶 Prix/Argent → sino-coréen (십 유로, 오천 원…).",
+          "💶 Prix/Argent → Hanja-coréen (십 유로, 오천 원…).",
           "Pourquoi/이유: unités fixées (유로/원) → 한자어"
         ],
         minutes: [
-          "⏱️ Minutes(분) → sino-coréen.",
+          "⏱️ Minutes(분) → Hanja-coréen.",
           "Pourquoi/이유: ‘분’ est un nom d’unité écrit → 한자어"
         ],
         hours: [
@@ -294,7 +294,7 @@
         time_history: [
           "🕰️ Histoire courte / 간단 역사",
           "Avant: ‘각’ ≈ 15 min. Maintenant: 1 h = 60 min.",
-          "→ Aujourd’hui: 시(natif) / 분(sino-coréen)"
+          "→ Aujourd’hui: 시(natif) / 분(Hanja-coréen)"
         ]
       };
       return lines[forWhat].concat(lines.time_history || []).join("\n");
@@ -314,7 +314,7 @@
       else if (/유로|원|Prix|Argent/i.test(text))               msg = buildConceptHint("money");
       else if (text.includes("분") || /Minutes/i.test(text))    msg = buildConceptHint("minutes");
       else if (text.includes("시") || /Heures/i.test(text))     msg = buildConceptHint("hours");
-      else msg = "ℹ️ Deux systèmes / 두 가지 숫자 체계:\n- Compter des choses → natifs\n- Noms/Unités écrits (date, prix, numéro…) → sino-coréen\n(Temps/시간: 시=고유, 분=한자)";
+      else msg = "ℹ️ Deux systèmes / 두 가지 숫자 체계:\n- Compter des choses → natifs\n- Noms/Unités écrits (date, prix, numéro…) → Hanja-coréen\n(Temps/시간: 시=고유, 분=한자)";
 
       d.textContent = msg;
       d.classList.remove('hidden');
