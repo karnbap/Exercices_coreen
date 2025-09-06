@@ -97,35 +97,88 @@
     }
     const $ = (sel) => document.querySelector(sel);
 
-    // 🔍 채점 보정 유틸(띄어쓰기/부호 무시 + 10% 오타 허용)
-    function normalizeForLoose(s){
-      return (s||'').toLowerCase().replace(/[.,!?;:'"()\-\u200b\s]/g,'').trim();
+  // 🔍 더 넓은 정규화: 공백/부호/공손어미/주어대명사 제거
+function normalizeForLoose(s){
+  return (s||'')
+    .toLowerCase()
+    // 불필요한 기호/공백 제거
+    .replace(/[.,!?;:'"()\-\u200b]/g,'')
+    .replace(/\s+/g,'')
+    // 자주 쓰는 공손어미/서술어 끝(요/습니다) 제거
+    .replace(/입니다|습니다|었어요|였어요|에요|예요|아요|어요|요/g,'')
+    // 흔한 1인칭/주어 표현 제거 (저/나 + 는/가/이 등)
+    .replace(/(?:저|나|제|내)(?:는|가|이|가요|는요)?/g,'')
+    .trim();
+}
+
+// 한글/영숫자만 유지
+function keepKRAndBasic(s){
+  return (s||'').toLowerCase().replace(/[^0-9a-z\u3131-\u318E\uAC00-\uD7A3]/g,'');
+}
+
+// 레벤슈타인(오타 허용)
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(!m) return n; if(!n) return m;
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
     }
-    function keepKRAndBasic(s){
-      return (s||'').toLowerCase().replace(/[^0-9a-z\u3131-\u318E\uAC00-\uD7A3]/g,'');
-    }
-    function levenshtein(a,b){
-      const m=a.length,n=b.length;
-      if(!m) return n; if(!n) return m;
-      const dp=Array.from({length:m+1},(_,i)=>Array(n+1).fill(0));
-      for(let i=0;i<=m;i++) dp[i][0]=i;
-      for(let j=0;j<=n;j++) dp[0][j]=j;
-      for(let i=1;i<=m;i++){
-        for(let j=1;j<=n;j++){
-          const cost=a[i-1]===b[j-1]?0:1;
-          dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
-        }
-      }
-      return dp[m][n];
-    }
-    function fuzzyMatchKR(user, target, threshold=0.10){
-      if(normalizeForLoose(user) === normalizeForLoose(target)) return true;
-      const u=keepKRAndBasic(user), t=keepKRAndBasic(target);
-      if(!t) return false;
-      const dist=levenshtein(u,t);
-      const rate=dist/Math.max(1,t.length);
-      return rate<=threshold;
-    }
+  }
+  return dp[m][n];
+}
+
+// 10% 오타 허용(느슨한 일치)
+function fuzzyMatchKR(user, target, threshold=0.10){
+  // 마침표/쉼표/요/저는 등 제거 후 완전일치면 통과
+  if(normalizeForLoose(user) === normalizeForLoose(target)) return true;
+  // 오타 허용(한글/영숫자만)
+  const u=keepKRAndBasic(user), t=keepKRAndBasic(target);
+  if(!t) return false;
+  const dist=levenshtein(u,t);
+  const rate=dist/Math.max(1,t.length);
+  return rate<=threshold;
+}
+
+// 핵심 토큰 뽑기: 정답 문장에서 의미어 추출(2글자 이상, 조사/어미 제거 시도 X - 단순 포함만)
+function extractCoreTokens(s){
+  // 공백 기준으로 2글자 이상만(너무 짧은 조사/어미 제외)
+  return (s||'').split(/\s+/).map(w=>w.replace(/[.,!?;:'"()\u200b]/g,'').trim())
+    .filter(w=>w && w.length>=2);
+}
+
+// 의미 일치 판정:
+//  - avant ↔ 전에, après ↔ 후에 방향이 일치
+//  - 정답 핵심 토큰 중 다수가(≥60%) 학생 답에 포함
+function semanticMatchKR(userKR, goldKR, frPrompt){
+  const u = normalizeForLoose(userKR);
+  const g = normalizeForLoose(goldKR);
+  if(!u || !g) return false;
+
+  // 방향(시간표현) 일치 확인
+  const fr = (frPrompt||'').toLowerCase();
+  const needAvant  = /avant/.test(fr);
+  const needApres  = /après|apres/.test(fr);
+  const hasJeon   = /전에/.test(userKR);
+  const hasHue    = /후에/.test(userKR);
+
+  if(needAvant && !hasJeon) return false;
+  if(needApres && !hasHue)  return false;
+
+  // 핵심 토큰 포함률
+  const cores = extractCoreTokens(goldKR);
+  if(!cores.length) return false;
+
+  const containCount = cores.filter(tok => userKR.includes(tok)).length;
+  const coverage = containCount / cores.length; // 포함 비율
+
+  return coverage >= 0.6; // 의미 60% 이상 맞으면 OK
+}
+
 
     // ===== 상태 =====
     const startScreen = $('#start-screen');
@@ -419,21 +472,42 @@
     }
 
     // ✅ fuzzy 채점 적용
-    function evaluateAnswers(){
-      questionsData.forEach(qd=>{
-        if(qd.type==='explanation') return;
+function evaluateAnswers(){
+  questionsData.forEach(qd=>{
+    if(qd.type==='explanation') return;
 
-        let input='';
-        if(typeof qd.userAnswer === 'string') input = qd.userAnswer;
-        else if(qd.userAnswer && qd.userAnswer.dictation1) input = qd.userAnswer.dictation1;
+    // 입력값(듣기는 1차 받아쓰기 기준)
+    let input='';
+    if(typeof qd.userAnswer === 'string') input = qd.userAnswer;
+    else if(qd.userAnswer && qd.userAnswer.dictation1) input = qd.userAnswer.dictation1;
 
-        if(qd.type==='multiple-choice' || qd.type==='fill-in-the-blank'){
-          qd.isCorrect = fuzzyMatchKR(input, qd.correctAnswer, 0.10);
-        } else if(qd.type==='translate-sentence' || qd.type==='listening-dictation'){
-          qd.isCorrect = fuzzyMatchKR(input, qd.ko, 0.10);
-        }
-      });
+    // 기본 정답 문자열(형태/문장)
+    const goldForm = qd.correctAnswer;
+    const goldSent = qd.ko;
+
+    // 매칭 레벨 기록(리뷰 메시지용)
+    qd.matchLevel = 'wrong';
+
+    if(qd.type==='multiple-choice' || qd.type==='fill-in-the-blank'){
+      // 형태 문제: 느슨일치(부호/요/저는 제거 + 10% 오타)로 판정
+      const ok = fuzzyMatchKR(input, goldForm, 0.10);
+      qd.isCorrect = ok;
+      qd.matchLevel = ok ? 'loose' : 'wrong';
+    } else if(qd.type==='translate-sentence' || qd.type==='listening-dictation'){
+      // 문장 문제: 1) 느슨일치 → 정답
+      if(fuzzyMatchKR(input, goldSent, 0.10)){
+        qd.isCorrect = true;
+        qd.matchLevel = 'loose'; // 사실상 정답
+      } else {
+        // 2) 의미일치(avant/후에 방향 + 핵심어 포함률) → 정답 + 검토권유
+        const okSem = semanticMatchKR(input, goldSent, qd.fr);
+        qd.isCorrect = okSem;
+        qd.matchLevel = okSem ? 'semantic' : 'wrong';
+      }
     }
+  });
+}
+
 
   // 🔎 결과 상세 리뷰 렌더 (라벨을 쉬운 불어+한글로)
 function renderDetailedReview(){
@@ -447,21 +521,15 @@ function renderDetailedReview(){
   }
 
   const rows = items.map((qd, idx) => {
-    // 학생 답 표현
+    // 학생 답
     let ua = '';
     if (typeof qd.userAnswer === 'string') ua = qd.userAnswer || '';
     else if (qd.userAnswer && (qd.userAnswer.dictation1 || qd.userAnswer.dictation2)) {
       ua = [qd.userAnswer.dictation1, qd.userAnswer.dictation2].filter(Boolean).join(' / ');
     }
 
-    // 정답 텍스트(우선: correctAnswer → ko)
+    // 정답 텍스트
     const gold = (qd.correctAnswer || qd.ko || '');
-
-    // 오타 허용으로 맞은 경우 안내
-    const looseEqual = normalizeForLoose(ua) === normalizeForLoose(gold);
-    const hint = (qd.isCorrect && !looseEqual)
-      ? `<span class="text-amber-700 text-xs ml-2">(Petite faute tolérée / 오타 허용)</span>`
-      : '';
 
     // 타입 라벨(쉬운 불어+한글)
     const typeLabel = ({
@@ -471,12 +539,21 @@ function renderDetailedReview(){
       'listening-dictation':'Dictée / 듣기'
     })[qd.type] || qd.type;
 
-    // 정오 표시 뱃지
-    const badge = qd.isCorrect
-      ? `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Correct / 정답</span>`
-      : `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">Incorrect / 오답</span>`;
+    // 정오 배지 + 권유 문구
+    let badge = '';
+    let note  = '';
+    if(qd.isCorrect){
+      if(qd.matchLevel==='semantic'){
+        badge = `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Correct / 정답</span>`;
+        note  = `<div class="text-xs text-amber-700 mt-1">Sens correct ✅, vérifie la forme standard aussi. / 의미는 맞아요! 표준형도 확인해 보세요.</div>`;
+      } else {
+        badge = `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Correct / 정답</span>`;
+        note  = ''; // 완전·느슨일치
+      }
+    } else {
+      badge = `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">Incorrect / 오답</span>`;
+    }
 
-    // 메타(청취/힌트 사용)
     const meta = `
       <div class="text-xs text-slate-500 mt-2">
         Écoute(듣기): ${qd.listenCount||0} · Indice début(초성): ${qd.hint1Count||0} · Indice mot(단어): ${qd.hint2Count||0}
@@ -494,8 +571,8 @@ function renderDetailedReview(){
         <div class="text-sm mt-1">
           Ma réponse / 내 답:
           <span class="font-semibold ${qd.isCorrect?'text-emerald-700':'text-rose-700'}">${ua || '(Non saisi / 미입력)'}</span>
-          ${hint}
         </div>
+        ${note}
         ${meta}
       </div>
     `;
