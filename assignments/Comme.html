@@ -351,6 +351,8 @@
 
   // Render helpers
   const list1 = document.getElementById('list1');
+  // (추가) 시작 시각 기록 – 전송 payload의 totalTimeSeconds 계산용
+  const sessionStart = Date.now();
 
   function renderSet1(){
     list1.innerHTML='';
@@ -418,6 +420,7 @@
           box.querySelector('.exp').classList.remove('hidden');
           // store
           box.dataset.correct = ok ? '1' : '0';
+          box.dataset.picked = picked;   // << 추가: 전송용 선택값 저장 (UI 변화 없음)
         });
       });
     });
@@ -429,22 +432,42 @@
   // Initial render
   renderSet1();
 
+  // ---------- 전송 유틸 (UI 변경 없음) ----------
+  async function sendResults(payload){
+    const res = await fetch('/.netlify/functions/send-results', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error(`send-results HTTP ${res.status}`);
+    return res.json().catch(()=>({ok:true}));
+  }
+  async function logError(where, step, err, extra){
+    try{
+      await fetch('/.netlify/functions/log-error',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ where, step, message:String(err), extra })
+      });
+    }catch(_){}
+  }
+
   // --------------------------
-  // Finish & Results (SET 1 only)
+  // Finish & Results (SET 1 only) + 선생님 전송
   // --------------------------
-  document.getElementById('finishBtn').addEventListener('click', ()=>{
+  document.getElementById('finishBtn').addEventListener('click', async ()=>{
     const s1Total = data1.length;
     let s1Ok = 0;
-    document.querySelectorAll('#list1 .exercise').forEach((box)=>{
-      s1Ok += (box.dataset.correct==='1') ? 1 : 0;
-    });
+    const boxes = Array.from(document.querySelectorAll('#list1 .exercise'));
+    boxes.forEach((box)=>{ s1Ok += (box.dataset.correct==='1') ? 1 : 0; });
 
     const res = document.getElementById('results');
     res.classList.remove('hidden');
     res.innerHTML = `
       <div class="card">
         <h3 class="text-2xl font-bold mb-2">📊 Résultats / 결과</h3>
-        <p class="text-lg mb-4">Score : <b>${s1Ok} / ${s1Total}</b></p>
+        <p class="text-lg mb-2">Score : <b>${s1Ok} / ${s1Total}</b></p>
+        <p id="sendStatus" class="text-sm text-slate-500 mb-4">Envoi au professeur…</p>
         <details class="mt-2">
           <summary class="cursor-pointer text-slate-700">Voir la correction</summary>
           <ol class="list-decimal list-inside mt-2 space-y-1 text-sm">
@@ -467,6 +490,48 @@
         </div>
       </div>
     `;
+
+    // ▶ 전송 payload 구성 (프로젝트 규격)
+    const now = Date.now();
+    const payload = {
+      studentName: window.prompt("Nom de l'élève / 학생 이름 ?", "")?.trim() || "Élève anonyme",
+      startTime: new Date(sessionStart).toISOString(),
+      endTime: new Date(now).toISOString(),
+      totalTimeSeconds: Math.round((now - sessionStart)/1000),
+      questions: boxes.map((box, i)=>{
+        const ex = data1[i];
+        const picked = box.dataset.picked || null;
+        // KO 문장: fill이면 (선택값이 정답 리스트에 있으면 그걸, 아니면 정답 첫번째) 끼워 넣어 재구성
+        let koText = '';
+        if(ex.type==='fill'){
+          const chosen = (picked && ex.ok.includes(picked)) ? picked : ex.ok[0];
+          koText = `${ex.parts[0]} ${chosen} ${ex.parts[1]}`;
+        }else{
+          koText = ex.ko || '';
+        }
+        return {
+          number: i+1,
+          ko: koText,
+          fr: ex.fr || '',
+          userAnswer: picked,
+          isCorrect: box.dataset.correct === '1',
+          listenCount: 0,
+          hint1Count: 0,
+          hint2Count: 0,
+          recording: null
+        };
+      })
+    };
+
+    // ▶ 서버 전송
+    const statusEl = document.getElementById('sendStatus');
+    try{
+      await sendResults(payload);
+      if(statusEl){ statusEl.textContent = "✅ Résumé envoyé à l'enseignant(e)."; statusEl.className="text-green-700 mb-4"; }
+    }catch(err){
+      if(statusEl){ statusEl.textContent = "⚠️ Échec de l'envoi. Un journal d'erreur a été transmis."; statusEl.className="text-red-700 mb-4"; }
+      await logError('assignments/comme.html','finish/sendResults',err, { total:s1Total, ok:s1Ok });
+    }
   });
   </script>
 </body>
