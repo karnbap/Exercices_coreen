@@ -115,8 +115,8 @@
           <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy', this, { speed:0.92 })">
             <i class="fas fa-play"></i> Écouter (듣기)
           </button>
-          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
-          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> 멈추기(Stop)</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> 반복하기(Répéter)</button>
         </div>
       </div>
 
@@ -126,8 +126,8 @@
           <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer', this, { speed:0.92 })">
             <i class="fas fa-play"></i> Écouter (듣기)
           </button>
-          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
-          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> 멈추기(Stop)</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> 반복하기(Répéter)</button>
         </div>
       </div>
 
@@ -137,8 +137,8 @@
           <button class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy', this)">
             <i class="fas fa-play"></i> Écouter (듣기)
           </button>
-          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
-          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
+          <button class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> 멈추기(Stop)</button>
+          <button class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> 반복하기(Répéter)</button>
         </div>
       </div>
 
@@ -279,7 +279,7 @@
         btn.innerHTML = '<i class="fas fa-redo"></i> Répéter On';
         btn.classList.add('bg-yellow-200');
       }else{
-        btn.innerHTML = '<i class="fas fa-redo"></i> Répéter Off';
+        btn.innerHTML = '<i class="fas fa-redo"></i> 반복하기(Répéter)';
         btn.classList.remove('bg-yellow-200');
       }
     }
@@ -584,10 +584,10 @@
               <i class="fas fa-play"></i> Écouter (듣기)
             </button>
             <button id="stop-btn" class="btn btn-secondary" onclick="onStop()">
-              <i class="fas fa-square"></i> Stop (처음)
+              <i class="fas fa-square"></i> 멈추기(Stop) (처음)
             </button>
             <button id="loop-btn" class="btn btn-secondary" onclick="onToggleLoop(this)">
-              <i class="fas fa-redo"></i> Répéter Off
+              <i class="fas fa-redo"></i> 반복하기(Répéter)
             </button>
           </div>
           <div class="grid grid-cols-2 gap-2">
