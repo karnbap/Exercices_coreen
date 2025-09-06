@@ -94,6 +94,36 @@
     }
     const $ = (sel) => document.querySelector(sel);
 
+    // 🔍 채점 보정 유틸(띄어쓰기/부호 무시 + 10% 오타 허용)
+    function normalizeForLoose(s){
+      return (s||'').toLowerCase().replace(/[.,!?;:'"()\-\u200b\s]/g,'').trim();
+    }
+    function keepKRAndBasic(s){
+      return (s||'').toLowerCase().replace(/[^0-9a-z\u3131-\u318E\uAC00-\uD7A3]/g,'');
+    }
+    function levenshtein(a,b){
+      const m=a.length,n=b.length;
+      if(!m) return n; if(!n) return m;
+      const dp=Array.from({length:m+1},(_,i)=>Array(n+1).fill(0));
+      for(let i=0;i<=m;i++) dp[i][0]=i;
+      for(let j=0;j<=n;j++) dp[0][j]=j;
+      for(let i=1;i<=m;i++){
+        for(let j=1;j<=n;j++){
+          const cost=a[i-1]===b[j-1]?0:1;
+          dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+        }
+      }
+      return dp[m][n];
+    }
+    function fuzzyMatchKR(user, target, threshold=0.10){
+      if(normalizeForLoose(user) === normalizeForLoose(target)) return true;
+      const u=keepKRAndBasic(user), t=keepKRAndBasic(target);
+      if(!t) return false;
+      const dist=levenshtein(u,t);
+      const rate=dist/Math.max(1,t.length);
+      return rate<=threshold;
+    }
+
     // ===== 상태 =====
     const startScreen = $('#start-screen');
     const quizContainer = $('#quiz-container');
@@ -218,7 +248,18 @@
       const card = document.createElement('div');
       card.className = 'p-6 bg-white rounded-xl shadow-lg';
 
-      let html = `<p class="text-sm text-slate-500 mb-4">Question ${currentQuestionIndex} / ${quizData.length-1}</p>`;
+      // 상단: 문제 번호 + 진행률
+      const totalGradables = quizData.length - 1; // 설명 제외
+      const shownIndex = currentQuestionIndex === 0 ? 0 : currentQuestionIndex; 
+      let html = `
+        <div class="mb-3 flex items-center justify-between">
+          <p class="text-sm text-slate-500">
+            ${currentQuestionIndex === 0 ? 'Intro / 안내' : `Question ${shownIndex} / ${totalGradables}`}
+          </p>
+          <div class="w-40 h-2 bg-slate-200 rounded">
+            <div class="h-2 bg-indigo-500 rounded" style="width:${Math.min(100, Math.round((Math.max(0, shownIndex-1)/Math.max(1,totalGradables))*100))}%"></div>
+          </div>
+        </div>`;
 
       if(q.type==='explanation'){
         html += `
@@ -322,7 +363,16 @@
 
     function addQuestionListeners(){
       $('#prev-btn')?.addEventListener('click', prevQuestion);
-      $('#next-btn')?.addEventListener('click', nextQuestion);
+
+      // 다음 버튼 디바운스(중복 클릭 방지)
+      const nextBtn = $('#next-btn');
+      let nextLock = false;
+      nextBtn?.addEventListener('click', ()=>{
+        if(nextLock) return;
+        nextLock = true;
+        setTimeout(()=>nextLock=false, 400);
+        nextQuestion();
+      });
 
       document.querySelectorAll('.btn-choice').forEach(btn=>{
         btn.addEventListener('click', (e)=>{
@@ -365,18 +415,19 @@
       else { finishQuiz(); }
     }
 
+    // ✅ fuzzy 채점 적용
     function evaluateAnswers(){
       questionsData.forEach(qd=>{
         if(qd.type==='explanation') return;
-        const fmt = (s)=>(s||'').replace(/[.\s+!?]/g,'').toLowerCase();
-        let input = '';
+
+        let input='';
         if(typeof qd.userAnswer === 'string') input = qd.userAnswer;
         else if(qd.userAnswer && qd.userAnswer.dictation1) input = qd.userAnswer.dictation1;
 
         if(qd.type==='multiple-choice' || qd.type==='fill-in-the-blank'){
-          qd.isCorrect = fmt(input) === fmt(qd.correctAnswer);
+          qd.isCorrect = fuzzyMatchKR(input, qd.correctAnswer, 0.10);
         } else if(qd.type==='translate-sentence' || qd.type==='listening-dictation'){
-          qd.isCorrect = fmt(input) === fmt(qd.ko);
+          qd.isCorrect = fuzzyMatchKR(input, qd.ko, 0.10);
         }
       });
     }
@@ -416,7 +467,7 @@
         const res = await fetch('/.netlify/functions/generate-audio',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text, voice, provider }) // 서버에서 OpenAI 우선→실패 시 Google 폴백
+          body: JSON.stringify({ text, voice, provider }) // 서버에서 OpenAI 우선→실패 시 Google 폴백 수행
         });
         if(!res.ok){
           const msg = await res.text().catch(()=> '');
