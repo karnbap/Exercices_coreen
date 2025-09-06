@@ -300,15 +300,15 @@
           "이유: 보이는 물건 개수를 셈 → 고유한국어 수."
         ],
         date: [
-          "📅 Dates (…일) → sino-coréen (일/이/삼…).",
+          "📅 Dates (…일) → Hanja-coréen (일/이/삼…).",
           "이유: 달력에 ‘적힌 이름/표기’ → 한자어 바탕."
         ],
         money: [
-          "💶 Prix/Argent → sino-coréen (십 유로, 오천 원…).",
+          "💶 Prix/Argent → Hanja-coréen (십 유로, 오천 원…).",
           "이유: ‘유로/원’ 같은 단위와 금액은 ‘정해진 이름’ → 한자어 바탕."
         ],
         minutes: [
-          "⏱️ Minutes(분) → sino-coréen.",
+          "⏱️ Minutes(분) → Hanja-coréen.",
           "이유: ‘분’은 쓰여 있는 시간 단위(이름) → 한자어 바탕."
         ],
         hours: [
@@ -339,7 +339,7 @@
       else if (/유로|원|Prix|Argent/i.test(text))               msg = buildConceptHint("money");
       else if (text.includes("분") || /Minutes/i.test(text))    msg = buildConceptHint("minutes");
       else if (text.includes("시") || /Heures/i.test(text))     msg = buildConceptHint("hours");
-      else msg = "ℹ️ Deux systèmes / 두 가지 숫자 체계:\n- Compter des choses → natifs\n- Noms/Unités écrits (date, prix, numéro…) → sino-coréen\n(Temps: 시=고유, 분=한자)";
+      else msg = "ℹ️ Deux systèmes / 두 가지 숫자 체계:\n- Compter des choses → natifs\n- Noms/Unités écrits (date, prix, numéro…) → Hanja-coréen\n(Temps: 시=고유, 분=한자)";
 
       d.textContent = msg;
       d.classList.remove('hidden');
