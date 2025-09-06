@@ -133,16 +133,35 @@ function levenshtein(a,b){
 }
 
 // 10% 오타 허용(느슨한 일치)
-function fuzzyMatchKR(user, target, threshold=0.10){
-  // 마침표/쉼표/요/저는 등 제거 후 완전일치면 통과
-  if(normalizeForLoose(user) === normalizeForLoose(target)) return true;
-  // 오타 허용(한글/영숫자만)
-  const u=keepKRAndBasic(user), t=keepKRAndBasic(target);
-  if(!t) return false;
-  const dist=levenshtein(u,t);
-  const rate=dist/Math.max(1,t.length);
-  return rate<=threshold;
+function semanticMatchKR(userKR, goldKR, frPrompt){
+  const u = normalizeForLoose(userKR);
+  const g = normalizeForLoose(goldKR);
+  if(!u || !g) return false;
+
+  // 방향(시간표현) 일치 확인
+  const fr = (frPrompt || '').toLowerCase();
+  const needAvant = /avant/.test(fr);
+  const needApres = /après|apres/.test(fr);
+  const hasJeon  = /전에/.test(userKR);
+  const hasHue   = /후에/.test(userKR);
+
+  if (needAvant && !hasJeon) return false;
+  if (needApres && !hasHue)  return false;
+
+  // 핵심 토큰 포함률 (정규화 후 포함 여부 판단)
+  const cores = extractCoreTokens(goldKR);
+  if (!cores.length) return false;
+
+  const uNorm = normalizeForLoose(userKR);
+  const containCount = cores
+    .map(tok => normalizeForLoose(tok))
+    .filter(tokN => tokN && uNorm.includes(tokN))
+    .length;
+
+  const coverage = containCount / cores.length; // 포함 비율
+  return coverage >= 0.6; // 의미 60% 이상 맞으면 OK
 }
+
 
 // 핵심 토큰 뽑기: 정답 문장에서 의미어 추출(2글자 이상, 조사/어미 제거 시도 X - 단순 포함만)
 function extractCoreTokens(s){
