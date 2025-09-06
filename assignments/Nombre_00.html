@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어) – Final v3</title>
+  <title>Exercice Coréen : Les Nombres (순수 한국어 vs 한자어) – Final</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,7 +38,7 @@
   <!-- 시작 화면 -->
   <div id="start-screen" class="min-h-screen flex flex-col items-center justify-center text-center p-4">
     <h1 class="text-4xl font-bold text-slate-800 mb-2">Exercice : Les Nombres Coréens 🔢</h1>
-    <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (Hanja-coréen)</p>
+    <p class="text-lg text-slate-600 mb-6">순수 한국어 (natifs) vs 한자어 (Hanja-coréens)</p>
     <div class="w-full max-w-sm">
       <input id="student-name" class="w-full p-3 text-center border-2 border-slate-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Quel est ton nom ? (이름이 뭐예요?)">
       <button id="start-btn" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Commencer ! (시작!)</button>
@@ -48,15 +48,19 @@
   <!-- 설명 -->
   <div id="explanation-screen" class="quiz-container hidden">
     <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">📘 Apprendre les nombres coréens !</h2>
-    <p class="text-center text-slate-600 mb-8">(Hanja ≠ chinois : Hanja = écriture, chinois = langue / 한자는 글자, 중국어는 말)</p>
+    <p class="text-center text-slate-600 mb-8">(Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)</p>
 
     <div class="space-y-6 text-slate-700">
       <div>
-        <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication / 간단 설명</h3>
+        <h3 class="font-bold text-xl mb-3">1️⃣ Petite explication</h3>
+        <p class="p-4 bg-yellow-100 text-yellow-800 rounded-lg">👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non !</p>
         <ul class="list-disc list-inside mt-3 space-y-2">
-          <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자 체계</li>
-          <li><strong>Chinois</strong> = langue / 중국어(말)</li>
+          <li><strong>한자 (Hanja)</strong> = système d’écriture. / 글자 이름(쓰기 방식)</li>
+          <li><strong>Chinois</strong> = langue. / 중국어(말)</li>
         </ul>
+        <div class="mt-3 p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
+          <p><strong>Astuce (analogie)</strong> : En Europe, on écrit avec <b>l'alphabet latin</b> (pas « alphabet italien »).<br>→ <b>Italien</b> = une <u>langue</u> / <b>lettres</b> = alphabet <u>latin</u>.<br>🇰🇷 <b>Le coréen aussi</b> : <b>langue</b> = coréen / <b>nombres</b> = <u>2 jeux</u> (natif, Hanja‑coréen).<br>한국어도 비슷해요: <b>언어</b>=한국어, <b>숫자 읽기</b>= 두 세트(순수 한국어, Hanja‑coréen).<br><em>Hanja ≠ chinois (la langue)</em> → « <b>caractères han</b> » = écriture, pas la langue chinoise.</p>
+        </div>
       </div>
 
       <div>
@@ -65,30 +69,26 @@
           <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 class="font-bold text-lg text-blue-800">Natifs (순수 한국어)</h4>
             <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
-            <p><strong>Pour :</strong> compter des choses qu’on voit (âge, personnes, objets…)
-              <br>→ 눈앞에서 직접 세는 것(나이, 사람 수, 물건 개수…)</p>
+            <p><strong>Pour :</strong> compter des choses qu’on voit (âge, personnes, objets…)<br>→ 눈앞에서 세는 것(나이, 사람 수, 물건 개수…)</p>
           </div>
           <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 class="font-bold text-lg text-green-800">Hanja-coréen (한자어)</h4>
+            <h4 class="font-bold text-lg text-green-800">Hanja-coréens (한자어)</h4>
             <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
-            <p><strong>Pour :</strong> noms/unités déjà écrits (dates, argent, minutes…)
-              <br>→ 이미 정해진 이름/단위(날짜, 돈, 분 등)</p>
+            <p><strong>Pour :</strong> noms/unités déjà <u>écrits</u> (dates, argent, minutes…)<br>→ 이미 적혀 있는 이름/단위(날짜, 돈, 분 등)</p>
           </div>
         </div>
       </div>
 
       <div>
-        <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance / 예외와 포인트</h3>
+        <h3 class="font-bold text-xl mb-3">⚡ Exception & Tendance</h3>
         <ul class="list-disc list-inside space-y-2">
-          <li><b>Heures(시)</b> → natifs / <b>Minutes(분)</b> → Hanja-coréen.
-            <br>→ <b>시=고유수 / 분=한자어</b></li>
-          <li>Petit mémo ⌛ : Avant, on avait d’autres unités (ex. ‘각’ ≈ 15 min). Maintenant : 1 h = 60 min → <b>시=natifs / 분=Hanja-coréen</b>.
-            <br>간단 역사: 예전엔 ‘각(15분)’ 같은 전통 단위 → 지금은 1시간=60분, 그래서 <b>시=고유 / 분=한자</b>.</li>
+          <li>Heures(시) → <b>natifs</b> / 분(minutes) → <b>Hanja</b></li>
+          <li>Pourquoi ? Autrefois, on utilisait des unités comme « 1각 ≈ 15 min ». Puis, à l’époque moderne, le système <b>1 h = 60 min</b> s’est imposé. ⇒ Aujourd’hui : <b>시 (heures) = natif</b> / <b>분 (minutes) = Hanja</b>.<br>왜? 예전엔 ‘1각(약 15분)’ 같은 전통 단위를 썼고, 근대에 ‘1시간=60분’ 체계가 자리 잡았어요. 그래서 지금은 <b>시=고유 / 분=한자</b>.</li>
         </ul>
       </div>
 
       <div>
-        <h3 class="font-bold text-xl mb-3">✅ Résumé facile / 한눈에 보기</h3>
+        <h3 class="font-bold text-xl mb-3">✅ Résumé facile</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead><tr class="bg-gray-100"><th class="p-3 border">Système</th><th class="p-3 border">Usage</th><th class="p-3 border">Exemples</th></tr></thead>
@@ -106,10 +106,10 @@
     </div>
   </div>
 
-  <!-- 워밍업 (간단 듣기) -->
+  <!-- 워밍업 -->
   <div id="warmup-screen" class="quiz-container hidden">
     <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center"> Méthode 5 par 5 🗣️</h2>
-    <p class="text-lg text-slate-600 mb-8 text-center">Écoute et répète plusieurs fois ! / 여러 번 듣고 따라해요!</p>
+    <p class="text-lg text-slate-600 mb-8 text-center">Écouter & Répéter plusieurs fois ! / 여러 번 듣고 따라해요!</p>
 
     <div class="space-y-4">
       <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
@@ -196,7 +196,7 @@
     let isPlayingOrFetching = false;   // 동시 요청/재생 보호
     function tinyDelay(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
-    // 받아쓰기 컨트롤용 메타 (워밍업도 공유)
+    // 현재 컨트롤바(받아쓰기 섹션)의 버튼 참조 & 메타
     let currentAudioMeta = { text: null, voice: null };
     let currentAudioUI   = { playBtn: null, loopBtn: null };
     let isLooping = false;
@@ -265,36 +265,37 @@
       const lines = {
         age: [
           "👶 Âge → nombres natifs (한/두/세 살).",
-          "Pourquoi/이유: on compte une personne → 고유한국어 수"
+          "이유: ‘나이’는 눈앞의 ‘개수 세기’와 같아요 → 고유한국어 수."
         ],
         people: [
           "🧑‍🤝‍🧑 Personnes → natifs (… 명/분).",
-          "Pourquoi/이유: nombre de gens qu’on voit → 고유한국어 수"
+          "이유: 사람 수를 직접 셈 → 고유한국어 수."
         ],
         objects: [
           "📦 Objets → natifs (… 개/권/장…).",
-          "Pourquoi/이유: on compte des choses visibles → 고유한국어 수"
+          "이유: 보이는 물건 개수를 셈 → 고유한국어 수."
         ],
         date: [
           "📅 Dates (…일) → Hanja-coréen (일/이/삼…).",
-          "Pourquoi/이유: c’est un nom écrit sur le calendrier → 한자어"
+          "이유: 달력에 ‘적힌 이름/표기’ → 한자어 바탕."
         ],
         money: [
           "💶 Prix/Argent → Hanja-coréen (십 유로, 오천 원…).",
-          "Pourquoi/이유: unités fixées (유로/원) → 한자어"
+          "이유: ‘유로/원’ 같은 단위와 금액은 ‘정해진 이름’ → 한자어 바탕."
         ],
         minutes: [
           "⏱️ Minutes(분) → Hanja-coréen.",
-          "Pourquoi/이유: ‘분’ est un nom d’unité écrit → 한자어"
+          "이유: ‘분’은 쓰여 있는 시간 단위(이름) → 한자어 바탕."
         ],
         hours: [
           "🕒 Heures(시) → natifs (한/두/세 시…).",
-          "Mémo/메모: 옛 단위 영향 → 지금은 시=고유, 분=한자"
+          "⚠️ Pourquoi ? 옛날 단위 영향(‘각’ 등)으로 지금은 ‘시=고유/분=한자’로 굳었어요."
         ],
         time_history: [
-          "🕰️ Histoire courte / 간단 역사",
-          "Avant: ‘각’ ≈ 15 min. Maintenant: 1 h = 60 min.",
-          "→ Aujourd’hui: 시(natif) / 분(Hanja-coréen)"
+          "🕰️ Petit rappel d’histoire / 간단 역사",
+          "예전엔 ‘1각(약 15분)’ 같은 전통 단위를 쓰던 때가 있었고,",
+          "근대에 ‘1시간=60분’ 방식이 자리 잡았어요.",
+          "→ 오늘은 ‘시(고유) / 분(한자)’로 사용!"
         ]
       };
       return lines[forWhat].concat(lines.time_history || []).join("\n");
@@ -314,7 +315,7 @@
       else if (/유로|원|Prix|Argent/i.test(text))               msg = buildConceptHint("money");
       else if (text.includes("분") || /Minutes/i.test(text))    msg = buildConceptHint("minutes");
       else if (text.includes("시") || /Heures/i.test(text))     msg = buildConceptHint("hours");
-      else msg = "ℹ️ Deux systèmes / 두 가지 숫자 체계:\n- Compter des choses → natifs\n- Noms/Unités écrits (date, prix, numéro…) → Hanja-coréen\n(Temps/시간: 시=고유, 분=한자)";
+      else msg = "ℹ️ Deux systèmes / 두 가지 숫자 체계:\n- Compter des choses → natifs\n- Noms/Unités écrits (date, prix, numéro…) → Hanja-coréen\n(Temps: 시=고유, 분=한자)";
 
       d.textContent = msg;
       d.classList.remove('hidden');
@@ -347,8 +348,9 @@
       return table[reqName] || table.default || reqName || "ko-KR-Standard-A";
     }
 
-    // ===== TTS: Play/Pause 토글 & 오류 폴백 =====
+    // ===== TTS: Play / Pause 토글, Stop, Loop, 오류 폴백 =====
     async function playAudio(text, voice='alloy', opts = {}){
+      // 이미 처리 중인 클릭이면: 같은 소스일 땐 토글만
       if (audioClickLocked || isPlayingOrFetching) {
         if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice){
           try{
@@ -361,6 +363,7 @@
       audioClickLocked = true; setTimeout(()=>audioClickLocked=false, 220);
 
       try{
+        // 같은 소스면 서버 재요청 없이 토글
         if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice && currentAudio.src){
           if(!currentAudio.paused){ currentAudio.pause(); updatePlayButtonUI(false); }
           else { await currentAudio.play(); updatePlayButtonUI(true); }
@@ -370,6 +373,7 @@
         isPlayingOrFetching = true;
         if(questions.length>0 && questions[currentQuestionIndex]){ questions[currentQuestionIndex].listenCount++; }
 
+        // 이전 소스 정리 (완전 정지 아님)
         if(currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
         if(currentAudio){ try{ currentAudio.pause(); }catch(_){} }
 
@@ -413,7 +417,7 @@
         const audio = new Audio(srcUrl);
         currentAudio = audio;
         currentAudioMeta = { text, voice };
-        audio.loop = isLooping;
+        audio.loop = isLooping; // 반복 상태 반영
 
         let endedNaturally = false;
         const canPlay = new Promise(resolve=>{
@@ -425,21 +429,187 @@
         audio.addEventListener('playing', ()=> updatePlayButtonUI(true));
         audio.addEventListener('pause',   ()=> updatePlayButtonUI(false));
         audio.addEventListener('ended',   ()=> { endedNaturally = true; updatePlayButtonUI(false); cleanupAudio(); });
-        audio.addEventListener('error',   ()=> { if(endedNaturally) return; showErrorModal('Problème de lecture audio. Réessaie ! / 오디오 재생에 문제가 있어요. 다시 시도해 주세요.'); });
+        audio.addEventListener('error',   ()=> { if(endedNaturally) return; showErrorModal('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.'); });
 
         await canPlay;
         try{ await audio.play(); }
-        catch(err){ await tinyDelay(150); try{ await audio.play(); }catch(_){ showErrorModal('Problème de lecture audio. Réessaie ! / 오디오 재생에 문제가 있어요. 다시 시도해 주세요.'); }}
+        catch(err){ await tinyDelay(150); try{ await audio.play(); }catch(_){ showErrorModal('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.'); }}
       }catch(error){
         if (error?.name !== 'AbortError'){
           console.error('playAudio error', error);
           logError(error,'playAudio',{text,voice,opts});
-          showErrorModal('Audio: petit souci. Réessaie dans un instant. / 오디오 생성·재생 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+          showErrorModal('오디오 생성/재생 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
         }
       }finally{ isPlayingOrFetching = false; }
     }
 
-    // ===== 받아쓰기용 녹음 =====
+    // 받아쓰기 컨트롤 핸들러
+    function onPlayPause(text, voice, btnEl){
+      currentAudioUI.playBtn = btnEl; // 현재 컨트롤바의 재생 버튼 참조
+      updatePlayButtonUI(currentAudio && !currentAudio.paused); // 초기 UI 정렬
+      return playAudio(text, voice); // 내부에서 토글 처리
+    }
+    function onStop(){
+      if(!currentAudio) return;
+      try{ currentAudio.pause(); currentAudio.currentTime = 0; }catch(_){ }
+      updatePlayButtonUI(false);
+    }
+    function onToggleLoop(btnEl){
+      currentAudioUI.loopBtn = btnEl;
+      isLooping = !isLooping;
+      if(currentAudio){ currentAudio.loop = isLooping; }
+      updateLoopButtonUI();
+    }
+
+    // ===== Results =====
+    async function sendResults(){
+      endTime = new Date();
+      const totalTimeSeconds = Math.round((endTime - startTime)/1000);
+      const payload = {
+        studentName,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        totalTimeSeconds,
+        questions: questions.map(q=>({
+          number:q.number, type:q.type,
+          ko:q.ko||q.answer||'', fr:q.fr||q.context||'',
+          userAnswer:q.userAnswer, isCorrect:q.isCorrect,
+          listenCount:q.listenCount, hint1Count:q.hint1Count, hint2Count:q.hint2Count,
+          recording:q.recording||null, pronunciationFeedback:q.pronunciationFeedback||null
+        }))
+      };
+      try{
+        const r = await fetch('/.netlify/functions/send-results',{
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+        });
+        if(!r.ok) throw new Error(`send-results: ${r.status}`);
+      }catch(e){
+        console.error('sendResults error', e);
+        logError(e,'sendResults',payload);
+        showErrorModal("결과를 보낼 수 없습니다. 오류가 보고되었습니다.");
+      }
+    }
+
+    // ===== Questions =====
+    function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
+
+    function getQuestions(){
+      const choiceData = [
+        { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hint:"Date écrite ⇒ Hanja / 달력에 적힌 날짜 → 한자어" },
+        { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hint:"Heures ⇒ natif (예외) / 시는 고유수" },
+        { context:"Pour l'âge '3살', on dit :", options:["세 살","삼 살"], answer:"세 살", hint:"Âge ⇒ natif / 나이는 고유수" },
+        { context:"Pour l'argent '10 euro', on dit :", options:["십 유로","열 유로"], answer:"십 유로", hint:"Prix affiché ⇒ Hanja / 단위·금액은 한자어" },
+        { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hint:"Minutes ⇒ Hanja / 분은 한자어" }
+      ];
+      const fillData = [
+        { fr:"J'ai trois ans. (저는 ___ 살이에요.)", ko:"세", hint:"Âge ⇒ natif / 나이는 고유수" },
+        { fr:"Il y a cinq livres. (책이 ___ 권 있어요.)", ko:"다섯", hint:"Objets ⇒ natif / 물건 개수는 고유수" },
+        { fr:"Aujourd'hui, c'est le 2 septembre. (오늘은 9월 __일이에요.)", ko:"이", hint:"Date ⇒ Hanja / 날짜는 한자어" },
+        { fr:"Nous sommes quatre personnes. (우리는 ___ 명이에요.)", ko:"네", hint:"Personnes ⇒ natif / 사람 수는 고유수" },
+        { fr:"J'ai 10 euros. (저는 ___ 유로 있어요.)", ko:"십", hint:"Prix ⇒ Hanja / 금액·단위는 한자어" }
+      ];
+      const translateKoData = [
+        { fr:"J'ai trois ans.", ko:"저는 세 살이에요.", hint:"Âge ⇒ natif / 나이는 고유수" },
+        { fr:"Nous sommes quatre personnes.", ko:"우리는 네 명이에요.", hint:"Personnes ⇒ natif / 사람 수는 고유수" },
+        { fr:"Il y a cinq livres.", ko:"책이 다섯 권 있어요.", hint:"Objets ⇒ natif / 물건 개수는 고유수" },
+        { fr:"Aujourd'hui, c'est le 2 septembre.", ko:"오늘은 9월 2일이에요.", hint:"Date ⇒ Hanja / 날짜는 한자어" },
+        { fr:"Il est trois heures.", ko:"지금은 세 시예요.", hint:"Heures ⇒ natif (예외) / 시는 고유수" }
+      ];
+      const dictationData = [
+        { ko:"사과 두 개 주세요.", fr:"Donnez-moi deux pommes, s'il vous plaît.", hint1:"ㅅㄱ ㄷ ㄱ ㅈㅅㅇ", hint2:"사과, 주세요", conceptualHint:"Compter ⇒ natif / 개수 세기 → 고유", voice:'shimmer' },
+        { ko:"이거는 오천 원이에요.", fr:"Ceci coûte 5000 won.", hint1:"ㅇㄱㄴ ㅇㅊ ㅇㅇㅇㅇ", hint2:"이거, 원", conceptualHint:"Prix ⇒ Hanja / 금액·단위 → 한자", voice:'nova' },
+        { ko:"제 생일은 십이월 십일이에요.", fr:"Mon anniversaire est le 10 décembre.", hint1:"ㅈ ㅅㅇㅇ ㅅㅇㅇ ㅅㅇㅇㅇㅇ", hint2:"생일, 십이월", conceptualHint:"Date ⇒ Hanja / 날짜 → 한자", voice:'alloy' },
+        { ko:"학생 여덟 명이 있어요.", fr:"Il y a huit étudiants.", hint1:"ㅎㅅ ㅇㄷ ㅁㅇ ㅇㅇㅇ", hint2:"학생, 명", conceptualHint:"Personnes ⇒ natif / 사람 수 → 고유", voice:'echo' },
+        { ko:"지금은 오후 네 시 삼십 분이에요.", fr:"Il est 16h30.", hint1:"ㅈㄱㅇ ㅇㅎ ㄴ ㅅ ㅅㅅ ㅂㅇㅇㅇ", hint2:"시, 분", conceptualHint:"시=natif / 분=Hanja", voice:'fable' }
+      ];
+
+      const choice = shuffleArray(choiceData).slice(0,5).map((q,i)=>({number:i+1,type:'choice',context:q.context,answer:q.answer,options:shuffleArray(q.options),hint:q.hint,userAnswer:null,isCorrect:null,listenCount:0,hint1Count:0,hint2Count:0}));
+      const fill = shuffleArray(fillData).slice(0,5).map((q,i)=>({number:choice.length+i+1,type:'fill',fr:q.fr,ko:q.ko,hint:q.hint,userAnswer:"",isCorrect:null,listenCount:0,hint1Count:0,hint2Count:0}));
+      const translate = shuffleArray(translateKoData).slice(0,5).map((q,i)=>({number:choice.length+fill.length+i+1,type:'translate',fr:q.fr,ko:q.ko,hint:q.hint,userAnswer:"",isCorrect:null,listenCount:0,hint1Count:0,hint2Count:0}));
+      const dictation = shuffleArray(dictationData).slice(0,5).map((q,i)=>({number:choice.length+fill.length+translate.length+i+1,type:'dictation',ko:q.ko,fr:q.fr,hint1:q.hint1,hint2:q.hint2,conceptualHint:q.conceptualHint,voice:q.voice,userAnswer:{ko:"",fr:"",selfDictation:""},isCorrect:null,listenCount:0,hint1Count:0,hint2Count:0,recording:null,pronunciationFeedback:null}));
+      return [...choice,...fill,...translate,...dictation];
+    }
+
+    // ===== UI =====
+    function renderQuestion(){
+      const q = questions[currentQuestionIndex];
+      const area = document.getElementById('question-area');
+      const explanationMap = {
+        choice:'Choisissez la bonne réponse. / 알맞은 답을 고르세요.',
+        fill:'Remplissez le champ vide. / 빈칸을 채우세요.',
+        translate:'Traduisez en coréen. / 한국어로 번역하세요.',
+        dictation:'Écoutez et écrivez. / 듣고 받아쓰세요.'
+      };
+      let html = `<h2 class="question-title">${q.type.toUpperCase()} - Question ${q.number}</h2><p class="question-text">${explanationMap[q.type]}</p>`;
+      if(q.type==='choice'){
+        html+=`<p class="text-lg font-semibold mb-4">${q.context}</p>
+               <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
+               <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>`;
+        q.options.forEach(opt=>{ html+=`<button class="choice-btn ${q.userAnswer===opt?'selected':''}" onclick="selectChoiceAnswer('${opt}')">${opt}</button>`; });
+      }else if(q.type==='fill'){
+        html+=`<p class="text-lg font-semibold mb-4">${q.fr}</p>
+               <button class="btn btn-secondary w_full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
+               <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
+               <input class="input-field" value="${q.userAnswer||''}" oninput="updateFillAnswer(this.value)" placeholder="Écrivez en hangeul...">`;
+      }else if(q.type==='translate'){
+        html+=`<p class="text-lg font-semibold mb-4">${q.fr}</p>
+               <button class="btn btn-secondary w-full mb-4" onclick="showGeneralHint()">Aidez moi 🙏 (힌트)</button>
+               <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg mb-4 hidden"></div>
+               <input class="input-field" value="${q.userAnswer||''}" oninput="updateTranslateAnswer(this.value)" placeholder="Traduisez en coréen...">`;
+      }else if(q.type==='dictation'){
+        html+=`<div class="space-y-4">
+          <div class="flex gap-2">
+            <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${q.ko}','${q.voice}', this)">
+              <i class="fas fa-play"></i> Écouter (듣기)
+            </button>
+            <button id="stop-btn" class="btn btn-secondary" onclick="onStop()">
+              <i class="fas fa-square"></i> Stop (처음)
+            </button>
+            <button id="loop-btn" class="btn btn-secondary" onclick="onToggleLoop(this)">
+              <i class="fas fa-redo"></i> Répéter Off
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="btn btn-secondary" onclick="showHint(1)">Aidez moi 🙏 (초성)</button>
+            <button class="btn btn-secondary" onclick="showHint(2)">Au secours 🛟 (단어)</button>
+            <button class="col-span-2 btn btn-secondary mt-2" onclick="showHint(3)">Pourquoi ce nombre ? 🤔 (숫자 힌트)</button>
+          </div>
+          <div id="hint-display" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden"></div>
+          <div><label class="block mb-1 font-semibold">1. Dictée (받아쓰기)</label><input class="input-field" value="${q.userAnswer.ko||''}" oninput="updateDictationAnswer('ko',this.value)"></div>
+          <div><label class="block mb-1 font-semibold">2. Traduction (번역)</label><input class="input-field" value="${q.userAnswer.fr||''}" oninput="updateDictationAnswer('fr',this.value)"></div>
+          <div><label class="block mb-1 font-semibold">3. Enregistrez votre voix (발음 녹음)</label>
+            <div class="flex items-center gap-2">
+              <button id="record-btn" class="btn btn-primary"><i class="fas fa-microphone"></i> Démarrer</button>
+              <div id="recording-indicator" class="hidden items-center gap-2 text-red-500 font-semibold"><div class="recording-dot"></div> Enregistrement...</div>
+            </div>
+            <audio id="audio-playback" controls class="mt-2 w-full hidden"></audio>
+          </div>
+          <div><label class="block mb-1 font-semibold">4. Réécoutez et écrivez</label><input class="input-field" value="${q.userAnswer.selfDictation||''}" oninput="updateDictationAnswer('selfDictation',this.value)"></div>
+        </div>`;
+      }
+      document.getElementById('question-area').innerHTML = html;
+      if(q.type==='dictation') setupRecording();
+      updateNavigation();
+    }
+
+    function updateNavigation(){
+      document.getElementById('prev-btn').classList.toggle('disabled', currentQuestionIndex===0);
+      document.getElementById('next-btn').classList.toggle('hidden', currentQuestionIndex===questions.length-1);
+      document.getElementById('finish-btn').classList.toggle('hidden', currentQuestionIndex<questions.length-1);
+    }
+    function updateProgressBar(){
+      const progress=((currentQuestionIndex+1)/questions.length)*100;
+      document.getElementById('progress-bar-inner').style.width=`${progress}%`;
+      document.getElementById('progress-text').textContent=`Question ${currentQuestionIndex+1} sur ${questions.length}`;
+    }
+
+    // ===== Answers =====
+    function selectChoiceAnswer(a){ questions[currentQuestionIndex].userAnswer=a; renderQuestion(); }
+    function updateFillAnswer(a){ questions[currentQuestionIndex].userAnswer=a; }
+    function updateTranslateAnswer(a){ questions[currentQuestionIndex].userAnswer=a; }
+    function updateDictationAnswer(part,val){ questions[currentQuestionIndex].userAnswer[part]=val; }
+
+    // ===== Recording =====
     function setupRecording(){
       const recordBtn=document.getElementById('record-btn'),
             indicator=document.getElementById('recording-indicator'),
@@ -476,7 +646,7 @@
             indicator.style.display='flex';
             recordBtn.classList.add('bg-red-500','hover:bg-red-600');
           }catch(err){
-            logError(err,'setupRecording'); showErrorModal("Micro bloqué. Active le micro dans ton navigateur. / 마이크 접근이 거부되었어요. 브라우저 설정을 확인해 주세요.");
+            logError(err,'setupRecording'); showErrorModal("마이크 접근이 거부되었습니다. 브라우저 설정을 확인해주세요.");
           }
         }
       };
@@ -485,7 +655,7 @@
     // ===== Flow =====
     function startQuiz(){
       studentName=document.getElementById('student-name').value.trim();
-      if(!studentName){ showErrorModal("Entre ton nom, s'il te plaît. / 이름을 입력해 주세요."); return; }
+      if(!studentName){ showErrorModal("이름을 입력해 주세요. (Entrez votre nom.)"); return; }
       const start = document.getElementById('start-screen');
       const explain = document.getElementById('explanation-screen');
       if(!start || !explain){ console.error('[startQuiz] Missing screens'); return; }
@@ -493,7 +663,7 @@
       explain.classList.remove('hidden');
       const next = document.getElementById('explanation-next-btn');
       if(next){ try{ next.focus({ preventScroll:true }); }catch(_){} }
-      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
+      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){}
     }
     function showWarmupScreen(){
       document.getElementById('explanation-screen').classList.add('hidden');
@@ -544,40 +714,5 @@
 
       const review=document.getElementById('review-content'); review.innerHTML='';
       questions.forEach(q=>{
-        const icon=q.isCorrect?'\u003ci class="fas fa-check-circle text-green-500"\u003e\u003c/i\u003e':'\u003ci class="fas fa-times-circle text-red-500"\u003e\u003c/i\u003e';
-        let html=`<div class="p-4 border rounded-lg ${q.isCorrect?'bg-green-50':'bg-red-50'}"><p class="font-bold text-lg">${icon} Q${q.number} (${q.type})</p>`;
-        let uAns='', cAns='';
-        if(q.type==='choice'){ html+=`<p><strong>Q:</strong> ${q.context}</p>`; uAns=q.userAnswer||"N/A"; cAns=q.answer; }
-        else if(q.type==='fill'){ html+=`<p><strong>Q:</strong> ${q.fr.replace('___', `<strong>${q.userAnswer||'...'}</strong>`)}</p>`; uAns=q.userAnswer||"N/A"; cAns=q.ko; }
-        else if(q.type==='translate'){ html+=`<p><strong>À traduire:</strong> ${q.fr}</p>`; uAns=q.userAnswer||"N/A"; cAns=q.ko; }
-        else if(q.type==='dictation'){ html+=`<p><strong>À écouter:</strong> ${q.ko}</p>`; uAns=`<strong>KR:</strong> ${q.userAnswer.ko||'vide'}<br><strong>FR:</strong> ${q.userAnswer.fr||'vide'}`; cAns=`<strong>KR:</strong> ${q.ko}<br><strong>FR:</strong> ${q.fr}`; }
-        html += q.isCorrect ? `<p><strong>Réponse:</strong> ${uAns||cAns}</p>` : `<p><strong>Votre réponse:</strong> <span class="text-red-700">${uAns}</span></p><p><strong>Réponse correcte:</strong> <span class="text-green-700">${cAns}</span></p>`;
-        review.insertAdjacentHTML('beforeend', html + '</div>');
-      });
-
-      document.getElementById('quiz-screen').classList.add('hidden');
-      document.getElementById('result-screen').classList.remove('hidden');
-    }
-    function restartQuiz(){
-      document.getElementById('result-screen').classList.add('hidden');
-      document.getElementById('start-screen').classList.remove('hidden');
-    }
-
-    // ===== Events =====
-    document.getElementById('start-btn').addEventListener('click', startQuiz);
-    document.getElementById('explanation-next-btn').addEventListener('click', showWarmupScreen);
-    document.getElementById('start-quiz-btn').addEventListener('click', startRealQuiz);
-    document.getElementById('next-btn').addEventListener('click', nextQuestion);
-    document.getElementById('prev-btn').addEventListener('click', prevQuestion);
-    document.getElementById('finish-btn').addEventListener('click', showResults);
-    document.getElementById('restart-btn').addEventListener('click', restartQuiz);
-    document.getElementById('print-btn').addEventListener('click', ()=>window.print());
-    document.getElementById('close-error-modal-btn').addEventListener('click', ()=>document.getElementById('error-modal').classList.add('hidden'));
-
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const nameInput=document.getElementById('student-name');
-      nameInput.placeholder=`Ex: ${placeholders[Math.floor(Math.random()*placeholders.length)]}`;
-    });
-  </script>
-</body>
-</html>
+        const icon=q.isCorrect?'<i class="fas fa-check-circle text-green-500"></i>':'<i class="fas fa-times-circle text-red-500"></i>';
+        let html=`<div class="p-4 border rounded-lg ${q.isCorrect?'bg-green-50':'bg-red-50'}"><p class="font-bold text-lg"
