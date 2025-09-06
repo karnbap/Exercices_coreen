@@ -317,7 +317,11 @@ function semanticMatchKR(userKR, goldKR, frPrompt){
 
     function renderQuestion(){
       quizContainer.innerHTML = '';
-      if(currentQuestionIndex >= quizData.length){ finishQuiz(); return; }
+      if (currentQuestionIndex >= quizData.length) { 
+        finishQuiz(); 
+        return; 
+      }
+
       const q = quizData[currentQuestionIndex];
 
       const card = document.createElement('div');
@@ -436,27 +440,28 @@ function semanticMatchKR(userKR, goldKR, frPrompt){
       addQuestionListeners();
     }
 
-    function addQuestionListeners(){
-      $('#prev-btn')?.addEventListener('click', prevQuestion);
+  function addQuestionListeners(){
+  // 이전 버튼
+  const prevBtn = document.getElementById('prev-btn');
+  if (prevBtn) prevBtn.onclick = prevQuestion;
 
-      // 다음 버튼 디바운스(중복 클릭 방지)
-      const nextBtn = $('#next-btn');
-      let nextLock = false;
-      nextBtn?.addEventListener('click', ()=>{
-        if(nextLock) return;
-        nextLock = true;
-        setTimeout(()=>nextLock=false, 400);
-        nextQuestion();
-      });
+  // 다음/끝내기 버튼: 이벤트 위임(렌더마다 안전)
+  quizContainer.onclick = (e)=>{
+    const btn = e.target.closest('#next-btn');
+    if (!btn) return;
+    nextQuestion();
+  };
 
-      document.querySelectorAll('.btn-choice').forEach(btn=>{
-        btn.addEventListener('click', (e)=>{
-          document.querySelectorAll('.btn-choice').forEach(b=>b.classList.remove('selected'));
-          e.currentTarget.classList.add('selected');
-          setTimeout(nextQuestion, 250);
-        });
-      });
-    }
+  // 객관식 자동 선택 후 진행
+  document.querySelectorAll('.btn-choice').forEach(btn=>{
+    btn.onclick = (e)=>{
+      document.querySelectorAll('.btn-choice').forEach(b=>b.classList.remove('selected'));
+      e.currentTarget.classList.add('selected');
+      setTimeout(nextQuestion, 200);
+    };
+  });
+}
+
 
     function showHint(num, text){
       if(num===1) questionsData[currentQuestionIndex].hint1Count++;
@@ -484,16 +489,17 @@ function semanticMatchKR(userKR, goldKR, frPrompt){
     }
 
     function prevQuestion(){ if(currentQuestionIndex>0){ saveCurrentAnswer(); currentQuestionIndex--; renderQuestion(); } }
-   function nextQuestion(){
+  function nextQuestion(){
   saveCurrentAnswer();
-  // 마지막 문제면 바로 finishQuiz 실행
-  if(currentQuestionIndex >= quizData.length - 1){ 
-    finishQuiz(); 
-  } else { 
-    currentQuestionIndex++; 
-    renderQuestion(); 
+  const isLast = currentQuestionIndex >= quizData.length - 1;
+  if (isLast) {
+    finishQuiz();
+  } else {
+    currentQuestionIndex++;
+    renderQuestion();
   }
 }
+
 
     // ✅ fuzzy 채점 적용
 function evaluateAnswers(){
