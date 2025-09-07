@@ -158,19 +158,26 @@
     });
   }
 
-  function pill(color, text) {
-    const base = 'display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid;';
-    if (color === 'green') return `<span style="${base}background:#e7f8ee;color:#0a7a3b;border-color:#9be4b8">${text}</span>`;
-    return `<span style="${base}background:#fde8e8;color:#9b1c1c;border-color:#f7b4b4">${text}</span>`;
-  }
-
-  function renderResult(el, pct, tags) {
+  function renderResult(el, pct, tags, explain) {
     const p = Math.round((pct || 0) * 100);
-    const label = textBilingual(`Précision de prononciation ${p}%`, `발음 정확도 ${p}%`);
-    const tagStr = (tags && tags.length) ? ` · ${textBilingual('Confusions détectées', '혼동')}: ${tags.join(', ')}` : '';
-    el.innerHTML = (p >= 85)
-      ? `${pill('green', label)}<div class="small-muted mt-1">${tagStr}</div>`
-      : `${pill('red',   label)}<div class="small-muted mt-1">${tagStr}</div>`;
+    const label = `${p >= 0 ? `Précision de prononciation ${p}% / 발음 정확도 ${p}%` : ''}`;
+    const tagStr = (tags && tags.length)
+      ? ` · ${'Confusions détectées / 혼동'}: ${tags.join(', ')}`
+      : '';
+
+    const pill = (p >= 85)
+      ? `<span style="display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid; background:#e7f8ee;color:#0a7a3b;border-color:#9be4b8">${label}</span>`
+      : `<span style="display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid; background:#fde8e8;color:#9b1c1c;border-color:#f7b4b4">${label}</span>`;
+
+    let detailsHTML = '';
+    if (p < 99 && Array.isArray(explain) && explain.length) {
+      const items = explain.slice(0, 6)
+        .map(e => `<li>${(e.fr||'').trim()} / ${(e.ko||'').trim()}</li>`)
+        .join('');
+      detailsHTML = `<ul class="small-muted mt-1 list-disc pl-5">${items}</ul>`;
+    }
+
+    el.innerHTML = `${pill}<div class="small-muted mt-1">${tagStr}</div>${detailsHTML}`;
   }
 
   function msg(el, text) { el.innerHTML = `<div class="small-muted">${text}</div>`; }
@@ -239,7 +246,7 @@
         };
         const data = await analyzeOnce(opts, payload, key);
         session.analyses++;
-        renderResult(resultEl, data.accuracy, data.confusionTags);
+        renderResult(resultEl, data.accuracy, data.confusionTags, data.details?.explain);
         if (typeof opts.onResult === 'function') {
           opts.onResult({ accuracy: data.accuracy, confusionTags: data.confusionTags, transcript: data.transcript, key });
         }
