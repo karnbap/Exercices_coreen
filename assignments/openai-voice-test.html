@@ -30,11 +30,13 @@
     .spinner{width:18px;height:18px;border:3px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     @media print {.no-print{display:none!important}}
+    .btn-rec-recording{ background:#ef4444 !important; color:#fff !important; }
+    .dot-rec{ width:10px;height:10px;border-radius:9999px;background:#ef4444;display:inline-block;animation:blink 1s infinite; }
+    @keyframes blink { 50%{ opacity:.2 } }
   </style>
 </head>
 <body class="text-slate-800">
   <div class="container mx-auto p-4 md:p-8 max-w-3xl">
-    <!-- Header -->
     <header class="text-center mb-8">
       <h1 class="text-4xl md:text-5xl font-bold text-indigo-600 mb-2">Dictée : Comme en Coréen 🎧</h1>
       <p class="text-lg text-slate-600">Écoutez → Écrivez en coréen → Traduisez en français → Enregistrez votre prononciation.</p>
@@ -46,15 +48,16 @@
       </div>
     </header>
 
-    <!-- Student name -->
     <section class="card mb-8 no-print">
       <label class="block font-semibold mb-2">Nom de l'étudiant / 학생 이름</label>
       <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500"
              placeholder="Ex. Camille, Noé, Chloé..." />
-      <p class="small-muted mt-2">시작하면 이름, 듣기/힌트/시도 횟수, 발음 점수까지 기록돼요.</p>
+      <p class="small-muted mt-2">
+        Dès le début, nous enregistrons : votre nom, le nombre d’écoutes/indices/essais, et vos scores de prononciation.
+        / 시작하면 이름, 듣기·힌트·시도 횟수, 발음 점수까지 기록돼요.
+      </p>
     </section>
 
-    <!-- Explanations -->
     <section id="explanations" class="mb-10 card">
       <h2 class="text-2xl font-bold mb-3 text-slate-700">Rappel : La Règle d'Or 🔑</h2>
       <div class="space-y-2 text-slate-700">
@@ -64,10 +67,8 @@
       </div>
     </section>
 
-    <!-- Exercises -->
     <section id="dictation-exercises"></section>
 
-    <!-- Footer actions -->
     <section class="mt-8 flex flex-wrap items-center gap-3 no-print">
       <button type="button" class="btn btn-secondary" id="restart-btn">↺ Réessayer / 다시하기</button>
       <button type="button" class="btn btn-primary" id="finish-btn">✅ Terminer / 끝내기</button>
@@ -79,12 +80,11 @@
   </div>
 
   <script>
-    // ------------ 데이터 ------------
     const exercises = [
       { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1: "ㅊㅅ ㄱㅇㅇ", hint2: "천사 = ange", voice: "Kore" },
       { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1: "ㅇㄱ ㄲ ㄱㅇㅇ", hint2: "꿈 = rêve", voice: "Puck" },
       { sentence: "가족 같은 친구예요.", translation: "C'est une amie comme ma famille.", hint1: "ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2: "가족 = famille", voice: "Charon" },
-      { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1: "ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2: "바다 = mer, 넓은 = large", voice: "Leda" },
+      { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1: "ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2: "바다 = mer, 넓은 = large", voice: "alloy" },
       { sentence: "소처럼 먹어요.", translation: "Il/Elle mange comme une vache.", hint1: "ㅅㅊㄹ ㅁㅇㅇ", hint2: "소 = vache", voice: "Fenrir" },
       { sentence: "그 사람은 바람처럼 달려요.", translation: "Il court comme le vent.", hint1: "ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2: "바람 = vent", voice: "Orus" },
       { sentence: "가수같이 노래를 잘해요.", translation: "Il/Elle chante bien comme un(e) chanteur(se).", hint1: "ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2: "가수 = chanteur/chanteuse", voice: "Aoede" },
@@ -103,93 +103,64 @@
       { sentence: "영화배우처럼 잘생겼어요.", translation: "Il est beau comme un acteur de cinéma.", hint1: "ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2: "영화배우 = acteur de cinéma", voice: "Schedar" }
     ];
 
-    // 문항 상태
-    const audioCache = {}; // text -> Blob
-    const recState = []; // per index: {recorder, chunks, startAt}
-    const exState = exercises.map(() => ({
+    const audioCache = {};
+    const recState = [];
+    const exState = exercises.map(()=>({
       listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
-      koCorrect:false, frCorrect:false,
-      pronunciation:null // { accuracy, modelUsed, confusionTags, transcript }
+      koCorrect:false, frCorrect:false, pronunciation:null
     }));
 
-    // ------------ 유틸 ------------
     function base64ToBlob(base64, mimeType="audio/wav"){
-      const bin = atob(base64);
-      const len = bin.length;
-      const bytes = new Uint8Array(len);
+      const bin=atob(base64); const len=bin.length; const bytes=new Uint8Array(len);
       for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
-      return new Blob([bytes], {type:mimeType});
+      return new Blob([bytes],{type:mimeType});
     }
     function blobToBase64(blob){
       return new Promise((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.onload=()=>resolve(reader.result.split(',')[1]);
-        reader.onerror=reject;
-        reader.readAsDataURL(blob);
+        const r=new FileReader();
+        r.onload=()=>resolve(r.result.split(',')[1]);
+        r.onerror=reject; r.readAsDataURL(blob);
       });
     }
     function escapeHtml(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-
     function normalizeHangul(s){
-      return (s||'')
-        .normalize('NFC')
-        .replace(/[.,!?~'"“”‘’:;()\[\]{}·…]/g,'')
-        .replace(/\s+/g,'')
-        .replace(/[A-Za-z]/g,''); // 로마자 제거
+      return (s||'').normalize('NFC')
+        .replace(/[.,!?~'"“”‘’:;()\[\]{}·…]/g,'').replace(/\s+/g,'').replace(/[A-Za-z]/g,'');
     }
     function levenshtein(a,b){
-      const m=a.length,n=b.length;
-      if(!m) return n; if(!n) return m;
+      const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
       const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i? (j?0:j):i));
-      for(let i=1;i<=m;i++){
-        for(let j=1;j<=n;j++){
-          const cost=a[i-1]===b[j-1]?0:1;
-          dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
-        }
+      for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+        const cost=a[i-1]===b[j-1]?0:1;
+        dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
       }
       return dp[m][n];
     }
     function styleHint(raw){
-      const hasJeoneun=/(저는|전)/.test(raw);
-      const hasNaneun=/(나는|난)/.test(raw);
-      const politeEnd=/(요|니다)[\s.]*$/.test(raw);
-      let msg='';
-      if(hasJeoneun && !politeEnd) msg="“저는/전”을 썼으면 문장 끝을 -요/-(스)ㅂ니다 형태로 맞춰요.";
-      if(hasNaneun && politeEnd) msg="“나는/난”을 썼으면 반말로 끝내요. -요/-(스)ㅂ니다는 쓰지 않아요.";
-      return msg;
+      const hasJeoneun=/(저는|전)/.test(raw), hasNaneun=/(나는|난)/.test(raw), politeEnd=/(요|니다)[\s.]*$/.test(raw);
+      if(hasJeoneun && !politeEnd) return "“저는/전”을 썼으면 문장 끝을 -요/-(스)ㅂ니다 형태로 맞춰요.";
+      if(hasNaneun && politeEnd) return "“나는/난”을 썼으면 반말로 끝내요. -요/-(스)ㅂ니다는 쓰지 않아요.";
+      return '';
     }
 
-    // ------------ 오디오 재생 ------------
     async function getAudio(text, voice, button, index){
       try{
-        button.disabled=true;
-        button.innerHTML='<span class="spinner"></span>';
+        button.disabled=true; button.innerHTML='<span class="spinner"></span>';
         if(audioCache[text] instanceof Blob){
-          const url=URL.createObjectURL(audioCache[text]);
-          const audio=new Audio(url);
-          audio.onended=()=>URL.revokeObjectURL(url);
-          exState[index].listenCount++;
-          await audio.play();
-          return;
+          const url=URL.createObjectURL(audioCache[text]); const audio=new Audio(url);
+          audio.onended=()=>URL.revokeObjectURL(url); exState[index].listenCount++; await audio.play(); return;
         }
         const res=await fetch('/.netlify/functions/generate-audio',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({text,voice})
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text,voice})
         });
         if(!res.ok) throw new Error('TTS API '+res.status);
         const {audioData,mimeType}=await res.json();
         if(!audioData || !mimeType || !mimeType.startsWith('audio/')) throw new Error('Invalid audio payload');
-        const blob=base64ToBlob(audioData,mimeType);
-        audioCache[text]=blob;
-        const url=URL.createObjectURL(blob);
-        const audio=new Audio(url);
-        audio.onended=()=>URL.revokeObjectURL(url);
-        exState[index].listenCount++;
-        await audio.play();
+        const blob=base64ToBlob(audioData,mimeType); audioCache[text]=blob;
+        const url=URL.createObjectURL(blob); const audio=new Audio(url);
+        audio.onended=()=>URL.revokeObjectURL(url); exState[index].listenCount++; await audio.play();
       }catch(err){
-        console.error(err);
-        alert("Désolé, une erreur audio.");
+        console.error(err); alert("Désolé, une erreur audio.");
         fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({functionName:'getAudio',error:String(err),pageUrl:location.href})}).catch(()=>{});
       }finally{
@@ -198,59 +169,40 @@
       }
     }
 
-    // ------------ 힌트 ------------
     function showHint(index, type){
       const hintDisplay=document.querySelectorAll('.hint-display')[index];
       const ex=exercises[index];
       if(type===1){
-        hintDisplay.innerHTML=`<p class="text-sm text-amber-700 korean-font"><strong>Indice 1 :</strong> ${ex.hint1}</p>`;
-        document.querySelectorAll('.hint1-btn')[index].disabled=true;
-        exState[index].hint1Count++;
+        hintDisplay.innerHTML=`<p class="text-sm text-amber-700 korean-font"><strong>🙏 Aidez-moi (초성) :</strong> ${ex.hint1}</p>`;
+        document.querySelectorAll('.hint1-btn')[index].disabled=true; exState[index].hint1Count++;
       }else{
         const prev=hintDisplay.querySelector('p:first-child')?.outerHTML||'';
-        hintDisplay.innerHTML=prev+`<p class="text-sm text-amber-700 korean-font mt-1"><strong>Indice 2 :</strong> ${ex.hint2}</p>`;
-        document.querySelectorAll('.hint2-btn')[index].disabled=true;
-        exState[index].hint2Count++;
+        hintDisplay.innerHTML=prev+`<p class="text-sm text-amber-700 korean-font mt-1"><strong>🦺 Au secours (단어) :</strong> ${ex.hint2}</p>`;
+        document.querySelectorAll('.hint2-btn')[index].disabled=true; exState[index].hint2Count++;
       }
     }
 
-    // ------------ 채점 (KO + FR) ------------
     function gradeBoth(index){
       const card=document.querySelectorAll('.dictation-card')[index];
       const koInput=card.querySelector('.input-ko');
       const frInput=card.querySelector('.input-fr');
       const feedback=card.querySelector('.feedback-display');
-      const rawKO=koInput.value||'';
-      const rawFR=frInput.value||'';
+      const rawKO=koInput.value||''; const rawFR=frInput.value||'';
       const styleMsg=styleHint(rawKO);
       const romanWarn=/[A-Za-z]/.test(rawKO) ? "한글 발음 표기 로마자는 쓰지 마세요. (ga, teun 등)" : "";
 
-      // KO
-      const userK=normalizeHangul(rawKO);
-      const corrK=normalizeHangul(exercises[index].sentence);
+      const userK=normalizeHangul(rawKO); const corrK=normalizeHangul(exercises[index].sentence);
       let koCorrect = userK===corrK || userK.includes(corrK) || corrK.includes(userK);
-      if(!koCorrect){
-        const d=levenshtein(userK,corrK), th=Math.max(1,Math.floor(corrK.length*0.1));
-        if(d<=th) koCorrect=true;
-      }
+      if(!koCorrect){ const d=levenshtein(userK,corrK), th=Math.max(1,Math.floor(corrK.length*0.1)); if(d<=th) koCorrect=true; }
 
-      // FR
       const userF=(rawFR||'').trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s+/g,' ');
       const corrF=(exercises[index].translation||'').trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s+/g,' ');
       let frCorrect = userF===corrF;
-      if(!frCorrect){
-        const d=levenshtein(userF,corrF), th=Math.max(1,Math.floor(corrF.length*0.1));
-        if(d<=th) frCorrect=true;
-      }
+      if(!frCorrect){ const d=levenshtein(userF,corrF), th=Math.max(1,Math.floor(corrF.length*0.1)); if(d<=th) frCorrect=true; }
 
-      exState[index].attempts++;
-      exState[index].koCorrect=koCorrect;
-      exState[index].frCorrect=frCorrect;
+      exState[index].attempts++; exState[index].koCorrect=koCorrect; exState[index].frCorrect=frCorrect;
 
-      const tags=[];
-      if(romanWarn) tags.push(`⚠️ ${romanWarn}`);
-      if(styleMsg) tags.push(`💡 ${styleMsg}`);
-
+      const tags=[]; if(romanWarn) tags.push(`⚠️ ${romanWarn}`); if(styleMsg) tags.push(`💡 ${styleMsg}`);
       const koPill = koCorrect ? `<span class="pill pill-green">KO ✓</span>` : `<span class="pill pill-red">KO ✗</span>`;
       const frPill = frCorrect ? `<span class="pill pill-green">FR ✓</span>` : `<span class="pill pill-red">FR ✗</span>`;
 
@@ -276,34 +228,79 @@
       `;
     }
 
-    // ------------ 발음 녹음/분석 ------------
     async function startRecord(index){
       try{
         const stream=await navigator.mediaDevices.getUserMedia({audio:true});
         const rec=new MediaRecorder(stream,{mimeType:'audio/webm'});
-        recState[index]={recorder:rec,chunks:[],startAt:Date.now()};
+
+        const card=document.querySelectorAll('.dictation-card')[index];
+        const btnStart=card.querySelector('.btn-rec-start');
+        const btnStop=card.querySelector('.btn-rec-stop');
+        const canvas=card.querySelector('.vu-canvas');
+        const ctx=canvas.getContext('2d');
+
+        const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+        const src=audioCtx.createMediaStreamSource(stream);
+        const analyser=audioCtx.createAnalyser();
+        analyser.fftSize=1024; const data=new Uint8Array(analyser.fftSize);
+        src.connect(analyser);
+
+        recState[index]={recorder:rec,chunks:[],startAt:Date.now(),stream,audioCtx,analyser,vuCanvas:canvas,rafId:null};
+
+        btnStart.classList.add('btn-rec-recording');
+        btnStart.innerHTML='🔴 Enregistrement… / 녹음 중 <span class="dot-rec"></span>';
+        btnStart.disabled=true; btnStop.disabled=false;
+
+        const draw=()=>{
+          analyser.getByteTimeDomainData(data);
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          ctx.beginPath();
+          for(let x=0;x<canvas.width;x++){
+            const i=Math.floor(x/canvas.width*data.length);
+            const y=(data[i]/255)*canvas.height;
+            if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.strokeStyle='#2563eb'; ctx.lineWidth=2; ctx.stroke();
+          recState[index].rafId=requestAnimationFrame(draw);
+        };
+        draw();
+
         rec.ondataavailable=e=>{ if(e.data.size>0) recState[index].chunks.push(e.data); };
-        rec.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); };
+        rec.onstop=()=>{ /* cleanup handled in stopAndAnalyze */ };
         rec.start();
+
       }catch(err){
-        alert('마이크 권한이 필요해요.');
+        alert('마이크 권한이 필요해요 / Autorisez le micro.');
         console.error(err);
       }
     }
+
     async function stopAndAnalyze(index){
       const state=recState[index];
       if(!state || !state.recorder) return;
-      const rec=state.recorder;
-      const card=document.querySelectorAll('.dictation-card')[index];
-      const area=card.querySelector('.pronun-display');
-      const durationSec=Math.max(0,Math.round((Date.now()-state.startAt)/1000));
 
-      area.innerHTML = `<div class="small-muted">⏳ Analyse de la prononciation...</div>`;
-      rec.onstop = async ()=>{
+      const {recorder,stream,audioCtx,analyser,vuCanvas,rafId,startAt,chunks}=state;
+      const card=document.querySelectorAll('.dictation-card')[index];
+      const btnStart=card.querySelector('.btn-rec-start');
+      const btnStop=card.querySelector('.btn-rec-stop');
+      const area=card.querySelector('.pronun-display');
+      const ctx=vuCanvas.getContext('2d');
+
+      btnStop.disabled=true;
+      area.innerHTML = `<div class="small-muted">⏳ Analyse de la prononciation... / 발음 분석 중...</div>`;
+
+      recorder.onstop = async ()=>{
         try{
-          const blob=new Blob(state.chunks,{type:'audio/webm'});
+          if(rafId) cancelAnimationFrame(rafId);
+          analyser.disconnect(); stream.getTracks().forEach(t=>t.stop());
+          try{ await audioCtx.close(); }catch(_){}
+
+          ctx.clearRect(0,0,vuCanvas.width,vuCanvas.height);
+
+          const blob=new Blob(chunks,{type:'audio/webm'});
           const base64=await blobToBase64(blob);
           const correct=exercises[index].sentence;
+          const durationSec=Math.max(0,Math.round((Date.now()-startAt)/1000));
 
           const res=await fetch('/.netlify/functions/analyze-pronunciation',{
             method:'POST',headers:{'Content-Type':'application/json'},
@@ -313,33 +310,37 @@
             })
           });
           if(!res.ok) throw new Error('STT '+res.status);
-          const data=await res.json(); // { accuracy, modelUsed, confusionTags, transcript, firstPass, secondPass? }
-          exState[index].pronunciation = {
+          const data=await res.json();
+
+          exState[index].pronunciation={
             accuracy:data.accuracy,
-            modelUsed:data.modelUsed,
             confusionTags:data.confusionTags||[],
             transcript:data.transcript,
             audio:{ base64, mimeType:'audio/webm', filename:`rec_${index+1}.webm`, duration:durationSec }
           };
 
           const pct=Math.round((data.accuracy||0)*100);
-          const tagStr=(data.confusionTags||[]).length? ` · ${data.confusionTags.join(', ')}`:'';
-          area.innerHTML = pct>=85
-            ? `<div class="pill pill-green">발음 정확도 ${pct}%</div><div class="small-muted mt-1">모델: ${data.modelUsed}${tagStr}</div>`
-            : `<div class="pill pill-red">발음 정확도 ${pct}%</div><div class="small-muted mt-1">모델: ${data.modelUsed}${tagStr}</div>`;
+          const tags=(data.confusionTags||[]).length? ` · Confusions détectées / 혼동: ${data.confusionTags.join(', ')}`:'';
+          const pill = pct>=85
+            ? `<div class="pill pill-green">Précision de prononciation ${pct}% / 발음 정확도 ${pct}%</div>`
+            : `<div class="pill pill-red">Précision de prononciation ${pct}% / 발음 정확도 ${pct}%</div>`;
+          area.innerHTML = `${pill}<div class="small-muted mt-1">${tags}</div>`;
+
         }catch(err){
           console.error(err);
-          area.innerHTML=`<div class="pill pill-red">분석 실패</div>`;
+          area.innerHTML=`<div class="pill pill-red">Échec de l'analyse / 분석 실패</div>`;
           fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({functionName:'analyze-pronunciation', error:String(err), pageUrl:location.href, index})}).catch(()=>{});
         }finally{
           recState[index]=null;
+          btnStart.classList.remove('btn-rec-recording');
+          btnStart.innerHTML='🎙️ Enregistrer / 녹음';
+          btnStart.disabled=false; btnStop.disabled=false;
         }
       };
-      rec.stop();
+      recorder.stop();
     }
 
-    // ------------ 렌더링 ------------
     function renderExercises(){
       const container=document.getElementById('dictation-exercises');
       container.innerHTML='';
@@ -352,12 +353,14 @@
             <button data-sentence="${ex.sentence}" data-voice="${ex.voice}" class="btn btn-primary play-btn" aria-label="Lire l'audio de la phrase ${index+1}">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-volume-up-fill" viewBox="0 0 16 16"><path d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303z"/><path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.48 5.48 0 0 1 11.025 8a5.48 5.48 0 0 1-1.61 3.89z"/><path d="M8.707 11.182A4.5 4.5 0 0 0 10.025 8a4.5 4.5 0 0 0-1.318-3.182L8 5.525A3.5 3.5 0 0 1 9.025 8 3.5 3.5 0 0 1 8 10.475zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/></svg>
             </button>
-            <div class="text-sm text-slate-500">Écouter → KO → FR → 🎙️</div>
+            <div class="text-sm text-slate-500">
+              Écouter / 듣기 → KO(한글) → FR(불어) → 🎙️ 녹음
+            </div>
           </div>
 
           <div class="mt-3 ml-12 grid gap-3">
             <input type="text" class="input-ko korean-font text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
-            <input type="text" class="input-fr text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Traduction en français"/>
+            <input type="text" class="input-fr text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
             <div class="flex items-center gap-2 row-gap">
               <button class="btn btn-hint hint1-btn">🙏 Aidez-moi (초성)</button>
               <button class="btn btn-hint hint2-btn">🦺 Au secours (단어)</button>
@@ -367,8 +370,9 @@
             <div class="feedback-display"></div>
 
             <div class="mt-3 flex flex-wrap items-center gap-2 no-print">
-              <button class="btn btn-primary btn-rec-start">🎙️ Enregistrer</button>
-              <button class="btn btn-secondary btn-rec-stop">⏹️ Stop & Analyser</button>
+              <button class="btn btn-primary btn-rec-start">🎙️ Enregistrer / 녹음</button>
+              <button class="btn btn-secondary btn-rec-stop" disabled>⏹️ Arrêter & Analyser / 정지·분석</button>
+              <canvas class="vu-canvas" width="160" height="24" style="background:#f1f5f9;border-radius:6px"></canvas>
               <div class="pronun-display small-muted"></div>
             </div>
           </div>
@@ -381,8 +385,7 @@
     function addEvents(){
       document.querySelectorAll('.play-btn').forEach((btn,i)=>{
         btn.addEventListener('click',e=>{
-          const b=e.currentTarget;
-          getAudio(b.dataset.sentence,b.dataset.voice,b,i);
+          const b=e.currentTarget; getAudio(b.dataset.sentence,b.dataset.voice,b,i);
         });
       });
       document.querySelectorAll('.hint1-btn').forEach((btn,i)=>btn.addEventListener('click',()=>showHint(i,1)));
@@ -390,12 +393,9 @@
       document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
       document.querySelectorAll('.btn-rec-start').forEach((btn,i)=>btn.addEventListener('click',()=>startRecord(i)));
       document.querySelectorAll('.btn-rec-stop').forEach((btn,i)=>btn.addEventListener('click',()=>stopAndAnalyze(i)));
-      document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
-        inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
-      });
+      document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{ inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); }); });
     }
 
-    // ------------ 다시하기 / 끝내기 ------------
     document.getElementById('restart-btn').addEventListener('click',()=>{
       document.querySelectorAll('.input-ko,.input-fr').forEach(i=>i.value='');
       document.querySelectorAll('.hint-display,.feedback-display,.pronun-display').forEach(d=>d.innerHTML='');
@@ -405,14 +405,13 @@
 
     document.getElementById('finish-btn').addEventListener('click',async()=>{
       const name=(document.getElementById('student-name').value||'').trim()||'N/A';
-      // 점수: KO + FR만 합산 (요청대로)
       const total=exercises.length*2;
       const got=exState.reduce((acc,s)=>acc+(s.koCorrect?1:0)+(s.frCorrect?1:0),0);
       const score=Math.round((got/total)*100);
-      const avgPronun = (exState.filter(s=>s.pronunciation).reduce((a,s)=>a+(s.pronunciation.accuracy||0),0) / Math.max(1,exState.filter(s=>s.pronunciation).length))*100;
-      alert(`총점: ${score}/100\n(한국어/불어 채점 합산)\n발음 평균: ${isFinite(avgPronun)?Math.round(avgPronun):0}%`);
+      const pronuArr=exState.filter(s=>s.pronunciation);
+      const avgPronun = (pronuArr.reduce((a,s)=>a+(s.pronunciation.accuracy||0),0) / Math.max(1,pronuArr.length))*100;
+      alert(`총점: ${score}/100 (한국어+불어)\nMoyenne de prononciation: ${isFinite(avgPronun)?Math.round(avgPronun):0}%`);
 
-      // 결과 전송
       try{
         const payload={
           studentName:name,
@@ -425,28 +424,16 @@
             const fr=card.querySelector('.input-fr').value||'';
             const pron=exState[i].pronunciation;
             return {
-              number:i+1,
-              ko: ex.sentence,
-              fr: ex.translation,
-              userAnswer: ko,                 // 규격상 필수(한글 답)
-              userAnswerFr: fr,               // 추가 필드(불어 답)
-              isCorrect: exState[i].koCorrect && exState[i].frCorrect, // 두 항목 동시
-              isCorrectKo: exState[i].koCorrect,
-              isCorrectFr: exState[i].frCorrect,
-              listenCount: exState[i].listenCount,
-              hint1Count: exState[i].hint1Count,
-              hint2Count: exState[i].hint2Count,
+              number:i+1, ko: ex.sentence, fr: ex.translation,
+              userAnswer: ko, userAnswerFr: fr,
+              isCorrect: exState[i].koCorrect && exState[i].frCorrect,
+              isCorrectKo: exState[i].koCorrect, isCorrectFr: exState[i].frCorrect,
+              listenCount: exState[i].listenCount, hint1Count: exState[i].hint1Count, hint2Count: exState[i].hint2Count,
               pronunciation: pron ? {
-                accuracy: pron.accuracy,
-                modelUsed: pron.modelUsed,
-                confusionTags: pron.confusionTags,
-                transcript: pron.transcript
+                accuracy: pron.accuracy, confusionTags: pron.confusionTags, transcript: pron.transcript
               } : null,
               recording: pron ? {
-                base64: pron.audio.base64,
-                filename: pron.audio.filename,
-                mimeType: pron.audio.mimeType,
-                duration: pron.audio.duration
+                base64: pron.audio.base64, filename: pron.audio.filename, mimeType: pron.audio.mimeType, duration: pron.audio.duration
               } : null
             };
           })
@@ -459,11 +446,8 @@
       }
     });
 
-    // 시작 타임 스탬프
     window._startTime=new Date().toISOString();
     window._startMs=Date.now();
-
-    // 렌더링 시작
     renderExercises();
   </script>
 </body>
