@@ -98,16 +98,14 @@
     const $ = (sel) => document.querySelector(sel);
 
   // 🔍 더 넓은 정규화: 공백/부호/공손어미/주어대명사 제거
+// 🔍 더 넓은 정규화: 공백/부호/공손어미/주어대명사 제거
 function normalizeForLoose(s){
   return (s||'')
     .toLowerCase()
-    // 불필요한 기호/공백 제거
-    .replace(/[.,!?;:'"()\-\u200b]/g,'')
-    .replace(/\s+/g,'')
-    // 자주 쓰는 공손어미/서술어 끝(요/습니다) 제거
-    .replace(/입니다|습니다|었어요|였어요|에요|예요|아요|어요|요/g,'')
-    // 흔한 1인칭/주어 표현 제거 (저/나 + 는/가/이 등)
-    .replace(/(?:저|나|제|내)(?:는|가|이|가요|는요)?/g,'')
+    .replace(/[.,!?;:'"()\-\u200b]/g,'')  // 불필요 기호 제거
+    .replace(/\s+/g,'')                   // 공백 제거
+    .replace(/입니다|습니다|었어요|였어요|에요|예요|아요|어요|요/g,'') // 공손어미 제거
+    .replace(/(?:저|나|제|내)(?:는|가|이|가요|는요)?/g,'')           // 1인칭 주어 제거
     .trim();
 }
 
@@ -116,7 +114,7 @@ function keepKRAndBasic(s){
   return (s||'').toLowerCase().replace(/[^0-9a-z\u3131-\u318E\uAC00-\uD7A3]/g,'');
 }
 
-// 레벤슈타인(오타 허용)
+// 레벤슈타인(오타 허용용)
 function levenshtein(a,b){
   const m=a.length,n=b.length;
   if(!m) return n; if(!n) return m;
@@ -132,13 +130,34 @@ function levenshtein(a,b){
   return dp[m][n];
 }
 
-// 10% 오타 허용(느슨한 일치)
+// ✅ 10% 오타 허용(느슨한 일치) — 빠져있던 함수 복구!
+function fuzzyMatchKR(user, target, threshold=0.10){
+  // 마침표/쉼표/요/저는 등 제거 후 완전일치면 통과
+  if(normalizeForLoose(user) === normalizeForLoose(target)) return true;
+
+  // 오타 허용(한글/영숫자만)
+  const u=keepKRAndBasic(user), t=keepKRAndBasic(target);
+  if(!t) return false;
+  const dist=levenshtein(u,t);
+  const rate=dist/Math.max(1,t.length);
+  return rate<=threshold;
+}
+
+// 핵심 토큰 뽑기: 정답 문장에서 의미어 추출(2글자 이상)
+function extractCoreTokens(s){
+  return (s||'').split(/\s+/)
+    .map(w=>w.replace(/[.,!?;:'"()\u200b]/g,'').trim())
+    .filter(w=>w && w.length>=2);
+}
+
+// ✅ 의미 일치 판정(최종 버전만 남기고, 중복 정의 제거)
+//  - avant ↔ 전에, après ↔ 후에 방향이 일치
+//  - 정답 핵심 토큰 중 ≥60%가 학생 답에 포함(정규화 후 포함 검사)
 function semanticMatchKR(userKR, goldKR, frPrompt){
   const u = normalizeForLoose(userKR);
   const g = normalizeForLoose(goldKR);
   if(!u || !g) return false;
 
-  // 방향(시간표현) 일치 확인
   const fr = (frPrompt || '').toLowerCase();
   const needAvant = /avant/.test(fr);
   const needApres = /après|apres/.test(fr);
@@ -148,7 +167,6 @@ function semanticMatchKR(userKR, goldKR, frPrompt){
   if (needAvant && !hasJeon) return false;
   if (needApres && !hasHue)  return false;
 
-  // 핵심 토큰 포함률 (정규화 후 포함 여부 판단)
   const cores = extractCoreTokens(goldKR);
   if (!cores.length) return false;
 
@@ -158,46 +176,9 @@ function semanticMatchKR(userKR, goldKR, frPrompt){
     .filter(tokN => tokN && uNorm.includes(tokN))
     .length;
 
-  const coverage = containCount / cores.length; // 포함 비율
-  return coverage >= 0.6; // 의미 60% 이상 맞으면 OK
+  const coverage = containCount / cores.length;
+  return coverage >= 0.6;
 }
-
-
-// 핵심 토큰 뽑기: 정답 문장에서 의미어 추출(2글자 이상, 조사/어미 제거 시도 X - 단순 포함만)
-function extractCoreTokens(s){
-  // 공백 기준으로 2글자 이상만(너무 짧은 조사/어미 제외)
-  return (s||'').split(/\s+/).map(w=>w.replace(/[.,!?;:'"()\u200b]/g,'').trim())
-    .filter(w=>w && w.length>=2);
-}
-
-// 의미 일치 판정:
-//  - avant ↔ 전에, après ↔ 후에 방향이 일치
-//  - 정답 핵심 토큰 중 다수가(≥60%) 학생 답에 포함
-function semanticMatchKR(userKR, goldKR, frPrompt){
-  const u = normalizeForLoose(userKR);
-  const g = normalizeForLoose(goldKR);
-  if(!u || !g) return false;
-
-  // 방향(시간표현) 일치 확인
-  const fr = (frPrompt||'').toLowerCase();
-  const needAvant  = /avant/.test(fr);
-  const needApres  = /après|apres/.test(fr);
-  const hasJeon   = /전에/.test(userKR);
-  const hasHue    = /후에/.test(userKR);
-
-  if(needAvant && !hasJeon) return false;
-  if(needApres && !hasHue)  return false;
-
-  // 핵심 토큰 포함률
-  const cores = extractCoreTokens(goldKR);
-  if(!cores.length) return false;
-
-  const containCount = cores.filter(tok => userKR.includes(tok)).length;
-  const coverage = containCount / cores.length; // 포함 비율
-
-  return coverage >= 0.6; // 의미 60% 이상 맞으면 OK
-}
-
 
     // ===== 상태 =====
     const startScreen = $('#start-screen');
