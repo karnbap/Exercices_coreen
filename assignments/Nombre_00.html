@@ -324,6 +324,18 @@
       }
     }
 
+
+    <script>
+      // ===== 안전 문자열 유틸 =====
+      function safeAttr(s){
+        return String(s||"")
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "&#39;")
+          .replace(/"/g, "&quot;")
+          .replace(/\n/g, " ");
+      }
+    </script>
+
     /* ===== 쉬운 불어+한글 개념 힌트 ===== */
     function buildConceptHint(forWhat){
       const lines = {
@@ -588,7 +600,7 @@
     }
 
     // ===== UI =====
-    function renderQuestion(){
+    function renderQuestion(){ try {
       const q = questions[currentQuestionIndex];
       const area = document.getElementById('question-area');
       const explanationMap = {
@@ -615,7 +627,7 @@
       else if(q.type==='dictation'){
         html+=`<div class="space-y-4">
           <div class="flex gap-2">
-            <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${q.ko}','${q.voice}', this)">
+            <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${safeAttr(q.ko)}','${q.voice}', this)">
               <i class="fas fa-play"></i> Écouter (듣기)
             </button>
             <button id="stop-btn" class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
@@ -643,7 +655,7 @@
         html+=`
           <p class="text-lg font-semibold mb-2">${q.fr}</p>
           <div class="flex gap-2 mb-3">
-            <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${q.audioText}','${q.voice||'alloy'}', this)"><i class="fas fa-play"></i> Écouter (듣기)</button>
+            <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${safeAttr(q.audioText)}','${q.voice||'alloy'}', this)"><i class="fas fa-play"></i> Écouter (듣기)</button>
             <button id="stop-btn" class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
             <button id="loop-btn" class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
           </div>
@@ -655,9 +667,13 @@
 
       area.innerHTML = html;
       if(q.type==='dictation') setupRecording();
-      toggleSticky55((questions[currentQuestionIndex]?.number || 0) >= 6);
-      updateNavigation();
-    }
+     toggleSticky55((questions[currentQuestionIndex]?.number || 0) >= 6);
+     updateNavigation();
+      } catch (err) {
+        console.error('renderQuestion error', err);
+        logError(err, 'renderQuestion', { idx: currentQuestionIndex });
+        showErrorModal('연습문제를 표시하는 중 오류가 발생했습니다. (콘솔 확인)');
+      }
 
     function updateNavigation(){
       document.getElementById('prev-btn').classList.toggle('disabled', currentQuestionIndex===0);
@@ -724,7 +740,16 @@
       try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
     }
     function showWarmupScreen(){ document.getElementById('explanation-screen').classList.add('hidden'); document.getElementById('warmup-screen').classList.remove('hidden'); }
-    function startRealQuiz(){ startTime=new Date(); questions=getQuestions(); currentQuestionIndex=0; document.getElementById('warmup-screen').classList.add('hidden'); document.getElementById('quiz-screen').classList.remove('hidden'); renderQuestion(); updateNavigation(); }
+    function startRealQuiz(){
+     startTime=new Date(); 
+     questions=getQuestions(); 
+     currentQuestionIndex=0;
+       if(!questions || !questions.length){
+        showErrorModal('문항 생성에 실패했습니다. 콘솔을 확인하세요.');
+        console.error('getQuestions returned', questions);
+        return;
+      }
+    document.getElementById('warmup-screen').classList.add('hidden'); document.getElementById('quiz-screen').classList.remove('hidden'); renderQuestion(); updateNavigation(); }
     function nextQuestion(){ if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} } if(currentQuestionIndex<questions.length-1){ currentQuestionIndex++; renderQuestion(); updateNavigation(); } }
     function prevQuestion(){ if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} } if(currentQuestionIndex>0){ currentQuestionIndex--; renderQuestion(); updateNavigation(); } }
 
