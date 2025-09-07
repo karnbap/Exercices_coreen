@@ -3,241 +3,295 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coréen — Nombres | Explications + Warming up</title>
+  <title>Exercice Coréen – Intro + Méthode 5×5</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- (선택) 공용 스타일 -->
+  <link rel="stylesheet" href="../assets/style.css"/>
+
   <style>
     body{font-family:'Poppins','Noto Sans KR',sans-serif;}
-    .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
-    .btn{padding:.75rem 1.25rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
-    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
-    .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
-    .small-muted{ font-size:.9rem; color:#64748b; }
+    .wrap{max-width:1000px;margin:0 auto;padding:24px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 15px -8px rgba(0,0,0,.08);padding:20px}
+    .kicker{color:#64748b;letter-spacing:.02em}
+
+    /* 설명 가독성 */
     .readable { line-height: 1.9; }
-    .readable p { margin-top: 0.9rem; margin-bottom: 0.9rem; }
-    .readable .kicker { font-size: .96rem; letter-spacing: .02em; color:#64748b; }
-    .info-card { background:#fff; border:1px solid #e5e7eb; border-radius:1rem; padding:1.15rem 1.25rem; box-shadow:0 1px 2px rgba(16,24,40,.06); }
-    .info-card h3 { font-weight:700; font-size:1.125rem; color:#0f172a; margin-bottom:.5rem; }
-    .callout { background:#fef9c3; border:1px solid #fde68a; color:#92400e; padding:.9rem 1rem; border-radius:.85rem; }
-    .soft-divider { height:1px; margin:1.35rem 0; background:linear-gradient(to right, transparent, #e5e7eb, transparent); }
-    .table-soft th { background:#f8fafc; color:#0f172a; }
-    .table-soft th, .table-soft td { padding:1rem; }
-    .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
+    .readable p { margin:.85rem 0; }
+    .soft-divider { height:1px;margin:1.2rem 0;background:linear-gradient(to right, transparent, #e5e7eb, transparent); }
+
+    /* 버튼들 */
+    .btn{padding:.65rem 1rem;border-radius:.65rem;font-weight:600;transition:all .2s;border:none;cursor:pointer}
+    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
+    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
+    .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
+    .playing{background:#059669 !important}
+
+    /* 스피드 칩 */
+    .speed-chip{font-size:.9rem;border:1px solid #e5e7eb;background:#f8fafc;border-radius:.65rem;padding:.4rem .65rem;display:inline-flex;align-items:center;gap:.4rem}
+    .speed-chip .dot{width:7px;height:7px;border-radius:50%;background:#94a3b8}
+    .speed-chip b{font-weight:700}
+
+    /* pronun 박스 */
+    .pronun-box{border:1px dashed #c7d2fe;background:#eef2ff;border-radius:12px;padding:12px}
+    .pronun-box h5{font-size:.95rem;margin-bottom:.35rem;color:#1f2937}
+
+    /* 하단 메이드바이(고정 한 곳) */
+    .madeby{position:fixed;right:14px;bottom:12px;font-size:.85rem;color:#94a3b8}
   </style>
 </head>
 <body class="bg-gray-50">
 
-  <!-- 설명 -->
-  <div class="min-h-screen flex flex-col items-center justify-center text-center p-6">
-    <div class="max-w-3xl w-full mx-auto readable">
-      <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
-      <p class="kicker mb-6">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
+  <div class="wrap space-y-6">
+    <!-- 헤더 -->
+    <header class="text-center">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">
+        Exercice : Les Nombres Coréens 🔢
+      </h1>
+      <p class="kicker mt-1">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
+    </header>
 
-      <div class="grid md:grid-cols-2 gap-6 text-left">
-        <div class="info-card">
-          <h3>1️⃣ Petite explication / 간단 설명</h3>
-          <div class="callout">👉 « 한자 = chinois(언어) »가 아니에요! Hanja=문자 체계, Chinois=언어.</div>
-          <ul class="list-disc list-inside mt-3 space-y-1.5">
-            <li><strong>한자 (Hanja)</strong> = système d’écriture</li>
-            <li><strong>Chinois</strong> = langue</li>
-          </ul>
-        </div>
-        <div class="info-card">
-          <h3>2️⃣ Deux systèmes / 두 가지 숫자</h3>
-          <p class="mb-2"><strong>순수 한국어</strong> ↔ <strong>한자어</strong></p>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <div class="font-semibold text-blue-900">Natifs</div>
-              <div class="text-xl font-bold">하나, 둘, 셋…</div>
-              <div class="small-muted">Âge, personnes, objets…</div>
-            </div>
-            <div class="p-3 rounded-lg bg-green-50 border border-green-200">
-              <div class="font-semibold text-green-900">Hanja-coréens</div>
-              <div class="text-xl font-bold">일, 이, 삼…</div>
-              <div class="small-muted">Dates, argent, minutes…</div>
-            </div>
-          </div>
-        </div>
-        <div class="info-card md:col-span-2">
-          <h3>⚡ Exception & Tendance</h3>
-          <ul class="list-disc list-inside space-y-1.5">
-            <li>Heures(시) → <b>natifs</b> · Minutes(분) → <b>Hanja-coréens</b></li>
-            <li>« 1 h = 60 min » 체계 이후 시=natifs / 분=Hanja</li>
-          </ul>
-        </div>
-        <div class="info-card md:col-span-2">
-          <h3>✅ Résumé / 요약</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-sm table-soft">
-              <thead>
-                <tr>
-                  <th class="border border-slate-200">Système / 체계</th>
-                  <th class="border border-slate-200">Usage / 용도</th>
-                  <th class="border border-slate-200">Exemples / 예</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="odd:bg-white even:bg-gray-50">
-                  <td class="border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
-                  <td class="border border-slate-200">Compter librement, classificateurs, durées libres</td>
-                  <td class="border border-slate-200">
-                    한 달, 두 달 / 한 개, 두 명, 세 잔, 한 권 / 한 시, 두 시
-                  </td>
-                </tr>
-                <tr class="odd:bg-white even:bg-gray-50">
-                  <td class="border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
-                  <td class="border border-slate-200">Valeurs « écrites » (calendrier, montre, monnaie…)</td>
-                  <td class="border border-slate-200">
-                    1월, 2월 / 10분, 30초 / 2025년 9월 7일, 1,000원 / 3층, 302호
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
+    <!-- 간단 설명 -->
+    <section class="card readable">
+      <h2 class="text-xl font-bold text-slate-900">📘 Pourquoi deux systèmes ? / 왜 두 가지 숫자?</h2>
+      <p><b>한자(Hanja)</b>는 <u>글자(문자 체계)</u>, <b>chinois</b>는 <u>언어</u>예요. 한국어 숫자는 <b>순수 한국어(하나, 둘…)</b>와 <b>한자어(일, 이…)</b>를 모두 써요.</p>
+      <ul class="list-disc list-inside">
+        <li><b>Natifs</b> → 눈앞에서 세는 것(나이, 사람 수, 사물 개수 등)</li>
+        <li><b>Hanja-coréens</b> → 달력·시계·돈처럼 <i>이미 정해져 적힌</i> 단위/값(날짜, 분·초, 금액, 호수 등)</li>
+      </ul>
       <div class="soft-divider"></div>
-    </div>
+      <p>⏱️ 예외: <b>Heures(시)</b>는 <b>natifs</b>, <b>Minutes(분)</b>은 <b>Hanja-coréens</b>를 주로 씁니다.</p>
+    </section>
+
+    <!-- Méthode 5×5 워밍업 -->
+    <section id="warmup" class="card">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Méthode 5×5 🗣️ / 5개씩 훈련법</h2>
+          <p class="text-slate-600">Écouter → Répéter → <b>Enregistrer & Évaluer</b> / 듣고 따라 말한 뒤 <b>녹음·평가</b></p>
+        </div>
+        <div class="text-sm text-slate-500">
+          <span class="font-semibold">Quand vous voulez</span> / 필요할 때 언제든 듣기
+        </div>
+      </div>
+
+      <div class="mt-4 grid md:grid-cols-2 gap-5">
+        <!-- 4개의 기본 구간이 JS에서 렌더링됩니다 -->
+        <div id="set-1" class="space-y-3"></div>
+        <div id="set-2" class="space-y-3"></div>
+        <div id="set-3" class="space-y-3"></div>
+        <div id="set-4" class="space-y-3"></div>
+      </div>
+
+      <div class="mt-5 text-xs text-slate-500">
+        ※ 각 칸은 <b>0.7× → 1.0× → 1.2× → 1.5× → 1.5×(쉼표 제거)</b> 순서로 <u>듣고 → 녹음 → 발음평가</u>를 연습합니다.
+      </div>
+    </section>
   </div>
 
-  <!-- 워밍업 (듣기 0.9배속 + 녹음·평가) -->
-  <div class="quiz-container">
-    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️ / 5개씩 훈련법</h2>
-    <p class="text-lg text-slate-600 mb-8 text-center">Écouter → Répéter → <b>Enregistrer & Évaluer</b> / 듣고 따라 말한 뒤 <b>녹음·평가</b></p>
+  <!-- 깔끔한 표기: 한 곳만 -->
+  <div class="madeby">made by 성일, Pongdang · Lapeace29@gmail.com</div>
 
-    <div class="space-y-6">
-      <div class="p-4 bg-white rounded-lg shadow-sm">
-        <div class="flex items-center justify-between">
-          <p class="font-semibold text-lg text-slate-700">Natifs (1–5) : <span class="text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-          <button class="btn btn-sound" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.9 })"><i class="fas fa-play"></i></button>
-        </div>
-        <div id="wu-pronun-1" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
-      </div>
-
-      <div class="p-4 bg-white rounded-lg shadow-sm">
-        <div class="flex items-center justify-between">
-          <p class="font-semibold text-lg text-slate-700">Natifs (6–10) : <span class="text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-          <button class="btn btn-sound" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.9 })"><i class="fas fa-play"></i></button>
-        </div>
-        <div id="wu-pronun-2" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
-      </div>
-
-      <div class="p-4 bg-white rounded-lg shadow-sm">
-        <div class="flex items-center justify-between">
-          <p class="font-semibold text-lg text-slate-700">Hanja (1–5) : <span class="text-gray-500">일, 이, 삼, 사, 오</span></p>
-          <button class="btn btn-sound" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy',{ speed:0.9 })"><i class="fas fa-play"></i></button>
-        </div>
-        <div id="wu-pronun-3" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
-      </div>
-
-      <div class="p-4 bg-white rounded-lg shadow-sm">
-        <div class="flex items-center justify-between">
-          <p class="font-semibold text-lg text-slate-700">Hanja (6–10) : <span class="text-gray-500">육, 칠, 팔, 구, 십</span></p>
-          <button class="btn btn-sound" onclick="onPlayPause('육, 칠, 팔, 구, 십','alloy',{ speed:0.9 })"><i class="fas fa-play"></i></button>
-        </div>
-        <div id="wu-pronun-4" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
-      </div>
-    </div>
-
-    <div class="mt-8 text-center">
-      <a href="./numbers-exercises.html" class="btn btn-primary text-lg">Commencer l'exercice ! (연습문제 시작!) <i class="fas fa-arrow-right"></i></a>
-    </div>
-  </div>
-
-  <div class="brand-tag">made by 성일, Pongdang · Lapeace29@gmail.com</div>
-
-  <!-- 기본 TTS/Functions 설정 -->
+  <!-- 전역 설정 -->
   <script>
-    window.PONGDANG_TTS = window.PONGDANG_TTS || { provider: 'openai' };
+    window.PONGDANG_TTS   = window.PONGDANG_TTS   || { provider:'openai' };
     window.PONGDANG_FN_BASE = window.PONGDANG_FN_BASE || '/.netlify/functions';
-    // 전사/숫자치환 문구 숨기기(클라이언트가 지원 안하면 아래 scrubber가 제거)
-    window.PRONUN_OPTIONS = { hideTranscript: true, hideNumericSwap: true };
   </script>
-  <script src="../assets/pronun-utils.js"></script>
-  <script src="../assets/pronun-vowel-middleware.js"></script>
+
+  <!-- 유틸 & 발음 평가 클라이언트 & 이름 게이트 -->
+  <script src="../assets/student-gate.js"></script>
   <script src="../assets/pronun-client.js"></script>
 
   <script>
     const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
-    let currentAudio=null,currentBlobUrl=null,currentFetchAbort=null,isPlayingOrFetching=false,audioClickLocked=false;
-    const VOICE_MAP={openai:{default:"alloy",alloy:"alloy",shimmer:"verse"},google:{default:"ko-KR-Standard-A",alloy:"ko-KR-Standard-A",shimmer:"ko-KR-Standard-B"}};
-    const mapVoice=(p,v)=> (VOICE_MAP[p]||{} )[v] || (VOICE_MAP[p]||{}).default || v;
 
-    function base64ToBlob(b64,mime='audio/mpeg'){const c=b64.includes(',')?b64.split(',')[1]:b64;const s=atob(c);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return new Blob([a],{type:mime});}
-    function updatePlayBtnUI(btn,playing){ if(!btn) return; btn.innerHTML = playing? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>'; }
-    async function onPlayPause(text,voice='alloy',opts={}){
-      const btn=event?.currentTarget;
-      if(audioClickLocked||isPlayingOrFetching){ if(currentAudio){ try{ if(currentAudio.paused){ await currentAudio.play(); updatePlayBtnUI(btn,true);} else { currentAudio.pause(); updatePlayBtnUI(btn,false);} }catch(_){} } return;}
-      audioClickLocked=true; setTimeout(()=>audioClickLocked=false,220);
-      try{
-        if(currentAudio && currentAudio.src && currentAudio._meta===text){ if(currentAudio.paused){ await currentAudio.play(); updatePlayBtnUI(btn,true);} else { currentAudio.pause(); updatePlayBtnUI(btn,false);} return; }
-        isPlayingOrFetching=true;
-        if(currentFetchAbort){ try{currentFetchAbort.abort();}catch(_){}
-        } if(currentAudio){ try{currentAudio.pause();}catch(_){}
+    /* ====== 재생 공통 ====== */
+    let currentAudio = null, currentBlobUrl = null, currentFetchAbort = null;
+    let audioClickLocked = false, isPlayingOrFetching = false;
+    let currentAudioMeta = { text:null, voice:null, speed:1 };
+    let currentPlayBtn = null;
+
+    function base64ToBlob(base64, mime='audio/mp3'){
+      const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
+      const byteChars = atob(cleaned);
+      const arr = new Uint8Array(byteChars.length);
+      for(let i=0;i<byteChars.length;i++) arr[i]=byteChars.charCodeAt(i);
+      return new Blob([arr],{type:mime});
+    }
+    function cleanupAudio(){
+      try{ currentAudio?.pause(); }catch(_){}
+      if(currentBlobUrl){ URL.revokeObjectURL(currentBlobUrl); currentBlobUrl=null; }
+      currentAudio=null; currentPlayBtn=null;
+    }
+    function btnToPlaying(btn, playing){
+      if(!btn) return;
+      if(playing){
+        btn.classList.add('playing');
+        btn.innerHTML = '<i class="fas fa-pause"></i> Pause (일시정지)';
+      }else{
+        btn.classList.remove('playing');
+        btn.innerHTML = '<i class="fas fa-play"></i> Écouter (듣기)';
+      }
+    }
+    function safeAttr(s){ return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;").replace(/\n/g," "); }
+
+    async function playKo(text, btn, { speed=1.0, voice='alloy' } = {}){
+      if(audioClickLocked || isPlayingOrFetching){
+        if(currentAudio && currentAudioMeta.text===text && currentAudioMeta.speed===speed){
+          try{
+            if(!currentAudio.paused){ currentAudio.pause(); btnToPlaying(btn,false); }
+            else { await currentAudio.play(); btnToPlaying(btn,true); }
+          }catch(_){}
         }
-        const ac=new AbortController(); currentFetchAbort=ac;
-        const primary=(window.PONGDANG_TTS?.provider)||'openai';
-        const payload={ text, voice: mapVoice(primary,voice), provider: primary, speed:(opts.speed ?? opts.speakingRate) };
-        const res=await fetch(`${FN_BASE}/generate-audio`,{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(payload),signal:ac.signal});
-        if(!res.ok){ throw new Error('TTS error '+res.status); }
-        const data=await res.json();
-        let src=null;
-        if(data.audioBase64||data.audioContent){ const blob=base64ToBlob(data.audioBase64||data.audioContent,data.mimeType||'audio/mpeg'); src=URL.createObjectURL(blob); currentBlobUrl=src; }
-        else if(data.audioUrl){ src=data.audioUrl; }
-        const audio=new Audio(src); currentAudio=audio; audio._meta=text;
-        audio.addEventListener('playing',()=>updatePlayBtnUI(btn,true));
-        audio.addEventListener('pause',()=>updatePlayBtnUI(btn,false));
-        audio.addEventListener('ended',()=>updatePlayBtnUI(btn,false));
+        return;
+      }
+      audioClickLocked = true; setTimeout(()=>audioClickLocked=false, 220);
+
+      try{
+        // 동일 컨텐츠 → 토글
+        if(currentAudio && currentAudioMeta.text===text && currentAudioMeta.speed===speed){
+          if(!currentAudio.paused){ currentAudio.pause(); btnToPlaying(btn,false); }
+          else { await currentAudio.play(); btnToPlaying(btn,true); }
+          return;
+        }
+
+        isPlayingOrFetching = true;
+        if(currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){ } }
+        if(currentAudio){ try{ currentAudio.pause(); }catch(_){ } }
+
+        const ac = new AbortController();
+        currentFetchAbort = ac;
+
+        const payload = { text, voice, speed };
+        const res = await fetch(`${FN_BASE}/generate-audio`,{
+          method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+          body:JSON.stringify(payload), signal: ac.signal
+        });
+        if(!res.ok){
+          const t = await res.text().catch(()=> '');
+          throw new Error(`generate-audio fail: ${res.status} ${t}`);
+        }
+        const data = await res.json();
+        let srcUrl = null;
+        if(data.audioBase64 || data.audioContent){
+          const blob = base64ToBlob(data.audioBase64 || data.audioContent, data.mimeType||'audio/mpeg');
+          srcUrl = URL.createObjectURL(blob); currentBlobUrl = srcUrl;
+        }else if(data.audioUrl){ srcUrl = data.audioUrl; }
+        else { throw new Error('Invalid TTS response'); }
+
+        const audio = new Audio(srcUrl);
+        currentAudio = audio;
+        currentAudioMeta = { text, voice, speed };
+        currentPlayBtn = btn;
+
+        audio.addEventListener('playing', ()=> btnToPlaying(btn,true));
+        audio.addEventListener('pause',   ()=> btnToPlaying(btn,false));
+        audio.addEventListener('ended',   ()=> btnToPlaying(btn,false));
+        audio.addEventListener('error',   ()=> btnToPlaying(btn,false));
+
         await audio.play();
-      }catch(e){ alert('오디오 생성/재생 오류. 잠시 후 다시 시도해주세요.'); }
-      finally{ isPlayingOrFetching=false; }
+      }catch(e){
+        console.error(e);
+        alert('오디오 재생 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      }finally{
+        isPlayingOrFetching = false;
+      }
     }
 
-    // Pronun mount + “전사”류 문구 제거 스크러버
-    function scrubPronun(container){
-      if(!container) return;
-      const killWords=['전사','transcription','transcrit'];
-      const sweep=()=>{
-        const nodes=container.querySelectorAll('*');
-        nodes.forEach(n=>{
-          if(n.childNodes && n.childNodes.length){
-            n.childNodes.forEach(c=>{
-              if(c.nodeType===3 && killWords.some(k=>c.textContent?.toLowerCase().includes(k))){
-                c.textContent='';
+    /* ====== 5×5 데이터 ====== */
+    const SETS = [
+      { mountId:'set-1', title:'순수 한국어 / Natifs (1–5)', phrase:'하나, 둘, 셋, 넷, 다섯', voice:'alloy' },
+      { mountId:'set-2', title:'순수 한국어 / Natifs (6–10)', phrase:'여섯, 일곱, 여덟, 아홉, 열', voice:'shimmer' },
+      { mountId:'set-3', title:'한자어 / Hanja-coréens (1–5)', phrase:'일, 이, 삼, 사, 오', voice:'alloy' },
+      { mountId:'set-4', title:'한자어 / Hanja-coréens (6–10)', phrase:'육, 칠, 팔, 구, 십', voice:'alloy' }
+    ];
+    const SPEED_STEPS = [
+      { label:'0.7×', speed:0.7, strip:false },
+      { label:'1.0×', speed:1.0, strip:false },
+      { label:'1.2×', speed:1.2, strip:false },
+      { label:'1.5×', speed:1.5, strip:false },
+      { label:'1.5× (sans virgules / 쉼표 없음)', speed:1.5, strip:true }
+    ];
+
+    function stripCommasKo(s){ return s.replaceAll(',', ''); }
+
+    function renderSet(container, meta){
+      const block = document.createElement('div');
+      block.className = 'p-4 rounded-xl border border-slate-200 bg-white/90 shadow-sm';
+      block.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="text-sm font-semibold text-slate-700">${meta.title}</div>
+            <div class="text-slate-500 text-sm korean-font">${meta.phrase}</div>
+          </div>
+          <div class="hidden md:block text-xs text-slate-500">Écouter → Répéter → <b>Enregistrer & Évaluer</b></div>
+        </div>
+        <div class="mt-3 grid md:grid-cols-2 gap-3" data-steps></div>
+      `;
+      container.appendChild(block);
+
+      const stepsWrap = block.querySelector('[data-steps]');
+      SPEED_STEPS.forEach((st, idx) => {
+        const refText = st.strip ? stripCommasKo(meta.phrase) : meta.phrase;
+        const card = document.createElement('div');
+        card.className = 'rounded-lg border border-slate-200 p-3 bg-slate-50';
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div class="speed-chip"><span class="dot"></span> <b>${st.label}</b></div>
+            <button class="btn btn-sound btn-play"><i class="fas fa-play"></i> Écouter (듣기)</button>
+          </div>
+          <div class="mt-2 pronun-box">
+            <h5>🎤 Enregistrer & évaluer / 녹음·발음 평가</h5>
+            <div class="text-xs text-slate-500 mb-1">Référez-vous à&nbsp;<span class="korean-font font-semibold">${refText}</span></div>
+            <div class="pronun-mount"></div>
+          </div>
+        `;
+        stepsWrap.appendChild(card);
+
+        // Play 버튼 동작
+        const playBtn = card.querySelector('.btn-play');
+        playBtn.addEventListener('click', () => {
+          playKo(refText, playBtn, { speed: st.speed, voice: meta.voice || 'alloy' });
+        });
+
+        // 발음 평가 mount
+        const mount = card.querySelector('.pronun-mount');
+        if (window.Pronun && mount){
+          try{
+            Pronun.mount(mount, {
+              getReferenceText: () => refText,
+              onResult: (r) => {
+                // 필요 시 후처리 가능. (r.score, r.detail 등)
+                // console.log('Pronun result', r);
               }
             });
+          }catch(e){
+            console.warn('Pronun.mount error', e);
           }
-        });
-      };
-      sweep();
-      const mo=new MutationObserver(sweep);
-      mo.observe(container,{childList:true,subtree:true});
+        }
+      });
     }
 
-    document.addEventListener('DOMContentLoaded',()=>{
-      const blocks=[
-        ['wu-pronun-1','하나, 둘, 셋, 넷, 다섯'],
-        ['wu-pronun-2','여섯, 일곱, 여덟, 아홉, 열'],
-        ['wu-pronun-3','일, 이, 삼, 사, 오'],
-        ['wu-pronun-4','육, 칠, 팔, 구, 십'],
-      ];
-      blocks.forEach(([id,text])=>{
-        const el=document.getElementById(id);
-        if(el && window.Pronun){
-          Pronun.mount(el,{
-            getReferenceText:()=>text,
-            isKoCorrect:()=>true,
-            onResult:()=>{}
-          });
-          scrubPronun(el);
-        }
+    /* ====== 부트스트랩 ====== */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 이름 입력 가드(최초 한 번)
+      if (window.StudentGate) {
+        StudentGate.init();
+        StudentGate.requireBeforeInteraction(document);
+      }
+
+      // 세트 렌더
+      SETS.forEach((s) => {
+        const host = document.getElementById(s.mountId);
+        if (host) renderSet(host, s);
       });
     });
   </script>
-
-  <div class="brand-tag">made by 성일, Pongdang · Lapeace29@gmail.com</div>
 </body>
 </html>
