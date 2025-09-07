@@ -10,8 +10,14 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
     if (!OPENAI_KEY) return json({ error: 'Missing OPENAI_API_KEY' }, 500);
 
-    const { referenceText, audio } = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
+    const { referenceText, audio, clientConfig, clientHash } = body;
+    const skipSecondPassIfAccurate =
+      Number(event.headers['x-skip-second-pass-if-accurate'] || (clientConfig?.skipSecondPassIfAccurate ?? 0)) || 0;
+
     if (!referenceText || !audio?.base64 || !audio?.mimeType) return json({ error: 'Invalid payload' }, 400);
+    if (audio?.duration && audio.duration > 10) return json({ error: 'Audio too long' }, 400);
+    if (audio?.duration && audio.duration < 0.5) return json({ error: 'Audio too short' }, 400);
 
     const audioBuf = Buffer.from(audio.base64, 'base64');
     const fileName = audio.filename || 'audio.webm';
@@ -19,25 +25,25 @@ exports.handler = async (event) => {
     // 1차: gpt-4o-mini-transcribe
     const first = await transcribe('gpt-4o-mini-transcribe', audioBuf, audio.mimeType, fileName);
     const firstScore = scorePronunciation(referenceText, first.text);
-    const needSecond = firstScore.accuracy < 0.85 || (firstScore.confusionTags && firstScore.confusionTags.length);
+
+    const needSecond =
+      (firstScore.accuracy < Math.max(0.85, skipSecondPassIfAccurate)) ||
+      (firstScore.confusionTags && firstScore.confusionTags.length);
 
     let final = {
-      modelUsed: 'gpt-4o-mini-transcribe',
       transcript: first.text,
       accuracy: firstScore.accuracy,
       cer: firstScore.cer,
       confusionTags: firstScore.confusionTags
     };
 
-    // 2차: whisper-1
-    let secondRaw = null, secondScore = null;
+    // 2차: whisper-1 (조건부)
     if (needSecond) {
-      secondRaw = await transcribe('whisper-1', audioBuf, audio.mimeType, fileName);
-      secondScore = scorePronunciation(referenceText, secondRaw.text);
+      const second = await transcribe('whisper-1', audioBuf, audio.mimeType, fileName);
+      const secondScore = scorePronunciation(referenceText, second.text);
       if ((secondScore.accuracy || 0) > (firstScore.accuracy || 0)) {
         final = {
-          modelUsed: 'whisper-1',
-          transcript: secondRaw.text,
+          transcript: second.text,
           accuracy: secondScore.accuracy,
           cer: secondScore.cer,
           confusionTags: secondScore.confusionTags
@@ -50,9 +56,9 @@ exports.handler = async (event) => {
       cer: final.cer,
       transcript: final.transcript,
       confusionTags: final.confusionTags,
-      // 참고 정보(클라이언트는 표시 안 함)
-      firstPass: { model: 'gpt-4o-mini-transcribe', transcript: first.text, accuracy: firstScore.accuracy, cer: firstScore.cer },
-      ...(secondRaw ? { secondPass: { model: 'whisper-1', transcript: secondRaw.text, accuracy: secondScore.accuracy, cer: secondScore.cer } } : {})
+      // 참고용 정보(클라이언트는 모델명 노출 안 함)
+      firstPass: { model: 'gpt-4o-mini-transcribe', accuracy: firstScore.accuracy, cer: firstScore.cer },
+      ...(needSecond ? { secondPassTried: true } : {})
     }, 200);
 
   } catch (err) {
@@ -67,7 +73,7 @@ async function transcribe(model, buf, mime, filename) {
   const blob = new Blob([buf], { type: mime });
   form.append('file', blob, filename);
   form.append('model', model);
-  form.append('language', 'ko');
+  form.append('language', 'ko'); // 한국어 고정
 
   const r = await fetch(`${OPENAI_BASE}/audio/transcriptions`, {
     method: 'POST',
@@ -86,12 +92,10 @@ async function transcribe(model, buf, mime, filename) {
 function scorePronunciation(ref, hyp) {
   const refNorm = normalizeHangulForCER(ref);
   const hypNorm = normalizeHangulForCER(hyp);
-
   const { dist, ops } = levenshteinOps(refNorm, hypNorm);
   const cer = refNorm.length ? (dist / refNorm.length) : 1.0;
   const accuracy = Math.max(0, 1 - cer);
   const confusionTags = detectConfusions(ref, hyp, ops);
-
   return { cer, accuracy, confusionTags };
 }
 
@@ -144,7 +148,6 @@ function levenshteinOps(a,b){
 
 function detectConfusions(refText, hypText, ops){
   const tags = new Set();
-
   const refTails = countJong(refText);
   const hypTails = countJong(hypText);
   if (refTails.total > 0 && hypTails.count < refTails.count * 0.7) tags.add('받침 누락');
