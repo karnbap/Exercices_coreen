@@ -201,44 +201,154 @@
     return {refHTML, hypHTML};
   }
 
-  function renderResult(el, pct, tags, explain, refText, transcript) {
-    const p = Math.round((pct || 0) * 100);
-    const label = `${p >= 0 ? `Précision de prononciation ${p}% / 발음 정확도 ${p}%` : ''}`;
-    const tagStr = (tags && tags.length)
-      ? ` · ${'Confusions détectées / 혼동'}: ${tags.join(', ')}`
-      : '';
+  // == 쉬운 용어 설명 생성: 모음/자음 바뀜·빠짐·추가 (FR/KO 병기) ==
+function friendlyExplainBySyllable(refText = '', hypText = '') {
+  const ref = [...refText];
+  const hyp = [...hypText];
+  const { pairs, ops } = alignSyllables(ref, hyp); // (a,b,op) 배열
 
-    const pill = (p >= 85)
-      ? `<span style="display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid; background:#e7f8ee;color:#0a7a3b;border-color:#9be4b8">${label}</span>`
-      : `<span style="display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid; background:#fde8e8;color:#9b1c1c;border-color:#f7b4b4">${label}</span>`;
+  const msgs = [];
+  const Ls = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const Vs = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+  const Ts = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
 
-    // 문장 내 강조(틀린 음절 하이라이트)
-    const { refHTML, hypHTML } = highlightPair(refText||'', transcript||'');
+  function decomp(ch) {
+    const c = ch && ch.charCodeAt && ch.charCodeAt(0);
+    if (!c || c < 0xAC00 || c > 0xD7A3) return null;
+    const S=c-0xAC00, L=Math.floor(S/588), V=Math.floor((S%588)/28), T=S%28;
+    return { L: Ls[L], V: Vs[V], T: Ts[T]||'' };
+  }
 
-    let detailsHTML = '';
-    if (p < 99 && Array.isArray(explain) && explain.length) {
-      const items = explain.slice(0, 6)
-        .map(e => `<li>${(e.fr||'').trim()} / ${(e.ko||'').trim()}</li>`)
-        .join('');
-      detailsHTML = `<ul class="small-muted mt-1 list-disc pl-5">${items}</ul>`;
+  for (const { a, b, op } of pairs) {
+    if (op === 'equal') continue;
+
+    if (op === 'del') {
+      msgs.push({
+        fr: `➡️ Lettre manquante: “${a}”`,
+        ko: `➡️ 글자 빠짐: “${a}”`
+      });
+      continue;
+    }
+    if (op === 'ins') {
+      msgs.push({
+        fr: `➕ Lettre en plus: “${b}”`,
+        ko: `➕ 글자 추가: “${b}”`
+      });
+      continue;
     }
 
-    const disclaimer = `<div class="small-muted mt-2 italic">
-      ⚠️ Fonction en test — les résultats peuvent ne pas être 100% exacts. Merci de signaler toute incohérence !
-      / 시험 중 기능이에요. 100% 정확하지 않을 수 있어요. 이상한 점이 있으면 알려주세요!
-    </div>`;
-
-    el.innerHTML = `
-      ${pill}
-      <div class="small-muted mt-1">${tagStr}</div>
-      <div class="mt-2 korean-font">
-        <div><strong>정확한 발음:</strong> ${refHTML}</div>
-        <div><strong>학생 발음(전사):</strong> ${hypHTML}</div>
-      </div>
-      ${detailsHTML}
-      ${disclaimer}
-    `;
+    // op === 'sub'
+    const da = decomp(a), db = decomp(b);
+    if (da && db) {
+      if (da.L !== db.L) {
+        msgs.push({
+          fr: `🔡 Consonne du début changée: ${da.L} → ${db.L}`,
+          ko: `🔡 초성 바뀜: ${da.L} → ${db.L}`
+        });
+      }
+      if (da.V !== db.V) {
+        msgs.push({
+          fr: `🅰️ Voyelle changée: ${da.V} → ${db.V}`,
+          ko: `🅰️ 모음 바뀜: ${da.V} → ${db.V}`
+        });
+      }
+      if (da.T !== db.T) {
+        const from = da.T || '∅', to = db.T || '∅';
+        const isMissing = da.T && !db.T;
+        msgs.push({
+          fr: isMissing ? `🧱 Finale (받침) manquante: ${da.T}` : `🧱 Finale changée: ${from} → ${to}`,
+          ko: isMissing ? `🧱 받침 빠짐: ${da.T}` : `🧱 받침 바뀜: ${from} → ${to}`
+        });
+      }
+    } else {
+      msgs.push({
+        fr: `✏️ Changement de lettre: ${a || '∅'} → ${b || '∅'}`,
+        ko: `✏️ 글자 바뀜: ${a || '∅'} → ${b || '∅'}`
+      });
+    }
   }
+
+  // 동일한 문구 중복 줄이기 (앞쪽 6개만)
+  const uniq = [];
+  const seen = new Set();
+  for (const m of msgs) {
+    const k = `${m.fr}||${m.ko}`;
+    if (!seen.has(k)) { seen.add(k); uniq.push(m); }
+    if (uniq.length >= 6) break;
+  }
+  return uniq;
+}
+
+// == 음절 정렬 (삽입/삭제/치환 판정용 간단 DP) ==
+function alignSyllables(A, B) {
+  const m=A.length, n=B.length;
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  const bt=Array.from({length:m+1},()=>Array(n+1).fill(null));
+  for(let i=0;i<=m;i++){dp[i][0]=i; bt[i][0]='D'}
+  for(let j=0;j<=n;j++){dp[0][j]=j; bt[0][j]='I'}
+  bt[0][0]=null;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = A[i-1]===B[j-1]?0:1;
+      let best=dp[i-1][j-1]+cost, op = cost? 'S':'M';
+      if (dp[i-1][j]+1 < best){best=dp[i-1][j]+1; op='D'}
+      if (dp[i][j-1]+1 < best){best=dp[i][j-1]+1; op='I'}
+      dp[i][j]=best; bt[i][j]=op;
+    }
+  }
+  const pairs=[]; let i=m,j=n;
+  while(i>0 || j>0){
+    const op=bt[i][j];
+    if (op==='M'){ pairs.push({a:A[i-1],b:B[j-1],op:'equal'}); i--; j--; }
+    else if (op==='S'){ pairs.push({a:A[i-1],b:B[j-1],op:'sub'}); i--; j--; }
+    else if (op==='D'){ pairs.push({a:A[i-1],b:'',op:'del'}); i--; }
+    else if (op==='I'){ pairs.push({a:'',b:B[j-1],op:'ins'}); j--; }
+    else break;
+  }
+  pairs.reverse();
+  return { pairs, ops: bt };
+}
+
+
+  function renderResult(el, pct, tags, _explainFromServer, refText, transcript) {
+  const p = Math.round((pct || 0) * 100);
+  const label = `Précision de prononciation ${p}% / 발음 정확도 ${p}%`;
+
+  const pill = (p >= 85)
+    ? `<span style="display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid; background:#e7f8ee;color:#0a7a3b;border-color:#9be4b8">${label}</span>`
+    : `<span style="display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem;border:1px solid; background:#fde8e8;color:#9b1c1c;border-color:#f7b4b4">${label}</span>`;
+
+  // 문장 내 하이라이트
+  const { refHTML, hypHTML } = highlightPair(refText||'', transcript||'');
+
+  // 어린이 친화 설명(서버 explain 대신 로컬 생성)
+  const friendly = (p < 99) ? friendlyExplainBySyllable(refText||'', transcript||'') : [];
+  const items = friendly.map(e => `<li>${e.fr} / ${e.ko}</li>`).join('');
+  const detailsHTML = friendly.length
+    ? `<ul class="small-muted mt-2 list-disc pl-5">${items}</ul>`
+    : '';
+
+  const tagStr = (tags && tags.length)
+    ? `<div class="small-muted mt-1">⚠️ ${'Confusions détectées / 혼동'}: ${tags.join(', ')}</div>`
+    : '';
+
+  const disclaimer = `<div class="small-muted mt-2 italic">
+    🧪 Fonction en test — les résultats peuvent ne pas être 100% exacts. Merci de nous dire s’il y a un truc bizarre !
+    / 시험 중 기능이에요. 100% 정확하지 않을 수 있어요. 이상한 점이 있으면 꼭 알려주세요!
+  </div>`;
+
+  el.innerHTML = `
+    ${pill}
+    ${tagStr}
+    <div class="mt-2 korean-font">
+      <div><strong>정확한 발음:</strong> ${refHTML}</div>
+      <div><strong>학생 발음(전사):</strong> ${hypHTML}</div>
+    </div>
+    ${detailsHTML}
+    ${disclaimer}
+  `;
+}
+
 
   function msg(el, text) { el.innerHTML = `<div class="small-muted">${text}</div>`; }
 
