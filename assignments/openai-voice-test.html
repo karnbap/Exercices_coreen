@@ -1,119 +1,470 @@
-<!doctype html>
-<html lang="ko">
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <title>OpenAI 보이스 테스트</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exercice de Dictée : Comme en Coréen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body{font-family:system-ui, sans-serif; max-width:720px; margin:40px auto; padding:0 16px;}
-    label{display:block; margin:14px 0 6px;}
-    input,select,textarea,button{font-size:16px; padding:10px; width:100%;}
-    button{cursor:pointer;}
-    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-    .hint{color:#666; font-size:14px;}
-    .error{color:#c00; margin-top:10px;}
+    body{font-family:'Inter',sans-serif;background:#f3f4f6}
+    .korean-font{font-family:'Gowun Dodum',sans-serif}
+    .card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 4px 6px -1px rgb(0 0 0 / .1),0 2px 4px -2px rgb(0 0 0 / .1)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.2rem;border-radius:.75rem;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;border:none}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover:not(:disabled){background:#2563eb}
+    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover:not(:disabled){background:#d1d5db}
+    .btn-hint{background:#fefce8;color:#a16207;padding:.4rem .8rem;font-size:.875rem;border:1px solid #fde047}.btn-hint:hover:not(:disabled){background:#fef08a}
+    .dictation-card{padding:1.5rem;border:1px solid #e5e7eb;border-radius:1rem;margin-bottom:1.5rem;background:#fff}
+    .feedback{padding:1rem;border-radius:.75rem;margin-top:1rem;font-size:.95rem}
+    .feedback.correct{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .feedback.incorrect{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+    .small-muted{font-size:.875rem;color:#6b7280}
+    .made-by-top,.made-by-bottom{text-align:center}
+    .pill{display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem}
+    .pill-green{background:#e7f8ee;color:#0a7a3b;border:1px solid #9be4b8}
+    .pill-red{background:#fde8e8;color:#9b1c1c;border:1px solid #f7b4b4}
+    .row-gap{row-gap:.5rem}
+    .spinner{width:18px;height:18px;border:3px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media print {.no-print{display:none!important}}
   </style>
 </head>
-<body>
-  <h1>🎙️ OpenAI 보이스 간단 테스트</h1>
-  <p class="hint">※ 기존 연습문제와 완전히 분리된 테스트 페이지입니다.</p>
+<body class="text-slate-800">
+  <div class="container mx-auto p-4 md:p-8 max-w-3xl">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-indigo-600 mb-2">Dictée : Comme en Coréen 🎧</h1>
+      <p class="text-lg text-slate-600">Écoutez → Écrivez en coréen → Traduisez en français → Enregistrez votre prononciation.</p>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3 no-print">
+        <button type="button" class="btn btn-secondary" onclick="window.print()" aria-label="Imprimer la page">🖨️ Imprimer / 페이지 인쇄</button>
+      </div>
+      <div class="made-by-top mt-3 text-sm text-slate-500">
+        made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+      </div>
+    </header>
 
-  <label>보이스</label>
-  <select id="voice">
-    <option>alloy</option>
-    <option>shimmer</option>
-    <option>nova</option>
-    <option>echo</option>
-    <option>fable</option>
-  </select>
+    <!-- Student name -->
+    <section class="card mb-8 no-print">
+      <label class="block font-semibold mb-2">Nom de l'étudiant / 학생 이름</label>
+      <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500"
+             placeholder="Ex. Camille, Noé, Chloé..." />
+      <p class="small-muted mt-2">시작하면 이름, 듣기/힌트/시도 횟수, 발음 점수까지 기록돼요.</p>
+    </section>
 
-  <div class="row">
-    <div>
-      <label>속도 (0.5 ~ 2.0)</label>
-      <input id="speed" type="number" value="1.0" step="0.1" min="0.5" max="2.0">
-    </div>
-    <div>
-      <label>샘플 문장 길이</label>
-      <select id="preset">
-        <option value="short">짧게</option>
-        <option value="medium" selected>보통</option>
-        <option value="long">길게</option>
-      </select>
+    <!-- Explanations -->
+    <section id="explanations" class="mb-10 card">
+      <h2 class="text-2xl font-bold mb-3 text-slate-700">Rappel : La Règle d'Or 🔑</h2>
+      <div class="space-y-2 text-slate-700">
+        <p>🙋‍♀️ <strong class="korean-font text-green-600">같아요</strong> : “~와/과 같다” (간단 비교).</p>
+        <p>✍️ <strong class="korean-font text-purple-600">같은</strong> : 명사 수식(“~같은 + 명사”).</p>
+        <p>🏃‍♂️ <strong class="korean-font text-blue-600">처럼 / 같이</strong> : 동작 비교(동사와 함께). <span class="small-muted">같이는 ‘함께’ 의미도 있어요.</span></p>
+      </div>
+    </section>
+
+    <!-- Exercises -->
+    <section id="dictation-exercises"></section>
+
+    <!-- Footer actions -->
+    <section class="mt-8 flex flex-wrap items-center gap-3 no-print">
+      <button type="button" class="btn btn-secondary" id="restart-btn">↺ Réessayer / 다시하기</button>
+      <button type="button" class="btn btn-primary" id="finish-btn">✅ Terminer / 끝내기</button>
+    </section>
+
+    <div class="made-by-bottom mt-6 text-sm text-slate-500">
+      made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
     </div>
   </div>
 
-  <label>텍스트(수정 가능)</label>
-  <textarea id="text" rows="4">안녕하세요, 오늘은 숫자를 배워봅시다. 하나, 둘, 셋, 넷—천천히 따라 읽어 보세요.</textarea>
-
-  <button id="play">재생 ▶</button>
-  <div id="msg" class="error"></div>
-  <audio id="player" controls style="margin-top:12px; width:100%; display:none;"></audio>
-
   <script>
-    const voiceEl = document.getElementById('voice');
-    const speedEl = document.getElementById('speed');
-    const presetEl = document.getElementById('preset');
-    const textEl  = document.getElementById('text');
-    const btn     = document.getElementById('play');
-    const player  = document.getElementById('player');
-    const msg     = document.getElementById('msg');
+    // ------------ 데이터 ------------
+    const exercises = [
+      { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1: "ㅊㅅ ㄱㅇㅇ", hint2: "천사 = ange", voice: "Kore" },
+      { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1: "ㅇㄱ ㄲ ㄱㅇㅇ", hint2: "꿈 = rêve", voice: "Puck" },
+      { sentence: "가족 같은 친구예요.", translation: "C'est une amie comme ma famille.", hint1: "ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2: "가족 = famille", voice: "Charon" },
+      { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1: "ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2: "바다 = mer, 넓은 = large", voice: "Leda" },
+      { sentence: "소처럼 먹어요.", translation: "Il/Elle mange comme une vache.", hint1: "ㅅㅊㄹ ㅁㅇㅇ", hint2: "소 = vache", voice: "Fenrir" },
+      { sentence: "그 사람은 바람처럼 달려요.", translation: "Il court comme le vent.", hint1: "ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2: "바람 = vent", voice: "Orus" },
+      { sentence: "가수같이 노래를 잘해요.", translation: "Il/Elle chante bien comme un(e) chanteur(se).", hint1: "ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2: "가수 = chanteur/chanteuse", voice: "Aoede" },
+      { sentence: "로봇같이 걸어요.", translation: "Il/Elle marche comme un robot.", hint1: "ㄹㅂㄱㅇ ㄱㅇㅇ", hint2: "로봇 = robot", voice: "Callirrhoe" },
+      { sentence: "친구랑 같이 갔어요.", translation: "Je suis allé(e) avec mon ami(e).", hint1: "ㅊㄱㄹ ㄱㅇ ㄱㅇㅇ", hint2: "같이 = ‘ensemble’", voice: "Zephyr" },
+      { sentence: "별처럼 춤을 춰요.", translation: "Il/Elle danse comme une étoile.", hint1: "ㅂㅊㄹ ㅊㅇ ㅊㅇ", hint2: "별 = étoile", voice: "Enceladus" },
+      { sentence: "오늘은 어제 같아요.", translation: "Aujourd'hui est comme hier.", hint1: "ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2: "어제 = hier", voice: "Iapetus" },
+      { sentence: "그 사람은 배우 같아요.", translation: "Cette personne est comme un(e) acteur/actrice.", hint1: "ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2: "배우 = acteur/actrice", voice: "Umbriel" },
+      { sentence: "얼음 같은 손.", translation: "Une main (froide) comme la glace.", hint1: "ㅇㅇ ㄱㅇ ㅅ", hint2: "얼음 = glace", voice: "Despina" },
+      { sentence: "설탕 같은 목소리.", translation: "Une voix (douce) comme le sucre.", hint1: "ㅅㅌ ㄱㅇ ㅁㅅㄹ", hint2: "설탕 = sucre", voice: "Erinome" },
+      { sentence: "인형 같은 아이.", translation: "Un enfant comme une poupée.", hint1: "ㅇㅎ ㄱㅇ ㅇㅇ", hint2: "인형 = poupée", voice: "Algenib" },
+      { sentence: "물처럼 돈을 써요.", translation: "Il/Elle dépense de l'argent comme de l'eau.", hint1: "ㅁㅊㄹ ㄷㅇ ㅆㅇ", hint2: "물 = eau", voice: "Rasalgethi" },
+      { sentence: "거북이처럼 느려요.", translation: "Il/Elle est lent(e) comme une tortue.", hint1: "ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2: "거북이 = tortue", voice: "Laomedeia" },
+      { sentence: "전문가처럼 말해요.", translation: "Il/Elle parle comme un expert.", hint1: "ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2: "전문가 = expert", voice: "Achernar" },
+      { sentence: "아기같이 자요.", translation: "Il/Elle dort comme un bébé.", hint1: "ㅇㄱㄱㅇ ㅈㅇ", hint2: "아기 = bébé", voice: "Alnilam" },
+      { sentence: "영화배우처럼 잘생겼어요.", translation: "Il est beau comme un acteur de cinéma.", hint1: "ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2: "영화배우 = acteur de cinéma", voice: "Schedar" }
+    ];
 
-    const samples = {
-      short:  '안녕하세요. 반갑습니다.',
-      medium: '안녕하세요, 오늘은 숫자를 배워봅시다. 하나, 둘, 셋, 넷—천천히 따라 읽어 보세요.',
-      long:   '안녕하세요, 오늘은 한국어 숫자를 자연스럽게 듣고 따라 하는 연습을 해 봅시다. 먼저 하나, 둘, 셋, 넷, 다섯—호흡을 가다듬고, 또박또박 소리 내어 읽어 보세요.'
-    };
+    // 문항 상태
+    const audioCache = {}; // text -> Blob
+    const recState = []; // per index: {recorder, chunks, startAt}
+    const exState = exercises.map(() => ({
+      listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
+      koCorrect:false, frCorrect:false,
+      pronunciation:null // { accuracy, modelUsed, confusionTags, transcript }
+    }));
 
-    presetEl.addEventListener('change', () => {
-      textEl.value = samples[presetEl.value];
+    // ------------ 유틸 ------------
+    function base64ToBlob(base64, mimeType="audio/wav"){
+      const bin = atob(base64);
+      const len = bin.length;
+      const bytes = new Uint8Array(len);
+      for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+      return new Blob([bytes], {type:mimeType});
+    }
+    function blobToBase64(blob){
+      return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result.split(',')[1]);
+        reader.onerror=reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    function escapeHtml(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+    function normalizeHangul(s){
+      return (s||'')
+        .normalize('NFC')
+        .replace(/[.,!?~'"“”‘’:;()\[\]{}·…]/g,'')
+        .replace(/\s+/g,'')
+        .replace(/[A-Za-z]/g,''); // 로마자 제거
+    }
+    function levenshtein(a,b){
+      const m=a.length,n=b.length;
+      if(!m) return n; if(!n) return m;
+      const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i? (j?0:j):i));
+      for(let i=1;i<=m;i++){
+        for(let j=1;j<=n;j++){
+          const cost=a[i-1]===b[j-1]?0:1;
+          dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+        }
+      }
+      return dp[m][n];
+    }
+    function styleHint(raw){
+      const hasJeoneun=/(저는|전)/.test(raw);
+      const hasNaneun=/(나는|난)/.test(raw);
+      const politeEnd=/(요|니다)[\s.]*$/.test(raw);
+      let msg='';
+      if(hasJeoneun && !politeEnd) msg="“저는/전”을 썼으면 문장 끝을 -요/-(스)ㅂ니다 형태로 맞춰요.";
+      if(hasNaneun && politeEnd) msg="“나는/난”을 썼으면 반말로 끝내요. -요/-(스)ㅂ니다는 쓰지 않아요.";
+      return msg;
+    }
+
+    // ------------ 오디오 재생 ------------
+    async function getAudio(text, voice, button, index){
+      try{
+        button.disabled=true;
+        button.innerHTML='<span class="spinner"></span>';
+        if(audioCache[text] instanceof Blob){
+          const url=URL.createObjectURL(audioCache[text]);
+          const audio=new Audio(url);
+          audio.onended=()=>URL.revokeObjectURL(url);
+          exState[index].listenCount++;
+          await audio.play();
+          return;
+        }
+        const res=await fetch('/.netlify/functions/generate-audio',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({text,voice})
+        });
+        if(!res.ok) throw new Error('TTS API '+res.status);
+        const {audioData,mimeType}=await res.json();
+        if(!audioData || !mimeType || !mimeType.startsWith('audio/')) throw new Error('Invalid audio payload');
+        const blob=base64ToBlob(audioData,mimeType);
+        audioCache[text]=blob;
+        const url=URL.createObjectURL(blob);
+        const audio=new Audio(url);
+        audio.onended=()=>URL.revokeObjectURL(url);
+        exState[index].listenCount++;
+        await audio.play();
+      }catch(err){
+        console.error(err);
+        alert("Désolé, une erreur audio.");
+        fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({functionName:'getAudio',error:String(err),pageUrl:location.href})}).catch(()=>{});
+      }finally{
+        button.disabled=false;
+        button.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-volume-up-fill" viewBox="0 0 16 16"><path d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303z"/><path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.48 5.48 0 0 1 11.025 8a5.48 5.48 0 0 1-1.61 3.89z"/><path d="M8.707 11.182A4.5 4.5 0 0 0 10.025 8a4.5 4.5 0 0 0-1.318-3.182L8 5.525A3.5 3.5 0 0 1 9.025 8 3.5 3.5 0 0 1 8 10.475zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/></svg>`;
+      }
+    }
+
+    // ------------ 힌트 ------------
+    function showHint(index, type){
+      const hintDisplay=document.querySelectorAll('.hint-display')[index];
+      const ex=exercises[index];
+      if(type===1){
+        hintDisplay.innerHTML=`<p class="text-sm text-amber-700 korean-font"><strong>Indice 1 :</strong> ${ex.hint1}</p>`;
+        document.querySelectorAll('.hint1-btn')[index].disabled=true;
+        exState[index].hint1Count++;
+      }else{
+        const prev=hintDisplay.querySelector('p:first-child')?.outerHTML||'';
+        hintDisplay.innerHTML=prev+`<p class="text-sm text-amber-700 korean-font mt-1"><strong>Indice 2 :</strong> ${ex.hint2}</p>`;
+        document.querySelectorAll('.hint2-btn')[index].disabled=true;
+        exState[index].hint2Count++;
+      }
+    }
+
+    // ------------ 채점 (KO + FR) ------------
+    function gradeBoth(index){
+      const card=document.querySelectorAll('.dictation-card')[index];
+      const koInput=card.querySelector('.input-ko');
+      const frInput=card.querySelector('.input-fr');
+      const feedback=card.querySelector('.feedback-display');
+      const rawKO=koInput.value||'';
+      const rawFR=frInput.value||'';
+      const styleMsg=styleHint(rawKO);
+      const romanWarn=/[A-Za-z]/.test(rawKO) ? "한글 발음 표기 로마자는 쓰지 마세요. (ga, teun 등)" : "";
+
+      // KO
+      const userK=normalizeHangul(rawKO);
+      const corrK=normalizeHangul(exercises[index].sentence);
+      let koCorrect = userK===corrK || userK.includes(corrK) || corrK.includes(userK);
+      if(!koCorrect){
+        const d=levenshtein(userK,corrK), th=Math.max(1,Math.floor(corrK.length*0.1));
+        if(d<=th) koCorrect=true;
+      }
+
+      // FR
+      const userF=(rawFR||'').trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s+/g,' ');
+      const corrF=(exercises[index].translation||'').trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s+/g,' ');
+      let frCorrect = userF===corrF;
+      if(!frCorrect){
+        const d=levenshtein(userF,corrF), th=Math.max(1,Math.floor(corrF.length*0.1));
+        if(d<=th) frCorrect=true;
+      }
+
+      exState[index].attempts++;
+      exState[index].koCorrect=koCorrect;
+      exState[index].frCorrect=frCorrect;
+
+      const tags=[];
+      if(romanWarn) tags.push(`⚠️ ${romanWarn}`);
+      if(styleMsg) tags.push(`💡 ${styleMsg}`);
+
+      const koPill = koCorrect ? `<span class="pill pill-green">KO ✓</span>` : `<span class="pill pill-red">KO ✗</span>`;
+      const frPill = frCorrect ? `<span class="pill pill-green">FR ✓</span>` : `<span class="pill pill-red">FR ✗</span>`;
+
+      const ok = koCorrect && frCorrect;
+      feedback.innerHTML = ok ? `
+        <div class="feedback correct">
+          <strong class="text-lg">🥳 Très bien ! (두 항목 모두 OK)</strong>
+          <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
+          <p class="korean-font mt-1"><strong>정답(한):</strong> ${exercises[index].sentence}</p>
+          <p><strong>Traduction (FR):</strong> ${exercises[index].translation}</p>
+          ${tags.length?`<p class="small-muted mt-1">${tags.join(' · ')}</p>`:''}
+        </div>
+      ` : `
+        <div class="feedback incorrect">
+          <strong class="text-lg">🙂 거의 다 왔어요. 다시 시도!</strong>
+          <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
+          <p class="korean-font mt-1"><strong>내 답(한):</strong> ${escapeHtml(rawKO)}</p>
+          <p><strong>Ma réponse (FR):</strong> ${escapeHtml(rawFR)}</p>
+          <p class="korean-font"><strong>정답(한):</strong> ${exercises[index].sentence}</p>
+          <p><strong>Traduction (FR):</strong> ${exercises[index].translation}</p>
+          ${tags.length?`<p class="small-muted mt-1">${tags.join(' · ')}</p>`:''}
+        </div>
+      `;
+    }
+
+    // ------------ 발음 녹음/분석 ------------
+    async function startRecord(index){
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        const rec=new MediaRecorder(stream,{mimeType:'audio/webm'});
+        recState[index]={recorder:rec,chunks:[],startAt:Date.now()};
+        rec.ondataavailable=e=>{ if(e.data.size>0) recState[index].chunks.push(e.data); };
+        rec.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); };
+        rec.start();
+      }catch(err){
+        alert('마이크 권한이 필요해요.');
+        console.error(err);
+      }
+    }
+    async function stopAndAnalyze(index){
+      const state=recState[index];
+      if(!state || !state.recorder) return;
+      const rec=state.recorder;
+      const card=document.querySelectorAll('.dictation-card')[index];
+      const area=card.querySelector('.pronun-display');
+      const durationSec=Math.max(0,Math.round((Date.now()-state.startAt)/1000));
+
+      area.innerHTML = `<div class="small-muted">⏳ Analyse de la prononciation...</div>`;
+      rec.onstop = async ()=>{
+        try{
+          const blob=new Blob(state.chunks,{type:'audio/webm'});
+          const base64=await blobToBase64(blob);
+          const correct=exercises[index].sentence;
+
+          const res=await fetch('/.netlify/functions/analyze-pronunciation',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              referenceText: correct,
+              audio:{ base64, mimeType:'audio/webm', filename:`rec_${index+1}.webm`, duration:durationSec }
+            })
+          });
+          if(!res.ok) throw new Error('STT '+res.status);
+          const data=await res.json(); // { accuracy, modelUsed, confusionTags, transcript, firstPass, secondPass? }
+          exState[index].pronunciation = {
+            accuracy:data.accuracy,
+            modelUsed:data.modelUsed,
+            confusionTags:data.confusionTags||[],
+            transcript:data.transcript,
+            audio:{ base64, mimeType:'audio/webm', filename:`rec_${index+1}.webm`, duration:durationSec }
+          };
+
+          const pct=Math.round((data.accuracy||0)*100);
+          const tagStr=(data.confusionTags||[]).length? ` · ${data.confusionTags.join(', ')}`:'';
+          area.innerHTML = pct>=85
+            ? `<div class="pill pill-green">발음 정확도 ${pct}%</div><div class="small-muted mt-1">모델: ${data.modelUsed}${tagStr}</div>`
+            : `<div class="pill pill-red">발음 정확도 ${pct}%</div><div class="small-muted mt-1">모델: ${data.modelUsed}${tagStr}</div>`;
+        }catch(err){
+          console.error(err);
+          area.innerHTML=`<div class="pill pill-red">분석 실패</div>`;
+          fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({functionName:'analyze-pronunciation', error:String(err), pageUrl:location.href, index})}).catch(()=>{});
+        }finally{
+          recState[index]=null;
+        }
+      };
+      rec.stop();
+    }
+
+    // ------------ 렌더링 ------------
+    function renderExercises(){
+      const container=document.getElementById('dictation-exercises');
+      container.innerHTML='';
+      exercises.forEach((ex,index)=>{
+        const el=document.createElement('div');
+        el.className='dictation-card';
+        el.innerHTML=`
+          <div class="flex items-center gap-4">
+            <span class="text-2xl font-bold text-indigo-500">${index+1}</span>
+            <button data-sentence="${ex.sentence}" data-voice="${ex.voice}" class="btn btn-primary play-btn" aria-label="Lire l'audio de la phrase ${index+1}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-volume-up-fill" viewBox="0 0 16 16"><path d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303z"/><path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.48 5.48 0 0 1 11.025 8a5.48 5.48 0 0 1-1.61 3.89z"/><path d="M8.707 11.182A4.5 4.5 0 0 0 10.025 8a4.5 4.5 0 0 0-1.318-3.182L8 5.525A3.5 3.5 0 0 1 9.025 8 3.5 3.5 0 0 1 8 10.475zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/></svg>
+            </button>
+            <div class="text-sm text-slate-500">Écouter → KO → FR → 🎙️</div>
+          </div>
+
+          <div class="mt-3 ml-12 grid gap-3">
+            <input type="text" class="input-ko korean-font text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
+            <input type="text" class="input-fr text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Traduction en français"/>
+            <div class="flex items-center gap-2 row-gap">
+              <button class="btn btn-hint hint1-btn">🙏 Aidez-moi (초성)</button>
+              <button class="btn btn-hint hint2-btn">🦺 Au secours (단어)</button>
+              <button class="btn btn-secondary check-btn">Vérifier (정답 확인)</button>
+            </div>
+            <div class="hint-display"></div>
+            <div class="feedback-display"></div>
+
+            <div class="mt-3 flex flex-wrap items-center gap-2 no-print">
+              <button class="btn btn-primary btn-rec-start">🎙️ Enregistrer</button>
+              <button class="btn btn-secondary btn-rec-stop">⏹️ Stop & Analyser</button>
+              <div class="pronun-display small-muted"></div>
+            </div>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+      addEvents();
+    }
+
+    function addEvents(){
+      document.querySelectorAll('.play-btn').forEach((btn,i)=>{
+        btn.addEventListener('click',e=>{
+          const b=e.currentTarget;
+          getAudio(b.dataset.sentence,b.dataset.voice,b,i);
+        });
+      });
+      document.querySelectorAll('.hint1-btn').forEach((btn,i)=>btn.addEventListener('click',()=>showHint(i,1)));
+      document.querySelectorAll('.hint2-btn').forEach((btn,i)=>btn.addEventListener('click',()=>showHint(i,2)));
+      document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
+      document.querySelectorAll('.btn-rec-start').forEach((btn,i)=>btn.addEventListener('click',()=>startRecord(i)));
+      document.querySelectorAll('.btn-rec-stop').forEach((btn,i)=>btn.addEventListener('click',()=>stopAndAnalyze(i)));
+      document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
+        inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
+      });
+    }
+
+    // ------------ 다시하기 / 끝내기 ------------
+    document.getElementById('restart-btn').addEventListener('click',()=>{
+      document.querySelectorAll('.input-ko,.input-fr').forEach(i=>i.value='');
+      document.querySelectorAll('.hint-display,.feedback-display,.pronun-display').forEach(d=>d.innerHTML='');
+      document.querySelectorAll('.hint1-btn,.hint2-btn').forEach(b=>b.disabled=false);
+      for(const s of exState) Object.assign(s,{listenCount:0,hint1Count:0,hint2Count:0,attempts:0,koCorrect:false,frCorrect:false,pronunciation:null});
     });
 
-    let lock = false;
-    btn.addEventListener('click', async () => {
-      if (lock) return;
-      lock = true; setTimeout(()=>lock=false, 600); // 과도한 연타 방지
+    document.getElementById('finish-btn').addEventListener('click',async()=>{
+      const name=(document.getElementById('student-name').value||'').trim()||'N/A';
+      // 점수: KO + FR만 합산 (요청대로)
+      const total=exercises.length*2;
+      const got=exState.reduce((acc,s)=>acc+(s.koCorrect?1:0)+(s.frCorrect?1:0),0);
+      const score=Math.round((got/total)*100);
+      const avgPronun = (exState.filter(s=>s.pronunciation).reduce((a,s)=>a+(s.pronunciation.accuracy||0),0) / Math.max(1,exState.filter(s=>s.pronunciation).length))*100;
+      alert(`총점: ${score}/100\n(한국어/불어 채점 합산)\n발음 평균: ${isFinite(avgPronun)?Math.round(avgPronun):0}%`);
 
-      msg.textContent = '';
-      player.style.display = 'none';
-      player.pause();
-      player.src = '';
-
-      try {
-        const payload = {
-          text: textEl.value.trim(),
-          voice: voiceEl.value,
-          speed: Number(speedEl.value) || 1.0
+      // 결과 전송
+      try{
+        const payload={
+          studentName:name,
+          startTime: window._startTime || new Date().toISOString(),
+          endTime: new Date().toISOString(),
+          totalTimeSeconds: Math.round(((Date.now())-(window._startMs||Date.now()))/1000),
+          questions: exercises.map((ex,i)=>{
+            const card=document.querySelectorAll('.dictation-card')[i];
+            const ko=card.querySelector('.input-ko').value||'';
+            const fr=card.querySelector('.input-fr').value||'';
+            const pron=exState[i].pronunciation;
+            return {
+              number:i+1,
+              ko: ex.sentence,
+              fr: ex.translation,
+              userAnswer: ko,                 // 규격상 필수(한글 답)
+              userAnswerFr: fr,               // 추가 필드(불어 답)
+              isCorrect: exState[i].koCorrect && exState[i].frCorrect, // 두 항목 동시
+              isCorrectKo: exState[i].koCorrect,
+              isCorrectFr: exState[i].frCorrect,
+              listenCount: exState[i].listenCount,
+              hint1Count: exState[i].hint1Count,
+              hint2Count: exState[i].hint2Count,
+              pronunciation: pron ? {
+                accuracy: pron.accuracy,
+                modelUsed: pron.modelUsed,
+                confusionTags: pron.confusionTags,
+                transcript: pron.transcript
+              } : null,
+              recording: pron ? {
+                base64: pron.audio.base64,
+                filename: pron.audio.filename,
+                mimeType: pron.audio.mimeType,
+                duration: pron.audio.duration
+              } : null
+            };
+          })
         };
-
-        const res = await fetch('/.netlify/functions/tts-openai', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json().catch(()=>({ error:{ message:'Invalid JSON' }}));
-        if (data?.error) throw new Error(data.error.message || 'TTS error');
-
-        const b64 = data.audioBase64;
-        const mime = data.mimeType || 'audio/mpeg';
-        const blob = b64ToBlob(b64, mime);
-        const url  = URL.createObjectURL(blob);
-
-        player.src = url;
-        player.style.display = 'block';
-        await player.play().catch(()=>{ /* 첫 재생 실패는 무시 */ });
-
-      } catch (e) {
-        msg.textContent = '오류: ' + (e.message || e);
+        await fetch('/.netlify/functions/send-results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      }catch(err){
+        console.error(err);
+        fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({functionName:'finish-send-results',error:String(err),pageUrl:location.href})}).catch(()=>{});
       }
     });
 
-    function b64ToBlob(base64, mime='audio/mpeg'){
-      const byteChars = atob(base64);
-      const arr = new Uint8Array(byteChars.length);
-      for (let i=0; i<byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
-      return new Blob([arr], { type: mime });
-    }
+    // 시작 타임 스탬프
+    window._startTime=new Date().toISOString();
+    window._startMs=Date.now();
+
+    // 렌더링 시작
+    renderExercises();
   </script>
 </body>
 </html>
