@@ -83,10 +83,14 @@ exports.handler = async (event) => {
 function decideProvider(provider, voice) {
   if (provider === 'openai') return 'openai';
   if (provider === 'google') return 'google';
-  if (OPENAI_VOICES.has(String(voice))) return 'openai';
-  if (String(voice).startsWith('ko-KR-')) return 'google';
-  return 'openai';
+
+  // auto 일 때: OPENAI_KEY가 있으면 일단 OpenAI 먼저 시도, 실패 시 Google로 폴백
+  if (process.env.OPENAI_API_KEY) return 'openai';
+
+  // OpenAI 키가 없으면 Google로
+  return 'google';
 }
+
 
 async function synthOpenAI({ text, voice, speed }) {
   if (!process.env.OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
@@ -167,3 +171,4 @@ function friendlyOpenAIError(e) {
   }
   return m;
 }
+
