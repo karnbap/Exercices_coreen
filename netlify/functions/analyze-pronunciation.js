@@ -51,30 +51,33 @@ exports.handler = async (event) => {
       }
     }
 
-    // 최종 점수(ops 포함) 산출 후 설명 생성
+    // 최종 점수(ops 포함) 산출 후 간단 설명 생성
     const finalScore = (needSecond && final.transcript !== first.text)
       ? scorePronunciation(referenceText, final.transcript)
       : firstScore;
 
-    const explain = explainMistakes(referenceText, final.transcript, finalScore.ops, finalScore.confusionTags);
+    const details = {
+      modelFirst: 'gpt-4o-mini-transcribe',
+      modelSecondUsed: (needSecond && final.transcript !== first.text) ? 'whisper-1' : null,
+      cer: finalScore.cer,
+      explain: explainMistakes(referenceText, final.transcript, finalScore.ops, finalScore.confusionTags)
+    };
 
     return json({
-      accuracy: final.accuracy,
-      cer: final.cer,
+      ok: true,
+      accuracy: finalScore.accuracy,
+      cer: finalScore.cer,
+      confusionTags: finalScore.confusionTags,
       transcript: final.transcript,
-      confusionTags: final.confusionTags,
-      details: { explain }, // 99% 미만일 때 클라이언트가 상세 안내 표시
-      firstPass: { model: 'gpt-4o-mini-transcribe', accuracy: firstScore.accuracy, cer: firstScore.cer },
-      ...(needSecond ? { secondPassTried: true } : {})
-    }, 200);
-
+      details,
+      clientHash: clientHash || null
+    });
   } catch (err) {
-    console.error('analyze-pronunciation error:', err);
-    return json({ error: String(err) }, 500);
+    console.error(err);
+    return json({ error: 'Server error', message: String(err && err.message || err) }, 500);
   }
 };
 
-// -------- OpenAI Transcribe --------
 async function transcribe(model, buf, mime, filename) {
   const form = new FormData();
   const blob = new Blob([buf], { type: mime });
@@ -95,6 +98,29 @@ async function transcribe(model, buf, mime, filename) {
   return { text: (data.text || '').trim() };
 }
 
+// -------- 숫자 정규화 유틸 (자연어 한자음으로) --------
+const DIGITS = ['영','일','이','삼','사','오','육','칠','팔','구'];
+function numToSino(n) {
+  n = Number(n);
+  if (!Number.isFinite(n)) return String(n||'');
+  if (n === 0) return '영';
+  const units = ['', '십', '백', '천'];
+  const d = String(n).split('').map(x=>+x);
+  let out = '';
+  for (let i=0;i<d.length;i++) {
+    const p = d.length - 1 - i;      // 자리수 (0:1의 자리, 1:십, 2:백, 3:천)
+    const digit = d[i];
+    if (digit === 0) continue;
+    if (p === 0) { out += DIGITS[digit]; continue; }
+    if (digit === 1) out += units[p];
+    else out += DIGITS[digit] + units[p];
+  }
+  return out;
+}
+function replaceDigitSequencesWithSino(str) {
+  return String(str||'').replace(/\d+/g, (m)=> numToSino(parseInt(m,10)));
+}
+
 // -------- 채점 (자모 CER + 혼동 태그) --------
 function scorePronunciation(ref, hyp) {
   const refNorm = normalizeHangulForCER(ref);
@@ -106,24 +132,11 @@ function scorePronunciation(ref, hyp) {
   return { cer, accuracy, confusionTags, ops };
 }
 
-function decomposeToJamo(str) {
-  const res = [];
-  for (const ch of (str||'')) {
-    const code = ch.charCodeAt(0);
-    if (code >= 0xAC00 && code <= 0xD7A3) {
-      const S = code - 0xAC00;
-      const L = Math.floor(S / 588);
-      const V = Math.floor((S % 588) / 28);
-      const T = S % 28;
-      res.push(LEADS[L], VOWELS[V]);
-      if (T > 0) res.push(TAILS[T]);
-    } else if (/[ㄱ-ㅎㅏ-ㅣ]/.test(ch)) {
-      res.push(ch);
-    }
-  }
-  return res.join('');
+// 숫자를 먼저 한자어로 바꾼 뒤 자모 분해
+function normalizeHangulForCER(s){
+  const replaced = replaceDigitSequencesWithSino((s||'').normalize('NFC'));
+  return decomposeToJamo(replaced).replace(/\s+/g,'');
 }
-function normalizeHangulForCER(s){ return decomposeToJamo((s||'').normalize('NFC')).replace(/\s+/g,''); }
 
 function levenshteinOps(a,b){
   const m=a.length,n=b.length;
@@ -153,10 +166,32 @@ function levenshteinOps(a,b){
   return { dist: dp[m][n], ops };
 }
 
+function decomposeToJamo(str) {
+  const res = [];
+  for (const ch of (str||'')) {
+    const code = ch.charCodeAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      const S = code - 0xAC00;
+      const L = Math.floor(S / 588);
+      const V = Math.floor((S % 588) / 28);
+      const T = S % 28;
+      res.push(LEADS[L], VOWELS[V]);
+      if (T > 0) res.push(TAILS[T]);
+    } else if (/[ㄱ-ㅎㅏ-ㅣ]/.test(ch)) {
+      res.push(ch);
+    } else if (/\s/.test(ch)) {
+      // skip
+    } else {
+      // 숫자 등 기타 기호는 이미 replaceDigitSequencesWithSino에서 정규화됨
+    }
+  }
+  return res.join('');
+}
+
 function detectConfusions(refText, hypText, ops){
   const tags = new Set();
-  const refTails = countJong(refText);
-  const hypTails = countJong(hypText);
+  const refTails = countJong(replaceDigitSequencesWithSino(refText));
+  const hypTails = countJong(replaceDigitSequencesWithSino(hypText));
   if (refTails.total > 0 && hypTails.count < refTails.count * 0.7) tags.add('받침 누락');
 
   for (const step of ops) if (step.op === 'S') {
@@ -171,11 +206,13 @@ function detectConfusions(refText, hypText, ops){
 function isPair(a,b,x,y){ return (a===x && b===y)||(a===y && b===x); }
 
 function countJong(s){
-  let total=0, count=0;
+  let total=0,count=0;
   for(const ch of (s||'')){
-    const code=ch.charCodeAt(0);
-    if(code>=0xAC00 && code<=0xD7A3){
-      total++; const T=(code-0xAC00)%28; if(T>0) count++;
+    const code = ch.charCodeAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      total++;
+      const T = (code - 0xAC00) % 28;
+      if (T > 0) count++;
     }
   }
   return { total, count };
@@ -194,6 +231,7 @@ function explainMistakes(refText, hypText, ops, tags=[]) {
     ));
   }
 
+  // 자주 헷갈리는 자음쌍 표시
   const pairNote = (a,b)=>{
     const P=[['ㄴ','ㄹ'],['ㅂ','ㅍ'],['ㄷ','ㅌ'],['ㅈ','ㅊ'],['ㅅ','ㅆ']];
     for(const [x,y] of P){
@@ -231,4 +269,10 @@ const LEADS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ'
 const VOWELS = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
 const TAILS = [ '', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ' ];
 
-function json(data, status=200){ return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }; }
+function json(data, status=200){
+  return {
+    statusCode: status,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  };
+}
