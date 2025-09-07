@@ -10,6 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- 공통: 학생 이름 게이트 + 채점 기준 -->
   <script src="/assets/student-gate.js"></script>
+  <script src="/assets/pronun-utils.js"></script>
+  <script src="/assets/pronun-vowel-middleware.js"></script>
+
   <script src="/assets/grading-criteria.js"></script>
   <style>
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
@@ -102,8 +105,6 @@
 
   <!-- 공용 발음 모듈 -->
   <script src="/assets/pronun-client.js"></script>
-  <script src="/assets/pronun-client.js"></script>
-  <script src="/assets/pronun-vowel-middleware.js"></script>
 
   <script>
     /* 0) 학생 이름 게이트 & 입력창 동기화 */
@@ -334,21 +335,18 @@
 
       // Pronun 모듈 장착(문항별)
       document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
-        Pronun.mount(cardEl, {
+                Pronun.mount(cardEl, {
           getReferenceText: () => exercises[i].sentence,
-          isKoCorrect: () => exState[i].koCorrect, // 틀려도 진행(안내용)
-          onResult: ({ accuracy, confusionTags, transcript, friendly }) => {
-            // 간단 모음 혼동 휴리스틱으로 미세 감점 (요↔유 등)
-            const adj = (() => {
-              const ref = exercises[i].sentence;
-              const hyp = transcript || '';
-              const pairs = [['요','유'],['오','우'],['애','에'],['외','웨'],['왜','와'],['위','유'],['야','여']];
-              let hits=0, L=Math.min(ref.length,hyp.length);
-              for(let k=0;k<L;k++){ if(ref[k]!==hyp[k] && pairs.some(([a,b])=>(ref[k]===a&&hyp[k]===b)||(ref[k]===b&&hyp[k]===a))) hits++; }
-              const penalty = Math.min(0.1, hits*0.03);
-              const tagPenalty = (confusionTags||[]).some(t=>/모음|vowel/i.test(t)) ? 0.02 : 0;
-              return Math.max(0, Math.min(1, (accuracy||0) - penalty - tagPenalty));
-            })();
+          isKoCorrect: () => exState[i].koCorrect,
+          onResult: ({ accuracy, transcript, friendly }) => {
+            // 미들웨어가 accuracy를 조정, 하이라이트 렌더까지 해줍니다.
+            exState[i].pronunciation = {
+              accuracy,
+              transcript: transcript || '',
+              friendly: friendly || []
+            };
+          }
+        });
 
             exState[i].pronunciation = {
               accuracy: adj,
