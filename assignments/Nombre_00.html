@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Exercice Coréen : Les Nombres – 순수 한국어 / Natifs vs 한자어 / Hanja-coréens (v2)</title>
+  <title>Coréen — Nombres | Explications + Warming up</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,48 +11,26 @@
   <style>
     body{font-family:'Poppins','Noto Sans KR',sans-serif;}
     .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
-    .progress-bar{width:100%;height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden}
-    .progress-bar-inner{height:100%;background:#3b82f6;transition:width .3s ease-in-out}
-    .question-title{font-size:1.35rem;font-weight:700;color:#1f2937;margin-bottom:.25rem;letter-spacing:.2px}
-    .question-text{font-size:1.05rem;color:#4b5563;margin-bottom:1.25rem;line-height:1.7}
     .btn{padding:.75rem 1.25rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
     .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
-    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
-    .btn-sound{background:#10b981;color:#fff;font-size:1.05rem}.btn-sound:hover{background:#059669}
-    .choice-btn{display:block;width:100%;text-align:left;padding:1rem;margin-bottom:.75rem;background:#fff;border:1px solid #e5e7eb;border-radius:.65rem;font-size:1.1rem;transition:all .2s}
-    .choice-btn:hover{background:#eff6ff;border-color:#3b82f6}
-    .choice-btn.selected{background:#bfdbfe;border-color:#3b82f6;font-weight:600}
-    .input-field{width:100%;padding:.75rem 1rem;border:1px solid #d1d5db;border-radius:.65rem;font-size:1.05rem}
-    .hidden{display:none}.disabled{opacity:.5;cursor:not-allowed}
-    .recording-dot{width:12px;height:12px;background:red;border-radius:50%;animation:pulse 1.5s infinite}
-    @keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
-
-    /* === Readability helpers (explanation screen 전용) === */
+    .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
+    .small-muted{ font-size:.9rem; color:#64748b; }
     .readable { line-height: 1.9; }
     .readable p { margin-top: 0.9rem; margin-bottom: 0.9rem; }
     .readable .kicker { font-size: .96rem; letter-spacing: .02em; color:#64748b; }
-
     .info-card { background:#fff; border:1px solid #e5e7eb; border-radius:1rem; padding:1.15rem 1.25rem; box-shadow:0 1px 2px rgba(16,24,40,.06); }
     .info-card h3 { font-weight:700; font-size:1.125rem; color:#0f172a; margin-bottom:.5rem; }
-
     .callout { background:#fef9c3; border:1px solid #fde68a; color:#92400e; padding:.9rem 1rem; border-radius:.85rem; }
-
     .soft-divider { height:1px; margin:1.35rem 0; background:linear-gradient(to right, transparent, #e5e7eb, transparent); }
-
     .table-soft th { background:#f8fafc; color:#0f172a; }
     .table-soft th, .table-soft td { padding:1rem; }
-
-    /* Pronun card inner */
-    .small-muted{ font-size:.9rem; color:#64748b; }
-    .korean-font{ font-family:'Noto Sans KR', system-ui, sans-serif; }
+    .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
   </style>
 </head>
 <body class="bg-gray-50">
 
-  <div class="absolute top-4 left-4 text-sm text-gray-400">made by 성일, Pongdang · Lapeace29@gmail.com</div>
-
-  <!-- 시작 화면 -->
-  <div id="start-screen" class="min-h-screen flex flex-col items-center justify-center text-center p-6">
+  <!-- 설명 -->
+  <div class="min-h-screen flex flex-col items-center justify-center text-center p-6">
     <div class="max-w-3xl w-full mx-auto readable">
       <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
       <p class="kicker mb-6">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
@@ -60,15 +38,15 @@
       <div class="grid md:grid-cols-2 gap-6 text-left">
         <div class="info-card">
           <h3>1️⃣ Petite explication / 간단 설명</h3>
-          <div class="callout">👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! / 많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!</div>
+          <div class="callout">👉 « 한자 = chinois(언어) »가 아니에요! Hanja=문자 체계, Chinois=언어.</div>
           <ul class="list-disc list-inside mt-3 space-y-1.5">
-            <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자(문자) 체계</li>
-            <li><strong>Chinois</strong> = langue / 중국어(언어)</li>
+            <li><strong>한자 (Hanja)</strong> = système d’écriture</li>
+            <li><strong>Chinois</strong> = langue</li>
           </ul>
         </div>
         <div class="info-card">
           <h3>2️⃣ Deux systèmes / 두 가지 숫자</h3>
-          <p class="mb-2"><strong>순수 한국어</strong> (natifs) ↔ <strong>한자어</strong> (Hanja-coréens)</p>
+          <p class="mb-2"><strong>순수 한국어</strong> ↔ <strong>한자어</strong></p>
           <div class="grid grid-cols-2 gap-3">
             <div class="p-3 rounded-lg bg-blue-50 border border-blue-200">
               <div class="font-semibold text-blue-900">Natifs</div>
@@ -83,10 +61,10 @@
           </div>
         </div>
         <div class="info-card md:col-span-2">
-          <h3>⚡ Exception & Tendance / 예외와 경향</h3>
+          <h3>⚡ Exception & Tendance</h3>
           <ul class="list-disc list-inside space-y-1.5">
             <li>Heures(시) → <b>natifs</b> · Minutes(분) → <b>Hanja-coréens</b></li>
-            <li>Modernisation : « 1 h = 60 min » → 시=natifs / 분=Hanja</li>
+            <li>« 1 h = 60 min » 체계 이후 시=natifs / 분=Hanja</li>
           </ul>
         </div>
         <div class="info-card md:col-span-2">
@@ -105,19 +83,14 @@
                   <td class="border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
                   <td class="border border-slate-200">Compter librement, classificateurs, durées libres</td>
                   <td class="border border-slate-200">
-                    <span class="font-medium">Durée (mois)</span> : <b>한 달, 두 달</b><br>
-                    <span class="font-medium">Classificateurs</span> : <b>한 개, 두 명, 세 잔, 한 권</b><br>
-                    <span class="font-medium">Heures (시)</span> : <b>한 시, 두 시</b>
+                    한 달, 두 달 / 한 개, 두 명, 세 잔, 한 권 / 한 시, 두 시
                   </td>
                 </tr>
                 <tr class="odd:bg-white even:bg-gray-50">
                   <td class="border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
-                  <td class="border border-slate-200">Libellés « écrits » (calendrier, montre, monnaie, numéros)</td>
+                  <td class="border border-slate-200">Valeurs « écrites » (calendrier, montre, monnaie…)</td>
                   <td class="border border-slate-200">
-                    <span class="font-medium">Mois calendrier</span> : <b>1월, 2월, 3월</b><br>
-                    <span class="font-medium">Minutes/Secondes</span> : <b>10분, 30초</b><br>
-                    <span class="font-medium">Dates/Argent</span> : <b>2025년 9월 7일, 1,000원</b><br>
-                    <span class="font-medium">Numéros d'appartement</span> : <b>3층, 302호</b>
+                    1월, 2월 / 10분, 30초 / 2025년 9월 7일, 1,000원 / 3층, 302호
                   </td>
                 </tr>
               </tbody>
@@ -127,679 +100,144 @@
       </div>
 
       <div class="soft-divider"></div>
-
-      <div class="w-full max-w-sm mx-auto mt-4">
-        <input id="student-name" class="w-full p-3 text-center border-2 border-slate-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Quel est ton nom ? (이름이 뭐예요?)">
-        <button id="start-btn" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Commencer ! (시작!)</button>
-      </div>
     </div>
   </div>
 
-  <!-- 워밍업 -->
-  <div id="warmup-screen" class="quiz-container hidden">
-    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5 par 5 🗣️ / 5개씩 훈련법</h2>
-    <p class="text-lg text-slate-600 mb-8 text-center">Écouter & Répéter plusieurs fois! / 여러 번 듣고 따라해요!</p>
+  <!-- 워밍업 (듣기 0.9배속 + 녹음·평가) -->
+  <div class="quiz-container">
+    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️ / 5개씩 훈련법</h2>
+    <p class="text-lg text-slate-600 mb-8 text-center">Écouter → Répéter → <b>Enregistrer & Évaluer</b> / 듣고 따라 말한 뒤 <b>녹음·평가</b></p>
 
-    <div class="space-y-4">
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">순수 한국어 / Natifs (1–5) : <span class="font-normal text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
-        <!-- speed 0.9 -->
-        <button class="btn btn-sound" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy', this, { speed:0.9 })"><i class="fas fa-play"></i></button>
+    <div class="space-y-6">
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-lg text-slate-700">Natifs (1–5) : <span class="text-gray-500">하나, 둘, 셋, 넷, 다섯</span></p>
+          <button class="btn btn-sound" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.9 })"><i class="fas fa-play"></i></button>
+        </div>
+        <div id="wu-pronun-1" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
       </div>
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">순수 한국어 / Natifs (6–10) : <span class="font-normal text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
-        <!-- speed 0.9 -->
-        <button class="btn btn-sound" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer', this, { speed:0.9 })"><i class="fas fa-play"></i></button>
+
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-lg text-slate-700">Natifs (6–10) : <span class="text-gray-500">여섯, 일곱, 여덟, 아홉, 열</span></p>
+          <button class="btn btn-sound" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.9 })"><i class="fas fa-play"></i></button>
+        </div>
+        <div id="wu-pronun-2" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
       </div>
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">한자어 / Hanja-coréen (1–5) : <span class="font-normal text-gray-500">일, 이, 삼, 사, 오</span></p>
-        <!-- speed 0.9 -->
-        <button class="btn btn-sound" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy', this, { speed:0.9 })"><i class="fas fa-play"></i></button>
+
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-lg text-slate-700">Hanja (1–5) : <span class="text-gray-500">일, 이, 삼, 사, 오</span></p>
+          <button class="btn btn-sound" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy',{ speed:0.9 })"><i class="fas fa-play"></i></button>
+        </div>
+        <div id="wu-pronun-3" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
       </div>
-      <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
-        <p class="font-semibold text-lg text-slate-700">한자어 / Hanja-coréen (6–10) : <span class="font-normal text-gray-500">육, 칠, 팔, 구, 십</span></p>
-        <!-- speed 0.9 -->
-        <button class="btn btn-sound" onclick="onPlayPause('육, 칠, 팔, 구, 십','alloy', this, { speed:0.9 })"><i class="fas fa-play"></i></button>
+
+      <div class="p-4 bg-white rounded-lg shadow-sm">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-lg text-slate-700">Hanja (6–10) : <span class="text-gray-500">육, 칠, 팔, 구, 십</span></p>
+          <button class="btn btn-sound" onclick="onPlayPause('육, 칠, 팔, 구, 십','alloy',{ speed:0.9 })"><i class="fas fa-play"></i></button>
+        </div>
+        <div id="wu-pronun-4" class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"></div>
       </div>
     </div>
 
     <div class="mt-8 text-center">
-      <button id="start-quiz-btn" class="btn btn-primary text-lg">Commencer l'exercice ! (연습문제 시작!) <i class="fas fa-arrow-right"></i></button>
+      <a href="./numbers-exercises.html" class="btn btn-primary text-lg">Commencer l'exercice ! (연습문제 시작!) <i class="fas fa-arrow-right"></i></a>
     </div>
   </div>
 
-  <!-- 본 퀴즈 -->
-  <div id="quiz-screen" class="quiz-container hidden">
-    <div class="flex justify-between items-center mb-4">
-      <span id="progress-text" class="text-sm font-semibold text-gray-600"></span>
-      <button id="print-btn" class="text-gray-600 hover:text-blue-600"><i class="fas fa-print"></i> Imprimer / 프린트</button>
-    </div>
-    <div class="progress-bar mb-6"><div id="progress-bar-inner" class="progress-bar-inner"></div></div>
-
-    <!-- Méthode 5×5 안내 바 (Q6+) -->
-    <div id="sticky-55" class="sticky top-0 z-30 -mx-4 sm:-mx-6 -mt-2 mb-4 hidden">
-      <div class="p-3 rounded-lg bg-white/90 backdrop-blur border border-slate-200 shadow-sm flex flex-wrap gap-2 items-center justify-between">
-        <span class="text-sm font-semibold text-slate-700">Méthode 5×5 (필요할 때 언제든 듣기)</span>
-        <div class="flex flex-wrap gap-2">
-          <!-- speed 1.2 -->
-          <button class="btn btn-sound" onclick="onPlayPause('하나, 둘, 셋, 넷, 다섯','alloy', this, { speed:1.2 })"><i class="fas fa-play"></i> 1–5 natifs</button>
-          <button class="btn btn-sound" onclick="onPlayPause('여섯, 일곱, 여덟, 아홉, 열','shimmer', this, { speed:1.2 })"><i class="fas fa-play"></i> 6–10 natifs</button>
-          <button class="btn btn-sound" onclick="onPlayPause('일, 이, 삼, 사, 오','alloy', this, { speed:1.2 })"><i class="fas fa-play"></i> 1–5 Hanja</button>
-          <button class="btn btn-sound" onclick="onPlayPause('육, 칠, 팔, 구, 십','alloy', this, { speed:1.2 })"><i class="fas fa-play"></i> 6–10 Hanja</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="question-area"></div>
-    <div id="navigation-btns" class="mt-8 flex justify-between items-center">
-      <button id="prev-btn" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Précédent (이전)</button>
-      <button id="next-btn" class="btn btn-primary">Suivant (다음) <i class="fas fa-arrow-right"></i></button>
-      <button id="finish-btn" class="btn btn-primary hidden">Terminer ! (끝내기!)</button>
-    </div>
-  </div>
-
-  <!-- 결과 -->
-  <div id="result-screen" class="quiz-container hidden text-center">
-    <h2 class="text-3xl font-bold text-slate-800 mb-4">Résultats du test / 결과</h2>
-    <div id="result-feedback" class="text-2xl font-semibold mb-6"></div>
-    <p class="text-slate-600 mb-2">Score final : <span id="final-score" class="font-bold"></span></p>
-    <p class="text-slate-600 mb-6">Temps total : <span id="total-time" class="font-bold"></span> secondes</p>
-    <div id="review-section" class="">
-      <h3 class="text-xl font-bold text-slate-700 mt-8 mb-4">Révision des questions / 오답노트</h3>
-      <div id="review-content" class="text-left space-y-4"></div>
-    </div>
-    <div class="mt-8 flex justify-center gap-4">
-      <button id="restart-btn" class="btn btn-primary"><i class="fas fa-redo"></i> Recommencer (다시하기)</button>
-      <a href="../index.html" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour aux exercices (연습문제로 돌아가기)</a>
-    </div>
-  </div>
-
-  <div class="absolute bottom-4 right-4 text-sm text-gray-400">made by 성일, Pongdang · Lapeace29@gmail.com</div>
-
-  <!-- 오류 모달 -->
-  <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
-      <h3 class="text-xl font-bold text-red-600 mb-2">Oops ! Une erreur est survenue. / 오류가 발생했어요.</h3>
-      <p id="error-message" class="text-gray-700 mb-4"></p>
-      <button id="close-error-modal-btn" class="btn btn-primary w-full mt-4">J'ai compris (확인)</button>
-    </div>
-  </div>
+  <div class="brand-tag">made by 성일, Pongdang · Lapeace29@gmail.com</div>
 
   <!-- 기본 TTS/Functions 설정 -->
   <script>
     window.PONGDANG_TTS = window.PONGDANG_TTS || { provider: 'openai' };
     window.PONGDANG_FN_BASE = window.PONGDANG_FN_BASE || '/.netlify/functions';
-    window.PONGDANG_SEND_AUDIO = (typeof window.PONGDANG_SEND_AUDIO === 'boolean') ? window.PONGDANG_SEND_AUDIO : false;
+    // 전사/숫자치환 문구 숨기기(클라이언트가 지원 안하면 아래 scrubber가 제거)
+    window.PRONUN_OPTIONS = { hideTranscript: true, hideNumericSwap: true };
   </script>
-  <script src="../assets/grading-criteria.js"></script>
+  <script src="../assets/pronun-utils.js"></script>
+  <script src="../assets/pronun-vowel-middleware.js"></script>
   <script src="../assets/pronun-client.js"></script>
 
   <script>
     const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
+    let currentAudio=null,currentBlobUrl=null,currentFetchAbort=null,isPlayingOrFetching=false,audioClickLocked=false;
+    const VOICE_MAP={openai:{default:"alloy",alloy:"alloy",shimmer:"verse"},google:{default:"ko-KR-Standard-A",alloy:"ko-KR-Standard-A",shimmer:"ko-KR-Standard-B"}};
+    const mapVoice=(p,v)=> (VOICE_MAP[p]||{} )[v] || (VOICE_MAP[p]||{}).default || v;
 
-    let studentName = "";
-    let currentQuestionIndex = 0;
-    let questions = [];
-    let startTime, endTime;
-    let mediaRecorder, audioChunks = [];
-    let currentAudio = null, currentBlobUrl = null;
-    let currentFetchAbort = null;
-    let audioClickLocked = false;
-    let isPlayingOrFetching = false;
-    function tinyDelay(ms){ return new Promise(r=>setTimeout(r, ms)); }
-
-    let currentAudioMeta = { text: null, voice: null };
-    let currentAudioUI   = { playBtn: null, loopBtn: null };
-    let isLooping = false;
-
-    function showErrorModal(message){
-      document.getElementById('error-message').textContent = message;
-      document.getElementById('error-modal').classList.remove('hidden');
-    }
-    async function logError(error, functionName, context){
+    function base64ToBlob(b64,mime='audio/mpeg'){const c=b64.includes(',')?b64.split(',')[1]:b64;const s=atob(c);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return new Blob([a],{type:mime});}
+    function updatePlayBtnUI(btn,playing){ if(!btn) return; btn.innerHTML = playing? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>'; }
+    async function onPlayPause(text,voice='alloy',opts={}){
+      const btn=event?.currentTarget;
+      if(audioClickLocked||isPlayingOrFetching){ if(currentAudio){ try{ if(currentAudio.paused){ await currentAudio.play(); updatePlayBtnUI(btn,true);} else { currentAudio.pause(); updatePlayBtnUI(btn,false);} }catch(_){} } return;}
+      audioClickLocked=true; setTimeout(()=>audioClickLocked=false,220);
       try{
-        await fetch(`${FN_BASE}/log-error`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ studentName:studentName||"Non défini", error:{message:error?.message||String(error), stack:error?.stack||null}, functionName, context, pageUrl:window.location.href })
-        });
-      }catch(e){ console.error('log-error fail', e); }
-    }
-
-    function base64ToBlob(base64, mime='audio/mp3'){
-      const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
-      const byteChars = atob(cleaned);
-      const arr = new Uint8Array(byteChars.length);
-      for(let i=0;i<byteChars.length;i++) arr[i]=byteChars.charCodeAt(i);
-      return new Blob([arr],{type:mime});
-    }
-    function cleanupAudio(){
-      if(currentAudio){ try{ currentAudio.pause(); }catch(_){ } currentAudio=null; }
-      if(currentBlobUrl){ URL.revokeObjectURL(currentBlobUrl); currentBlobUrl=null; }
-    }
-
-    function updatePlayButtonUI(isPlaying){
-      const btn = currentAudioUI.playBtn;
-      if(!btn) return;
-      if(isPlaying){
-        btn.innerHTML = '<i class="fas fa-pause"></i> Pause (일시정지)';
-        btn.classList.remove('bg-emerald-600');
-        btn.classList.add('bg-emerald-700');
-      }else{
-        btn.innerHTML = '<i class="fas fa-play"></i> Écouter (듣기)';
-        btn.classList.remove('bg-emerald-700');
-        btn.classList.add('bg-emerald-600');
-      }
-    }
-    function updateLoopButtonUI(){
-      const btn = currentAudioUI.loopBtn;
-      if(!btn) return;
-      if(isLooping){
-        btn.innerHTML = '<i class="fas fa-redo"></i> Répéter On (반복 켜짐)';
-        btn.classList.add('bg-yellow-200');
-      }else{
-        btn.innerHTML = '<i class="fas fa-redo"></i> Répéter Off (반복 꺼짐)';
-        btn.classList.remove('bg-yellow-200');
-      }
-    }
-
-    function safeAttr(s){
-      return String(s||"").replace(/\\/g, "\\\\").replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, " ");
-    }
-
-    const VOICE_MAP = {
-      openai: { default: "alloy", alloy: "alloy", shimmer: "verse", nova: "alloy", echo: "alloy", fable: "verse" },
-      google: { default: "ko-KR-Standard-A", alloy: "ko-KR-Standard-A", shimmer: "ko-KR-Standard-B", nova: "ko-KR-Standard-C", echo: "ko-KR-Standard-D", fable: "ko-KR-Neural2-A" }
-    };
-    function mapVoice(provider, reqName){
-      const table = VOICE_MAP[provider] || {};
-      return table[reqName] || table.default || reqName || "ko-KR-Standard-A";
-    }
-
-    async function playAudio(text, voice='alloy', opts = {}){
-      if (audioClickLocked || isPlayingOrFetching) {
-        if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice){
-          try{ if (!currentAudio.paused) { currentAudio.pause(); updatePlayButtonUI(false); } else { await currentAudio.play(); updatePlayButtonUI(true); } }catch(_){ }
+        if(currentAudio && currentAudio.src && currentAudio._meta===text){ if(currentAudio.paused){ await currentAudio.play(); updatePlayBtnUI(btn,true);} else { currentAudio.pause(); updatePlayBtnUI(btn,false);} return; }
+        isPlayingOrFetching=true;
+        if(currentFetchAbort){ try{currentFetchAbort.abort();}catch(_){}
+        } if(currentAudio){ try{currentAudio.pause();}catch(_){}
         }
-        return;
-      }
-      audioClickLocked = true; setTimeout(()=>audioClickLocked=false, 220);
+        const ac=new AbortController(); currentFetchAbort=ac;
+        const primary=(window.PONGDANG_TTS?.provider)||'openai';
+        const payload={ text, voice: mapVoice(primary,voice), provider: primary, speed:(opts.speed ?? opts.speakingRate) };
+        const res=await fetch(`${FN_BASE}/generate-audio`,{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(payload),signal:ac.signal});
+        if(!res.ok){ throw new Error('TTS error '+res.status); }
+        const data=await res.json();
+        let src=null;
+        if(data.audioBase64||data.audioContent){ const blob=base64ToBlob(data.audioBase64||data.audioContent,data.mimeType||'audio/mpeg'); src=URL.createObjectURL(blob); currentBlobUrl=src; }
+        else if(data.audioUrl){ src=data.audioUrl; }
+        const audio=new Audio(src); currentAudio=audio; audio._meta=text;
+        audio.addEventListener('playing',()=>updatePlayBtnUI(btn,true));
+        audio.addEventListener('pause',()=>updatePlayBtnUI(btn,false));
+        audio.addEventListener('ended',()=>updatePlayBtnUI(btn,false));
+        await audio.play();
+      }catch(e){ alert('오디오 생성/재생 오류. 잠시 후 다시 시도해주세요.'); }
+      finally{ isPlayingOrFetching=false; }
+    }
 
-      try{
-        if (currentAudio && currentAudioMeta.text===text && currentAudioMeta.voice===voice && currentAudio.src){
-          if(!currentAudio.paused){ currentAudio.pause(); updatePlayButtonUI(false); }
-          else { await currentAudio.play(); updatePlayButtonUI(true); }
-          return;
-        }
-
-        isPlayingOrFetching = true;
-        if(questions.length>0 && questions[currentQuestionIndex]){ questions[currentQuestionIndex].listenCount++; }
-
-        if(currentFetchAbort){ try{ currentFetchAbort.abort(); }catch(_){} }
-        if(currentAudio){ try{ currentAudio.pause(); }catch(_){} }
-
-        const ac = new AbortController();
-        currentFetchAbort = ac;
-
-        const configured = (window.PONGDANG_TTS && window.PONGDANG_TTS.provider) || 'openai';
-        const primary   = opts.provider || configured;
-        const secondary = (primary === 'openai') ? 'google' : 'openai';
-
-        const basePayload = { text, voice, provider: primary, speed:(opts.speed ?? opts.speakingRate), speakingRate:opts.speakingRate };
-
-        const tryFetch = async (prov) => {
-          const payload = { ...basePayload, provider: prov, voice: mapVoice(prov, voice) };
-          const res = await fetch(`${FN_BASE}/generate-audio`,{ method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'}, body:JSON.stringify(payload), signal: ac.signal });
-          if(!res.ok){
-            const body = await res.text().catch(()=>"");
-            const msg = `generate-audio ${prov}: ${res.status} ${body}`;
-            if (res.status===402 || res.status===429 || (res.status>=500 && res.status<=599)) throw new Error('RETRY:'+msg);
-            throw new Error(msg);
+    // Pronun mount + “전사”류 문구 제거 스크러버
+    function scrubPronun(container){
+      if(!container) return;
+      const killWords=['전사','transcription','transcrit'];
+      const sweep=()=>{
+        const nodes=container.querySelectorAll('*');
+        nodes.forEach(n=>{
+          if(n.childNodes && n.childNodes.length){
+            n.childNodes.forEach(c=>{
+              if(c.nodeType===3 && killWords.some(k=>c.textContent?.toLowerCase().includes(k))){
+                c.textContent='';
+              }
+            });
           }
-          const data = await res.json().catch(()=>{ throw new Error('Invalid JSON from TTS'); });
-          return data;
-        };
-
-        let data;
-        try { data = await tryFetch(primary); }
-        catch(e){ if(String(e.message).startsWith('RETRY:')) data = await tryFetch(secondary); else throw e; }
-        if(ac.signal.aborted || !data) return;
-
-        let srcUrl = null;
-        if(data.audioBase64 || data.audioContent){
-          const b64 = data.audioBase64 || data.audioContent;
-          const blob = base64ToBlob(b64, data.mimeType||'audio/mpeg');
-          srcUrl = URL.createObjectURL(blob); currentBlobUrl = srcUrl;
-        }else if(data.audioUrl){ srcUrl = data.audioUrl; }
-        else { throw new Error('Invalid TTS response: missing audio'); }
-
-        const audio = new Audio(srcUrl);
-        currentAudio = audio;
-        currentAudioMeta = { text, voice };
-        audio.loop = isLooping;
-
-        const canPlay = new Promise(resolve=>{
-          const ready = () => { audio.removeEventListener('canplaythrough', ready); resolve(); };
-          audio.addEventListener('canplaythrough', ready, { once:true });
-          setTimeout(resolve, 380);
         });
-
-        audio.addEventListener('playing', ()=> updatePlayButtonUI(true));
-        audio.addEventListener('pause',   ()=> updatePlayButtonUI(false));
-        audio.addEventListener('ended',   ()=> { updatePlayButtonUI(false); });
-        audio.addEventListener('error',   (e)=> {
-          console.warn('audio error', e);
-          if (!audio.ended) showErrorModal('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.');
-        });
-
-        await canPlay;
-        try{ await audio.play(); }
-        catch(err){ await tinyDelay(150); try{ await audio.play(); }catch(_){ showErrorModal('오디오 재생에 문제가 발생했습니다. 다시 시도해 주세요.'); }}
-      }catch(error){
-        if (error?.name !== 'AbortError'){
-          console.error('playAudio error', error);
-          logError(error,'playAudio',{text,voice,opts});
-          showErrorModal('오디오 생성/재생 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-        }
-      }finally{ isPlayingOrFetching = false; }
+      };
+      sweep();
+      const mo=new MutationObserver(sweep);
+      mo.observe(container,{childList:true,subtree:true});
     }
 
-    function onPlayPause(text, voice, btnEl, opts){
-      currentAudioUI.playBtn = btnEl;
-      updatePlayButtonUI(currentAudio && !currentAudio.paused);
-      return playAudio(text, voice, opts);
-    }
-    function onStop(){ if(!currentAudio) return; try{ currentAudio.pause(); currentAudio.currentTime = 0; }catch(_){ } updatePlayButtonUI(false); }
-    function onToggleLoop(btnEl){ currentAudioUI.loopBtn = btnEl; isLooping = !isLooping; if(currentAudio){ currentAudio.loop = isLooping; } updateLoopButtonUI(); }
-
-    function toggleSticky55(show){
-      const bar = document.getElementById('sticky-55');
-      if (!bar) return;
-      bar.classList.toggle('hidden', !show);
-    }
-
-    async function sendResults(){
-      endTime = new Date();
-      const totalTimeSeconds = Math.round((endTime - startTime)/1000);
-
-      const includeAudio = !!window.PONGDANG_SEND_AUDIO;
-
-      const payload = {
-        studentName,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        totalTimeSeconds,
-        questions: questions.map(q=>{
-          let rec = null;
-          if(q.recording){
-            const tooBig = ((q.recording.base64||'').length > 500000);
-            if(includeAudio && !tooBig){ rec = q.recording; }
-            else { rec = { hasRecording:true, duration:q.recording.duration, filename:q.recording.filename, omitted:true, reason: tooBig? 'size':'disabled' }; }
-          }
-          return ({
-            number:q.number, type:q.type,
-            ko:(q.type==='fr_fill_audio' ? (q.audioKo||'') : (q.ko||q.answer||'')),
-            fr:(q.type==='fr_fill_audio' ? (q.answerTemplateFr||'') : (q.fr||q.context||'')),
-            userAnswer:q.userAnswer, isCorrect:q.isCorrect,
-            listenCount:q.listenCount, hint1Count:q.hint1Count, hint2Count:q.hint2Count,
-            recording: rec, pronunciationFeedback:q.pronunciationFeedback||null
+    document.addEventListener('DOMContentLoaded',()=>{
+      const blocks=[
+        ['wu-pronun-1','하나, 둘, 셋, 넷, 다섯'],
+        ['wu-pronun-2','여섯, 일곱, 여덟, 아홉, 열'],
+        ['wu-pronun-3','일, 이, 삼, 사, 오'],
+        ['wu-pronun-4','육, 칠, 팔, 구, 십'],
+      ];
+      blocks.forEach(([id,text])=>{
+        const el=document.getElementById(id);
+        if(el && window.Pronun){
+          Pronun.mount(el,{
+            getReferenceText:()=>text,
+            isKoCorrect:()=>true,
+            onResult:()=>{}
           });
-        })
-      };
-      try{
-        const r = await fetch(`${FN_BASE}/send-results`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        if(!r.ok){
-          const body = await res.text().catch(()=>"");
-          throw new Error(`send-results: ${r.status} ${body}`);
-        }
-      }catch(e){ console.error('sendResults error', e); logError(e,'sendResults',{}); showErrorModal("결과를 보낼 수 없습니다. 서버 경로나 본문 크기를 확인하세요."); }
-    }
-
-    const TYPE_TITLES = {
-      choice: 'Choix / 선택',
-      fr_prompt_ko: 'Français → 한국어 / 불→한',
-      dictation: 'Dictée / 받아쓰기',
-    };
-
-    function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
-
-    function getQuestions(){
-      const choiceData = [
-        { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hint:"Règle/규칙: Dates ⇒ Hanja-coréen" },
-        { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hint:"Rècle/규칙: Heures(시) ⇒ Natifs (예외)" },
-        { context:"Pour l'âge '3살', on dit :", options:["세 살","삼 살"], answer:"세 살", hint:"Règle/규칙: Âge ⇒ Natifs" },
-        { context:"Pour l'argent '10 euro', on dit :", options:["십 유로","열 유로"], answer:"십 유로", hint:"Règle/규칙: Prix ⇒ Hanja-coréen" },
-        { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hint:"Règle/규칙: Minutes(분) ⇒ Hanja-coréen" }
-      ];
-
-      // 6–15: consigne FR, audio KO only, answer in KO
-      const frPromptKoData = [
-        { fr:"Quelle heure est-il ?", audio:"몇 시예요?", frGuide:"Ex. Il est 3 h.", ko:"세 시예요.", acceptedKo:["3시예요","세시예요","지금은 세 시예요.","세 시입니다."], voice:"alloy", pronunRequired:false },
-        { fr:"Quelle est la date (jour du mois) ?", audio:"오늘 며칠이에요?", frGuide:"Ex. Nous sommes le 10.", ko:"십일이에요.", acceptedKo:["10일이에요","오늘은 십일이에요","오늘 십일이에요"], voice:"shimmer", pronunRequired:false },
-        { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. C’est 10 euros.", ko:"십 유로예요.", acceptedKo:["10유로예요","십유로예요","열 유로예요"], voice:"alloy", pronunRequired:false },
-        { fr:"Combien de personnes ?", audio:"몇 명이에요?", frGuide:"Ex. Ils sont huit.", ko:"여덟 명이에요.", acceptedKo:["8명이에요","여덟명이에요"], voice:"nova", pronunRequired:false },
-        { fr:"Combien de minutes ?", audio:"몇 분이에요?", frGuide:"Ex. 30 minutes.", ko:"삼십 분이에요.", acceptedKo:["30분이에요","서른 분이에요"], voice:"echo", pronunRequired:false },
-
-        // 11–15 (발음 시험 필수)
-        { fr:"À quelle heure est le rendez-vous ?", audio:"약속이 몇 시예요?", frGuide:"Ex. À 4 h.", ko:"네 시예요.", acceptedKo:["4시예요","네시예요"], voice:"fable", pronunRequired:true },
-        { fr:"Quel jour du mois est l’examen ?", audio:"시험이 며칠이에요?", frGuide:"Ex. Le 15.", ko:"십오일이에요.", acceptedKo:["15일이에요"], voice:"alloy", pronunRequired:true },
-        { fr:"Combien ce livre coûte-t-il ?", audio:"이 책은 얼마예요?", frGuide:"Ex. 12 euros.", ko:"십이 유로예요.", acceptedKo:["12유로예요","십이유로예요"], voice:"shimmer", pronunRequired:true },
-        { fr:"Combien de tasses de café ?", audio:"커피 몇 잔이에요?", frGuide:"Ex. Trois.", ko:"세 잔이에요.", acceptedKo:["3잔이에요","세잔이에요"], voice:"alloy", pronunRequired:true },
-        { fr:"Combien de secondes ?", audio:"몇 초예요?", frGuide:"Ex. Dix secondes.", ko:"십 초예요.", acceptedKo:["10초예요","십초예요"], voice:"nova", pronunRequired:true }
-      ];
-
-      const dictationData = [
-        { ko: "지금 몇 시예요?", fr: "Quelle heure est-il ?", frAnswerGuide: "Ex. Il est 3 h.", voice: "shimmer" },
-        { ko: "오늘 며칠이에요?", fr: "Quelle est la date (jour du mois) ?", frAnswerGuide: "Ex. Nous sommes le 10.", voice: "nova" },
-        { ko: "이 책은 얼마예요?", fr: "Combien coûte ce livre ?", frAnswerGuide: "Ex. C’est 12 euros.", voice: "alloy" },
-        { ko: "학생 몇 명이에요?", fr: "Combien de personnes/élèves ?", frAnswerGuide: "Ex. Ils sont huit.", voice: "echo" },
-        { ko: "몇 분이에요?", fr: "Combien de minutes ?", frAnswerGuide: "Ex. 30 minutes.", voice: "fable" }
-      ];
-
-      const choice = choiceData.map((q,i)=>({
-        number:i+1,
-        type:'choice', typeLabel: TYPE_TITLES['choice'],
-        context:q.context, answer:q.answer, options:[...q.options].sort(()=>Math.random()-0.5), hint:q.hint,
-        userAnswer:null, isCorrect:null, listenCount:0, hint1Count:0, hint2Count:0, pronunRequired:false, pronunChecked:true
-      }));
-
-      const frPromptKo = frPromptKoData.map((q,i)=>({
-        number: choice.length + i + 1,
-        type:'fr_prompt_ko', typeLabel: TYPE_TITLES['fr_prompt_ko'],
-        fr:q.fr, audioText:q.audio, frGuide:q.frGuide, ko:q.ko, acceptedKo:q.acceptedKo || [],
-        voice:q.voice || 'alloy', baseHintFr: "Écoute bien l’audio (en coréen) et réponds en coréen.",
-        userAnswer:"", isCorrect:null, listenCount:0, hint1Count:0, hint2Count:0,
-        pronunRequired: !!q.pronunRequired, pronunChecked: !q.pronunRequired, recording:null, pronunciationFeedback:null
-      }));
-
-      const dictation = dictationData.map((q,i)=>({
-        number: choice.length + frPromptKo.length + i + 1,
-        type:'dictation', typeLabel: TYPE_TITLES['dictation'],
-        ko:q.ko, fr:q.fr, frAnswerGuide:q.frAnswerGuide, voice:q.voice,
-        userAnswer:{ ko:"", replyKo:"" },
-        isCorrect:null, listenCount:0, hint1Count:0, hint2Count:0,
-        pronunRequired:true, pronunChecked:false, recording:null, pronunciationFeedback:null
-      }));
-
-      return [...choice, ...frPromptKo, ...dictation];
-    }
-
-    function renderQuestion(){
-      try {
-        const q = questions[currentQuestionIndex];
-        const area = document.getElementById('question-area');
-
-        const typeBadge = `<span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-white">${q.typeLabel}</span>`;
-        let html = `<div class="flex items-center gap-2 mb-1">${typeBadge}<span class="text-sm text-slate-500">Q${q.number}</span></div>`;
-
-        if(q.type==='choice'){
-          html += `<h2 class="question-title">${q.context}</h2>`;
-          html += `<p class="question-text">Choisissez la bonne réponse. / 알맞은 답을 고르세요.</p>`;
-          q.options.forEach(opt=>{ html+=`<button class="choice-btn ${q.userAnswer===opt?'selected':''}" onclick="selectChoiceAnswer('${opt}')">${opt}</button>`; });
-        }
-        else if(q.type==='fr_prompt_ko'){
-          html += `<h2 class="question-title">${q.fr}</h2>`;
-          html += `<p class="question-text">🇰🇷 Audio en coréen → Répondez en coréen. / 오디오 듣고 한국어로 답하세요.</p>`;
-          html += `
-            <div class="flex gap-2 mb-3">
-              <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${safeAttr(q.audioText)}','${q.voice||'alloy'}', this)"><i class="fas fa-play"></i> Écouter (듣기)</button>
-              <button id="stop-btn" class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
-              <button id="loop-btn" class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
-            </div>
-            <div class="p-3 bg-white rounded border mb-3 text-sm text-slate-600"><span class="font-medium">Guide (FR)</span> : ${q.frGuide}</div>
-            <label class="block mb-1 font-semibold">Réponse en coréen (한국어로):</label>
-            <input class="input-field input-ko" value="${q.userAnswer||''}" oninput="updateTranslateAnswer(this.value)" placeholder="예: ${q.ko}">
-          `;
-          if(q.pronunRequired){
-            html += `
-            <div id="pronun-card" class="mt-4 p-4 rounded-lg border border-indigo-200 bg-indigo-50/60">
-              <div class="text-sm text-slate-700 mb-2">🎤 Enregistrer & tester la prononciation / 녹음해서 발음 시험해보기</div>
-              <div class="flex gap-2">
-                <button class="btn btn-secondary btn-rec-start">🎙️ Enregistrer / 녹음</button>
-                <button class="btn btn-secondary btn-rec-stop" disabled>⏹️ Stop</button>
-              </div>
-              <canvas class="vu-canvas mt-2 w-full" height="48"></canvas>
-              <div class="pronun-display mt-2 text-sm"></div>
-            </div>`;
-          }
-        }
-        else if(q.type==='dictation'){
-          const stepsCaption = `
-            <div class="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-md p-2 mb-3">
-              <b>Question ${q.number}</b> — Écoutez → <b>1)</b> Dictée(받아쓰기) <b>2)</b> Répondez en coréen(한국어로 대답) <b>3)</b> Enregistrez & vérifiez(녹음·발음 확인)
-            </div>`;
-
-          html+=`${stepsCaption}
-            <div class="space-y-4">
-              <div class="flex gap-2">
-                <button id="playpause-btn" class="btn btn-sound flex-1 text-lg bg-emerald-600" onclick="onPlayPause('${safeAttr(q.ko)}','${q.voice}', this)">
-                  <i class="fas fa-play"></i> Écouter (듣기)
-                </button>
-                <button id="stop-btn" class="btn btn-secondary" onclick="onStop()"><i class="fas fa-square"></i> Stop</button>
-                <button id="loop-btn" class="btn btn-secondary" onclick="onToggleLoop(this)"><i class="fas fa-redo"></i> Répéter Off</button>
-              </div>
-
-              <!-- 1) 받아쓰기 -->
-              <div>
-                <label class="block mb-1 font-semibold">1) 들은 문장 받아쓰기 / Dictée</label>
-                <input class="input-field" value="${q.userAnswer.ko||''}" oninput="updateDictationAnswer('ko',this.value)" placeholder="(오디오를 듣고 그대로 적으세요)">
-              </div>
-
-              <!-- 2) 한국어로 대답 -->
-              <div>
-                <label class="block mb-1 font-semibold">2) 한국어로 대답하기 / Réponse en coréen</label>
-                <input class="input-field input-reply-ko" value="${q.userAnswer.replyKo||''}" oninput="updateDictationAnswer('replyKo',this.value)" placeholder="예: 네 시예요 / 십유로예요">
-                <div class="text-xs text-slate-500 mt-1">Ex (FR) : ${q.frAnswerGuide||''}</div>
-              </div>
-
-              <!-- 3) 녹음 & 발음 확인 -->
-              <div id="pronun-card" class="mt-2 p-4 rounded-lg border border-indigo-200 bg-indigo-50/60">
-                <div class="text-sm text-slate-700 mb-2">3) 🎤 Enregistrez & vérifiez / 녹음·발음 확인</div>
-                <!-- pronun-client.js가 버튼/파형/결과를 이 컨테이너에 붙임 -->
-              </div>
-            </div>`;
-        }
-
-        area.innerHTML = html;
-
-        // Mount pronunciation tester if needed
-        if ((q.type==='fr_prompt_ko' && q.pronunRequired) || (q.type==='dictation')){
-          const card = document.getElementById('pronun-card');
-          if(card && window.Pronun){
-            try{
-              Pronun.mount(card, {
-                // dictation은 학생이 입력한 한국어 대답을 기준으로 검사
-                getReferenceText: () =>
-                  (q.type==='dictation'
-                    ? (document.querySelector('#question-area .input-reply-ko')?.value || '')
-                    : q.ko),
-                isKoCorrect: () => true,
-                onResult: (r) => { q.pronunChecked = true; q.pronunciationFeedback = r; updateNavigation(); }
-              });
-            }catch(err){
-              console.error('Pronun.mount error', err);
-              logError(err,'Pronun.mount',{ qnum:q.number });
-            }
-          }
-        }
-
-        toggleSticky55((questions[currentQuestionIndex]?.number || 0) >= 6);
-        updateNavigation();
-      } catch (err) {
-        console.error('renderQuestion error', err);
-        logError(err, 'renderQuestion', { idx: currentQuestionIndex });
-        showErrorModal('연습문제를 표시하는 중 오류가 발생했습니다. (콘솔 확인)');
-      }
-    }
-
-    function isNextAllowed(){
-      const q = questions[currentQuestionIndex];
-      if (!q) return true;
-      if (q.pronunRequired && !q.pronunChecked) return false;
-      if (q.type==='dictation'){
-        if (!q.userAnswer.ko || !q.userAnswer.replyKo) return false;
-      }
-      if (q.type==='fr_prompt_ko'){
-        if (!q.userAnswer || !q.userAnswer.trim()) return false;
-      }
-      return true;
-    }
-
-    function updateNavigation(){
-      const prev = document.getElementById('prev-btn');
-      const next = document.getElementById('next-btn');
-      const finish = document.getElementById('finish-btn');
-      prev.classList.toggle('disabled', currentQuestionIndex===0);
-      next.classList.toggle('hidden', currentQuestionIndex===questions.length-1);
-      finish.classList.toggle('hidden', currentQuestionIndex<questions.length-1);
-      const allow = isNextAllowed();
-      next.disabled = !allow;
-      next.classList.toggle('disabled', !allow);
-
-      const pb = document.getElementById('progress-bar-inner');
-      if(pb){ const progress=((currentQuestionIndex+1)/questions.length)*100; pb.style.width=`${progress}%`; }
-      const pt = document.getElementById('progress-text');
-      if(pt){ pt.textContent=`Question ${currentQuestionIndex+1} sur ${questions.length}`; }
-    }
-
-    function selectChoiceAnswer(a){ questions[currentQuestionIndex].userAnswer=a; updateNavigation(); }
-    function updateTranslateAnswer(a){ questions[currentQuestionIndex].userAnswer=a; }
-    function updateDictationAnswer(part,val){ questions[currentQuestionIndex].userAnswer[part]=val; }
-
-    function setupRecording(){
-      const recordBtn=document.getElementById('record-btn'), indicator=document.getElementById('recording-indicator'), playback=document.getElementById('audio-playback');
-      if(!recordBtn) return;
-      recordBtn.onclick = async () => {
-        if(mediaRecorder && mediaRecorder.state==="recording"){
-          mediaRecorder.stop();
-          recordBtn.innerHTML='<i class="fas fa-microphone"></i> Démarrer (시작)';
-          indicator && indicator.classList.add('hidden');
-          recordBtn.classList.remove('bg-red-500','hover:bg-red-600');
-        }else{
-          try{
-            const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-            mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'});
-            audioChunks=[];
-            mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
-            mediaRecorder.onstop=()=>{
-              const blob=new Blob(audioChunks,{type:'audio/webm'});
-              const url=URL.createObjectURL(blob);
-              if (playback){ playback.src=url; playback.classList.remove('hidden'); }
-              const temp=new Audio(url);
-              temp.addEventListener('loadedmetadata',()=>{
-                const duration=temp.duration;
-                const reader=new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend=()=>{ questions[currentQuestionIndex].recording={ base64:reader.result, filename:`rec_q${questions[currentQuestionIndex].number}.webm`, mimeType:'audio/webm', duration }; };
-              });
-              stream.getTracks().forEach(t=>t.stop());
-            };
-            mediaRecorder.start();
-            recordBtn.innerHTML='<i class="fas fa-stop"></i> Arrêter (정지)';
-            indicator && (indicator.style.display='flex');
-            recordBtn.classList.add('bg-red-500','hover:bg-red-600');
-          }catch(err){ logError(err,'setupRecording'); showErrorModal("마이크 접근이 거부되었습니다. 브라우저 설정을 확인해주세요."); }
-        }
-      };
-    }
-
-    function startQuiz(){
-      studentName=document.getElementById('student-name').value.trim();
-      if(!studentName){ showErrorModal("이름을 입력해 주세요. (Entrez votre nom.)"); return; }
-      document.getElementById('start-screen').classList.add('hidden');
-      document.getElementById('warmup-screen').classList.remove('hidden');
-      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
-    }
-    function showWarmupScreen(){}
-    function startRealQuiz(){
-      startTime=new Date();
-      questions=getQuestions();
-      currentQuestionIndex=0;
-      if(!questions || !questions.length){
-        showErrorModal('문항 생성에 실패했습니다. 콘솔을 확인하세요.');
-        console.error('getQuestions returned', questions);
-        return;
-      }
-      document.getElementById('warmup-screen').classList.add('hidden');
-      document.getElementById('quiz-screen').classList.remove('hidden');
-      renderQuestion(); updateNavigation();
-    }
-    function nextQuestion(){ if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} } if(currentQuestionIndex<questions.length-1){ currentQuestionIndex++; renderQuestion(); updateNavigation(); } }
-    function prevQuestion(){ if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} } if(currentQuestionIndex>0){ currentQuestionIndex--; renderQuestion(); updateNavigation(); } }
-
-    function stripKo(s){ return String(s||'').replace(/\s/g,'').replace(/[.,!?]/g,''); }
-    function checkAnswers(){
-      questions.forEach(q=>{
-        if(q.type==='choice') q.isCorrect = q.userAnswer===q.answer;
-        else if(q.type==='dictation'){
-          const ok1 = stripKo(q.userAnswer.ko) === stripKo(q.ko); // 받아쓰기 정확
-          const ok2 = !!stripKo(q.userAnswer.replyKo);            // 대답은 작성 여부만
-          q.isCorrect = ok1 && ok2;
-        }
-        else if(q.type==='fr_prompt_ko'){
-          const candidates = [q.ko, ...(q.acceptedKo||[])];
-          q.isCorrect = candidates.some(ans=> stripKo(q.userAnswer)===stripKo(ans));
+          scrubPronun(el);
         }
       });
-    }
-    function getFeedback(score){
-      if(score>=90) return {fr:"Excellent travail ! 🌟",ko:"완벽해요! 너무 잘했어요 😊",className:"text-green-600"};
-      if(score>=70) return {fr:"Très bien ! Continuez 💪",ko:"아주 좋아요! 계속해요!",className:"text-emerald-600"};
-      if(score>=50) return {fr:"Pas mal ! On révise encore 👍",ko:"나쁘지 않아요! 조금만 더!",className:"text-yellow-600"};
-      return {fr:"Courage ! On va y arriver 👊",ko:"괜찮아요! 같이 다시 해봐요!",className:"text-orange-600"};
-    }
-
-    function showResults(){
-      if (currentFetchAbort) { try{ currentFetchAbort.abort(); }catch(_){} }
-      cleanupAudio();
-      checkAnswers();
-      sendResults();
-
-      const correct=questions.filter(q=>q.isCorrect).length;
-      const score=Math.round((correct/questions.length)*100);
-      const time=Math.round((new Date()-startTime)/1000);
-
-      const fb=getFeedback(score);
-      document.getElementById('final-score').textContent=score+"/100";
-      document.getElementById('total-time').textContent=time;
-      const rf=document.getElementById('result-feedback');
-      rf.className='text-2xl font-semibold mb-6 '+fb.className;
-      rf.textContent=`${fb.fr} / ${fb.ko}`;
-
-      const review=document.getElementById('review-content');
-      review.innerHTML='';
-      questions.forEach(q=>{
-        if(!q.isCorrect){
-          const userAns=(q.type==='dictation'? (`${q.userAnswer.ko||''} | ${q.userAnswer.replyKo||''}`) : (q.userAnswer||''));
-          const block=document.createElement('div');
-          block.className='p-3 bg-white rounded border';
-          block.innerHTML=`<div class='text-sm text-gray-500 mb-1'>Q${q.number} (${q.type})</div><div class='font-semibold mb-1'>${(q.fr||q.context||'')}</div><div class='text-green-700'>✅ ${q.ko||q.answer||''}</div><div class='text-red-700'>❌ ${userAns||'(vide)'}</div>`;
-          review.appendChild(block);
-        }
-      });
-
-      document.getElementById('quiz-screen').classList.add('hidden');
-      document.getElementById('result-screen').classList.remove('hidden');
-    }
-
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const nameInput=document.getElementById('student-name');
-      if(nameInput){
-        const names=["Camille","Lucas","Zoé","Arthur","Élise","Léa","Hugo","Théo","Oscar","Chloé","Jeanne d'Arc","Napoléon","Marie Curie","Louis XIV"];
-        nameInput.placeholder = names[Math.floor(Math.random()*names.length)];
-        nameInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') startQuiz(); });
-      }
-      const byId=(id,fn)=>{ const el=document.getElementById(id); if(el) el.addEventListener('click',fn); };
-      byId('start-btn', startQuiz);
-      byId('start-quiz-btn', startRealQuiz);
-      byId('next-btn', ()=>{ if (isNextAllowed()) nextQuestion(); });
-      byId('prev-btn', prevQuestion);
-      byId('finish-btn', showResults);
-      byId('print-btn', ()=>window.print());
-      byId('restart-btn', ()=>window.location.reload());
-      byId('close-error-modal-btn', ()=>document.getElementById('error-modal').classList.add('hidden'));
     });
-
-    window.addEventListener('beforeunload', ()=>{ try{ if(currentFetchAbort) currentFetchAbort.abort(); cleanupAudio(); }catch(_){ } });
   </script>
+
+  <div class="brand-tag">made by 성일, Pongdang · Lapeace29@gmail.com</div>
 </body>
 </html>
