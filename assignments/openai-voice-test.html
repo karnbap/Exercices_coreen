@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- 학생 이름 게이트 -->
+  <script src="/assets/student-gate.js"></script>
   <style>
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
     .korean-font{font-family:'Gowun Dodum',sans-serif}
@@ -53,36 +55,36 @@
       <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500"
              placeholder="Ex. Camille, Noé, Chloé..." />
       <p class="small-muted mt-2">
-        Dès le début, nous enregistrons : votre nom, le nombre d’écoutes/indices/essais, et vos scores de prononciation.
-        / 시작하면 이름, 듣기·힌트·시도 횟수, 발음 점수까지 기록돼요.
+        Nous enregistrons : votre nom, le nombre d’écoutes/indices/essais, et vos scores de prononciation. /
+        시작하면 이름, 듣기·힌트·시도 횟수, 발음 점수까지 기록돼요.
       </p>
     </section>
 
-  <section id="explanations" class="mb-10 card">
-  <h2 class="text-2xl font-bold mb-3 text-slate-700">“Comme” — Je décris quoi ? / 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
-  <div class="space-y-3 text-slate-700">
-    <p class="text-slate-600">
-      <strong>Comme…</strong> décrit <u>quoi</u> ? → 
-      <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">un verbe (une action)</span> 
-      ou <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">un nom</span> 
-      ou <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">le verbe “être”</span> ?
-      / 동작(동사), 명사, 아니면 <em>이다</em>(~예요) 같은 <strong>‘같다’</strong>를 말하나요?
-    </p>
+    <section id="explanations" class="mb-10 card">
+      <h2 class="text-2xl font-bold mb-3 text-slate-700">“Comme” — Je décris quoi ? / 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
+      <div class="space-y-3 text-slate-700">
+        <p class="text-slate-600">
+          <strong>Comme…</strong> décrit <u>quoi</u> ? →
+          <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">un verbe (une action)</span>
+          ou <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">un nom</span>
+          ou <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">le verbe “être”</span> ?
+          / 동작(동사), 명사, 아니면 <em>이다</em>(~예요) 같은 <strong>‘같다’</strong>를 말하나요?
+        </p>
 
-    <p class="text-slate-600">
-      <strong>Quel mot vient avant “comme …” ?</strong> / “처럼/같이/같다” <u>앞에는</u> 무엇이 오나요?
-    </p>
-    <ul class="list-disc pl-6 space-y-1">
-      <li><span class="font-semibold">nom + comme</span> → <span class="korean-font">명사 + 처럼/같이</span> (예: <span class="korean-font">로봇같이</span>)</li>
-      <li><span class="font-semibold">être + comme</span> → <span class="korean-font">~와/과 같다</span> (예: <span class="korean-font">천사 같아요</span>)</li>
-      <li><span class="font-semibold">verbe/adj + comme</span> → <span class="korean-font">동사 + 처럼/같이</span> (예: <span class="korean-font">바람처럼 달려요</span>)</li>
-    </ul>
+        <p class="text-slate-600">
+          <strong>Quel mot vient avant “comme …” ?</strong> / “처럼/같이/같다” <u>앞에는</u> 무엇이 오나요?
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li><span class="font-semibold">nom + comme</span> → <span class="korean-font">명사 + 처럼/같이</span> (예: <span class="korean-font">로봇같이</span>)</li>
+          <li><span class="font-semibold">être + comme</span> → <span class="korean-font">~와/과 같다</span> (예: <span class="korean-font">천사 같아요</span>)</li>
+          <li><span class="font-semibold">verbe/adj + comme</span> → <span class="korean-font">동사 + 처럼/같이</span> (예: <span class="korean-font">바람처럼 달려요</span>)</li>
+        </ul>
 
-    <hr class="my-2"/>
-    <p>🙋‍♀️ <strong class="korean-font text-green-600">같아요</strong> : « être comme … » — comparaison entre deux noms&nbsp;: <em>Nom1 est comme Nom2</em> (il n’y a que « être » et « comme » entre les deux).</p>
-    <p>✍️ <strong class="korean-font text-purple-600">같은</strong> : pour qualifier un nom (« ~같은 + nom » = « nom qui est comme … »).</p>
-    <p>🏃‍♂️ <strong class="korean-font text-blue-600">처럼 / 같이</strong> : pour comparer une action (avec un verbe). « 같이 » peut aussi vouloir dire « ensemble ».</p>
-    </div>
+        <hr class="my-2"/>
+        <p>🙋‍♀️ <strong class="korean-font text-green-600">같아요</strong> : « être comme … » — comparaison entre deux noms&nbsp;: <em>Nom1 est comme Nom2</em> (il n’y a que « être » et « comme » entre les deux).</p>
+        <p>✍️ <strong class="korean-font text-purple-600">같은</strong> : pour qualifier un nom (« ~같은 + nom » = « nom qui est comme … »).</p>
+        <p>🏃‍♂️ <strong class="korean-font text-blue-600">처럼 / 같이</strong> : pour comparer une action (avec un verbe). « 같이 » peut aussi vouloir dire « ensemble ».</p>
+      </div>
     </section>
 
     <section id="dictation-exercises"></section>
@@ -101,6 +103,31 @@
   <script src="/assets/pronun-client.js"></script>
 
   <script>
+    /* 0) 학생 이름 게이트 & 입력창 동기화 */
+    StudentGate.init();
+    StudentGate.requireBeforeInteraction(document);
+
+    const _nameInput = document.getElementById('student-name');
+    const _syncNameFromStore = () => { if (_nameInput) _nameInput.value = StudentGate.getName() || ''; };
+    document.addEventListener('student-ready', _syncNameFromStore);
+    window.addEventListener('DOMContentLoaded', _syncNameFromStore);
+    _nameInput?.addEventListener('change', (e) => {
+      const v = String(e.target.value || '').trim();
+      if (v) StudentGate.setName(v);
+    });
+
+    /* 과제 메타(메일 상단 요약용) */
+    const ASSIGNMENT_META = {
+      assignmentTitle: "Dictée – Comme en coréen",
+      assignmentTopic: "같아요 / 같은 / 처럼 / 같이",
+      assignmentSummary: [
+        "Comparaison de deux noms: être comme (같아요)",
+        "Nom + 같은 (qui est comme …)",
+        "Comparer une action: verbe + 처럼/같이 (« 같이 » peut aussi vouloir dire « ensemble »)"
+      ]
+    };
+
+    /* 1) 문항 목록 */
     const exercises = [
       { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1: "ㅊㅅ ㄱㅇㅇ", hint2: "천사 = ange", voice: "alloy" },
       { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1: "ㅇㄱ ㄲ ㄱㅇㅇ", hint2: "꿈 = rêve", voice: "Puck" },
@@ -296,9 +323,14 @@
       document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
         Pronun.mount(cardEl, {
           getReferenceText: () => exercises[i].sentence,
-          isKoCorrect: () => exState[i].koCorrect, // 안내용(틀려도 진행)
-          onResult: ({accuracy, confusionTags}) => {
-            exState[i].pronunciation = { accuracy, confusionTags };
+          isKoCorrect: () => exState[i].koCorrect, // 틀려도 진행(안내용)
+          onResult: ({ accuracy, confusionTags, transcript, friendly }) => {
+            exState[i].pronunciation = {
+              accuracy,
+              confusionTags,
+              transcript: transcript || '',
+              friendly: friendly || []
+            };
           }
         });
       });
@@ -312,7 +344,7 @@
     });
 
     document.getElementById('finish-btn').addEventListener('click',async()=>{
-      const name=(document.getElementById('student-name').value||'').trim()||'N/A';
+      const name = StudentGate.getName() || (document.getElementById('student-name').value || '').trim() || 'N/A';
       const total=exercises.length*2;
       const got=exState.reduce((acc,s)=>acc+(s.koCorrect?1:0)+(s.frCorrect?1:0),0);
       const score=Math.round((got/total)*100);
@@ -326,6 +358,13 @@
           startTime: window._startTime || new Date().toISOString(),
           endTime: new Date().toISOString(),
           totalTimeSeconds: Math.round(((Date.now())-(window._startMs||Date.now()))/1000),
+
+          // 메일 상단 카드용 메타
+          assignmentTitle: ASSIGNMENT_META.assignmentTitle,
+          assignmentTopic: ASSIGNMENT_META.assignmentTopic,
+          assignmentSummary: ASSIGNMENT_META.assignmentSummary,
+
+          // 문항들
           questions: exercises.map((ex,i)=>{
             const card=document.querySelectorAll('.dictation-card')[i];
             const ko=card.querySelector('.input-ko').value||'';
@@ -337,8 +376,13 @@
               isCorrect: exState[i].koCorrect && exState[i].frCorrect,
               isCorrectKo: exState[i].koCorrect, isCorrectFr: exState[i].frCorrect,
               listenCount: exState[i].listenCount, hint1Count: exState[i].hint1Count, hint2Count: exState[i].hint2Count,
-              pronunciation: pron ? { accuracy: pron.accuracy, confusionTags: pron.confusionTags } : null,
-              recording: null // 필요 시 Pronun 모듈에서 base64 전달하도록 확장 가능
+              pronunciation: pron ? {
+                accuracy: pron.accuracy,
+                tags: pron.confusionTags || [],
+                transcript: pron.transcript || '',
+                friendly: pron.friendly || []
+              } : null,
+              recording: null // (원하면 추후 연동)
             };
           })
         };
