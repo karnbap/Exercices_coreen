@@ -1,264 +1,424 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exercice ecrit Coréen : 같아요, 처럼, 같이, 같은</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-        }
-
-        .korean-font {
-            font-family: 'Gowun Dodum', sans-serif;
-        }
-
-        .card {
-            background-color: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
-        
-        .btn-secondary {
-            background-color: #f3f4f6;
-            color: #374151;
-            border-color: #e5e7eb;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background-color: #e5e7eb;
-        }
-        
-        .btn.selected {
-            background-color: #dbeafe;
-            border-color: #93c5fd;
-            color: #1e40af;
-        }
-
-        .btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        
-        .exercise-item {
-            padding: 1.5rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 1rem;
-            margin-bottom: 1.5rem;
-            background-color: #ffffff;
-            transition: background-color 0.3s;
-        }
-        
-        .feedback {
-            padding: 1rem;
-            border-radius: 0.75rem;
-            margin-top: 1rem;
-        }
-        .feedback.correct {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-        .feedback.incorrect {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comment dire « Comme » en coréen | 같아요 · 처럼 · 같이 · 같은</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Inter',sans-serif;background:#f0f4f8;color:#0f172a}
+    .korean-font{font-family:'Gowun Dodum',sans-serif}
+    .card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1),0 2px 4px -2px rgb(0 0 0 / 0.1)}
+    .btn{display:inline-block;padding:.5rem 1rem;border-radius:.75rem;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;border:2px solid transparent}
+    .btn-secondary{background:#f3f4f6;color:#374151;border-color:#e5e7eb}
+    .btn-secondary:hover:not(:disabled){background:#e5e7eb}
+    .btn-primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
+    .btn-primary:hover:not(:disabled){background:#1d4ed8}
+    .btn.selected{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
+    .btn:disabled{opacity:.7;cursor:not-allowed}
+    .exercise-item{padding:1.5rem;border:1px solid #e5e7eb;border-radius:1rem;margin-bottom:1.5rem;background:#fff;transition:background-color .3s}
+    .feedback{padding:1rem;border-radius:.75rem;margin-top:1rem}
+    .feedback.correct{background:#dcfce7;color:#166534}
+    .feedback.incorrect{background:#fee2e2;color:#991b1b}
+    .feedback.soft{background:#fef9c3;color:#854d0e} /* 의미 일치(부분 포함/경미차이) → 정답 처리 + 안내 */
+    .made-by-top,.made-by-bottom{ text-align:center; padding:.5rem; color:#475569; font-size:.875rem }
+    .made-by-top{ border-bottom:1px solid #e5e7eb }
+    .made-by-bottom{ border-top:1px solid #e5e7eb; margin-top:2rem }
+    .print-btn{ position:sticky; top:.75rem; float:right; margin-top:-.5rem }
+  </style>
 </head>
 
 <body class="text-slate-800">
-
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-blue-600 mb-2">Comme en Coréen (2-Étapes) 🇰🇷</h1>
-            <p class="text-lg text-slate-600">Apprends à utiliser 같아요, 처럼, 같이, et 같은 !</p>
-        </header>
-
-        <!-- Exercises Section -->
-        <section id="exercises">
-            <div class="flex justify-between items-center mb-6">
-                 <h2 class="text-3xl font-bold text-slate-700">Exercices (20)</h2>
-                 <button id="reset-btn" class="btn btn-secondary">Recommencer</button>
-            </div>
-            
-            <div id="exercise-list">
-                <!-- Les exercices seront injectés ici par JS -->
-            </div>
-        </section>
+  <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+    <!-- 상단 크레딧 + 인쇄 -->
+    <div class="made-by-top">
+      made by 성일, Pongdang ·
+      <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+      · <button onclick="window.print()" class="btn btn-secondary print-btn">🖨️ Imprimer</button>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const exercises = [
-            { french: "Ce bébé est comme un ange.", vocab: [{fr:"bébé", ko:"아기"}, {fr:"ange", ko:"천사"}], typeAnswer: "etre", koreanParts: ["이 아기는 천사", "."], fillAnswer: "같아요", chosungHint: "ㅇ ㅇㄱㄴ ㅊㅅ ㄱㅇㅇ." },
-            { french: "Le temps est comme de l'or.", vocab: [{fr:"temps", ko:"시간"}, {fr:"or", ko:"금"}], typeAnswer: "etre", koreanParts: ["시간은 금", "."], fillAnswer: "같아요", chosungHint: "ㅅㄱㅇ ㄱ ㄱㅇㅇ." },
-            { french: "C'est une amie comme ma famille.", vocab: [{fr:"amie", ko:"친구"}, {fr:"famille", ko:"가족"}], typeAnswer: "nom", koreanParts: ["가족", " 친구예요."], fillAnswer: "같은", chosungHint: "ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ." },
-            { french: "J'ai un ami comme un frère.", vocab: [{fr:"ami", ko:"친구"}, {fr:"frère", ko:"형제"}], typeAnswer: "nom", koreanParts: ["형제", " 친구가 있어요."], fillAnswer: "같은", chosungHint: "ㅎㅈ ㄱㅇ ㅊㄱㄱ ㅇㅇㅇ." },
-            { french: "Il court comme le vent.", vocab: [{fr:"courir", ko:"달리다"}, {fr:"vent", ko:"바람"}], typeAnswer: "verbe", koreanParts: ["그는 바람", " 달려요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ." },
-            { french: "Elle chante comme une sirène.", vocab: [{fr:"chanter", ko:"노래하다"}, {fr:"sirène", ko:"인어"}], typeAnswer: "verbe", koreanParts: ["그녀는 인어", " 노래해요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㄴㄴ ㅇㅇㅊㄹ ㄴㄹㅎㅇ." },
-            { french: "Ceci est comme un rêve.", vocab: [{fr:"ceci", ko:"이것"}, {fr:"rêve", ko:"꿈"}], typeAnswer: "etre", koreanParts: ["이건 꿈", "."], fillAnswer: "같아요", chosungHint: "ㅇㄱ ㄲ ㄱㅇㅇ." },
-            { french: "C'est une femme comme un renard.", vocab: [{fr:"femme", ko:"여자"}, {fr:"renard", ko:"여우"}], typeAnswer: "nom", koreanParts: ["여우", " 여자예요."], fillAnswer: "같은", chosungHint: "ㅇㅇ ㄱㅇ ㅇㅈㅇㅇ." },
-            { french: "Il danse comme un professionnel.", vocab: [{fr:"danser", ko:"춤추다"}, {fr:"professionnel", ko:"전문가"}], typeAnswer: "verbe", koreanParts: ["그는 전문가", " 춤을 춰요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㄴ ㅈㅁㄱㅊㄹ ㅊㅇ ㅊㅇ." },
-            { french: "Aujourd'hui est comme hier.", vocab: [{fr:"aujourd'hui", ko:"오늘"}, {fr:"hier", ko:"어제"}], typeAnswer: "etre", koreanParts: ["오늘은 어제", "."], fillAnswer: "같아요", chosungHint: "ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ." },
-            { french: "C'est un cadeau comme un trésor.", vocab: [{fr:"cadeau", ko:"선물"}, {fr:"trésor", ko:"보물"}], typeAnswer: "nom", koreanParts: ["보물", " 선물이에요."], fillAnswer: "같은", chosungHint: "ㅂㅁ ㄱㅇ ㅅㅁㅇㅇㅇ." },
-            { french: "Elle parle comme un poète.", vocab: [{fr:"parler", ko:"말하다"}, {fr:"poète", ko:"시인"}], typeAnswer: "verbe", koreanParts: ["그녀는 시인", " 말해요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㄴㄴ ㅅㅇㅊㄹ ㅁㅎㅇ." },
-            { french: "Un coeur large comme la mer.", vocab: [{fr:"coeur", ko:"마음"}, {fr:"mer", ko:"바다"}], typeAnswer: "nom", koreanParts: ["바다", " 넓은 마음."], fillAnswer: "같은", chosungHint: "ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ." },
-            { french: "Il dort comme un ours.", vocab: [{fr:"dormir", ko:"자다"}, {fr:"ours", ko:"곰"}], typeAnswer: "verbe", koreanParts: ["그는 곰", " 자요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㄴ ㄱㅊㄹ ㅈㅇ." },
-            { french: "Un enfant comme une poupée.", vocab: [{fr:"enfant", ko:"아이"}, {fr:"poupée", ko:"인형"}], typeAnswer: "nom", koreanParts: ["인형", " 아이."], fillAnswer: "같은", chosungHint: "ㅇㅎ ㄱㅇ ㅇㅇ." },
-            { french: "Il marche comme un robot.", vocab: [{fr:"marcher", ko:"걷다"}, {fr:"robot", ko:"로봇"}], typeAnswer: "verbe", koreanParts: ["그는 로봇", " 걸어요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㄴ ㄹㅂㄱㅇ ㄱㅇㅇ." },
-            { french: "Une voix douce comme le sucre.", vocab: [{fr:"voix", ko:"목소리"}, {fr:"sucre", ko:"설탕"}], typeAnswer: "nom", koreanParts: ["설탕", " 목소리."], fillAnswer: "같은", chosungHint: "ㅅㅌ ㄱㅇ ㅁㅅㄹ." },
-            { french: "Il est lent comme une tortue.", vocab: [{fr:"lent", ko:"느리다"}, {fr:"tortue", ko:"거북이"}], typeAnswer: "verbe", koreanParts: ["거북이", " 느려요."], fillAnswer: "처럼/같이", chosungHint: "ㄱㅂㅇㅊㄹ ㄴㄹㅇ." },
-            { french: "Cette personne est comme un acteur.", vocab: [{fr:"personne", ko:"사람"}, {fr:"acteur", ko:"배우"}], typeAnswer: "etre", koreanParts: ["그 사람은 배우", "."], fillAnswer: "같아요", chosungHint: "ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ." },
-            { french: "Il dépense de l'argent comme de l'eau.", vocab: [{fr:"dépenser de l'argent", ko:"돈을 쓰다"}, {fr:"eau", ko:"물"}], typeAnswer: "verbe", koreanParts: ["물", " 돈을 써요."], fillAnswer: "처럼/같이", chosungHint: "ㅁㅊㄹ ㄷㅇ ㅆㅇ." }
-        ];
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-blue-600 mb-2">Comme en Coréen (2-Étapes) 🇰🇷</h1>
+      <p class="text-lg text-slate-600">Apprends à utiliser 같아요, 처럼, 같이, et 같은 !</p>
+    </header>
 
-        const exerciseListContainer = document.getElementById('exercise-list');
-        const resetBtn = document.getElementById('reset-btn');
+    <!-- Exercises Section -->
+    <section id="exercises">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-slate-700">Exercices (20)</h2>
+        <button id="reset-btn" class="btn btn-secondary">Recommencer</button>
+      </div>
+      <div id="exercise-list"></div>
+    </section>
 
-        function renderExercises() {
-            exerciseListContainer.innerHTML = '';
-            exercises.forEach((ex, index) => {
-                const exerciseEl = document.createElement('div');
-                exerciseEl.className = 'exercise-item';
-                exerciseEl.id = `ex-${index}`;
+    <!-- 하단 크레딧 -->
+    <div class="made-by-bottom">
+      made by 성일, Pongdang · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+    </div>
+  </div>
 
-                const vocabList = ex.vocab.map(v => `<li class="text-sm"><span class="font-semibold">${v.fr}</span>: <span class="korean-font">${v.ko}</span></li>`).join('');
+  <script>
+  /* ===== 정규화 & 관대한 채점 유틸 ===== */
+  function normalizeKo(s=''){
+    return s
+      .replace(/\s+/g,'')                                // 모든 공백 제거
+      .replace(/[.,!?;:'"“”‘’()[\]·\-–—~…]/g,'');        // 문장부호 제거
+  }
+  function stripYo(s=''){ return s.replace(/요$/,''); }
 
-                exerciseEl.innerHTML = `
-                    <div class="flex items-start">
-                        <span class="text-xl font-bold text-blue-500 mr-4">${index + 1}.</span>
-                        <div class="w-full">
-                            <p class="font-semibold text-lg text-slate-800 mb-2">"${ex.french}"</p>
-                            <ul class="list-disc list-inside bg-slate-50 p-2 rounded-md mb-4">${vocabList}</ul>
+  // 편집거리(레벤슈타인)
+  function levenshtein(a,b){
+    const m=a.length,n=b.length;
+    if(m===0) return n; if(n===0) return m;
+    const dp=new Array(n+1);
+    for(let j=0;j<=n;j++) dp[j]=j;
+    for(let i=1;i<=m;i++){
+      let prev=dp[0]; dp[0]=i;
+      for(let j=1;j<=n;j++){
+        const tmp=dp[j];
+        dp[j]=Math.min(
+          dp[j]+1,               // 삭제
+          dp[j-1]+1,             // 삽입
+          prev + (a[i-1]===b[j-1]?0:1) // 치환
+        );
+        prev=tmp;
+      }
+    }
+    return dp[n];
+  }
 
-                            <!-- Step 1 -->
-                            <div class="mb-4">
-                                <p class="font-semibold text-slate-700 mb-2">1. Quel est le type de la phrase ?</p>
-                                <div class="flex flex-wrap gap-2 type-options">
-                                    <button data-type="verbe" class="btn btn-secondary">Action (Verbe) 🏃‍♂️</button>
-                                    <button data-type="nom" class="btn btn-secondary">Objet (Nom) ✍️</button>
-                                    <button data-type="etre" class="btn btn-secondary">Identification (Être comme) 🙋‍♀️</button>
-                                </div>
-                            </div>
+  // ‘부분 포함’, 공백/마침표 무시, ‘요’ 유무/경미 오타 허용
+  function classifyFill(userRaw, fillAnswer){
+    const targetsRaw = fillAnswer.split('/').map(v=>v.trim());
+    const userN = normalizeKo(userRaw);
+    const targetsN = targetsRaw.map(normalizeKo);
+    const targetsNoYo = targetsRaw.map(v=>normalizeKo(stripYo(v)));
 
-                            <!-- Step 2 -->
-                            <div>
-                                <p class="font-semibold text-slate-700 mb-2">2. Complétez la phrase en coréen.</p>
-                                <div class="flex items-center gap-2">
-                                    <p class="korean-font text-xl">${ex.koreanParts[0]}</p>
-                                    <input type="text" class="korean-font text-xl p-2 border-2 border-slate-300 rounded-lg w-48 focus:border-blue-500 focus:ring-blue-500 transition" placeholder="Réponse">
-                                    <p class="korean-font text-xl">${ex.koreanParts[1]}</p>
-                                </div>
-                                <button class="text-sm text-blue-600 hover:underline mt-2 hint-btn">Afficher l'indice (초성)</button>
-                                <p class="text-sm text-amber-700 korean-font mt-1 hint-text hidden"></p>
-                            </div>
-                            
-                            <div class="mt-4 border-t pt-4">
-                               <button class="btn btn-primary w-full check-btn">Vérifier</button>
-                            </div>
-                            <div class="feedback mt-4 hidden"></div>
-                        </div>
-                    </div>
-                `;
-                exerciseListContainer.appendChild(exerciseEl);
-            });
-            addEventListeners();
-        }
-        
-        function addEventListeners() {
-            document.querySelectorAll('.type-options button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const currentButton = e.currentTarget;
-                    const parent = currentButton.parentElement;
-                    // Deselect other buttons in the same group
-                    parent.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
-                    // Select the clicked button
-                    currentButton.classList.add('selected');
-                });
-            });
+    // 완전 일치
+    if (targetsN.includes(userN)) {
+      return { correct:true, perfect:true, reason:null, ref: targetsRaw[targetsN.indexOf(userN)] };
+    }
+    // '요' 유무만 다름
+    if (targetsNoYo.includes(normalizeKo(stripYo(userRaw)))) {
+      const idx = targetsNoYo.indexOf(normalizeKo(stripYo(userRaw)));
+      return { correct:true, perfect:false, reason:"‘요’ 유무만 달라요.", ref: targetsRaw[idx] };
+    }
+    // 학생답 안에 정답 형태 '부분 포함'
+    for (let k=0; k<targetsN.length; k++){
+      if (userN.includes(targetsN[k])) {
+        return { correct:true, perfect:false, reason:"정답 형태가 학생 답 안에 포함되어 있어요.", ref: targetsRaw[k] };
+      }
+    }
+    // 경미 오타(편집거리 ≤1)
+    const dists = targetsN.map(t => levenshtein(userN, t));
+    const minDist = Math.min(...dists);
+    if (minDist <= 1) {
+      const idx = dists.indexOf(minDist);
+      return { correct:true, perfect:false, reason:"아주 사소한 철자/띄어쓰기 차이.", ref: targetsRaw[idx] };
+    }
+    // 오답
+    return { correct:false, perfect:false, reason:null, ref: targetsRaw[0] };
+  }
 
-            document.querySelectorAll('.hint-btn').forEach((button, index) => {
-                button.addEventListener('click', () => {
-                    const hintText = document.querySelector(`#ex-${index} .hint-text`);
-                    hintText.textContent = exercises[index].chosungHint;
-                    hintText.classList.remove('hidden');
-                    button.disabled = true;
-                });
-            });
+  /* ===== 말투(높임) 판정 유틸 ===== */
+  function getPronounClass(text=''){
+    if (/저는|전/.test(text)) return 'polite';   // 요/습니다 계열
+    if (/나는|난/.test(text)) return 'casual';   // 아/어(해체)
+    return 'neutral';
+  }
+  function getEndingStyle(text=''){
+    const tail = (text || '').trim().replace(/[\s\n]+/g,' ');
+    if (/(습니다|ㅂ니다|습니까\??)[.!?]?$/.test(tail)) return 'deferential';
+    if (/요[.!?]?$/.test(tail)) return 'haeyo';
+    if (/(아|어)[.!?]?$/.test(tail)) return 'haeche';
+    if (/다[.!?]?$/.test(tail)) return 'plain';
+    return 'unknown';
+  }
+  function suggestRefByPoliteness(ex, pronounClass, currentRef){
+    if (ex.typeAnswer !== 'etre') return currentRef; // '같아요/같아' 대상만
+    if (pronounClass === 'casual') return currentRef.replace(/같아요$/, '같아');
+    if (pronounClass === 'polite') return currentRef.replace(/같아$/, '같아요');
+    return currentRef;
+  }
+  function checkPolitenessConsistency(fullSentence, ex, userFillRaw){
+    const p = getPronounClass(fullSentence);
+    const e = getEndingStyle(fullSentence);
+    const fillHasYo = /요$/.test((userFillRaw||'').trim());
+    const fillHaeche = /(아|어)$/.test((userFillRaw||'').trim());
 
-            document.querySelectorAll('.check-btn').forEach((button, index) => {
-                button.addEventListener('click', () => handleCheck(index));
-            });
-            
-            resetBtn.addEventListener('click', renderExercises);
-        }
+    // 1) 나는/난 → -요/-(스)ㅂ니다 금지
+    if (p==='casual' && (e==='haeyo' || e==='deferential' || fillHasYo)) {
+      return { ok:false, reason:"‘나는/난’에는 -요/-습니다 말투를 쓰지 않아요. (해체로)", target:'casual' };
+    }
+    // 2) 저는/전 → -아/어(해체) 금지
+    if (p==='polite' && (e==='haeche' || fillHaeche)) {
+      return { ok:false, reason:"‘저는/전’에는 -아/어(해체)를 쓰지 않아요. (-요/-습니다)", target:'polite' };
+    }
+    return { ok:true };
+  }
 
-        function handleCheck(index) {
-            const exerciseEl = document.getElementById(`ex-${index}`);
-            const exerciseData = exercises[index];
-            const feedbackEl = exerciseEl.querySelector('.feedback');
-            
-            // Check Step 1
-            const selectedTypeBtn = exerciseEl.querySelector('.type-options .selected');
-            const typeAnswer = selectedTypeBtn ? selectedTypeBtn.dataset.type : null;
-            const isTypeCorrect = typeAnswer === exerciseData.typeAnswer;
+  /* ===== 오디오(TTS) 유틸 ===== */
+  function base64ToBlob(base64, mime='audio/wav'){
+    const bin = atob(base64); const len = bin.length;
+    const bytes = new Uint8Array(len);
+    for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+    return new Blob([bytes], {type:mime});
+  }
+  async function playAudioTTS(text, voice='man'){
+    try{
+      const r = await fetch('/.netlify/functions/generate-audio',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text, voice })
+      });
+      const j = await r.json();
+      if(!j?.audioData) throw new Error(j?.error || 'TTS error');
+      const blob = base64ToBlob(j.audioData, j.mimeType || 'audio/wav');
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.addEventListener('ended', ()=> URL.revokeObjectURL(url), { once:true });
+      audio.play();
+      return true;
+    }catch(e){
+      console.error(e);
+      return false;
+    }
+  }
 
-            // Check Step 2
-            const fillInput = exerciseEl.querySelector('input[type="text"]');
-            const fillAnswer = fillInput.value.trim();
-            const isFillCorrect = exerciseData.fillAnswer.split('/').map(s => s.trim()).includes(fillAnswer);
+  function hint2Text(ex){
+    if (ex.typeAnswer === 'verbe') return "Action(동사) → ‘처럼/같이’ (ex: 바람처럼 달려요).";
+    if (ex.typeAnswer === 'nom')   return "Nom(명사 꾸밈) → ‘같은’ (ex: 인형 같은 아이).";
+    return "Être comme(이다) → ‘같아요’ (ex: 오늘은 어제 같아요).";
+  }
+  function firstAnswer(ex){ return ex.fillAnswer.split('/')[0].trim(); }
+  function buildSentence(ex, userAns){
+    const ans = (userAns && userAns.trim()) ? userAns.trim() : firstAnswer(ex);
+    const mid = ex.koreanParts[0].trimEnd(), tail = ex.koreanParts[1].trimStart();
+    return `${mid} ${ans}${tail}`.replace(/\s+/g,' ').trim();
+  }
 
-            let feedbackHTML = '';
-            if (isTypeCorrect && isFillCorrect) {
-                feedbackEl.className = 'feedback correct';
-                feedbackHTML = `<p class="font-bold">🥳 Bravo, c'est parfait !</p>`;
-            } else {
-                feedbackEl.className = 'feedback incorrect';
-                feedbackHTML = `<p class="font-bold">🤔 Presque ! Regardons ensemble :</p><ul class="list-disc list-inside mt-2">`;
-                if (!isTypeCorrect) {
-                    feedbackHTML += `<li><strong>Partie 1 (Type) :</strong> La bonne réponse était '<strong>${exerciseData.typeAnswer}</strong>'.</li>`;
-                } else {
-                    feedbackHTML += `<li><strong>Partie 1 (Type) :</strong> Bien joué, c'est correct !</li>`;
-                }
-                if (!isFillCorrect) {
-                    feedbackHTML += `<li><strong>Partie 2 (Phrase) :</strong> Il fallait écrire '<strong>${exerciseData.fillAnswer.replace('/', ' / ')}</strong>'.</li>`;
-                } else {
-                     feedbackHTML += `<li><strong>Partie 2 (Phrase) :</strong> Bien joué, c'est correct !</li>`;
-                }
-                feedbackHTML += `</ul>`;
-            }
-            
-            const fullSentence = exerciseData.koreanParts[0] + ` <span class='font-bold text-blue-700'>${exerciseData.fillAnswer.split('/')[0]}</span>` + exerciseData.koreanParts[1];
-            feedbackHTML += `<p class="mt-2 border-t border-slate-300 pt-2"><strong>Phrase complète :</strong> <span class="korean-font">${fullSentence}</span></p>`;
+  document.addEventListener('DOMContentLoaded', () => {
+    const exercises = [
+      { french:"Ce bébé est comme un ange.", vocab:[{fr:"bébé",ko:"아기"},{fr:"ange",ko:"천사"}], typeAnswer:"etre",  koreanParts:["이 아기는 천사","."],           fillAnswer:"같아요",      chosungHint:"ㅇ ㅇㄱㄴ ㅊㅅ ㄱㅇㅇ." },
+      { french:"Le temps est comme de l'or.", vocab:[{fr:"temps",ko:"시간"},{fr:"or",ko:"금"}],     typeAnswer:"etre",  koreanParts:["시간은 금","."],               fillAnswer:"같아요",      chosungHint:"ㅅㄱㅇ ㄱ ㄱㅇㅇ." },
+      { french:"C'est une amie comme ma famille.", vocab:[{fr:"amie",ko:"친구"},{fr:"famille",ko:"가족"}], typeAnswer:"nom", koreanParts:["가족"," 친구예요."],       fillAnswer:"같은",       chosungHint:"ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ." },
+      { french:"J'ai un ami comme un frère.", vocab:[{fr:"ami",ko:"친구"},{fr:"frère",ko:"형제"}],  typeAnswer:"nom",   koreanParts:["형제"," 친구가 있어요."],     fillAnswer:"같은",       chosungHint:"ㅎㅈ ㄱㅇ ㅊㄱㄱ ㅇㅇㅇ." },
+      { french:"Il court comme le vent.", vocab:[{fr:"courir",ko:"달리다"},{fr:"vent",ko:"바람"}], typeAnswer:"verbe", koreanParts:["바람"," 달려요."],              fillAnswer:"처럼/같이",  chosungHint:"ㅂㄹㅁ  ㅊㄹ ㄷㄹㅇ." },
+      { french:"Elle chante comme une sirène.", vocab:[{fr:"chanter",ko:"노래하다"},{fr:"sirène",ko:"인어"}], typeAnswer:"verbe", koreanParts:["인어"," 노래해요."], fillAnswer:"처럼/같이",  chosungHint:"ㅇㅇ  ㅊㄹ ㄴㄹㅎㅇ." },
+      { french:"Ceci est comme un rêve.", vocab:[{fr:"ceci",ko:"이것"},{fr:"rêve",ko:"꿈"}],       typeAnswer:"etre",  koreanParts:["이건 꿈","."],                 fillAnswer:"같아요",      chosungHint:"ㅇㄱ ㄲ ㄱㅇㅇ." },
+      { french:"C'est une femme comme un renard.", vocab:[{fr:"femme",ko:"여자"},{fr:"renard",ko:"여우"}], typeAnswer:"nom", koreanParts:["여우"," 여자예요."],   fillAnswer:"같은",       chosungHint:"ㅇㅇ ㄱㅇ ㅇㅈㅇㅇ." },
+      { french:"Il danse comme un professionnel.", vocab:[{fr:"danser",ko:"춤추다"},{fr:"professionnel",ko:"전문가"}], typeAnswer:"verbe", koreanParts:["전문가"," 춤을 춰요."], fillAnswer:"처럼/같이",  chosungHint:"ㅈㅁㄱ  ㅊㄹ ㅊㅇ ㅊㅇ." },
+      { french:"Aujourd'hui est comme hier.", vocab:[{fr:"aujourd'hui",ko:"오늘"},{fr:"hier",ko:"어제"}], typeAnswer:"etre", koreanParts:["오늘은 어제","."],      fillAnswer:"같아요",      chosungHint:"ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ." },
+      { french:"C'est un cadeau comme un trésor.", vocab:[{fr:"cadeau",ko:"선물"},{fr:"trésor",ko:"보물"}], typeAnswer:"nom", koreanParts:["보물"," 선물이에요."], fillAnswer:"같은",       chosungHint:"ㅂㅁ ㄱㅇ ㅅㅁㅇㅇㅇ." },
+      { french:"Elle parle comme un poète.", vocab:[{fr:"parler",ko:"말하다"},{fr:"poète",ko:"시인"}], typeAnswer:"verbe", koreanParts:["시인"," 말해요."],     fillAnswer:"처럼/같이",  chosungHint:"ㅅㅇ  ㅊㄹ ㅁㅎㅇ." },
+      { french:"Un coeur large comme la mer.", vocab:[{fr:"coeur",ko:"마음"},{fr:"mer",ko:"바다"}], typeAnswer:"nom",   koreanParts:["바다"," 넓은 마음."],          fillAnswer:"같은",       chosungHint:"ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ." },
+      { french:"Il dort comme un ours.", vocab:[{fr:"dormir",ko:"자다"},{fr:"ours",ko:"곰"}],      typeAnswer:"verbe", koreanParts:["곰"," 자요."],                fillAnswer:"처럼/같이",  chosungHint:"ㄱㅁ  ㅊㄹ ㅈㅇ." },
+      { french:"Un enfant comme une poupée.", vocab:[{fr:"enfant",ko:"아이"},{fr:"poupée",ko:"인형"}], typeAnswer:"nom", koreanParts:["인형"," 아이."],         fillAnswer:"같은",       chosungHint:"ㅇㅎ ㄱㅇ ㅇㅇ." },
+      { french:"Il marche comme un robot.", vocab:[{fr:"marcher",ko:"걷다"},{fr:"robot",ko:"로봇"}], typeAnswer:"verbe", koreanParts:["로봇"," 걸어요."],      fillAnswer:"처럼/같이",  chosungHint:"ㄹㅂㅅ  ㅊㄹ ㄱㅇㅇ." },
+      { french:"Une voix douce comme le sucre.", vocab:[{fr:"voix",ko:"목소리"},{fr:"sucre",ko:"설탕"}], typeAnswer:"nom", koreanParts:["설탕"," 목소리."],     fillAnswer:"같은",       chosungHint:"ㅅㅌ ㄱㅇ ㅁㅅㄹ." },
+      { french:"Il est lent comme une tortue.", vocab:[{fr:"lent",ko:"느리다"},{fr:"tortue",ko:"거북이"}], typeAnswer:"verbe", koreanParts:["거북이"," 느려요."], fillAnswer:"처럼/같이",  chosungHint:"ㄱㅂㅇ  ㅊㄹ ㄴㄹㅇ." },
+      { french:"Cette personne est comme un acteur.", vocab:[{fr:"personne",ko:"사람"},{fr:"acteur",ko:"배우"}], typeAnswer:"etre", koreanParts:["이 사람은 배우","."], fillAnswer:"같아요", chosungHint:"ㅇ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ." },
+      { french:"Il dépense de l'argent comme de l'eau.", vocab:[{fr:"dépenser",ko:"돈을 쓰다"},{fr:"eau",ko:"물"}], typeAnswer:"verbe", koreanParts:["물"," 돈을 써요."], fillAnswer:"처럼/같이", chosungHint:"ㅁㄹ  ㅊㄹ ㄷㅇ ㅆㅇ." }
+    ];
 
-            feedbackEl.innerHTML = feedbackHTML;
-            feedbackEl.classList.remove('hidden');
-        }
+    const exerciseListContainer = document.getElementById('exercise-list');
+    const resetBtn = document.getElementById('reset-btn');
 
-        // Initial load
-        renderExercises();
-    });
-    </script>
+    function renderExercises(){
+      exerciseListContainer.innerHTML = '';
+      exercises.forEach((ex, index) => {
+        const exerciseEl = document.createElement('div');
+        exerciseEl.className = 'exercise-item';
+        exerciseEl.id = `ex-${index}`;
 
+        const vocabList = ex.vocab.map(v => `<li class="text-sm"><span class="font-semibold">${v.fr}</span>: <span class="korean-font">${v.ko}</span></li>`).join('');
+
+        exerciseEl.innerHTML = `
+          <div class="flex items-start">
+            <span class="text-xl font-bold text-blue-500 mr-4">${index+1}.</span>
+            <div class="w-full">
+              <p class="font-semibold text-lg text-slate-800 mb-2">"${ex.french}"</p>
+              <ul class="list-disc list-inside bg-slate-50 p-2 rounded-md mb-4">${vocabList}</ul>
+
+              <!-- Step 1 -->
+              <div class="mb-4">
+                <p class="font-semibold text-slate-700 mb-2">1. Quel est le type de la phrase ?</p>
+                <div class="flex flex-wrap gap-2 type-options">
+                  <button data-type="verbe" class="btn btn-secondary">Action (Verbe) 🏃‍♂️</button>
+                  <button data-type="nom" class="btn btn-secondary">Objet (Nom) ✍️</button>
+                  <button data-type="etre" class="btn btn-secondary">Identification (Être comme) 🙋‍♀️</button>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div>
+                <p class="font-semibold text-slate-700 mb-2">2. Complétez la phrase en coréen.</p>
+                <div class="flex items-center gap-2">
+                  <p class="korean-font text-xl">${ex.koreanParts[0]}</p>
+                  <input type="text" class="korean-font text-xl p-2 border-2 border-slate-300 rounded-lg w-48 focus:border-blue-500 focus:ring-blue-500 transition ans-input" placeholder="Réponse">
+                  <p class="korean-font text-xl">${ex.koreanParts[1]}</p>
+                  <button class="ml-auto btn btn-secondary listen-btn" title="Écoute">🔊 Écoute</button>
+                </div>
+
+                <div class="flex gap-3 mt-2">
+                  <button class="text-sm text-blue-600 hover:underline hint1-btn">Astuce 1 — 초성 (Aidez-moi 🙏)</button>
+                  <button class="text-sm text-rose-600 hover:underline hint2-btn">Astuce 2 — 힌트 (Au secours 🦺)</button>
+                </div>
+
+                <p class="text-sm text-amber-700 korean-font mt-1 hint1-text hidden"></p>
+                <p class="text-sm text-rose-700 mt-1 hint2-text hidden"></p>
+              </div>
+
+              <div class="mt-4 border-t pt-4">
+                <button class="btn btn-primary w-full check-btn">Vérifier</button>
+              </div>
+              <div class="feedback mt-4 hidden"></div>
+            </div>
+          </div>
+        `;
+        exerciseListContainer.appendChild(exerciseEl);
+      });
+      addEventListeners();
+    }
+
+    function addEventListeners(){
+      // 타입 선택 토글
+      document.querySelectorAll('.type-options button').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const parent=e.currentTarget.parentElement;
+          parent.querySelectorAll('button').forEach(b=>b.classList.remove('selected'));
+          e.currentTarget.classList.add('selected');
+        });
+      });
+
+      // 힌트 1: 초성
+      document.querySelectorAll('.hint1-btn').forEach((button,index)=>{
+        button.addEventListener('click',()=>{
+          const hintText = document.querySelector(`#ex-${index} .hint1-text`); 
+          hintText.textContent = exercises[index].chosungHint;
+          hintText.classList.remove('hidden'); button.disabled=true;
+        });
+      });
+
+      // 힌트 2: 개념(타입별 선택 가이드)
+      document.querySelectorAll('.hint2-btn').forEach((button,index)=>{
+        button.addEventListener('click',()=>{
+          const hintText = document.querySelector(`#ex-${index} .hint2-text`);
+          hintText.textContent = hint2Text(exercises[index]);
+          hintText.classList.remove('hidden'); button.disabled=true;
+        });
+      });
+
+      // 오디오
+      document.querySelectorAll('.listen-btn').forEach((button,index)=>{
+        button.addEventListener('click', async ()=>{
+          const ex = exercises[index];
+          const input = document.querySelector(`#ex-${index} .ans-input`);
+          const sentence = buildSentence(ex, input?.value);
+          await playAudioTTS(sentence, 'man'); // 필요시 'woman' 사용
+        });
+      });
+
+      // Enter로 채점
+      document.querySelectorAll('.ans-input').forEach((inp,index)=>{
+        inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') handleCheck(index); });
+      });
+
+      // 채점 버튼
+      document.querySelectorAll('.check-btn').forEach((button,index)=>{
+        button.addEventListener('click',()=>handleCheck(index));
+      });
+
+      // 리셋
+      resetBtn.addEventListener('click', renderExercises);
+    }
+
+    function handleCheck(index){
+      const exerciseEl = document.getElementById(`ex-${index}`);
+      const ex = exercises[index];
+      const feedbackEl = exerciseEl.querySelector('.feedback');
+
+      // Step 1: 타입
+      const selectedTypeBtn = exerciseEl.querySelector('.type-options .selected');
+      const typeAnswer = selectedTypeBtn ? selectedTypeBtn.dataset.type : null;
+      const isTypeCorrect = typeAnswer === ex.typeAnswer;
+
+      // Step 2: 채우기
+      const inputEl = exerciseEl.querySelector('.ans-input');
+      const userFill = (inputEl.value||'').trim();
+      const judged = classifyFill(userFill, ex.fillAnswer);
+
+      // 문장 구성(학생 입력 기반, 없으면 기준 정답)
+      const userFullSentence = buildSentence(ex, userFill || judged.ref);
+
+      // 말투(높임) 일치 검사
+      const politeness = checkPolitenessConsistency(userFullSentence, ex, userFill || judged.ref);
+
+      // 기본 정오 판정(유형 + 채우기)
+      const baseCorrect = isTypeCorrect && judged.correct;
+
+      let html = '';
+      let className = 'incorrect';
+
+      // 말투 불일치가 있으면 의미가 맞아도 ❌ + 교정 안내
+      if (baseCorrect && !politeness.ok){
+        className = 'incorrect';
+        html += `
+          <p class="font-bold">⚠️ 말투(높임) 불일치</p>
+          <p class="text-sm mt-1">${politeness.reason}</p>
+        `;
+      } else if (isTypeCorrect && judged.correct){
+        className = judged.perfect ? 'correct' : 'soft';
+        html += judged.perfect
+          ? `<p class="font-bold">🥳 완벽해요!</p>`
+          : `
+             <p class="font-bold">✅ 의미는 정확해요! (정답 처리)</p>
+             <p class="text-sm mt-1">FR: Sens juste. Vérifie la forme exacte ci-dessous.</p>
+             ${ judged.reason ? `<p class="text-xs mt-1 text-slate-700">(${judged.reason})</p>` : '' }
+            `;
+      } else {
+        className = 'incorrect';
+        html = `<p class="font-bold">🤔 Presque ! Regardons ensemble :</p><ul class="list-disc list-inside mt-2">`;
+        html += isTypeCorrect
+          ? `<li><strong>Partie 1 (Type) :</strong> Bien joué, c'est correct !</li>`
+          : `<li><strong>Partie 1 (Type) :</strong> La bonne réponse était '<strong>${ex.typeAnswer}</strong>'.</li>`;
+        html += judged.correct
+          ? `<li><strong>Partie 2 (Phrase) :</strong> Sens OK. Vérifie la bonne forme ci-dessous.</li>`
+          : `<li><strong>Partie 2 (Phrase) :</strong> Il fallait écrire '<strong>${ex.fillAnswer.replace('/', ' / ')}</strong>'.</li>`;
+        html += `</ul>`;
+      }
+
+      // 표시용 기준 정답(말투 교정 필요시 추천형으로 조정: 같아요↔같아)
+      let refAnswer = judged.ref || ex.fillAnswer.split('/')[0];
+      const fullForPronounCheck = buildSentence(ex, refAnswer);
+      const pClass = getPronounClass(fullForPronounCheck);
+      if (!politeness.ok){
+        refAnswer = suggestRefByPoliteness(ex, pClass, refAnswer);
+      }
+
+      const fullSentence = ex.koreanParts[0] + ` <span class='font-bold text-blue-700'>${refAnswer}</span>` + ex.koreanParts[1];
+
+      html += `
+        <p class="mt-2 border-t border-slate-300 pt-2">
+          <strong>Phrase complète :</strong>
+          <span class="korean-font">${fullSentence}</span>
+        </p>
+        <p class="text-xs mt-1 text-slate-600">
+          ✅ 공백·마침표·‘부분 포함’은 맞게 처리하지만, <b>말투(나는/저는 ↔ 어미)</b>는 반드시 일치시켜요.
+        </p>
+      `;
+
+      feedbackEl.className = `feedback ${className}`;
+      feedbackEl.innerHTML = html;
+      feedbackEl.classList.remove('hidden');
+    }
+
+    // 초기 렌더
+    renderExercises();
+  });
+  </script>
 </body>
-
 </html>
