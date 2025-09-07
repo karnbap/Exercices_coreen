@@ -51,12 +51,19 @@ exports.handler = async (event) => {
       }
     }
 
+    // 최종 점수(ops 포함) 산출 후 설명 생성
+    const finalScore = (needSecond && final.transcript !== first.text)
+      ? scorePronunciation(referenceText, final.transcript)
+      : firstScore;
+
+    const explain = explainMistakes(referenceText, final.transcript, finalScore.ops, finalScore.confusionTags);
+
     return json({
       accuracy: final.accuracy,
       cer: final.cer,
       transcript: final.transcript,
       confusionTags: final.confusionTags,
-      // 참고용 정보(클라이언트는 모델명 노출 안 함)
+      details: { explain }, // 99% 미만일 때 클라이언트가 상세 안내 표시
       firstPass: { model: 'gpt-4o-mini-transcribe', accuracy: firstScore.accuracy, cer: firstScore.cer },
       ...(needSecond ? { secondPassTried: true } : {})
     }, 200);
@@ -96,7 +103,7 @@ function scorePronunciation(ref, hyp) {
   const cer = refNorm.length ? (dist / refNorm.length) : 1.0;
   const accuracy = Math.max(0, 1 - cer);
   const confusionTags = detectConfusions(ref, hyp, ops);
-  return { cer, accuracy, confusionTags };
+  return { cer, accuracy, confusionTags, ops };
 }
 
 function decomposeToJamo(str) {
@@ -172,6 +179,52 @@ function countJong(s){
     }
   }
   return { total, count };
+}
+
+function explainMistakes(refText, hypText, ops, tags=[]) {
+  const out = [];
+  let sub=0, del=0, ins=0;
+
+  const note = (fr, ko)=>({ fr, ko });
+
+  if (tags.includes('받침 누락')) {
+    out.push(note(
+      "Finale de syllabe (받침) absente à plusieurs endroits",
+      "받침이 여러 곳에서 누락된 것으로 보여요"
+    ));
+  }
+
+  const pairNote = (a,b)=>{
+    const P=[['ㄴ','ㄹ'],['ㅂ','ㅍ'],['ㄷ','ㅌ'],['ㅈ','ㅊ'],['ㅅ','ㅆ']];
+    for(const [x,y] of P){
+      if((a===x&&b===y)||(a===y&&b===x)) return ` (confusion ${x}/${y})`;
+    }
+    return '';
+  };
+
+  for (const step of ops) {
+    if (out.length >= 6) break; // 너무 길지 않게 상위 6개만
+    if (step.op==='S' && step.a && step.b) {
+      sub++;
+      const tail = pairNote(step.a, step.b);
+      out.push(note(
+        `Substitution: ${step.a} → ${step.b}${tail}`,
+        `치환: ${step.a} → ${step.b}${tail ? ' ('+tail.replace('confusion','혼동')+')':''}`
+      ));
+    } else if (step.op==='D' && step.a) {
+      del++;
+      out.push(note(`Suppression: ${step.a}`, `삭제: ${step.a}`));
+    } else if (step.op==='I' && step.b) {
+      ins++;
+      out.push(note(`Insertion: ${step.b}`, `삽입: ${step.b}`));
+    }
+  }
+
+  out.push(note(
+    `Résumé — Substitutions: ${sub}, Suppressions: ${del}, Insertions: ${ins}`,
+    `요약 — 치환: ${sub}, 삭제: ${del}, 삽입: ${ins}`
+  ));
+  return out;
 }
 
 const LEADS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
