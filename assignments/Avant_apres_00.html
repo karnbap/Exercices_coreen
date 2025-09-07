@@ -505,7 +505,7 @@ function evaluateAnswers(){
         qd.matchLevel = 'contain';
       } else {
         // 보조: 오타 허용(조금 넉넉히 15%)
-        ok = fuzzyMatchKR(input, goldForm, 0.15);
+        ok = fuzzyMatchKR(input, goldForm, 0.10);
         qd.matchLevel = ok ? 'loose' : 'wrong';
       }
 
