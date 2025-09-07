@@ -98,57 +98,34 @@
         </ul>
       </div>
 
-   <!-- 4) Résumé -->
-<div>
-  <h3 class="font-bold text-xl mb-3">✅ Résumé facile / 요약</h3>
-  <div class="overflow-x-auto">
-    <table class="w-full text-left border-collapse text-sm">
-      <thead>
-        <tr class="bg-gray-100 text-gray-800">
-          <th class="p-3 border border-slate-200">Système / 체계</th>
-          <th class="p-3 border border-slate-200">Usage / 용도</th>
-          <th class="p-3 border border-slate-200">Exemples / 예</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Natifs -->
-        <tr class="odd:bg-white even:bg-gray-50">
-          <td class="p-3 border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
-          <td class="p-3 border border-slate-200">
-            Compter (valeur libre), classificateurs, durées libres<br>
-            자유 계수, 의존명사, 자유 기간
-          </td>
-          <td class="p-3 border border-slate-200">
-            <span class="font-medium">Durée (mois)</span> : <b>한 달, 두 달</b><br>
-            <span class="font-medium">Classificateurs</span> : <b>한 개, 두 명, 세 잔, 한 권</b><br>
-            <span class="font-medium">Heures (시)</span> : <b>한 시, 두 시</b>
-          </td>
-        </tr>
-        <!-- Sino-coréens -->
-        <tr class="odd:bg-white even:bg-gray-50">
-          <td class="p-3 border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
-          <td class="p-3 border border-slate-200">
-            Libellés/valeurs « déjà écrits » (calendrier, montre, monnaie, numéros)<br>
-            표기·표준값(달력, 시계, 화폐, 번호)
-          </td>
-          <td class="p-3 border border-slate-200">
-            <span class="font-medium">Mois du calendrier</span> : <b>1월, 2월, 3월</b><br>
-            <span class="font-medium">Minutes/Secondes</span> : <b>10분, 30초</b><br>
-            <span class="font-medium">Dates/Argent</span> : <b>2025년 9월 7일, 1,000원</b><br>
-            <span class="font-medium">Numéros</span> : <b>3층, 302호</b>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Notes courtes / 각주 -->
-  <ul class="mt-2 text-xs text-gray-600 list-disc list-inside leading-relaxed">
-    <li><b>Temps</b> : <b>시(heures)</b> → natifs / <b>분·초(minutes/secondes)</b> → sino.</li>
-    <li><b>Mélanges</b> : <b>달/개월</b>, <b>주/주일</b>, <b>SI 단위(kg, km, L)</b>는 문맥·격식에 따라 고유어/한자어 혼용.</li>
-  </ul>
-</div>
-
+      <!-- 4) Résumé -->
+      <div>
+        <h3 class="font-bold text-xl mb-3">✅ Résumé facile / 요약</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="p-3 border">Système / 체계</th>
+                <th class="p-3 border">Usage / 용도</th>
+                <th class="p-3 border">Exemples / 예</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="p-3 border font-semibold">순수 한국어 / Natifs</td>
+                <td class="p-3 border">Compter / 세기</td>
+                <td class="p-3 border">Âge(살), Personnes(명), Objets(개), Heures(시)</td>
+              </tr>
+              <tr>
+                <td class="p-3 border font-semibold">한자어 / Hanja‑coréens</td>
+                <td class="p-3 border">Noms/Unités écrits / 이름·단위</td>
+                <td class="p-3 border">Dates, Argent, Minutes, Numéros</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
     <div class="mt-8 text-center">
       <button id="explanation-next-btn" class="btn btn-primary text-lg">C'est compris, on s'échauffe ! (워밍업) <i class="fas fa-arrow-right"></i></button>
@@ -195,7 +172,7 @@
     <!-- Méthode 5×5 : 항상 보이기 (Q6–20) -->
     <div id="sticky-55" class="sticky top-0 z-30 -mx-4 sm:-mx-6 -mt-2 mb-4 hidden">
       <div class="p-3 rounded-lg bg-white/90 backdrop-blur border border-slate-200 shadow-sm flex flex-wrap gap-2 items-center justify-between">
-        <span class="text-sm font-semibold text-slate-700">Méthode 5×5 (Écoutez quand vous voulez ! 필요할 때 언제든 듣기!)</span>
+        <span class="text-sm font-semibold text-slate-700">Méthode 5×5 (필요할 때 언제든 듣기)</span>
         <div class="flex flex-wrap gap-2">
           <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:0.92 })"><i class="fas fa-play"></i> 1–5 natifs</button>
           <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:0.92 })"><i class="fas fa-play"></i> 6–10 natifs</button>
