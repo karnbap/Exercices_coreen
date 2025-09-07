@@ -325,7 +325,6 @@
     }
 
 
-    <script>
       // ===== 안전 문자열 유틸 =====
       function safeAttr(s){
         return String(s||"")
@@ -334,7 +333,6 @@
           .replace(/"/g, "&quot;")
           .replace(/\n/g, " ");
       }
-    </script>
 
     /* ===== 쉬운 불어+한글 개념 힌트 ===== */
     function buildConceptHint(forWhat){
@@ -674,6 +672,8 @@
         logError(err, 'renderQuestion', { idx: currentQuestionIndex });
         showErrorModal('연습문제를 표시하는 중 오류가 발생했습니다. (콘솔 확인)');
       }
+    }
+        
 
     function updateNavigation(){
       document.getElementById('prev-btn').classList.toggle('disabled', currentQuestionIndex===0);
