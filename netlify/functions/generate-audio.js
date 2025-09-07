@@ -1,5 +1,6 @@
 // /.netlify/functions/generate-audio.js
 // Node 18+ (global fetch 사용)
+
 const textToSpeech = require('@google-cloud/text-to-speech');
 
 // --- Google TTS 클라이언트 준비 ---
@@ -22,7 +23,7 @@ const GOOGLE_KO_VOICES = new Set([
 ]);
 
 const GOOGLE_DEFAULT = 'ko-KR-Neural2-D';
-const OPENAI_DEFAULT = 'alloy';
+const OPENAI_DEFAULT  = 'alloy';
 
 exports.handler = async (event) => {
   try {
@@ -36,7 +37,7 @@ exports.handler = async (event) => {
       voice = OPENAI_DEFAULT,
       provider = 'auto',      // 'openai' | 'google' | 'auto'
       speed,                  // OpenAI 전용 (0.5~2.0)
-      speakingRate           // Google 전용 (0.25~4.0)
+      speakingRate            // Google 전용 (0.25~4.0)
     } = body;
 
     if (!String(text).trim()) {
@@ -45,7 +46,7 @@ exports.handler = async (event) => {
 
     const decided = decideProvider(provider, voice);
 
-    // 1차: OpenAI (요청이 openai거나 auto + openai 보이스) → 실패 시 Google 폴백
+    // 1차: OpenAI (요청이 openai거나 auto+openai 보이스) → 실패 시 Google 폴백
     if (decided === 'openai') {
       try {
         const r = await synthOpenAI({ text, voice, speed });
@@ -56,7 +57,7 @@ exports.handler = async (event) => {
           const r = await synthGoogle({
             text,
             voice: GOOGLE_KO_VOICES.has(voice) ? voice : GOOGLE_DEFAULT,
-            speakingRate: speakingRate ?? 1.0
+            speakingRate: (typeof speakingRate === 'number' && speakingRate > 0) ? speakingRate : 1.0
           });
           return resp(r, 200);
         }
@@ -69,7 +70,7 @@ exports.handler = async (event) => {
     const r = await synthGoogle({
       text,
       voice: GOOGLE_KO_VOICES.has(voice) ? voice : GOOGLE_DEFAULT,
-      speakingRate: speakingRate ?? 1.0
+      speakingRate: (typeof speakingRate === 'number' && speakingRate > 0) ? speakingRate : 1.0
     });
     return resp(r, 200);
 
@@ -116,21 +117,36 @@ async function synthOpenAI({ text, voice, speed }) {
     throw new Error(msg);
   }
 
-  // ✅ 바이너리로 안전하게 받기 → base64
+  // 바이너리 → base64
   const arr = await res.arrayBuffer();
   const b64 = Buffer.from(arr).toString('base64');
-  return { mimeType: 'audio/mpeg', audioBase64: b64, providerUsed: 'openai', voiceUsed: v };
+  return {
+    mimeType: 'audio/mpeg',
+    audioBase64: b64,
+    audioData: b64,               // 구페이지 호환 키
+    providerUsed: 'openai',
+    voiceUsed: v
+  };
 }
 
 async function synthGoogle({ text, voice, speakingRate }) {
   const name = GOOGLE_KO_VOICES.has(voice) ? voice : GOOGLE_DEFAULT;
-  const [resp] = await gClient.synthesizeSpeech({
+  const [gRes] = await gClient.synthesizeSpeech({
     input: { text: String(text) },
     voice: { languageCode: 'ko-KR', name },
-    audioConfig: { audioEncoding: 'MP3', speakingRate: speakingRate ?? 1.0 }
+    audioConfig: {
+      audioEncoding: 'MP3',
+      speakingRate: (typeof speakingRate === 'number' && speakingRate > 0) ? speakingRate : 1.0
+    }
   });
-  const b64 = Buffer.from(resp.audioContent).toString('base64');
-  return { mimeType: 'audio/mpeg', audioBase64: b64, providerUsed: 'google', voiceUsed: name };
+  const b64 = Buffer.from(gRes.audioContent || Buffer.alloc(0)).toString('base64');
+  return {
+    mimeType: 'audio/mpeg',
+    audioBase64: b64,
+    audioData: b64,               // 구페이지 호환 키
+    providerUsed: 'google',
+    voiceUsed: name
+  };
 }
 
 function resp(obj, status = 200) {
@@ -146,7 +162,7 @@ function resp(obj, status = 200) {
 
 function friendlyOpenAIError(e) {
   const m = String(e?.message || e);
-  if (/insufficient_quota|quota|429/.test(m)) {
+  if (/insufficient_quota|quota|429/i.test(m)) {
     return 'OpenAI 잔액/월 한도가 부족합니다. Billing을 확인하세요.';
   }
   return m;
