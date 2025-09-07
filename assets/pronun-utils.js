@@ -1,6 +1,5 @@
 // assets/pronun-utils.js
 // 한글 음절 정렬 + 모음/자음 차이 하이라이트 + 가중 감점 계산
-
 (function (global) {
   const SBase=0xAC00,LBase=0x1100,VBase=0x1161,TBase=0x11A7,LCount=19,VCount=21,TCount=28,NCount=VCount*TCount,SCount=LCount*NCount;
 
@@ -91,5 +90,33 @@
     };
   }
 
-  global.PronunUtils = { analyzePronunciationDiff };
+  // --- 2차 채점(Whisper) 유틸: 녹음 base64 → 전사 → 자모 기반 점수 ---
+  async function scoreRecordingWithWhisper(recBase64, refKo){
+    try{
+      const r = await fetch('/.netlify/functions/transcribe-whisper', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ base64: recBase64, mimeType:'audio/webm', filename:'rec.webm' })
+      });
+      const j = await r.json().catch(()=>({}));
+      const text = j && j.text ? j.text : '';
+      const diff = analyzePronunciationDiff(refKo, text || '');
+      const adjusted = Math.max(0, Math.min(1, 1 - (diff.penalty || 0)));
+      const same = (refKo||'').replace(/\s/g,'') === (text||'').replace(/\s/g,'');
+      const score = same ? 100 : Math.min(99, Math.round(adjusted * 100));
+      return { text, score, diff };
+    }catch(e){
+      return {
+        text:'',
+        score:0,
+        diff:{ penalty:1, highlightRef:refKo, highlightHyp:'', tips:[{fr:'Erreur STT (Whisper)', ko:'음성 인식 오류(Whisper)'}] }
+      };
+    }
+  }
+
+  // 전역 노출(기존 객체와 병합)
+  global.PronunUtils = Object.assign({}, global.PronunUtils || {}, {
+    analyzePronunciationDiff,
+    scoreRecordingWithWhisper
+  });
 })(window);
