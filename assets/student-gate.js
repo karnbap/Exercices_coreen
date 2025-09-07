@@ -79,3 +79,66 @@
 
   global.StudentGate = { init, getName, setName, requireBeforeInteraction };
 })(window);
+
+// ===== Global fetch middleware for send-results (put at bottom of assets/student-gate.js) =====
+(function(){
+  if (window.__sendResultsFetchWrapped) return;
+  window.__sendResultsFetchWrapped = true;
+
+  const SEND_PATH = '/.netlify/functions/send-results';
+  const LOG_PATH  = '/.netlify/functions/log-error';
+  const origFetch = window.fetch.bind(window);
+
+  // helper: safe JSON parse
+  function safeJson(s){ try { return JSON.parse(s || '{}'); } catch { return {}; } }
+
+  window.fetch = async function(input, init) {
+    const url = (typeof input === 'string') ? input : (input && input.url) || '';
+
+    // Non target fetch → 그대로 통과
+    if (!url.includes(SEND_PATH)) {
+      return origFetch(input, init);
+    }
+
+    // ---- send-results 요청만 가로채서 응답 전문 로깅 ----
+    let bodyPreview = {};
+    try {
+      // JSON string body만 간단 프리뷰 (학생이름/문항수)
+      const bodyStr = init && typeof init.body === 'string' ? init.body : '';
+      const p = safeJson(bodyStr);
+      bodyPreview = {
+        studentName: p.studentName || 'N/A',
+        totalQ: Array.isArray(p.questions) ? p.questions.length : 0
+      };
+    } catch(_) {}
+
+    // 실제 요청
+    const resp = await origFetch(input, init);
+
+    // 응답 전문 확보(원본 resp는 clone해서 본문 추출)
+    let text = '';
+    try { text = await resp.clone().text(); } catch(_) {}
+
+    // 실패/서버오류 또는 {ok:false} 형태면 에러 메일로 보냄
+    let j = null; try { j = text ? JSON.parse(text) : null; } catch(_) {}
+    if (!resp.ok || (j && j.ok === false)) {
+      // fire-and-forget: 서버로 에러 전문 전송
+      origFetch(LOG_PATH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          functionName: 'send-results',
+          pageUrl: location.href,
+          status: resp.status,
+          statusText: resp.statusText,
+          respBody: text,
+          payloadPreview: bodyPreview,
+          ua: navigator.userAgent
+        })
+      }).catch(()=>{});
+    }
+
+    return resp; // 원래 흐름 유지
+  };
+})();
+
