@@ -417,9 +417,19 @@ function alignSyllables(A, B) {
         const data = await analyzeOnce(opts, payload, key);
         session.analyses++;
         renderResult(resultEl, data.accuracy, data.confusionTags, data.details?.explain, ref, data.transcript);
-        if (typeof opts.onResult === 'function') {
-          opts.onResult({ accuracy: data.accuracy, confusionTags: data.confusionTags, transcript: data.transcript, key });
-        }
+       if (typeof opts.onResult === 'function') {
+        const friendly = (typeof friendlyExplainBySyllable === 'function')
+          ? friendlyExplainBySyllable(ref, data.transcript || '')
+          : [];
+        opts.onResult({
+          accuracy: data.accuracy,
+          confusionTags: data.confusionTags,
+          transcript: data.transcript,
+          key,
+          friendly
+        });
+      }
+
       } catch (err) {
         console.error(err);
         msg(resultEl, textBilingual("Échec de l'analyse.", "분석 실패"));
