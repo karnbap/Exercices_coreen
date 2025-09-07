@@ -18,13 +18,17 @@ exports.handler = async (event) => {
       questions = [],
       assignmentTitle = 'Exercice de coréen',
       assignmentTopic = '',
-      assignmentSummary = []
+      assignmentSummary = [],
+      gradingMessage // (옵션) 클라이언트에서 보낸 메시지
     } = payload;
 
-    // 점수 집계
+    // 채점 집계
     const graded = questions.filter(q => typeof q.isCorrect === 'boolean');
     const correct = graded.filter(q => q.isCorrect).length;
     const score = graded.length ? Math.round((correct / graded.length) * 100) : 0;
+
+    // 서버에서도 동일 기준 메시지 산출(클라 미제공 대비)
+    const gm = gradingMessage || serverGetGradingMessage(score);
 
     // 발음 요약(평균/85% 미만/자주 태그)
     const pronunItems = questions
@@ -40,17 +44,14 @@ exports.handler = async (event) => {
     pronunItems.forEach(x => (x.p.tags||[]).forEach(t => tagCount[t]=(tagCount[t]||0)+1));
     const topTags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,c])=>`${t} ×${c}`);
 
-    // 메일 본문 구성
     const html = buildEmailHtml({
       studentName, startTime, endTime, totalTimeSeconds,
       questions, assignmentTitle, assignmentTopic, assignmentSummary,
       score, gradedCount: graded.length, correctCount: correct,
-      avgAcc, below, topTags
+      avgAcc, below, topTags, gm
     });
 
     const attachments = buildAttachments(questions);
-
-    // 메일 전송
     const transporter = await transportFromEnv();
     const info = await transporter.sendMail({
       from: process.env.FROM_EMAIL,
@@ -101,7 +102,7 @@ function buildEmailHtml(ctx) {
   const {
     studentName, startTime, endTime, totalTimeSeconds,
     questions, assignmentTitle, assignmentTopic, assignmentSummary,
-    score, gradedCount, correctCount, avgAcc, below, topTags
+    score, gradedCount, correctCount, avgAcc, below, topTags, gm
   } = ctx;
 
   const mins = Math.floor((totalTimeSeconds || 0) / 60);
@@ -176,6 +177,13 @@ function buildEmailHtml(ctx) {
     `;
   }).join('');
 
+  const gmHtml = gm ? `
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px;margin:10px 0">
+      <div style="font-weight:700">${escapeHtml(gm.emoji || '')} ${escapeHtml(gm.fr || '')}</div>
+      <div style="color:#374151">${escapeHtml(gm.ko || '')}</div>
+    </div>
+  ` : '';
+
   const html = `
     <div style="font-family:Arial, sans-serif">
       <h2 style="margin:0 0 8px 0">${escapeHtml(assignmentTitle)}</h2>
@@ -196,6 +204,7 @@ function buildEmailHtml(ctx) {
           <h3 style="margin:0; font-size:22px;">Score Final: ${score} / 100</h3>
           <p style="margin:6px 0 0; font-size:14px; color:#333;">(${correctCount} / ${gradedCount} bonnes réponses)</p>
         </div>
+        ${gmHtml}
       </div>
 
       <table style="border-collapse:collapse;width:100%;font-size:14px;margin-top:6px">
@@ -207,6 +216,14 @@ function buildEmailHtml(ctx) {
   return html;
 }
 
+function serverGetGradingMessage(score){
+  const s = Number(score) || 0;
+  if (s === 100) return { fr:"Parfait absolu ! 👑🎉 Génie confirmé !", ko:"완벽 그 자체! 👑🎉 천재 인증!", emoji:"👑", score:s };
+  if (s >= 80)  return { fr:"Très bien joué ! 👍 Presque un maître !", ko:"아주 잘했어요! 👍 이 정도면 거의 마스터!", emoji:"👏", score:s };
+  if (s >= 60)  return { fr:"Pas mal du tout ! 😎 Encore un petit effort et c’est le top !", ko:"꽤 잘했어요! 😎 조금만 더 가면 최고!", emoji:"✅", score:s };
+  return { fr:"Allez, un petit café et on repart ! ☕", ko:"자, 커피 한 잔 하고 다시 가자! ☕💪", emoji:"☕", score:s };
+}
+
 function escapeHtml(s=''){
   return String(s)
     .replaceAll('&','&amp;')
@@ -215,11 +232,9 @@ function escapeHtml(s=''){
     .replaceAll('"','&quot;')
     .replaceAll("'",'&#39;');
 }
-
 function stripHtml(s=''){
   return s.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
 }
-
 function json(obj, status=200){
   return { statusCode: status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(obj) };
 }
