@@ -1,11 +1,13 @@
-// /.netlify/functions/send-results.js
+// netlify/functions/send-results.js
 // Node 18+
-// 필요 ENV: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL, TO_EMAIL
+// Email via Gmail(App Password) 혹은 일반 SMTP 자동 선택
+// ENV (Gmail): GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL
+// ENV (SMTP):  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, TO_EMAIL(또는 RECIPIENT_EMAIL)
+
 const nodemailer = require('nodemailer');
 
 exports.handler = async (event) => {
   try {
-    // CORS(선택) — 같은 도메인이면 문제 없지만, 서브도메인/프리뷰 대비
     if (event.httpMethod === 'OPTIONS') {
       return jres({ ok: true }, 200, true);
     }
@@ -22,28 +24,39 @@ exports.handler = async (event) => {
       questions = [],
       assignmentTitle = 'Exercice de coréen',
       assignmentTopic = '',
-      assignmentSummary = [],
-      gradingMessage // (옵션) 클라이언트에서 보낸 메시지
-    } = payload;
+      assignmentSummary = [],       // array or \n-joined string
+      gradingMessage                // optional {fr,ko,emoji,score}
+    } = payload || {};
 
-    // ----- 점수 집계 -----
+    // 점수 집계
     const graded = questions.filter(q => typeof q?.isCorrect === 'boolean');
     const correct = graded.filter(q => q.isCorrect).length;
     const score = graded.length ? Math.round((correct / graded.length) * 100) : 0;
 
-    // 클라 미제공 대비 서버에서도 동일 기준 메시지 생성
     const gm = gradingMessage || serverGetGradingMessage(score);
 
-    // 발음 요약 (평균)
+    // 발음 평균
     const pronArr = (questions || []).map(q => q?.pronunciation).filter(Boolean);
     const avgAcc = pronArr.length
       ? Math.round(pronArr.reduce((s, p) => s + (p.accuracy || 0), 0) / pronArr.length * 100)
       : null;
 
-    // ----- SMTP Transport -----
-    const transporter = await transportFromEnv(); // 여기서 ENV 검증
+    // 이메일 트랜스포트
+    const { transporter, from, to, envFlavor } = await createSmartTransport();
 
-    // ----- 본문/첨부 -----
+    // 연결/인증 사전 점검
+    try { await transporter.verify(); }
+    catch (e) {
+      return jres({
+        ok: false,
+        error: 'SMTP verify failed',
+        detail: String(e?.message || e),
+        stack: String(e?.stack || ''),
+        envFlavor
+      }, 500, true);
+    }
+
+    // 본문/첨부
     const html = buildEmailHtml({
       studentName, startTime, endTime, totalTimeSeconds,
       questions, assignmentTitle, assignmentTopic, assignmentSummary,
@@ -52,63 +65,65 @@ exports.handler = async (event) => {
     });
     const attachments = buildAttachments(questions);
 
-    // ----- 메일 발송 -----
+    // 발송
     const info = await transporter.sendMail({
-      from: mustEnv('FROM_EMAIL'),
-      to: mustEnv('TO_EMAIL'),
+      from,
+      to,
       subject: `Résultats – ${studentName} – ${assignmentTitle} – Score: ${score}/100`,
       html,
       text: stripHtml(html),
       attachments
     });
 
-    return jres({ ok: true, messageId: info.messageId }, 200, true);
+    return jres({ ok: true, messageId: info.messageId, envFlavor }, 200, true);
 
   } catch (e) {
-    // 항상 JSON 에러(+CORS)로 반환 → 클라에서 바로 원인 확인 가능
     return jres({
       ok: false,
       error: String(e?.message || e),
-      // 민감정보 제외한 디버그 힌트
-      hint: {
-        host: process.env.SMTP_HOST || null,
-        port: process.env.SMTP_PORT || null,
-        secure: autoSecurePreview(process.env.SMTP_PORT, process.env.SMTP_SECURE),
-        from: process.env.FROM_EMAIL ? 'set' : 'missing',
-        to: process.env.TO_EMAIL ? 'set' : 'missing'
-      }
+      stack: String(e?.stack || '')
     }, 500, true);
   }
 };
 
 // ---------- helpers ----------
-
 function safeJson(s) { try { return JSON.parse(s || '{}'); } catch { return {}; } }
 
-function mustEnv(k) {
-  const v = process.env[k];
-  if (!v) throw new Error(`Missing env: ${k}`);
-  return v;
-}
+async function createSmartTransport(){
+  // Gmail (권장)
+  const GMAIL_USER = process.env.GMAIL_USER;
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+  const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.TO_EMAIL;
 
-// 포트-보안 자동 판별: SMTP_SECURE 지정 없으면 465→true, 그 외→false
-function autoSecurePreview(port, secureEnv) {
-  if (String(secureEnv).toLowerCase() === 'true') return true;
-  if (String(secureEnv).toLowerCase() === 'false') return false;
-  return Number(port) === 465; // 일반적 관례
-}
+  if (GMAIL_USER && GMAIL_APP_PASSWORD && RECIPIENT_EMAIL) {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
+    });
+    return { transporter, from: `Korean Pondant <${GMAIL_USER}>`, to: RECIPIENT_EMAIL, envFlavor: 'gmail' };
+  }
 
-async function transportFromEnv() {
-  const host = mustEnv('SMTP_HOST');
-  const port = Number(mustEnv('SMTP_PORT'));
-  const user = mustEnv('SMTP_USER');
-  const pass = mustEnv('SMTP_PASS');
-  const secure = autoSecurePreview(port, process.env.SMTP_SECURE);
+  // SMTP (대안)
+  const SMTP_HOST = process.env.SMTP_HOST;
+  const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+  const SMTP_SECURE = /^true$/i.test(String(process.env.SMTP_SECURE || ''));
+  const SMTP_USER = process.env.SMTP_USER;
+  const SMTP_PASS = process.env.SMTP_PASS;
+  const TO_EMAIL  = process.env.TO_EMAIL || process.env.RECIPIENT_EMAIL;
 
-  return nodemailer.createTransport({
-    host, port, secure,
-    auth: { user, pass }
-  });
+  if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS && TO_EMAIL) {
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS }
+    });
+    return { transporter, from: SMTP_USER, to: TO_EMAIL, envFlavor: 'smtp' };
+  }
+
+  throw new Error('Email env missing. Provide either GMAIL_USER/GMAIL_APP_PASSWORD/RECIPIENT_EMAIL or SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/TO_EMAIL');
 }
 
 function buildAttachments(questions = []) {
@@ -251,9 +266,8 @@ function escapeHtml(s = '') {
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
     .replaceAll('"','&quot;').replaceAll("'",'&#39;');
 }
-function stripHtml(s = '') { return s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
+function stripHtml(s = '') { return String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
 
-// JSON + CORS 응답
 function jres(obj, status = 200, withCORS = false) {
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
   if (withCORS) {
