@@ -8,8 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- 학생 이름 게이트 -->
+  <!-- 공통: 학생 이름 게이트 + 채점 기준 -->
   <script src="/assets/student-gate.js"></script>
+  <script src="/assets/grading-criteria.js"></script>
   <style>
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
     .korean-font{font-family:'Gowun Dodum',sans-serif}
@@ -106,7 +107,6 @@
     /* 0) 학생 이름 게이트 & 입력창 동기화 */
     StudentGate.init();
     StudentGate.requireBeforeInteraction(document);
-
     const _nameInput = document.getElementById('student-name');
     const _syncNameFromStore = () => { if (_nameInput) _nameInput.value = StudentGate.getName() || ''; };
     document.addEventListener('student-ready', _syncNameFromStore);
@@ -234,10 +234,21 @@
       let koCorrect = userK===corrK || userK.includes(corrK) || corrK.includes(userK);
       if(!koCorrect){ const d=levenshtein(userK,corrK), th=Math.max(1,Math.floor(corrK.length*0.1)); if(d<=th) koCorrect=true; }
 
+      // --- FR 판정(부분 일치/단어 겹침/소폭 오탈자 허용)
       const userF=(rawFR||'').trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s+/g,' ');
       const corrF=(exercises[index].translation||'').trim().toLowerCase().replace(/[.,!?;:()]/g,'').replace(/\s+/g,' ');
-      let frCorrect = userF===corrF;
-      if(!frCorrect){ const d=levenshtein(userF,corrF), th=Math.max(1,Math.floor(corrF.length*0.1)); if(d<=th) frCorrect=true; }
+      let frCorrect = userF === corrF || userF.includes(corrF) || corrF.includes(userF);
+      if(!frCorrect){
+        const set = s => new Set(s.split(' ').filter(Boolean));
+        const a=set(userF), b=set(corrF);
+        const inter = new Set([...a].filter(x=>b.has(x)));
+        const jacc = inter.size / Math.max(1, new Set([...a,...b]).size);
+        if (jacc >= 0.8) frCorrect = true;
+      }
+      if(!frCorrect){
+        const d=levenshtein(userF,corrF), th=Math.max(1,Math.floor(corrF.length*0.1));
+        if(d<=th) frCorrect=true;
+      }
 
       exState[index].attempts++; exState[index].koCorrect=koCorrect; exState[index].frCorrect=frCorrect;
 
@@ -248,7 +259,7 @@
       const ok = koCorrect && frCorrect;
       feedback.innerHTML = ok ? `
         <div class="feedback correct">
-          <strong class="text-lg">🥳 Très bien ! (두 항목 모두 OK)</strong>
+          <strong class="text-lg">🎉 Super ! 잘했어요!</strong>
           <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
           <p class="korean-font mt-1"><strong>정답(한):</strong> ${exercises[index].sentence}</p>
           <p><strong>Traduction (FR):</strong> ${exercises[index].translation}</p>
@@ -256,7 +267,7 @@
         </div>
       ` : `
         <div class="feedback incorrect">
-          <strong class="text-lg">🙂 거의 다 왔어요. 다시 시도!</strong>
+          <strong class="text-lg">👍 거의 맞았어요! 한 번만 더! / Presque réussi·e ! Réessaie 😉</strong>
           <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
           <p class="korean-font mt-1"><strong>내 답(한):</strong> ${escapeHtml(rawKO)}</p>
           <p><strong>Ma réponse (FR):</strong> ${escapeHtml(rawFR)}</p>
@@ -325,8 +336,20 @@
           getReferenceText: () => exercises[i].sentence,
           isKoCorrect: () => exState[i].koCorrect, // 틀려도 진행(안내용)
           onResult: ({ accuracy, confusionTags, transcript, friendly }) => {
+            // 간단 모음 혼동 휴리스틱으로 미세 감점 (요↔유 등)
+            const adj = (() => {
+              const ref = exercises[i].sentence;
+              const hyp = transcript || '';
+              const pairs = [['요','유'],['오','우'],['애','에'],['외','웨'],['왜','와'],['위','유'],['야','여']];
+              let hits=0, L=Math.min(ref.length,hyp.length);
+              for(let k=0;k<L;k++){ if(ref[k]!==hyp[k] && pairs.some(([a,b])=>(ref[k]===a&&hyp[k]===b)||(ref[k]===b&&hyp[k]===a))) hits++; }
+              const penalty = Math.min(0.1, hits*0.03);
+              const tagPenalty = (confusionTags||[]).some(t=>/모음|vowel/i.test(t)) ? 0.02 : 0;
+              return Math.max(0, Math.min(1, (accuracy||0) - penalty - tagPenalty));
+            })();
+
             exState[i].pronunciation = {
-              accuracy,
+              accuracy: adj,
               confusionTags,
               transcript: transcript || '',
               friendly: friendly || []
@@ -348,9 +371,25 @@
       const total=exercises.length*2;
       const got=exState.reduce((acc,s)=>acc+(s.koCorrect?1:0)+(s.frCorrect?1:0),0);
       const score=Math.round((got/total)*100);
+
+      // 공통 채점 메시지(불/한)
+      const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(score) : null;
+
+      // 페이지 배너 표시(선택)
+      if (window.Grading?.formatFinalBanner) {
+        let box = document.getElementById('final-result');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'final-result';
+          document.querySelector('.container').appendChild(box);
+        }
+        box.innerHTML = window.Grading.formatFinalBanner(score);
+      }
+
+      // 발음 평균 얼럿(간단)
       const pronuArr=exState.filter(s=>s.pronunciation);
       const avgPronun = (pronuArr.reduce((a,s)=>a+(s.pronunciation.accuracy||0),0) / Math.max(1,pronuArr.length))*100;
-      alert(`총점: ${score}/100 (한국어+불어)\nMoyenne de prononciation: ${isFinite(avgPronun)?Math.round(avgPronun):0}%`);
+      alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}총점: ${score}/100 (한국어+불어)\nMoyenne de prononciation: ${isFinite(avgPronun)?Math.round(avgPronun):0}%`);
 
       try{
         const payload={
@@ -363,6 +402,9 @@
           assignmentTitle: ASSIGNMENT_META.assignmentTitle,
           assignmentTopic: ASSIGNMENT_META.assignmentTopic,
           assignmentSummary: ASSIGNMENT_META.assignmentSummary,
+
+          // 공통 채점 메시지(옵션)
+          gradingMessage: gm,
 
           // 문항들
           questions: exercises.map((ex,i)=>{
@@ -382,11 +424,22 @@
                 transcript: pron.transcript || '',
                 friendly: pron.friendly || []
               } : null,
-              recording: null // (원하면 추후 연동)
+              recording: null
             };
           })
         };
-        await fetch('/.netlify/functions/send-results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+
+        const resp = await fetch('/.netlify/functions/send-results',{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+        });
+        let j={}; try{ j=await resp.json(); }catch(e){}
+        if (!resp.ok || j.ok===false) {
+          alert("⚠️ 전송 실패 / Envoi échoué.\n서버 로그를 확인해 주세요.");
+          fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({functionName:'send-results',error:`HTTP ${resp.status} ${resp.statusText} | ${JSON.stringify(j)}`,pageUrl:location.href})}).catch(()=>{});
+        } else {
+          alert("✅ 결과가 메일로 전송됐어요 ! / Résultats envoyés par e-mail !");
+        }
       }catch(err){
         console.error(err);
         fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
