@@ -2,14 +2,14 @@
 ;(function (global) {
   const DEFAULTS = {
     endpoint: '/.netlify/functions/analyze-pronunciation',
-    // 크레딧 절약 옵션
-    requireKoCorrect: true,               // KO(한글) 정답일 때만 분석
-    skipSecondPassIfAccurate: 0.90,       // 1차 정확도 ≥ 90%면 2차(Whisper) 생략 권장 플래그를 서버로 전달
-    maxAnalysesPerSession: 12,            // 한 세션당 최대 분석 횟수
-    minDurationSec: 0.6,                  // 너무 짧은(잡음) 녹음 거르기
-    maxDurationSec: 10,                   // 너무 긴 녹음 제한
-    cacheResults: true,                   // 같은 오디오 재분석 방지(클라이언트 캐시)
-    useLocalStorageCache: true,           // localStorage 캐시 사용
+    // 크레딧 절약/반복 연습 정책
+    requireKoCorrect: false,              // KO 정답 여부와 무관하게 STT 수행
+    skipSecondPassIfAccurate: 0.90,       // 1차 정확도 ≥ 90%면 2차(Whisper) 생략 권고
+    maxAnalysesPerSession: 50,            // 한 세션당 분석 상한(반복 연습 지원)
+    minDurationSec: 0.6,                  // 너무 짧은 녹음 차단
+    maxDurationSec: 10,                   // 너무 긴 녹음 차단
+    cacheResults: true,                   // 동일 오디오 재분석 방지
+    useLocalStorageCache: true,
     selectors: {
       btnStart:  '.btn-rec-start',
       btnStop:   '.btn-rec-stop',
@@ -17,11 +17,9 @@
       result:    '.pronun-display',
       koInput:   '.input-ko'
     },
-    // 호출자 제공 필수: 참조 원문(채점 기준)
-    getReferenceText: null,
-    // 선택 제공: KO 정답 여부 함수 (없으면 requireKoCorrect=false 권장)
-    isKoCorrect: null,
-    // 결과 콜백
+    // 호출자 제공
+    getReferenceText: null,               // (필수) 문항의 정답 한글문
+    isKoCorrect: null,                    // (선택) KO 정답 여부 판별 함수
     onResult: null,
     onCostGuardHit: null
   };
@@ -76,7 +74,7 @@
       const digest = await crypto.subtle.digest('SHA-256', buf);
       return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
     } catch {
-      // 폴백(충돌 가능하지만 크레딧 절약용엔 충분)
+      // 폴백 해시(충돌 가능성 있음)
       let h = 0; for (let i = 0; i < b64.length; i++) h = (h * 31 + b64.charCodeAt(i)) | 0;
       return 'x' + (h >>> 0).toString(16);
     }
@@ -86,10 +84,7 @@
     if (!key) return null;
     const k = 'pronun:' + key;
     if (memCache.has(k)) return memCache.get(k);
-    try {
-      const s = localStorage.getItem(k);
-      if (s) { const v = JSON.parse(s); memCache.set(k, v); return v; }
-    } catch {}
+    try { const s = localStorage.getItem(k); if (s) { const v = JSON.parse(s); memCache.set(k, v); return v; } } catch {}
     return null;
   }
 
@@ -107,8 +102,10 @@
     }
     const res = await fetch(opts.endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json',
-        'X-Skip-Second-Pass-If-Accurate': String(opts.skipSecondPassIfAccurate || 0) },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Skip-Second-Pass-If-Accurate': String(opts.skipSecondPassIfAccurate || 0)
+      },
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('STT ' + res.status);
@@ -129,18 +126,12 @@
     src.connect(analyser);
 
     state.media = { stream, rec, audioCtx };
-    state.vu = {
-      analyser, data,
-      canvas: state.canvas,
-      ctx: state.canvas.getContext('2d'),
-      rafId: null
-    };
-
+    state.vu = { analyser, data, canvas: state.canvas, ctx: state.canvas.getContext('2d'), rafId: null };
     state.chunks = [];
     state.startedAt = Date.now();
 
     rec.ondataavailable = e => { if (e.data.size > 0) state.chunks.push(e.data); };
-    rec.onstop = () => { /* cleanup in stop */ };
+    rec.onstop = () => { /* cleanup in stopRecording */ };
 
     rec.start();
     drawLoop(state);
@@ -160,10 +151,7 @@
           const blob = new Blob(state.chunks, { type: 'audio/webm' });
           resolve({ blob, duration: Math.max(0, Math.round((Date.now() - state.startedAt) / 1000)) });
         } finally {
-          state.media = null;
-          state.vu = null;
-          state.chunks = [];
-          state.startedAt = 0;
+          state.media = null; state.vu = null; state.chunks = []; state.startedAt = 0;
         }
       };
       rec.stop();
@@ -189,38 +177,27 @@
 
   function mount(cardEl, userOpts) {
     const opts = Object.assign({}, DEFAULTS, userOpts || {});
-    if (typeof opts.getReferenceText !== 'function') {
-      throw new Error('getReferenceText(option)가 필요해요.');
-    }
+    if (typeof opts.getReferenceText !== 'function') throw new Error('getReferenceText(option)가 필요해요.');
 
     const btnStart = cardEl.querySelector(opts.selectors.btnStart);
     const btnStop  = cardEl.querySelector(opts.selectors.btnStop);
     const canvas   = cardEl.querySelector(opts.selectors.canvas);
     const resultEl = cardEl.querySelector(opts.selectors.result);
-    const koInput  = cardEl.querySelector(opts.selectors.koInput);
 
     const state = { canvas, vu: null, media: null, chunks: [], startedAt: 0 };
 
+    // 녹음 시작
     btnStart.addEventListener('click', async () => {
-      // 크레딧 절약: KO 정답 아니면 음성 분석 생략(설정됨)
-      if (opts.requireKoCorrect && typeof opts.isKoCorrect === 'function') {
-        const ok = !!opts.isKoCorrect(cardEl);
-        if (!ok) {
-          const t = textBilingual(
-            "Écrivez d'abord correctement en coréen, puis enregistrez.",
-            "먼저 한국어 정답을 쓰고, 그 다음에 녹음하세요."
-          );
-          msg(resultEl, t);
-          return;
-        }
+      // KO 정답 여부와 무관하게 분석 진행 (틀려도 안내만)
+      if (typeof opts.isKoCorrect === 'function' && !opts.isKoCorrect(cardEl)) {
+        msg(resultEl, textBilingual(
+          "Vous pouvez enregistrer même si la dictée KO n'est pas parfaite. (Analyse effectuée)",
+          "한국어 받아쓰기를 틀려도 녹음 가능합니다. (분석 진행)"
+        ));
       }
 
-      // 세션 제한
       if (session.analyses >= opts.maxAnalysesPerSession) {
-        const t = textBilingual(
-          "Limite d'analyses atteinte pour cette session.",
-          "이번 세션 분석 한도에 도달했어요."
-        );
+        const t = textBilingual("Limite d'analyses atteinte pour cette session.", "이번 세션 분석 한도에 도달했어요.");
         msg(resultEl, t);
         if (typeof opts.onCostGuardHit === 'function') opts.onCostGuardHit();
         return;
@@ -231,26 +208,22 @@
       await startRecording(Object.assign(state, { canvas }));
     });
 
+    // 정지+분석
     btnStop.addEventListener('click', async () => {
       btnStop.disabled = true;
       const out = await stopRecording(state);
       uiSetRecording(btnStart, false);
 
-      if (!out) return;
+      if (!out) { btnStop.disabled = false; return; }
       const { blob, duration } = out;
 
-      // 길이 가드
       if (duration < opts.minDurationSec) {
-        const t = textBilingual("Trop court. Réessayez.", "너무 짧아요. 다시 녹음해요.");
-        msg(resultEl, t);
-        btnStop.disabled = false;
-        return;
+        msg(resultEl, textBilingual("Trop court. Réessayez.", "너무 짧아요. 다시 녹음해요."));
+        btnStop.disabled = false; return;
       }
       if (duration > opts.maxDurationSec) {
-        const t = textBilingual("Trop long. Coupez en dessous de 10 s.", "너무 길어요. 10초 이내로 줄여주세요.");
-        msg(resultEl, t);
-        btnStop.disabled = false;
-        return;
+        msg(resultEl, textBilingual("Trop long. Coupez en dessous de 10 s.", "너무 길어요. 10초 이내로 줄여주세요."));
+        btnStop.disabled = false; return;
       }
 
       msg(resultEl, textBilingual("Analyse en cours…", "분석 중…"));
@@ -258,18 +231,12 @@
         const base64 = await base64FromBlob(blob);
         const ref = String(opts.getReferenceText(cardEl) || '');
         const key = await sha256Base64(base64 + '|' + ref);
-
-        // 크레딧 절약: 동일 오디오 캐시 재사용
         const payload = {
           referenceText: ref,
           audio: { base64, mimeType: 'audio/webm', filename: `rec_${Date.now()}.webm`, duration },
-          clientConfig: {
-            skipSecondPassIfAccurate: opts.skipSecondPassIfAccurate,
-            maxDurationSec: opts.maxDurationSec
-          },
+          clientConfig: { skipSecondPassIfAccurate: opts.skipSecondPassIfAccurate, maxDurationSec: opts.maxDurationSec },
           clientHash: key
         };
-
         const data = await analyzeOnce(opts, payload, key);
         session.analyses++;
         renderResult(resultEl, data.accuracy, data.confusionTags);
