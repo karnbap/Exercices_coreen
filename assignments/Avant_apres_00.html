@@ -486,30 +486,36 @@ function evaluateAnswers(){
   questionsData.forEach(qd=>{
     if(qd.type==='explanation') return;
 
-    // 입력값(듣기는 1차 받아쓰기 기준)
     let input='';
     if(typeof qd.userAnswer === 'string') input = qd.userAnswer;
     else if(qd.userAnswer && qd.userAnswer.dictation1) input = qd.userAnswer.dictation1;
 
-    // 기본 정답 문자열(형태/문장)
     const goldForm = qd.correctAnswer;
     const goldSent = qd.ko;
-
-    // 매칭 레벨 기록(리뷰 메시지용)
     qd.matchLevel = 'wrong';
 
     if(qd.type==='multiple-choice' || qd.type==='fill-in-the-blank'){
-      // 형태 문제: 느슨일치(부호/요/저는 제거 + 10% 오타)로 판정
-      const ok = fuzzyMatchKR(input, goldForm, 0.10);
+      // ✅ 형태 문제: "정답 형태"가 학생 답에 부분 포함되면 정답
+      const uNorm = normalizeForLoose(input);
+      const gNorm = normalizeForLoose(goldForm || '');
+      let ok = false;
+
+      if (uNorm && gNorm && uNorm.includes(gNorm)) {
+        ok = true;                       // ex) "잠을잔후에" 안에 "잔후에" 포함
+        qd.matchLevel = 'contain';
+      } else {
+        // 보조: 오타 허용(조금 넉넉히 15%)
+        ok = fuzzyMatchKR(input, goldForm, 0.15);
+        qd.matchLevel = ok ? 'loose' : 'wrong';
+      }
+
       qd.isCorrect = ok;
-      qd.matchLevel = ok ? 'loose' : 'wrong';
+
     } else if(qd.type==='translate-sentence' || qd.type==='listening-dictation'){
-      // 문장 문제: 1) 느슨일치 → 정답
       if(fuzzyMatchKR(input, goldSent, 0.10)){
         qd.isCorrect = true;
-        qd.matchLevel = 'loose'; // 사실상 정답
+        qd.matchLevel = 'loose';
       } else {
-        // 2) 의미일치(avant/후에 방향 + 핵심어 포함률) → 정답 + 검토권유
         const okSem = semanticMatchKR(input, goldSent, qd.fr);
         qd.isCorrect = okSem;
         qd.matchLevel = okSem ? 'semantic' : 'wrong';
