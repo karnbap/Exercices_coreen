@@ -520,15 +520,15 @@
     }
 
     // ===== 타입 라벨 =====
-    const TYPE_TITLES = {
-      choice:'CHOICE',
-      fr_fill_audio:'FR_FILL_AUDIO',
-      fr_prompt_ko:'FR_PROMPT_KO',
-      listen_write:'LISTEN_WRITE',
-      dictation:'DICTATION',
-      fill:'FILL',
-      translate:'TRANSLATE'
-    };
+ const TYPE_TITLES = {
+  choice: 'Choix / 선택',
+  fr_fill_audio: 'Audio(KO)→Chiffre(FR) / 듣고 숫자만 불어로',
+  fr_prompt_ko: 'Français → 한국어 / 불→한',
+  listen_write: 'Écouter-Écrire / 듣고 쓰기',
+  dictation: 'Dictée / 받아쓰기',
+  fill: 'Compléter / 빈칸 채우기',
+  translate: 'Traduire / 번역'
+};
 
     // ===== 문제 세트 =====
     function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
