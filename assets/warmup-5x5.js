@@ -117,10 +117,10 @@ function makeRecorder(){
       const bars = 32; const step = Math.floor(data.length / bars);
       for(let i=0;i<bars;i++){
         const v = data[i*step]/255; const bh = v*h;
+        g.fillStyle = '#6366f1';
         g.fillRect(i*(w/bars)+2, h-bh, (w/bars)-4, bh);
       }
     }
-    g.fillStyle = '#6366f1';
     loop();
   }
   function stop(canvas){
@@ -154,7 +154,7 @@ function makeRecorder(){
   return { start, stop, getResult };
 }
 
-// ---------- Pronunciation API (서버 최신 스키마로 전송) ----------
+// ---------- Pronunciation API ----------
 function toBareBase64(dataUrlOrB64){
   return String(dataUrlOrB64||'').includes(',')
     ? String(dataUrlOrB64).split(',')[1]
@@ -179,7 +179,7 @@ async function analyzePronunciation({ referenceText, record }){
   let acc = (typeof data.accuracy === 'number') ? data.accuracy : 0;
   if(acc > 1) acc = acc/100;
   const friendly = Array.isArray(data?.details?.explain) ? data.details.explain : [];
-  return { accuracy: acc, raw:data, friendly, transcript: data?.transcript||'' };
+  return { accuracy: acc, friendly, transcript: data?.transcript||'' };
 }
 
 // ---------- UI Render ----------
@@ -392,19 +392,21 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const cont = btn.dataset.cont === 'true';
       state.mode = { speed: sp, continuous: cont };
 
+      document.getElementById('mode-chooser').classList.add('hidden');
       startScreen.classList.add('hidden');
       quizRoot.classList.remove('hidden');
 
       renderAll();
 
-      // 액션 버튼들
       document.getElementById('btn-send')?.addEventListener('click', sendResults);
       document.getElementById('btn-retry')?.addEventListener('click', ()=>{
         // 다시 모드 선택
         quizRoot.classList.add('hidden');
         startBtn.disabled = false;
-        modeChooser.classList.remove('hidden');
+        document.getElementById('mode-chooser').classList.remove('hidden');
         startScreen.classList.remove('hidden');
+        document.getElementById('finish-wrap')?.classList.add('hidden');
+        renderAll();
       });
     });
   });
