@@ -1,19 +1,16 @@
-// KO 엄격 / FR 관대 — v2 (모음·받침 오타 ❌, 공백·구두점 무시, "학생답이 더 길고 정답을 온전히 포함"할 때만 예외 ✓)
+<script>
+// KO 엄격 / FR 관대 — v2 (빈 FR 입력 절대 불가, 부분 포함은 S.includes(R)만 허용)
 (function(w){
   const P=/[\p{P}\p{S}]/gu, W=/\s+/g, M=/\p{M}/gu, H=/[가-힣]/g;
 
-  // 유틸
   const nfd = s => String(s||'').normalize('NFD');
   const deacc = s => nfd(s).replace(M,'');
   const stripPunc = s => String(s||'').replace(P,'');
   const onlyHangul = s => (String(s||'').match(H)||[]).join('');
 
-  // KO: 공백/구두점 완전 제거 + 한글만
   const normKO = s => onlyHangul(stripPunc(String(s||'').normalize('NFC'))).replace(W,'');
-  // FR: 악상/구두점/대소문자 무시 (공백은 1칸으로)
   const normFR = s => deacc(stripPunc(String(s||'').toLowerCase())).replace(W,' ').trim();
 
-  // 한글 분해(모음 비교)
   const S0=0xAC00, Lc=19, Vc=21, Tc=28, N=Vc*Tc;
   function decomp(ch){
     const c=ch.codePointAt(0);
@@ -26,7 +23,6 @@
     return false;
   }
 
-  // 말투 체크(저는/전 ↔ -요/-(스)ㅂ니다, 나는/난 ↔ -아/어)
   function checkRegister(ans){
     const je=/(저는|전)\b/.test(ans), na=/(나는|난)\b/.test(ans), tr=String(ans||'').trim();
     const yo=/요[.?!]*$/.test(tr), sm=/니다[.?!]*$/.test(tr), hae=/[다]$/.test(tr);
@@ -35,23 +31,17 @@
     return {ok:true};
   }
 
-  // ✅ KO: 공백/구두점 무시, 학생답이 정답을 "온전히 포함"할 때만 예외 ✓, 모음 다르면 즉시 ❌, 그 외엔 완전 일치만 ✓
+  // KO: 공백·구두점 무시, 학생답이 정답을 온전히 포함(S.includes(R))이면 인정, 모음 다르면 즉시 ❌, 아니면 완전일치만 ✓
   function gradeKO(ref, ans, { allowSubstring=true } = {}){
     const R=normKO(ref), S=normKO(ans);
     if(!R) return {score:0,isCorrect:false,note:'정답이 비어 있음'};
-
-    // 학생답이 더 길고 정답을 그대로 포함할 때만 인정
-    if(allowSubstring && S.includes(R)) return {score:100,isCorrect:true,note:'부분 포함 인정'};
-
-    // 모음 하나라도 다르면 발음 문제 → 즉시 오답
+    if(allowSubstring && S && S.includes(R)) return {score:100,isCorrect:true,note:'부분 포함 인정'};
     if(hasVowelDiff(R,S)) return {score:0,isCorrect:false,note:'모음 오류(발음 영향)'};
-
-    // 철자(자음/받침 포함) 완전 일치만 정답
     const ok = (S===R);
     return {score: ok?100:0, isCorrect: ok, note: ok?'':'철자 불일치(받침/자음 포함)'};
   }
 
-  // ✅ FR: 악상/구두점 무시 + 의미 근사(자카드 0.8 또는 레벤슈타인 15%) 허용
+  // FR: 악상·구두점 무시, **빈 입력은 오답**, 부분 포함은 S.includes(R)만 허용, 그 외 Jaccard≥0.8 또는 Levenshtein≤15%
   function levenshtein(a,b){
     const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
     const dp=Array(n+1).fill(0).map((_,j)=>j);
@@ -68,7 +58,8 @@
   function gradeFR(ref, ans){
     const R=normFR(ref), S=normFR(ans);
     if(!R) return {score:0,isCorrect:false,note:'réf. vide'};
-    if(S===R || S.includes(R) || R.includes(S)) return {score:100,isCorrect:true,note:'accents/ponctuation ignorés'};
+    if(!S) return {score:0,isCorrect:false,note:'réponse vide'};
+    if(S===R || S.includes(R)) return {score:100,isCorrect:true,note:'accents/ponctuation ignorés'};
 
     const set=t=>new Set(String(t).split(' ').filter(Boolean));
     const a=set(S), b=set(R);
@@ -82,3 +73,4 @@
 
   w.AnswerJudge = { gradeKO, gradeFR, checkRegister };
 })(window);
+</script>
