@@ -1,591 +1,283 @@
-// assets/warmup-chooser-5x5.js
-// 속도 선택 → 4그룹 발음 연습 → 평가/전송 + 점수 설명(friendly tips)
-// - 전역: window.WARMUP.init({ mount: HTMLElement })
-// - 필요 서버 함수(선택): /.netlify/functions/generate-audio, /.netlify/functions/analyze-pronunciation
-// - 서버가 없어도: TTS 실패 시 경고 표시, 평가는 로컬 간이 점수(길이/자모 유사도)로 대체
+<!-- assignments/numbers-warmup.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warm-up Coréen — Nombres (5×5 + Choix de vitesse)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    body{font-family:'Poppins','Noto Sans KR',sans-serif;}
+    .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
+    .btn{padding:.75rem 1.15rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
+    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
+    .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
+    .btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+    .small-muted{ font-size:.9rem; color:#64748b; }
+    .readable { line-height: 1.9; }
+    .readable p { margin-top: 0.9rem; margin-bottom: 0.9rem; }
+    .readable .kicker { font-size: .96rem; letter-spacing: .02em; color:#64748b; }
+    .info-card { background:#fff; border:1px solid #e5e7eb; border-radius:1rem; padding:1.15rem 1.25rem; box-shadow:0 1px 2px rgba(16,24,40,.06); }
+    .info-card h3 { font-weight:700; font-size:1.125rem; color:#0f172a; margin-bottom:.5rem; }
+    .callout { background:#fef9c3; border:1px solid #fde68a; color:#92400e; padding:.9rem 1rem; border-radius:.85rem; }
+    .soft-divider { height:1px; margin:1.35rem 0; background:linear-gradient(to right, transparent, #e5e7eb, transparent); }
+    .table-soft th { background:#f8fafc; color:#0f172a; }
+    .table-soft th, .table-soft td { padding:1rem; }
+    .wu-card{background:#fff;border:1px solid #e5e7eb;border-radius:0.9rem;padding:1rem}
+    .wu-done{background:#ecfdf5;border:1px solid #a7f3d0}
+    .progress-dot{width:.6rem;height:.6rem;border-radius:9999px;background:#e5e7eb}
+    .progress-dot.on{background:#22c55e}
+    .hidden{display:none}
+    .vu{width:100%;height:50px;background:#eef2ff;border-radius:.5rem;border:1px solid #c7d2fe}
+    canvas{display:block;width:100%;height:50px}
+    .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
+  </style>
+</head>
+<body class="bg-gray-50">
 
-(function () {
-  'use strict';
+  <header class="max-w-5xl mx-auto px-4 mt-4 flex items-center justify-between print:hidden">
+    <div class="text-sm text-slate-500">made by 성일, Pongdang · Lapeace29@gmail.com</div>
+    <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
+  </header>
 
-  // ----------------------------
-  // 환경 변수
-  // ----------------------------
-  const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
-  const TTS_PROVIDER = (window.PONGDANG_TTS?.provider) || 'openai';
+  <!-- 설명 (교체본) -->
+  <div id="explanation-screen" class="quiz-container">
+    <div class="mx-auto max-w-3xl readable">
+      <h2 class="text-3xl md:text-4xl font-bold text-slate-800 tracking-tight leading-tight text-center">
+        📘 Apprendre les nombres coréens ! / 한국어 숫자 배우기!
+      </h2>
+      <p class="kicker text-center mt-2 mb-8">(Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)</p>
 
-  // ----------------------------
-  // 발음 번들 (4그룹)
-  // ----------------------------
-  const BUNDLES = [
-    { key: 'natifs_1_5',  label: 'Natifs (1–5)',   text: '하나, 둘, 셋, 넷, 다섯',   compact: '하나둘셋넷다섯', voice: 'alloy'   },
-    { key: 'natifs_6_10', label: 'Natifs (6–10)',  text: '여섯, 일곱, 여덟, 아홉, 열', compact: '여섯일곱여덟아홉열', voice: 'shimmer' },
-    { key: 'hanja_1_5',   label: 'Hanja (1–5)',    text: '일, 이, 삼, 사, 오',      compact: '일이삼사오',       voice: 'alloy'   },
-    { key: 'hanja_6_10',  label: 'Hanja (6–10)',   text: '육, 칠, 팔, 구, 십',      compact: '육칠팔구십',       voice: 'alloy'   },
-  ];
+      <section class="info-card space-y-3">
+        <h3>1️⃣ Petite explication / 간단 설명</h3>
+        <p class="callout">
+          👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! /
+          많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!
+        </p>
+        <ul class="list-disc list-inside space-y-2 text-slate-700">
+          <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자(문자) 체계</li>
+          <li><strong>Chinois</strong> = langue / 중국어(언어)</li>
+        </ul>
+        <div class="soft-divider"></div>
+        <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
+          <p class="font-semibold">Astuce (analogie) / 비유</p>
+          <p class="mt-1">
+            En Europe, on écrit avec <b>l'alphabet latin</b> (pas « alphabet italien »).<br>
+            → <b>Italien</b> = une <u>langue</u> / <b>lettres</b> = alphabet <u>latin</u>.<br>
+            → <b>chinois</b> = une <u>langue</u> / <b>lettres</b> = <u>caractères han (Hanja)</u>.<br>
+            🇰🇷 <b>Le coréen aussi</b> : <b>langue</b> = coréen / <b>nombres</b> = <u>2 jeux</u>
+            (순수 한국어 / natifs, 한자어 / Hanja-coréens).<br>
+            <em>Hanja ≠ chinois (la langue)</em> → « <b>caractères han</b> » = écriture, pas la langue chinoise.
+          </p>
+        </div>
+      </section>
 
-  // ----------------------------
-  // 상태
-  // ----------------------------
-  const state = {
-    mode: { speed: 1.0, continuous: false },
-    name: 'Élève',
-    startISO: null,
-    startMs: 0,
-    progress: {},          // { [key]: { listened:boolean, recorded:boolean, duration:ms } }
-    listenCount: {},       // { [key]: number }
-    recordings: {},        // { [key]: Blob }
-    scores: {},            // { [key]: { score:number, tips:string[] } }
-  };
-  window.__WARMUP_STATE__ = state; // 디버깅용(optional)
+      <div class="soft-divider"></div>
 
-  // ----------------------------
-  // 유틸
-  // ----------------------------
-  function stripForContinuous(s) { return s.replace(/,\s*/g, ' '); }
-  function mapVoice(provider, req) {
-    const VOICE_MAP = {
-      openai: { default: 'alloy', alloy: 'alloy', shimmer: 'verse' },
-      google: { default: 'ko-KR-Standard-A', alloy: 'ko-KR-Standard-A', shimmer: 'ko-KR-Standard-B' }
-    };
-    const t = VOICE_MAP[provider] || {};
-    return t[req] || t.default || req;
-  }
-  function base64ToBlob(base64, mime = 'audio/mpeg') {
-    const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
-    const byteChars = atob(cleaned);
-    const arr = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
-    return new Blob([arr], { type: mime });
-  }
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  function $(sel, root = document) { return root.querySelector(sel); }
-  function $all(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
-
-  // ----------------------------
-  // TTS
-  // ----------------------------
-  let currentAudio = null, audioLock = false, aborter = null, currentSrc = null;
-  async function playTTS(text, voice = 'alloy', speed = 1.0, btn) {
-    if (audioLock) {
-      if (currentAudio) {
-        if (currentAudio.paused) { await currentAudio.play(); setBtnPlaying(btn, true); }
-        else { currentAudio.pause(); setBtnPlaying(btn, false); }
-      }
-      return;
-    }
-    audioLock = true; setTimeout(() => audioLock = false, 200);
-
-    try {
-      if (currentAudio && currentAudio._meta === `${text}|${speed}|${voice}`) {
-        if (currentAudio.paused) { await currentAudio.play(); setBtnPlaying(btn, true); }
-        else { currentAudio.pause(); setBtnPlaying(btn, false); }
-        return;
-      }
-      if (aborter) { try { aborter.abort(); } catch { } }
-      if (currentAudio) { try { currentAudio.pause(); } catch { } }
-      if (currentSrc) { URL.revokeObjectURL(currentSrc); currentSrc = null; }
-
-      aborter = new AbortController();
-      const payload = { text, voice: mapVoice(TTS_PROVIDER, voice), provider: TTS_PROVIDER, speed };
-      const res = await fetch(`${FN_BASE}/generate-audio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-        body: JSON.stringify(payload),
-        signal: aborter.signal
-      });
-
-      if (!res.ok) throw new Error('TTS request failed: ' + res.status);
-      const data = await res.json();
-
-      let src = null;
-      if (data.audioBase64 || data.audioContent) {
-        const blob = base64ToBlob(data.audioBase64 || data.audioContent, data.mimeType || 'audio/mpeg');
-        src = URL.createObjectURL(blob);
-      } else if (data.audioUrl) {
-        src = data.audioUrl;
-      }
-      if (!src) throw new Error('No audio in TTS response');
-      currentSrc = src;
-
-      const audio = new Audio(src);
-      currentAudio = audio;
-      audio._meta = `${text}|${speed}|${voice}`;
-      audio.addEventListener('playing', () => setBtnPlaying(btn, true));
-      audio.addEventListener('pause', () => setBtnPlaying(btn, false));
-      audio.addEventListener('ended', () => {
-        setBtnPlaying(btn, false);
-        if (currentSrc) { URL.revokeObjectURL(currentSrc); currentSrc = null; }
-      });
-      await audio.play();
-    } catch (e) {
-      console.warn(e);
-      alert('🔊 오디오 재생에 문제가 있어요. 인터넷/서버 상태를 확인하고 다시 시도하세요.');
-    }
-  }
-  function setBtnPlaying(btn, on) {
-    if (!btn) return;
-    btn.innerHTML = on ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Écouter';
-  }
-
-  // ----------------------------
-  // 레코더
-  // ----------------------------
-  function makeRecorder() {
-    let mediaRecorder = null, chunks = [], stream = null, ctx = null, analyser = null, raf = 0, startedAt = 0;
-
-    async function start(canvas) {
-      if (stream) stop(canvas);
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      chunks = [];
-      mediaRecorder.ondataavailable = e => chunks.push(e.data);
-      mediaRecorder.start(50);
-      startedAt = performance.now();
-
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = ctx.createMediaStreamSource(stream);
-      analyser = ctx.createAnalyser(); analyser.fftSize = 512;
-      source.connect(analyser);
-      drawVU(canvas, analyser);
-    }
-
-    function drawVU(canvas, analyser) {
-      if (!canvas) return;
-      const cv = canvas, g = cv.getContext('2d');
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const w = cv.width, h = cv.height;
-
-      function loop() {
-        raf = requestAnimationFrame(loop);
-        analyser.getByteFrequencyData(data);
-        g.clearRect(0, 0, w, h);
-        const bars = 32; const step = Math.floor(data.length / bars);
-        g.fillStyle = '#6366f1';
-        for (let i = 0; i < bars; i++) {
-          const v = data[i * step] / 255; const bh = v * h;
-          g.fillRect(i * (w / bars) + 2, h - bh, (w / bars) - 4, bh);
-        }
-      }
-      loop();
-    }
-
-    function stop(canvas) {
-      let dur = 0;
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        dur = performance.now() - startedAt;
-      }
-      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-      if (ctx) { ctx.close(); ctx = null; }
-      if (raf) cancelAnimationFrame(raf);
-      if (canvas) { const g = canvas.getContext('2d'); g.clearRect(0, 0, canvas.width, canvas.height); }
-      return dur;
-    }
-
-    async function getBlob() {
-      if (!chunks.length) return null;
-      return new Blob(chunks, { type: 'audio/webm' });
-    }
-
-    return { start, stop, getBlob };
-  }
-
-  // ----------------------------
-  // 로컬 간이 평가(서버 실패 시 사용)
-  //   - 텍스트 정답 대비 길이/자모 겹침으로 점수 근사
-  //   - 학습 피드백용 "친절 팁" 생성
-  // ----------------------------
-  const JAMO_BASE = /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7A3]/;
-  function normalizeKO(s) {
-    return (s || '')
-      .replace(/[^\u1100-\u11FF\u3130-\u318F\uAC00-\uD7A3a-zA-Z0-9]/g, '')
-      .toLowerCase();
-  }
-  function roughScoreByText(targetKo, hypoKo) {
-    // 길이 기반
-    const A = normalizeKO(targetKo);
-    const B = normalizeKO(hypoKo);
-    if (!A || !B) return 0;
-
-    // 공통 부분 집합 길이 근사 (자모/음절 단순 교집합)
-    const setA = new Set(A.split(''));
-    const setB = new Set(B.split(''));
-    let inter = 0;
-    setA.forEach(ch => { if (setB.has(ch)) inter++; });
-    const ratio = inter / Math.max(setA.size, 1);
-
-    // 길이 페널티
-    const lenRatio = Math.min(B.length / A.length, A.length / B.length);
-
-    const score = Math.max(0, Math.min(1, 0.6 * ratio + 0.4 * lenRatio));
-    return Math.round(score * 100);
-  }
-  function friendlyTipsFromScore(score) {
-    const tips = [];
-    if (score >= 90) tips.push('아주 좋아요! 리듬과 끊어 읽기도 자연스러워요.');
-    else if (score >= 75) tips.push('좋아요! 모음 길이와 받침 연결만 조금 더 또렷하게.');
-    else if (score >= 60) tips.push('괜찮아요. ‘ㅓ/ㅗ’, ‘ㄹ/ㄴ’ 등 헷갈리는 소리만 집중!');
-    else tips.push('처음엔 천천히, 또박또박. 단어 사이를 분명히 끊어보세요.');
-    return tips;
-  }
-
-  // ----------------------------
-  // 서버 평가 호출
-  //   - 성공: 서버 점수/피드백 사용
-  //   - 실패: 로컬 간이 평가 대체
-  // ----------------------------
-  async function evaluatePronunciation(key, bundle, blob) {
-    // 서버 호출
-    try {
-      const fd = new FormData();
-      fd.append('audio', blob, `${key}.webm`);
-      fd.append('meta', JSON.stringify({
-        key,
-        text: state.mode.continuous ? bundle.compact : bundle.text,
-        speed: state.mode.speed,
-        student: state.name,
-      }));
-
-      const res = await fetch(`${FN_BASE}/analyze-pronunciation`, { method: 'POST', body: fd });
-      if (!res.ok) throw new Error('analyze-pronunciation failed: ' + res.status);
-      const data = await res.json();
-      if (typeof data.score === 'number') {
-        return {
-          score: Math.round(data.score),
-          tips: Array.isArray(data.tips) && data.tips.length ? data.tips : friendlyTipsFromScore(Math.round(data.score)),
-          raw: data,
-        };
-      }
-      // 점수필드가 없으면 로컬로
-      throw new Error('Invalid response (no score)');
-    } catch (e) {
-      console.warn('[analyze-pronunciation] fallback to local scoring', e);
-      // 로컬 간이 점수: 실제 음성-텍스트 정렬이 없으므로 "목표 문장"을 그대로 비교
-      const fakeRecognized = (state.mode.continuous ? bundle.compact : bundle.text);
-      const score = roughScoreByText(fakeRecognized, fakeRecognized); // 녹음 STT 부재 → 100% 기반 후 소폭 가중치
-      const jitter = Math.floor(Math.random() * 11) - 5; // ±5 변동
-      const final = Math.max(40, Math.min(98, score + jitter)); // 과도한 만점 방지
-      return { score: final, tips: friendlyTipsFromScore(final), raw: null };
-    }
-  }
-
-  // ----------------------------
-  // UI 렌더
-  // ----------------------------
-  function renderSkeleton(mount) {
-    mount.innerHTML = `
-      <div class="rounded-xl border border-slate-200 p-4 md:p-5 bg-white shadow-sm">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-sky-100 text-sky-700">🎙️</span>
-            <div>
-              <div class="font-bold text-slate-800">Échauffement 5×5 / 발음 워밍업</div>
-              <div class="text-sm text-slate-500">속도 고르고, 듣고, 따라 말한 뒤 평가 받기</div>
-            </div>
+      <section class="info-card">
+        <p class="mb-4">
+          En coréen, on utilise <strong>deux systèmes</strong> de nombres /
+          한국어에는 숫자 체계가 <strong>두 가지</strong> 있어요:
+        </p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-bold text-lg text-blue-900">순수 한국어 / Natifs</h4>
+            <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
+            <p><strong>Pour / 용도:</strong> compter des choses (âge, personnes, objets…)
+              / 눈앞에서 세는 것(나이, 사람 수, 물건 개수…)</p>
           </div>
-          <div class="flex items-center gap-2">
-            <label class="text-sm text-slate-600">Vitesse</label>
-            <select id="speedSel" class="px-2 py-1 border rounded-md">
-              <option value="0.8">0.8×</option>
-              <option value="1.0" selected>1.0×</option>
-              <option value="1.2">1.2×</option>
-              <option value="1.4">1.4×</option>
-            </select>
-            <label class="ml-3 text-sm text-slate-600 flex items-center gap-2">
-              <input id="chkContinuous" type="checkbox" class="accent-sky-600">
-              <span>Continu (쉼 없이)</span>
-            </label>
+          <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 class="font-bold text-lg text-green-900">한자어 / Hanja-coréens</h4>
+            <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
+            <p><strong>Pour / 용도:</strong> noms/unités déjà <u>écrits</u>
+              (dates, argent, minutes…) / 이미 적혀 있는 이름·단위(날짜, 돈, 분 등)</p>
           </div>
         </div>
+      </section>
 
-        <div class="mt-4 grid md:grid-cols-2 gap-4" id="bundleGrid">
-          ${BUNDLES.map((b, i) => bundleCardHTML(b, i)).join('')}
-        </div>
+      <div class="soft-divider"></div>
 
-        <div class="mt-5 flex items-center justify-between">
-          <div class="text-sm text-slate-500">
-            ⏱️ <span id="warmupTimer">00:00</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="btnEvaluateAll" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-              평가/전송 (전체)
-            </button>
-          </div>
-        </div>
+      <section class="info-card">
+        <h3>⚡ Exception & Tendance / 예외와 경향</h3>
+        <ul class="list-disc list-inside space-y-2">
+          <li>Heures(시) → <b>순수 한국어 / natifs</b> · Minutes(분) → <b>한자어 / Hanja-coréens</b></li>
+          <li>« 1 h = 60 min » 체계 정착 → 오늘날 <b>시 = natifs</b> / <b>분 = Hanja</b></li>
+        </ul>
+      </section>
 
-        <div id="resultPanel" class="mt-4 hidden">
-          <div class="p-4 rounded-lg border bg-emerald-50 border-emerald-200">
-            <div class="font-semibold text-emerald-900">결과 요약</div>
-            <div id="resultSummary" class="text-sm text-emerald-800 mt-2"></div>
-          </div>
+      <div class="soft-divider"></div>
+
+      <section class="info-card"> 
+        <h3>✅ Résumé facile / 요약</h3>
+        <div class="overflow-x-auto mt-3">
+          <table class="w-full text-left border-collapse text-base table-soft">
+            <thead>
+              <tr>
+                <th class="border border-slate-200">Système / 체계</th>
+                <th class="border border-slate-200">Usage / 용도</th>
+                <th class="border border-slate-200">Exemples / 예</th>
+                <th class="border border-slate-200">Explication (FR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="odd:bg-white even:bg-gray-50">
+                <td class="border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
+                <td class="border border-slate-200">Compter, classificateurs, durées libres</td>
+                <td class="border border-slate-200">
+                  <b>한 달, 두 달</b> / <b>한 개, 두 명, 세 잔, 한 권</b> / <b>한 시, 두 시</b>
+                </td>
+                <td class="border border-slate-200">
+                  👉 <b>한 달</b> = un mois (durée)<br>
+                  👉 <b>한 개</b> = une chose (objet)<br>
+                  👉 <b>두 명</b> = deux personnes<br>
+                  👉 <b>세 잔</b> = trois verres/tasses<br>
+                  👉 <b>한 권</b> = un livre<br>
+                  👉 <b>한 시</b> = 1 heure (il est 1h)
+                </td>
+              </tr>
+              <tr class="odd:bg-white even:bg-gray-50">
+                <td class="border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
+                <td class="border border-slate-200">Valeurs « écrites »</td>
+                <td class="border border-slate-200">
+                  <b>1월, 2월</b> / <b>10분, 30초</b> / <b>2025년 9월 7일, 1,000원</b> / <b>3층, 302호</b>
+                </td>
+                <td class="border border-slate-200">
+                  👉 <b>1월</b> = janvier<br>
+                  👉 <b>10분</b> = 10 minutes<br>
+                  👉 <b>30초</b> = 30 secondes<br>
+                  👉 <b>2025년 9월 7일</b> = le 7 septembre 2025<br>
+                  👉 <b>1,000원</b> = 1000 wons (monnaie)<br>
+                  👉 <b>3층, 302호</b> = étage 3, appartement 302
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </section>
+
+      <div class="text-center mt-8">
+        <button id="explanation-next-btn" class="btn btn-primary text-lg">
+          C'est compris, on s'échauffe ! (워밍업) <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
-    `;
-  }
+    </div>
+  </div>
 
-  function bundleCardHTML(bundle, idx) {
-    const safeId = `b_${bundle.key}`;
-    return `
-      <div class="rounded-lg border border-slate-200 p-4">
-        <div class="flex items-center justify-between gap-2">
-          <div class="font-semibold text-slate-800">${idx + 1}. ${bundle.label}</div>
-          <div class="text-xs text-slate-500">${bundle.key}</div>
-        </div>
-        <div class="mt-2 text-slate-700">${bundle.text}</div>
-        <div class="mt-2 text-xs text-slate-500">연속모드 텍스트: <code>${bundle.compact}</code></div>
-
-        <div class="mt-3 flex items-center gap-2">
-          <button class="btnListen px-3 py-1.5 bg-slate-800 text-white rounded-md"
-                  data-key="${bundle.key}">
-            <i class="fas fa-play"></i> Écouter
-          </button>
-          <button class="btnRec px-3 py-1.5 bg-rose-600 text-white rounded-md"
-                  data-key="${bundle.key}">
-            ⏺️ 녹음
-          </button>
-          <button class="btnStop px-3 py-1.5 bg-rose-200 text-rose-800 rounded-md"
-                  data-key="${bundle.key}" disabled>
-            ⏹️ 정지
-          </button>
-          <button class="btnEvalOne px-3 py-1.5 bg-emerald-600 text-white rounded-md"
-                  data-key="${bundle.key}">
-            ✅ 평가
-          </button>
-        </div>
-
-        <div class="mt-3 grid grid-cols-[120px_1fr] gap-3 items-center">
-          <div class="text-xs text-slate-500">입력 VU</div>
-          <canvas id="${safeId}_vu" width="480" height="48" class="w-full rounded border border-slate-200"></canvas>
-          <div class="text-xs text-slate-500">상태</div>
-          <div id="${safeId}_status" class="text-sm text-slate-700">대기</div>
-        </div>
-
-        <div id="${safeId}_result" class="mt-3 hidden">
-          <div class="p-3 rounded-lg border bg-slate-50">
-            <div><b>점수:</b> <span class="scoreVal">-</span>/100</div>
-            <ul class="tips text-sm text-slate-700 mt-1 list-disc list-inside"></ul>
-          </div>
-        </div>
+  <!-- 이름 입력 -->
+  <div id="start-screen" class="quiz-container hidden">
+    <div class="max-w-3xl mx-auto">
+      <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève / 이름</label>
+      <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3" placeholder="Ex. Camille / Lucas / Zoé" />
+      <div class="p-4 bg-white rounded-lg border mt-6 text-center">
+        <h2 class="text-3xl font-bold text-slate-800 mb-2">Méthode 5×5 🗣️</h2>
+        <p>Écouter → S’enregistrer → Évaluer (score %). 4 groupes : Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10.</p>
       </div>
-    `;
-  }
+      <div class="text-center mt-4">
+        <button id="start-btn" class="btn btn-primary text-lg">Commencer ! (시작!)</button>
+      </div>
+    </div>
+  </div>
 
-  // ----------------------------
-  // 타이머
-  // ----------------------------
-  let timerId = 0;
-  function startTimer() {
-    state.startISO = new Date().toISOString();
-    state.startMs = performance.now();
-    const el = $('#warmupTimer');
-    if (timerId) cancelAnimationFrame(timerId);
-    const tick = () => {
-      const dt = performance.now() - state.startMs;
-      const mm = Math.floor(dt / 60000);
-      const ss = Math.floor((dt % 60000) / 1000);
-      el.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
-      timerId = requestAnimationFrame(tick);
-    };
-    tick();
-  }
+  <!-- (선택) 속도 선택 페이지: WARMUP 안 쓰고 자체 구현 시 사용 -->
+  <section id="mode-chooser" class="quiz-container hidden">
+    <h2 class="text-2xl font-bold text-slate-800 text-center mb-3">Choisis ta vitesse / 속도 고르기</h2>
+    <div class="grid md:grid-cols-3 gap-3">
+      <button class="btn btn-sound w-full" data-speed="0.7" data-cont="false">🐢 Débutant total (0.7×) / 완전 초보</button>
+      <button class="btn btn-sound w-full" data-speed="1.0" data-cont="false">🙂 Je lis un peu (1.0×) / 보통</button>
+      <button class="btn btn-sound w-full" data-speed="1.5" data-cont="true">⚡ Je lis bien (1.5×, continu) / 빠름 + 쉼표 없이</button>
+    </div>
+  </section>
 
-  // ----------------------------
-  // 이벤트 바인딩
-  // ----------------------------
-  function bindEvents(mount) {
-    // 속도/연속모드
-    $('#speedSel', mount)?.addEventListener('change', (e) => {
-      state.mode.speed = parseFloat(e.target.value || '1.0') || 1.0;
-    });
-    $('#chkContinuous', mount)?.addEventListener('change', (e) => {
-      state.mode.continuous = !!e.target.checked;
-    });
+  <!-- 워밍업 실제 마운트 화면 (WARMUP.init로 렌더) -->
+  <section id="warmup-screen" class="quiz-container hidden">
+    <div class="mx-auto max-w-3xl">
+      <h2 class="text-2xl md:text-3xl font-bold text-slate-800">🎯 Échauffement 5×5</h2>
+      <p class="text-slate-600 mt-1">속도를 고르고, 듣고 따라 말한 뒤 평가/전송해요.</p>
+      <div id="warmup-root" class="mt-4"></div>
+    </div>
+  </section>
 
-    // 카드별 버튼들
-    const recorders = {}; // { key: recorder }
-    $all('.btnListen', mount).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const key = btn.dataset.key;
-        const bundle = BUNDLES.find(b => b.key === key);
-        if (!bundle) return;
+  <!-- (WARMUP가 내부에서 알아서 구성해도 되지만, 기존 안내용) -->
+  <section id="quiz-root" class="quiz-container hidden">
+    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️</h2>
+    <div class="p-4 bg-white rounded-lg border mb-6 text-center">
+      <p><b>Comment ?</b> Écouter → S’enregistrer → Évaluer (score %)</p>
+      <p class="text-slate-600">4 groupes (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10).</p>
+      <div id="global-progress" class="flex items-center gap-2 justify-center mt-2">
+        <span class="text-xs font-semibold text-slate-500">Groupes:</span>
+        <div class="progress-dot"></div><div class="progress-dot"></div><div class="progress-dot"></div><div class="progress-dot"></div>
+      </div>
+    </div>
 
-        // 텍스트 (연속모드 적용)
-        const text = state.mode.continuous ? stripForContinuous(bundle.text) : bundle.text;
-        await playTTS(text, bundle.voice, state.mode.speed, btn);
+    <div id="groups-wrap" class="space-y-8"></div>
 
-        // 진행 표시
-        state.listenCount[key] = (state.listenCount[key] || 0) + 1;
-        updateStatus(key, `듣기 ${state.listenCount[key]}회 완료`);
+    <div id="finish-wrap" class="hidden mt-8 text-center">
+      <div class="p-4 bg-white rounded-lg border mb-4">
+        <div class="text-lg font-semibold">👏 Warming up terminé !</div>
+        <div class="text-slate-600">Envoie le résultat au professeur, puis continue.</div>
+      </div>
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button id="btn-send"  class="btn btn-primary">Terminer · Envoyer les résultats</button>
+        <a href="./numbers-exercices.html" id="btn-next" class="btn btn-secondary">Aller aux exercices (실전)</a>
+        <button id="btn-retry" class="btn btn-secondary">↺ Rechoisir la vitesse / 다시 선택</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="max-w-5xl mx-auto px-4 mb-8 text-center">
+    <a href="../index.html" class="text-slate-500 underline">← Revenir / 이전 페이지</a>
+  </footer>
+
+  <div class="brand-tag print:hidden">made by 성일, Pongdang · Lapeace29@gmail.com</div>
+
+  <!-- 환경 설정 -->
+  <script>
+    window.PONGDANG_TTS = { provider:'openai' };
+    window.PONGDANG_FN_BASE='/.netlify/functions';
+  </script>
+
+  <!-- 의존 스크립트들 -->
+  <script defer src="../assets/student-gate.js"></script>
+  <script defer src="../assets/pronun-utils.js"></script>
+  <script defer src="../assets/pronun-vowel-middleware.js"></script>
+  <!-- ★ 반드시 정확한 경로/파일명으로! (앞에 'ㅇ' 같은 오타 절대 금지) -->
+  <script defer src="../assets/warmup-chooser-5x5.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const $ = (s, r=document)=>r.querySelector(s);
+
+      const ex = $('#explanation-screen');
+      const st = $('#start-screen');
+      const wu = $('#warmup-screen');
+      const mount = $('#warmup-root');
+
+      // 설명 → 이름 입력
+      $('#explanation-next-btn')?.addEventListener('click', ()=>{
+        ex.classList.add('hidden');
+        st.classList.remove('hidden');
       });
-    });
 
-    $all('.btnRec', mount).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const key = btn.dataset.key;
-        const bundle = BUNDLES.find(b => b.key === key);
-        if (!bundle) return;
+      // 이름 입력 → WARMUP 화면
+      $('#start-btn')?.addEventListener('click', ()=>{
+        const name = ($('#student-name')?.value || '').trim();
+        st.classList.add('hidden');
+        wu.classList.remove('hidden');
 
-        // 준비
-        const vu = $(`#b_${key}_vu`, mount);
-        if (!recorders[key]) recorders[key] = makeRecorder();
-
-        // 버튼 상태
-        btn.disabled = true;
-        const stopBtn = $(`.btnStop[data-key="${key}"]`, mount);
-        stopBtn.disabled = false;
-
-        updateStatus(key, '녹음 중...');
-        try {
-          await recorders[key].start(vu);
-        } catch (e) {
-          console.warn(e);
-          alert('🎙️ 마이크 권한을 확인해주세요.');
-          btn.disabled = false;
-          stopBtn.disabled = true;
-        }
-      });
-    });
-
-    $all('.btnStop', mount).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const key = btn.dataset.key;
-        const bundle = BUNDLES.find(b => b.key === key);
-        if (!bundle) return;
-
-        const vu = $(`#b_${key}_vu`, mount);
-        const rec = recorders[key];
-        if (!rec) return;
-
-        const dur = rec.stop(vu) || 0;
-        const blob = await rec.getBlob();
-        if (blob) {
-          state.recordings[key] = blob;
-          state.progress[key] = { ...(state.progress[key] || {}), recorded: true, duration: Math.round(dur) };
-          updateStatus(key, `녹음 완료 (${Math.round(dur / 1000)}s)`);
+        // WARMUP.init 호출 (전역 공개 필수)
+        if (window.WARMUP && typeof window.WARMUP.init === 'function') {
+          window.WARMUP.init({ mount, studentName: name || 'Élève' });
         } else {
-          updateStatus(key, '녹음 데이터가 없어요. 다시 시도하세요.');
+          alert('warmup 스크립트가 로드되지 않았어요. 경로(../assets/warmup-chooser-5x5.js)를 확인하세요.');
+          // 폴백: 별도 페이지로 이동하도록 설정 가능
+          // location.href = './warmup-chooser-5x5.html';
         }
-
-        // 버튼 상태
-        const recBtn = $(`.btnRec[data-key="${key}"]`, mount);
-        recBtn.disabled = false;
-        btn.disabled = true;
       });
     });
-
-    // 개별 평가
-    $all('.btnEvalOne', mount).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const key = btn.dataset.key;
-        const bundle = BUNDLES.find(b => b.key === key);
-        if (!bundle) return;
-        if (!state.recordings[key]) {
-          alert('먼저 녹음해주세요!');
-          return;
-        }
-        await evaluateAndRenderOne(mount, key, bundle);
-      });
-    });
-
-    // 전체 평가/전송
-    $('#btnEvaluateAll', mount)?.addEventListener('click', async () => {
-      let done = 0;
-      for (const bundle of BUNDLES) {
-        const key = bundle.key;
-        if (!state.recordings[key]) continue; // 녹음 안 한 항목은 건너뜀
-        await evaluateAndRenderOne(mount, key, bundle);
-        done++;
-        await sleep(150);
-      }
-      renderSummary(mount);
-      if (!$('#resultPanel', mount).classList.contains('hidden')) {
-        $('#resultPanel', mount).scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      if (!done) alert('평가할 녹음이 없어요. 하나 이상 녹음 후 다시 시도!');
-    });
-  }
-
-  async function evaluateAndRenderOne(mount, key, bundle) {
-    try {
-      updateStatus(key, '평가 중…');
-      const blob = state.recordings[key];
-      const result = await evaluatePronunciation(key, bundle, blob);
-      state.scores[key] = result;
-
-      // UI 반영
-      const card = $(`#b_${key}_result`, mount);
-      const sEl = card?.querySelector('.scoreVal');
-      const tEl = card?.querySelector('.tips');
-      if (card && sEl && tEl) {
-        card.classList.remove('hidden');
-        sEl.textContent = String(result.score);
-        tEl.innerHTML = result.tips.map(x => `<li>${escapeHTML(x)}</li>`).join('');
-      }
-      updateStatus(key, `평가 완료: ${result.score}/100`);
-      return result;
-    } catch (e) {
-      console.warn(e);
-      updateStatus(key, '평가 실패. 네트워크/서버 확인 후 재시도하세요.');
-      alert('평가 중 문제가 발생했어요.');
-      return null;
-    }
-  }
-
-  function renderSummary(mount) {
-    const panel = $('#resultPanel', mount);
-    const sum = $('#resultSummary', mount);
-    const items = [];
-    let total = 0, cnt = 0;
-
-    for (const b of BUNDLES) {
-      const r = state.scores[b.key];
-      if (!r) continue;
-      items.push(`<li><b>${b.label}</b> — ${r.score}/100</li>`);
-      total += r.score; cnt++;
-    }
-    const avg = cnt ? Math.round(total / cnt) : 0;
-    sum.innerHTML = `
-      <div class="text-sm">평균 점수: <b>${avg}</b>/100</div>
-      <ul class="mt-1 list-disc list-inside">${items.join('')}</ul>
-      <div class="mt-2 text-xs text-slate-500">시작: ${state.startISO || '-'}</div>
-    `;
-    panel.classList.remove('hidden');
-  }
-
-  function updateStatus(key, msg) {
-    const el = document.querySelector(`#b_${key}_status`);
-    if (el) el.textContent = msg;
-  }
-
-  function escapeHTML(s) {
-    return String(s || '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  // ----------------------------
-  // 퍼블릭 API
-  // ----------------------------
-  const WARMUP = {
-    /**
-     * 초기화 (필수)
-     * @param {{ mount: HTMLElement, studentName?: string }} opts
-     */
-    async init(opts = {}) {
-      const mount = opts.mount || document.body;
-      if (opts.studentName) state.name = opts.studentName;
-
-      renderSkeleton(mount);
-      bindEvents(mount);
-      startTimer();
-
-      // iOS/Safari에서 첫 상호작용 전 오디오 정책 이슈 예방
-      document.body.addEventListener('touchstart', () => { try { new Audio().play().catch(()=>{}); } catch {} }, { once: true });
-    }
-  };
-
-  // 전역 공개
-  window.WARMUP = WARMUP;
-
-})();
+  </script>
+</body>
+</html>
