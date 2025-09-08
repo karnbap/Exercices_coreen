@@ -1,41 +1,30 @@
-// assets/warmup-5x5.js
-// Warming up 5×5: 재생/녹음/평가 + 결과 전송
-// 필요 파일: student-gate.js, pronun-utils.js, grading-criteria.js(선택), style.css(선택)
-// 서버 함수: /.netlify/functions/generate-audio (TTS), /.netlify/functions/analyze-pronunciation (STT+채점), /.netlify/functions/send-results (메일)
+// assets/warmup-chooser-5x5.js
+// 속도 선택 → 4그룹 발음 연습 → 평가/전송
+const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
-// ===== 설정/데이터 =====
-const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions'); // 경로 공통
 const BUNDLES = [
   { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나, 둘, 셋, 넷, 다섯',   voice:'alloy'   },
   { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯, 일곱, 여덟, 아홉, 열', voice:'shimmer' },
   { key:'hanja_1_5',   label:'Hanja (1–5)',   text:'일, 이, 삼, 사, 오',       voice:'alloy'   },
   { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육, 칠, 팔, 구, 십',       voice:'alloy'   },
 ];
-const STAGES = [
-  { idx:0, title:'Étape 1', speed:0.7, continuous:false },
-  { idx:1, title:'Étape 2', speed:1.0, continuous:false },
-  { idx:2, title:'Étape 3', speed:1.2, continuous:false },
-  { idx:3, title:'Étape 4', speed:1.5, continuous:false },
-  { idx:4, title:'Étape 5 (rythme continu)', speed:1.5, continuous:true },
-];
 
-// 진행상태 + 듣기횟수
-const progress = {};
-const listenCount = {}; // key: `s{idx}-{bundle.key}` → number
-STAGES.forEach(s => {
-  progress[s.idx] = {};
-  BUNDLES.forEach(b => {
-    progress[s.idx][b.key] = { done:false, score:null, accuracy:null, audioBase64:null, duration:null, friendly:[] };
-    listenCount[`s${s.idx}-${b.key}`] = 0;
-  });
-});
-
-// ===== TTS =====
-const VOICE_MAP = {
-  openai: { default:'alloy', alloy:'alloy', shimmer:'verse' },
-  google: { default:'ko-KR-Standard-A', alloy:'ko-KR-Standard-A', shimmer:'ko-KR-Standard-B' }
+const state = {
+  mode: { speed:1.0, continuous:false },
+  progress: {},           // key=bundle.key → { done, score, accuracy, audioBase64, duration, friendly }
+  listenCount: {},        // key=bundle.key → number
+  startISO: null, startMs: 0, name:'Élève'
 };
-function mapVoice(provider, req){ const t = VOICE_MAP[provider]||{}; return t[req] || t.default || req; }
+
+function stripForContinuous(s){ return s.replace(/,\s*/g,' '); }
+function mapVoice(provider, req){
+  const VOICE_MAP = {
+    openai: { default:'alloy', alloy:'alloy', shimmer:'verse' },
+    google: { default:'ko-KR-Standard-A', alloy:'ko-KR-Standard-A', shimmer:'ko-KR-Standard-B' }
+  };
+  const t = VOICE_MAP[provider]||{};
+  return t[req] || t.default || req;
+}
 function base64ToBlob(base64, mime='audio/mpeg'){
   const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
   const byteChars = atob(cleaned);
@@ -43,8 +32,8 @@ function base64ToBlob(base64, mime='audio/mpeg'){
   for(let i=0;i<byteChars.length;i++) arr[i]=byteChars.charCodeAt(i);
   return new Blob([arr],{type:mime});
 }
-function stripForContinuous(s){ return s.replace(/,\s*/g,' '); }
 
+// ---------- TTS ----------
 let currentAudio=null, audioLock=false, aborter=null, currentSrc=null;
 async function playTTS(text, voice='alloy', speed=1.0, btn){
   if(audioLock){ if(currentAudio){ if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true);} else { currentAudio.pause(); setBtnPlaying(btn,false);} } return; }
@@ -61,7 +50,10 @@ async function playTTS(text, voice='alloy', speed=1.0, btn){
     aborter = new AbortController();
     const provider = (window.PONGDANG_TTS?.provider) || 'openai';
     const payload = { text, voice: mapVoice(provider, voice), provider, speed };
-    const res = await fetch(`${FN_BASE}/generate-audio`, { method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'}, body:JSON.stringify(payload), signal:aborter.signal });
+    const res = await fetch(`${FN_BASE}/generate-audio`, {
+      method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+      body:JSON.stringify(payload), signal:aborter.signal
+    });
     if(!res.ok) throw new Error('TTS fail '+res.status);
     const data = await res.json();
 
@@ -81,23 +73,7 @@ async function playTTS(text, voice='alloy', speed=1.0, btn){
 }
 function setBtnPlaying(btn, on){ if(!btn) return; btn.innerHTML = on ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Écouter'; }
 
-// ===== 녹음 + 평가 =====
-async function analyzePronunciation({ referenceText, audioBase64 }){
-  const body = { text: referenceText, audioBase64, lang:'ko' };
-  const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(body)
-  });
-  const data = await r.json().catch(()=> ({}));
-  if(!r.ok){ throw new Error(data?.error || 'Analyse échouée'); }
-  let acc = 0;
-  if(typeof data.accuracy === 'number') acc = data.accuracy;
-  else if(typeof data.score === 'number') acc = data.score;
-  else if(typeof data.percent === 'number') acc = data.percent / 100;
-  if(acc > 1) acc = acc/100;
-  return { accuracy: acc, raw:data };
-}
-
+// ---------- Recorder ----------
 function makeRecorder(){
   let mediaRecorder=null, chunks=[], stream=null, ctx=null, analyser=null, raf=0;
   async function start(canvas){
@@ -165,32 +141,48 @@ function makeRecorder(){
   return { start, stop, getResult };
 }
 
-// ===== 렌더링 =====
-function renderStage(stage){
-  const wrap = document.createElement('section');
-  wrap.id = `stage-${stage.idx}`;
-  wrap.innerHTML = `
-    <h3 class="text-xl font-bold text-slate-800 mb-3">${stage.title} — vitesse ${stage.speed}× ${stage.continuous?'<span class="text-slate-500 text-sm">(rythme continu)</span>':''}</h3>
-    <div class="space-y-4"></div>
-  `;
-  const list = wrap.querySelector('.space-y-4');
-  BUNDLES.forEach(b => list.appendChild( makeBundleCard(stage, b) ));
-  return wrap;
+// ---------- Pronunciation API ----------
+async function analyzePronunciation({ referenceText, audioBase64 }){
+  const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ text: referenceText, audioBase64, lang:'ko' })
+  });
+  const data = await r.json().catch(()=> ({}));
+  if(!r.ok) throw new Error(data?.error || 'Analyse échouée');
+  let acc = 0;
+  if(typeof data.accuracy === 'number') acc = data.accuracy;
+  else if(typeof data.score === 'number') acc = data.score;
+  else if(typeof data.percent === 'number') acc = data.percent / 100;
+  if(acc > 1) acc = acc/100;
+  return { accuracy: acc, raw:data };
 }
 
-function makeBundleCard(stage, bundle){
+// ---------- UI Render ----------
+function renderAll(){
+  const wrap = document.getElementById('groups-wrap');
+  wrap.innerHTML = '';
+  state.progress = {};
+  state.listenCount = {};
+  BUNDLES.forEach(b=>{
+    state.progress[b.key] = { done:false, score:null, accuracy:null, audioBase64:null, duration:null, friendly:[] };
+    state.listenCount[b.key] = 0;
+    wrap.appendChild(makeBundleCard(b));
+  });
+  document.querySelectorAll('.progress-dot').forEach(d=>d.classList.remove('on'));
+}
+
+function makeBundleCard(bundle){
   const wrap = document.createElement('div');
   wrap.className = 'wu-card';
-  wrap.id = `stage-${stage.idx}-${bundle.key}`;
+  wrap.id = `bundle-${bundle.key}`;
 
-  const referenceText = stage.continuous ? stripForContinuous(bundle.text) : bundle.text;
-  const listenKey = `s${stage.idx}-${bundle.key}`;
+  const refText = state.mode.continuous ? stripForContinuous(bundle.text) : bundle.text;
 
   wrap.innerHTML = `
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <div>
-        <div class="text-sm text-slate-500">${stage.title}</div>
-        <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${referenceText}</span></div>
+        <div class="text-sm text-slate-500">Vitesse ${state.mode.speed}× ${state.mode.continuous?'<span class="text-slate-500 text-xs">(rythme continu)</span>':''}</div>
+        <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${refText}</span></div>
         <div class="small-muted">1) Écouter  2) S’enregistrer  3) Évaluer</div>
       </div>
       <div class="flex items-center gap-2">
@@ -219,16 +211,16 @@ function makeBundleCard(stage, bundle){
     </div>
   `;
 
-  // Écouter
+  // 듣기
   const btnPlay = wrap.querySelector('.btn-play');
   const playCountTag = wrap.querySelector('.play-count');
   btnPlay.addEventListener('click', async (e)=>{
-    await playTTS(referenceText, bundle.voice, stage.speed, e.currentTarget);
-    listenCount[listenKey] = (listenCount[listenKey]||0) + 1;
-    playCountTag.textContent = String(listenCount[listenKey]);
+    await playTTS(refText, bundle.voice, state.mode.speed, e.currentTarget);
+    state.listenCount[bundle.key] = (state.listenCount[bundle.key]||0) + 1;
+    playCountTag.textContent = String(state.listenCount[bundle.key]);
   });
 
-  // Recorder & Eval
+  // 녹음/평가
   const rec = makeRecorder();
   const btnStart = wrap.querySelector('.btn-rec-start');
   const btnStop  = wrap.querySelector('.btn-rec-stop');
@@ -241,17 +233,11 @@ function makeBundleCard(stage, bundle){
   let lastRecord = null;
 
   btnStart.addEventListener('click', async ()=>{
-    btnStart.disabled = true;
-    btnStop.disabled  = false;
-    btnEval.disabled  = true;
+    btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
     scoreTag.classList.add('hidden');
     status.textContent = 'Enregistrement… parle comme le modèle !';
-    try{
-      await rec.start(canvas);
-    }catch(e){
-      alert("Micro non autorisé. Vérifie les permissions du navigateur.");
-      btnStart.disabled = false; btnStop.disabled = true;
-    }
+    try{ await rec.start(canvas); }
+    catch(e){ alert("Micro non autorisé. Vérifie les permissions du navigateur."); btnStart.disabled=false; btnStop.disabled=true; }
   });
 
   btnStop.addEventListener('click', async ()=>{
@@ -271,26 +257,22 @@ function makeBundleCard(stage, bundle){
   });
 
   btnEval.addEventListener('click', async ()=>{
-    if(!lastRecord?.base64){ return; }
+    if(!lastRecord?.base64) return;
     btnEval.disabled = true;
     status.textContent = 'Évaluation en cours…';
     try{
-      const { accuracy, raw } = await analyzePronunciation({ referenceText, audioBase64: lastRecord.base64 });
+      const { accuracy, raw } = await analyzePronunciation({ referenceText: refText, audioBase64: lastRecord.base64 });
       const percent = Math.round((accuracy || 0)*100);
       scoreTag.textContent = `Score: ${percent}%`;
       scoreTag.classList.remove('hidden');
-      status.textContent = 'Groupe évalué. Tu peux passer au suivant.';
+      status.textContent = 'Groupe évalué. Passe au suivant.';
 
-      progress[stage.idx][bundle.key] = {
-        done: true,
-        score: percent,
-        accuracy: accuracy,
-        audioBase64: lastRecord.base64,
-        duration: lastRecord.duration,
-        friendly: raw?.tips || []
+      state.progress[bundle.key] = {
+        done:true, score:percent, accuracy, audioBase64:lastRecord.base64,
+        duration:lastRecord.duration, friendly: (raw?.tips||[])
       };
       wrap.classList.add('wu-done');
-      checkStageUnlock(stage.idx);
+      checkFinish();
     }catch(e){
       status.textContent = 'Échec de l’évaluation. Réessaie.';
     }finally{
@@ -301,54 +283,42 @@ function makeBundleCard(stage, bundle){
   return wrap;
 }
 
-function checkStageUnlock(idx){
-  const allDone = BUNDLES.every(b => progress[idx][b.key].done);
-  if(!allDone) return;
-  const dot = document.querySelector(`.progress-dot[data-dot="${idx}"]`);
-  dot?.classList.add('on');
-
-  const next = STAGES[idx+1];
-  if(next){
-    document.getElementById(`stage-${next.idx}`)?.classList.remove('hidden');
-  }else{
+function checkFinish(){
+  const keys = BUNDLES.map(b=>b.key);
+  const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
+  document.querySelectorAll('.progress-dot').forEach((d,idx)=> d.classList.toggle('on', idx < doneCount));
+  if(doneCount === keys.length){
     document.getElementById('finish-wrap')?.classList.remove('hidden');
   }
 }
 
-// ===== 결과 전송 =====
+// ---------- Results ----------
 async function sendResults(){
-  const questions = [];
-  STAGES.forEach(s=>{
-    BUNDLES.forEach(b=>{
-      const st = progress[s.idx][b.key];
-      const refText = s.continuous ? stripForContinuous(b.text) : b.text;
-      const listenKey = `s${s.idx}-${b.key}`;
-      questions.push({
-        number: `WU-${s.idx+1}-${b.key}`,
-        type: 'warmup_pronun',
-        fr: `${b.label} — ${s.title} — vitesse ${s.speed}×${s.continuous?' (rythme continu)':''}`,
-        ko: refText,
-        userAnswer: '',
-        isCorrect: true,
-        listenCount: listenCount[listenKey] || 0,
-        hint1Count: 0,
-        hint2Count: 0,
-        pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100), friendly: st.friendly || [] },
-        recording: st.audioBase64 ? {
-          base64: st.audioBase64, filename:`wu_${s.idx+1}_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration
-        } : null
-      });
-    });
+  const questions = BUNDLES.map(b=>{
+    const st = state.progress[b.key] || {};
+    const refText = state.mode.continuous ? stripForContinuous(b.text) : b.text;
+    return {
+      number: `WU-${b.key}`,
+      type: 'warmup_pronun',
+      fr: `${b.label} — vitesse ${state.mode.speed}×${state.mode.continuous?' (rythme continu)':''}`,
+      ko: refText,
+      userAnswer: '',
+      isCorrect: true,
+      listenCount: state.listenCount[b.key] || 0,
+      hint1Count: 0, hint2Count: 0,
+      pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100), friendly: st.friendly || [] },
+      recording: st.audioBase64 ? { base64: st.audioBase64, filename:`wu_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration } : null
+    };
   });
 
   const payload = {
-    studentName: (document.getElementById('student-name')?.value || '').trim() || (window.StudentGate?.getName?.() || 'Élève'),
-    startTime: window._startTime || new Date().toISOString(),
+    studentName: state.name || 'Élève',
+    startTime: state.startISO || new Date().toISOString(),
     endTime: new Date().toISOString(),
-    totalTimeSeconds: Math.max(0, Math.round((Date.now() - (window._startMs||Date.now()))/1000)),
-    assignmentTitle: 'Warming up 5×5 – Nombres coréens',
+    totalTimeSeconds: Math.max(0, Math.round((Date.now() - (state.startMs||Date.now()))/1000)),
+    assignmentTitle: `Warm-up – Nombres (vitesse ${state.mode.speed}×${state.mode.continuous?' / continu':''})`,
     assignmentSummary: [
-      '4 groupes × 5 étapes (0.7/1.0/1.2/1.5/1.5 rythme continu)',
+      '4 groupes: Natifs(1–5,6–10) + Hanja(1–5,6–10)',
       'Écouter → S’enregistrer → Évaluer (score en %)'
     ],
     questions
@@ -362,25 +332,53 @@ async function sendResults(){
     const j = await r.json().catch(()=> ({}));
     if(!r.ok || j?.ok===false) throw new Error(j?.error || 'send-results failed');
     alert('Résultat envoyé ✔️');
-    document.getElementById('btn-next')?.classList.remove('hidden');
   }catch(e){
     console.error(e);
     alert('Envoi impossible. Réessaie plus tard.');
   }
 }
 
-// ===== 초기화 =====
+// ---------- Mount ----------
 document.addEventListener('DOMContentLoaded', ()=>{
-  // 이름 게이트: 이름 없으면 상호작용 막기
+  // 이름 게이트
   window.StudentGate?.init?.();
   window.StudentGate?.requireBeforeInteraction?.(document);
 
-  const mount = document.getElementById('stages-wrap');
-  STAGES.forEach((s, i)=>{
-    const el = renderStage(s);
-    if(i>0) el.classList.add('hidden');
-    mount.appendChild(el);
+  const startScreen = document.getElementById('start-screen');
+  const quizRoot    = document.getElementById('quiz-root');
+  const startBtn    = document.getElementById('start-btn');
+  const modeChooser = document.getElementById('mode-chooser');
+
+  startBtn?.addEventListener('click', ()=>{
+    const v = (document.getElementById('student-name')?.value||'').trim();
+    state.name = v || (window.StudentGate?.getName?.() || 'Élève');
+    state.startISO = new Date().toISOString();
+    state.startMs = Date.now();
+    modeChooser.classList.remove('hidden');
+    startBtn.disabled = true;
   });
 
-  document.getElementById('btn-send')?.addEventListener('click', sendResults);
+  // 모드 선택 버튼
+  modeChooser?.querySelectorAll('button[data-speed]')?.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const sp = parseFloat(btn.dataset.speed||'1.0');
+      const cont = btn.dataset.cont === 'true';
+      state.mode = { speed: sp, continuous: cont };
+
+      startScreen.classList.add('hidden');
+      quizRoot.classList.remove('hidden');
+
+      renderAll();
+
+      // 액션 버튼들
+      document.getElementById('btn-send')?.addEventListener('click', sendResults);
+      document.getElementById('btn-retry')?.addEventListener('click', ()=>{
+        // 다시 모드 선택
+        quizRoot.classList.add('hidden');
+        startBtn.disabled = false;
+        modeChooser.classList.remove('hidden');
+        startScreen.classList.remove('hidden');
+      });
+    });
+  });
 });
