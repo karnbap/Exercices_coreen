@@ -6,10 +6,10 @@
   <title>Coréen — Nombres | Explications + Warming up (5×5)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/style.css">
   <style>
-    body{font-family:'Poppins','Noto Sans KR',sans-serif;}
+    body{font-family:'Poppins','Noto Sans KR',sans-serif; background:#f4f6f8; color:#0f172a;}
     .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
     .btn{padding:.75rem 1.1rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
     .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
@@ -22,7 +22,7 @@
     .readable .kicker { font-size: .96rem; letter-spacing: .02em; color:#64748b; }
     .info-card { background:#fff; border:1px solid #e5e7eb; border-radius:1rem; padding:1.15rem 1.25rem; box-shadow:0 1px 2px rgba(16,24,40,.06); }
     .info-card h3 { font-weight:700; font-size:1.125rem; color:#0f172a; margin-bottom:.5rem; }
-    .callout { background:#fef9c3; border:1px solid #fde68a; color:#92400e; padding:.9rem 1rem; border-radius:.85rem; }
+    .callout { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:.9rem 1rem; border-radius:.85rem; }
     .soft-divider { height:1px; margin:1.35rem 0; background:linear-gradient(to right, transparent, #e5e7eb, transparent); }
     .table-soft th { background:#f8fafc; color:#0f172a; }
     .table-soft th, .table-soft td { padding:1rem; }
@@ -57,71 +57,70 @@
     <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3" placeholder="Ex. Camille / Lucas / Zoé" />
   </div>
 
-  <!-- 설명 -->
+  <!-- ===== [EXPLICATIONS] : 위(첫 코드)의 콘텐츠를 100% 유지하여 배치 ===== -->
   <div id="explanation-screen" class="quiz-container">
     <div class="mx-auto max-w-3xl readable">
-      <h2 class="text-3xl md:text-4xl font-bold text-slate-800 tracking-tight leading-tight text-center">
-        📘 Apprendre les nombres coréens ! / 한국어 숫자 배우기!
-      </h2>
-      <p class="kicker text-center mt-2 mb-8">
-        (Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)
-      </p>
+      <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight text-center">Exercice : Les Nombres Coréens 🔢</h1>
+      <p class="kicker text-center mt-2">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
 
-      <section class="info-card space-y-3">
+      <!-- 1) Petite explication -->
+      <section class="info-card space-y-3 mt-6">
         <h3>1️⃣ Petite explication / 간단 설명</h3>
         <p class="callout">
-          👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! /
-          많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!
+          👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! / 많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!
         </p>
         <ul class="list-disc list-inside space-y-2 text-slate-700">
           <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자(문자) 체계</li>
           <li><strong>Chinois</strong> = langue / 중국어(언어)</li>
         </ul>
-
         <div class="soft-divider"></div>
-
         <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
-          <p class="font-semibold">Astuce (analogie) / 비유</p>
-          <p class="mt-1">
-            En Europe, on écrit avec <b>l'alphabet latin</b>…<br>
-            → <b>chinois</b> = langue / <b>lettres</b> = <u>caractères han (Hanja)</u>.<br>
-            🇰🇷 <b>Le coréen</b> : <u>2 jeux</u> de nombres (순수 한국어, 한자어).
+          <p>
+            <strong>Astuce (analogie) / 비유</strong> : En Europe, on écrit avec <b>l'alphabet latin</b> (pas « alphabet italien »).<br>
+            → <b>Italien</b> = une <u>langue</u> / <b>lettres</b> = alphabet <u>latin</u>.<br>
+            → <b>chinois</b> = une <u>langue</u> / <b>lettres</b> = <u>caractères han (Hanja)</u>.<br>
+            🇰🇷 <b>Le coréen aussi</b> : <b>langue</b> = coréen / <b>nombres</b> = <u>2 jeux</u> (순수 한국어 / natifs, 한자어 / Hanja-coréens).<br>
+            <em>Hanja ≠ chinois (la langue)</em> → « <b>caractères han</b> » = écriture, pas la langue chinoise.
           </p>
         </div>
       </section>
 
       <div class="soft-divider"></div>
 
+      <!-- 2) Deux systèmes -->
       <section class="info-card">
-        <p class="mb-4">Deux systèmes / 두 가지 숫자</p>
+        <h3>2️⃣ Deux systèmes / 두 가지 숫자</h3>
+        <p class="mb-2"><strong>순수 한국어</strong> (natifs) ↔ <strong>한자어</strong> (Hanja-coréens)</p>
         <div class="grid md:grid-cols-2 gap-4">
           <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 class="font-bold text-lg text-blue-900">순수 한국어 / Natifs</h4>
-            <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
-            <p><b>Pour:</b> âge, personnes, objets… / 눈앞에서 세는 값</p>
+            <div class="font-semibold text-blue-900">순수 한국어 / Natifs</div>
+            <div class="text-2xl font-bold my-2">하나, 둘, 셋…</div>
+            <div class="text-slate-700">Âge, personnes, objets… / 나이, 사람 수, 사물 개수…</div>
           </div>
           <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 class="font-bold text-lg text-green-900">한자어 / Hanja-coréens</h4>
-            <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
-            <p><b>Pour:</b> unités <u>écrites</u> (dates, argent, minutes…)</p>
+            <div class="font-semibold text-green-900">한자어 / Hanja-coréens</div>
+            <div class="text-2xl font-bold my-2">일, 이, 삼…</div>
+            <div class="text-slate-700">Dates, argent, minutes… / 날짜, 돈, 분…</div>
           </div>
         </div>
       </section>
 
       <div class="soft-divider"></div>
 
+      <!-- 3) Exception & Tendance -->
       <section class="info-card">
         <h3>⚡ Exception & Tendance / 예외와 경향</h3>
         <ul class="list-disc list-inside space-y-2">
-          <li>Heures(시) → <b>natifs</b> · Minutes(분) → <b>Hanja-coréens</b></li>
-          <li>« 1 h = 60 min » 체계 이후 시=natifs / 분=Hanja</li>
+          <li>Heures(시) → <b>순수 한국어 / natifs</b> · Minutes(분) → <b>한자어 / Hanja-coréens</b></li>
+          <li>Autrefois « 1각 ≈ 15 min », puis système moderne <b>1 h = 60 min</b> → aujourd’hui : <b>시 = natifs</b>, <b>분 = Hanja</b>. Nouveaux mots → tendance <b>coréen natif</b>.</li>
         </ul>
       </section>
 
       <div class="soft-divider"></div>
 
+      <!-- 4) Résumé -->
       <section class="info-card">
-        <h3>✅ Résumé / 요약</h3>
+        <h3>✅ Résumé facile / 요약</h3>
         <div class="overflow-x-auto mt-3">
           <table class="w-full text-left border-collapse text-base table-soft">
             <thead>
@@ -134,17 +133,30 @@
             <tbody>
               <tr class="odd:bg-white even:bg-gray-50">
                 <td class="border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
-                <td class="border border-slate-200">Valeurs libres, classificateurs, durées</td>
-                <td class="border border-slate-200">한 달, 두 달 / 한 개, 두 명, 세 잔, 한 권 / 한 시, 두 시</td>
+                <td class="border border-slate-200">Compter (valeur libre), classificateurs, durées libres</td>
+                <td class="border border-slate-200">
+                  <span class="font-medium">Durée (mois)</span> : <b>한 달, 두 달</b><br>
+                  <span class="font-medium">Classificateurs</span> : <b>한 개, 두 명, 세 잔, 한 권</b><br>
+                  <span class="font-medium">Heures (시)</span> : <b>한 시, 두 시</b>
+                </td>
               </tr>
               <tr class="odd:bg-white even:bg-gray-50">
                 <td class="border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
-                <td class="border border-slate-200">Libellés écrits (calendrier, monnaie, montre…)</td>
-                <td class="border border-slate-200">1월, 2월 / 10분, 30초 / 3층, 302호 / 1,000원</td>
+                <td class="border border-slate-200">Libellés/valeurs « déjà écrits » (calendrier, montre, monnaie, numéros)</td>
+                <td class="border border-slate-200">
+                  <span class="font-medium">Mois (calendrier)</span> : <b>1월, 2월, 3월</b><br>
+                  <span class="font-medium">Minutes/Secondes</span> : <b>10분, 30초</b><br>
+                  <span class="font-medium">Dates/Argent</span> : <b>2025년 9월 7일, 1,000원</b><br>
+                  <span class="font-medium">Numéros d'appartement</span> : <b>3층, 302호</b>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
+        <ul class="mt-2 text-xs text-gray-600 list-disc list-inside leading-relaxed">
+          <li><b>Temps</b> : <b>시(heures)</b> → natifs / <b>분·초(minutes/secondes)</b> → Hanja.</li>
+          <li><b>Mélanges</b> : <b>달/개월</b>(durées en mois), <b>주/주일</b>(semaines) — usages coexistent.</li>
+        </ul>
       </section>
 
       <div class="text-center mt-8">
@@ -229,8 +241,10 @@
       const exp = document.getElementById('explanation-screen');
       const pick = document.getElementById('mode-picker');
       const wu = document.getElementById('warmup-screen');
-      document.getElementById('explanation-next-btn')?.addEventListener('click', ()=> {
-        exp.classList.add('hidden'); pick.classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'});
+      document.getElementById('explanation-next-btn')?.addEventListener('click', ()=>{
+        exp.classList.add('hidden');
+        pick.classList.remove('hidden');
+        window.scrollTo({top:0, behavior:'smooth'});
       });
       if(m){ exp.classList.add('hidden'); pick.classList.add('hidden'); wu.classList.remove('hidden'); }
       else { exp.classList.remove('hidden'); pick.classList.remove('hidden'); wu.classList.add('hidden'); }
