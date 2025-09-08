@@ -12,7 +12,10 @@
   <!-- 공통 스크립트 (의존성 순서 중요: utils → middleware → client) -->
   <script defer src="/assets/student-gate.js"></script>
   <script defer src="/assets/grading-criteria.js"></script>
-  <script defer src="/assets/answer-judge.js"></script>  <!-- ✅ KO/FR 채점 공통 모듈 -->
+
+  <!-- ✅ 채점 공용 모듈 추가 -->
+  <script defer src="/assets/answer-judge.js"></script>
+
   <script defer src="/assets/pronun-utils.js"></script>
   <script defer src="/assets/pronun-vowel-middleware.js"></script>
   <script defer src="/assets/pronun-client.js"></script>
@@ -87,9 +90,9 @@
         </ul>
 
         <hr class="my-2"/>
-        <p>🙋‍♀️ <strong class="korean-font text-green-600">같아요</strong> : « être comme … » — comparaison entre deux noms&nbsp;: <em>Nom1 est comme Nom2</em> (il n’y a que « être » et « comme » entre les deux).</p>
-        <p>✍️ <strong class="korean-font text-purple-600">같은</strong> : pour qualifier un nom (« ~같은 + nom » = « nom qui est comme … »).</p>
-        <p>🏃‍♂️ <strong class="korean-font text-blue-600">처럼 / 같이</strong> : pour comparer une action (avec un verbe). « 같이 » peut aussi vouloir dire « ensemble ».</p>
+        <p>🙋‍♀️ <strong class="korean-font text-green-600">같아요</strong> : « être comme … » — comparaison entre deux noms : Nom1 est comme Nom2.</p>
+        <p>✍️ <strong class="korean-font text-purple-600">같은</strong> : « ~같은 + nom ».</p>
+        <p>🏃‍♂️ <strong class="korean-font text-blue-600">처럼 / 같이</strong> : comparaison d’action (« 같이 » peut aussi vouloir dire « ensemble »).</p>
       </div>
     </section>
 
@@ -109,7 +112,6 @@
   window.addEventListener('DOMContentLoaded', () => {
     if (!window.StudentGate) window.StudentGate = { init(){}, requireBeforeInteraction(){}, getName(){return ''}, setName(){} };
 
-    // 0) 학생 이름 게이트 & 입력창 동기화
     StudentGate.init();
     StudentGate.requireBeforeInteraction(document);
     const _nameInput = document.getElementById('student-name');
@@ -120,7 +122,6 @@
       if (v) StudentGate.setName(v);
     });
 
-    // 과제 메타(메일 상단 요약용)
     const ASSIGNMENT_META = {
       assignmentTitle: "Dictée – Comme en coréen",
       assignmentTopic: "같아요 / 같은 / 처럼 / 같이",
@@ -131,7 +132,6 @@
       ]
     };
 
-    // 1) 문항 목록
     const exercises = [
       { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1: "ㅊㅅ ㄱㅇㅇ", hint2: "천사 = ange", voice: "alloy" },
       { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1: "ㅇㄱ ㄲ ㄱㅇㅇ", hint2: "꿈 = rêve", voice: "Puck" },
@@ -166,7 +166,7 @@
       for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
       return new Blob([bytes],{type:mimeType});
     }
-    function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    function escapeHtml(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
     async function getAudio(text, voice, button, index){
       try{
@@ -207,35 +207,43 @@
       }
     }
 
+    function styleHint(raw){
+      const hasJeoneun=/(저는|전)/.test(raw), hasNaneun=/(나는|난)/.test(raw), politeEnd=/(요|니다)[\s.]*$/.test(raw);
+      if(hasJeoneun && !politeEnd) return "“저는/전”을 썼으면 문장 끝을 -요/-(스)ㅂ니다 형태로 맞춰요.";
+      if(hasNaneun && politeEnd) return "“나는/난”을 썼으면 반말로 끝내요. -요/-(스)ㅂ니다는 쓰지 않아요.";
+      return '';
+    }
+
     function gradeBoth(index){
       const card=document.querySelectorAll('.dictation-card')[index];
       const koInput=card.querySelector('.input-ko');
       const frInput=card.querySelector('.input-fr');
       const feedback=card.querySelector('.feedback-display');
-      const rawKO=koInput.value||'';
+
+      const rawKO=koInput.value||''; 
       const rawFR=frInput.value||'';
 
-      const romanWarn=/[A-Za-z]/.test(rawKO) ? "한글 발음 표기 로마자는 쓰지 마세요. (ga, teun 등)" : "";
-
-      // ✅ KO/FR 채점: 공통 모듈 사용 (KO 엄격 / FR 관대)
-      const gko = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:true });
-      const gfr = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
-      const reg = AnswerJudge.checkRegister(rawKO);
+      // ✅ 공용 채점기 사용
+      const koRes = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:true });
+      const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
 
       exState[index].attempts++;
-      exState[index].koCorrect = gko.isCorrect;
-      exState[index].frCorrect = gfr.isCorrect;
+      exState[index].koCorrect = koRes.isCorrect;
+      exState[index].frCorrect = frRes.isCorrect;
+
+      const romanWarn=/[A-Za-z]/.test(rawKO) ? "한글 발음 표기 로마자는 쓰지 마세요. (ga, teun 등)" : "";
+      const styleMsg=styleHint(rawKO);
 
       const tags=[];
       if(romanWarn) tags.push(`⚠️ ${romanWarn}`);
-      if(gko.note)  tags.push(`KO: ${gko.note}`);
-      if(gfr.note)  tags.push(`FR: ${gfr.note}`);
-      if(reg && reg.ok===false){ tags.push(`말투: ${reg.ko}`); }
+      if(styleMsg) tags.push(`💡 ${styleMsg}`);
+      if(koRes.note) tags.push(`KO: ${koRes.note}`);
+      if(frRes.note) tags.push(`FR: ${frRes.note}`);
 
-      const koPill = gko.isCorrect ? `<span class="pill pill-green">KO ✓</span>` : `<span class="pill pill-red">KO ✗</span>`;
-      const frPill = gfr.isCorrect ? `<span class="pill pill-green">FR ✓</span>` : `<span class="pill pill-red">FR ✗</span>`;
-      const ok = gko.isCorrect && gfr.isCorrect;
+      const koPill = koRes.isCorrect ? `<span class="pill pill-green">KO ✓</span>` : `<span class="pill pill-red">KO ✗</span>`;
+      const frPill = frRes.isCorrect ? `<span class="pill pill-green">FR ✓</span>` : `<span class="pill pill-red">FR ✗</span>`;
 
+      const ok = koRes.isCorrect && frRes.isCorrect;
       feedback.innerHTML = ok ? `
         <div class="feedback correct">
           <strong class="text-lg">🎉 Super ! 잘했어요!</strong>
@@ -309,7 +317,6 @@
       document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
       document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{ inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); }); });
 
-      // Pronun 모듈 장착(문항별) - 가드 포함
       if (window.Pronun && typeof Pronun.mount === 'function') {
         document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
           Pronun.mount(cardEl, {
@@ -337,34 +344,21 @@
     document.getElementById('finish-btn').addEventListener('click', async () => {
       const name = (window.StudentGate?.getName?.() || document.getElementById('student-name').value || '').trim() || 'N/A';
 
-      // 개별 스코어 집계
       const totalQ = exercises.length;
       const koCorrectCount = exState.filter(s => s.koCorrect).length;
       const frCorrectCount = exState.filter(s => s.frCorrect).length;
       const koScore = Math.round((koCorrectCount / Math.max(1, totalQ)) * 100);
       const frScore = Math.round((frCorrectCount / Math.max(1, totalQ)) * 100);
 
-      const pronItems = exState
-        .map(s => s.pronunciation?.accuracy)
-        .filter(x => typeof x === 'number' && isFinite(x));
-      const pronScore = Math.round(
-        (pronItems.reduce((a, b) => a + b, 0) / Math.max(1, pronItems.length)) * 100
-      );
+      const pronItems = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
+      const pronScore = Math.round((pronItems.reduce((a, b) => a + b, 0) / Math.max(1, pronItems.length)) * 100);
 
-      // 기존 총점(= KO+FR만 반영) 유지 — 필요 시 가중치 바꾸세요
       const overall = Math.round(((koScore + frScore) / 2));
-
-      // 공통 채점 메시지(불/한)
       const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
 
-      // 페이지 배너(선택) + 분리 스코어 보드
       if (window.Grading?.formatFinalBanner) {
         let box = document.getElementById('final-result');
-        if (!box) {
-          box = document.createElement('div');
-          box.id = 'final-result';
-          document.querySelector('.container').appendChild(box);
-        }
+        if (!box) { box = document.createElement('div'); box.id = 'final-result'; document.querySelector('.container').appendChild(box); }
         box.innerHTML = window.Grading.formatFinalBanner(overall) +
           `<div class="mt-2 text-center">
              <div class="inline-flex gap-2 text-sm">
@@ -375,7 +369,6 @@
            </div>`;
       }
 
-      // 안내 알림(요약)
       alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}`
           + `총점: ${overall}/100 (KO+FR)\n`
           + `한글 받아쓰기: ${koScore}/100\n`
@@ -393,11 +386,8 @@
           assignmentTopic: ASSIGNMENT_META.assignmentTopic,
           assignmentSummary: ASSIGNMENT_META.assignmentSummary,
           gradingMessage: gm,
-
-          // ✅ 분리 스코어 동봉
           categoryScores: { ko: koScore, fr: frScore, pron: pronScore, overall },
 
-          // 문항별 상세
           questions: exercises.map((ex, i) => {
             const card = document.querySelectorAll('.dictation-card')[i];
             const ko = card.querySelector('.input-ko').value || '';
