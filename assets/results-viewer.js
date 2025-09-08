@@ -18,7 +18,7 @@ window.ResultsViewer = {
     const ko = avg(data.totals?.ko||0), fr = avg(data.totals?.fr||0), pr = avg(data.totals?.pron||0);
     const total = Math.round((ko+fr+pr)/3);
     el.innerHTML = `
-<header class="mb-4">
+<header class="mb-4 max-w-3xl mx-auto">
   <div class="flex items-center justify-between">
     <div class="text-sm text-slate-500">made by 성일,Pongdang · Lapeace29@gmail.com</div>
     <button onclick="window.print()" class="px-3 py-2 rounded bg-blue-700 text-white">인쇄 / Imprimer</button>
@@ -26,13 +26,13 @@ window.ResultsViewer = {
   <h1 class="mt-3 text-2xl font-bold">결과 / <span class="text-amber-600">Résultats</span></h1>
 </header>
 
-<section class="bg-white rounded-xl p-5 shadow">
+<section class="bg-white rounded-xl p-5 shadow max-w-3xl mx-auto">
   <p>이름 / Nom : <b>${data.studentName||'-'}</b></p>
   <p class="mt-1">총점 / Total : <b class="text-blue-700">${total}/100</b></p>
   <p class="mt-1 text-sm">KO 받아쓰기 ${ko}/100 · FR 번역 ${fr}/100 · 발음 ${pr}/100</p>
 </section>
 
-<section class="mt-4 space-y-3">
+<section class="mt-4 space-y-3 max-w-3xl mx-auto">
   ${data.questions.map(q=>`
   <article class="bg-white rounded-xl p-4 shadow">
     <div class="flex justify-between items-center">
@@ -56,7 +56,7 @@ window.ResultsViewer = {
   </article>`).join('')}
 </section>
 
-<footer class="mt-6 text-center text-sm text-slate-500">
+<footer class="mt-6 text-center text-sm text-slate-500 max-w-3xl mx-auto">
   made by 성일,Pongdang · Lapeace29@gmail.com
   <div class="mt-3 flex gap-2 justify-center">
     <button onclick="history.back()" class="px-4 py-2 rounded border">이전 연습문제로 / Exercice précédent</button>
