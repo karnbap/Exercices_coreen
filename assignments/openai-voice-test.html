@@ -9,12 +9,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- 공통 스크립트 (순서 유지, defer) -->
+  <!-- 공통 스크립트 (의존성 순서 중요: utils → middleware → client) -->
   <script defer src="/assets/student-gate.js"></script>
   <script defer src="/assets/grading-criteria.js"></script>
-  <script defer src="/assets/pronun-client.js"></script>
   <script defer src="/assets/pronun-utils.js"></script>
   <script defer src="/assets/pronun-vowel-middleware.js"></script>
+  <script defer src="/assets/pronun-client.js"></script>
 
   <style>
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
@@ -158,7 +158,7 @@
     const exState = exercises.map(() => ({
       listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
       koCorrect:false, frCorrect:false, pronunciation:null
-    })));
+    }));  // ← 괄호 정정
 
     function base64ToBlob(base64, mimeType="audio/wav"){
       const bin=atob(base64); const len=bin.length; const bytes=new Uint8Array(len);
