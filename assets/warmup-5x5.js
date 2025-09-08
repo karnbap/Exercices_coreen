@@ -1,5 +1,6 @@
 // assets/warmup-chooser-5x5.js
-// 속도 선택 → 4그룹 발음 연습 → 평가/전송
+// 속도 선택 → 4그룹 발음 연습 → 평가/전송 (서버 analyze-pronunciation 스키마 호환)
+
 const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
 const BUNDLES = [
@@ -36,11 +37,18 @@ function base64ToBlob(base64, mime='audio/mpeg'){
 // ---------- TTS ----------
 let currentAudio=null, audioLock=false, aborter=null, currentSrc=null;
 async function playTTS(text, voice='alloy', speed=1.0, btn){
-  if(audioLock){ if(currentAudio){ if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true);} else { currentAudio.pause(); setBtnPlaying(btn,false);} } return; }
+  if(audioLock){
+    if(currentAudio){
+      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true); }
+      else { currentAudio.pause(); setBtnPlaying(btn,false); }
+    }
+    return;
+  }
   audioLock=true; setTimeout(()=>audioLock=false,200);
   try{
     if(currentAudio && currentAudio._meta === `${text}|${speed}|${voice}`){
-      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true);} else { currentAudio.pause(); setBtnPlaying(btn,false); }
+      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true); }
+      else { currentAudio.pause(); setBtnPlaying(btn,false); }
       return;
     }
     if(aborter){ try{aborter.abort();}catch{} }
@@ -64,10 +72,15 @@ async function playTTS(text, voice='alloy', speed=1.0, btn){
     } else if (data.audioUrl){ src = data.audioUrl; }
     currentSrc = src;
 
-    const audio = new Audio(src); currentAudio = audio; audio._meta = `${text}|${speed}|${voice}`;
+    const audio = new Audio(src);
+    currentAudio = audio;
+    audio._meta = `${text}|${speed}|${voice}`;
     audio.addEventListener('playing', ()=>setBtnPlaying(btn,true));
     audio.addEventListener('pause',   ()=>setBtnPlaying(btn,false));
-    audio.addEventListener('ended',   ()=>{ setBtnPlaying(btn,false); if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; } });
+    audio.addEventListener('ended',   ()=>{
+      setBtnPlaying(btn,false);
+      if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; }
+    });
     await audio.play();
   }catch(e){ alert('Problème de lecture audio. Réessaie.'); }
 }
@@ -104,10 +117,10 @@ function makeRecorder(){
       const bars = 32; const step = Math.floor(data.length / bars);
       for(let i=0;i<bars;i++){
         const v = data[i*step]/255; const bh = v*h;
-        g.fillStyle = '#6366f1';
         g.fillRect(i*(w/bars)+2, h-bh, (w/bars)-4, bh);
       }
     }
+    g.fillStyle = '#6366f1';
     loop();
   }
   function stop(canvas){
@@ -141,20 +154,32 @@ function makeRecorder(){
   return { start, stop, getResult };
 }
 
-// ---------- Pronunciation API ----------
-async function analyzePronunciation({ referenceText, audioBase64 }){
+// ---------- Pronunciation API (서버 최신 스키마로 전송) ----------
+function toBareBase64(dataUrlOrB64){
+  return String(dataUrlOrB64||'').includes(',')
+    ? String(dataUrlOrB64).split(',')[1]
+    : String(dataUrlOrB64||'');
+}
+async function analyzePronunciation({ referenceText, record }){
+  const payload = {
+    referenceText,
+    audio: {
+      base64: toBareBase64(record.base64),
+      filename: `rec_${Date.now()}.webm`,
+      mimeType: 'audio/webm',
+      duration: record.duration
+    }
+  };
   const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ text: referenceText, audioBase64, lang:'ko' })
+    body: JSON.stringify(payload)
   });
   const data = await r.json().catch(()=> ({}));
   if(!r.ok) throw new Error(data?.error || 'Analyse échouée');
-  let acc = 0;
-  if(typeof data.accuracy === 'number') acc = data.accuracy;
-  else if(typeof data.score === 'number') acc = data.score;
-  else if(typeof data.percent === 'number') acc = data.percent / 100;
+  let acc = (typeof data.accuracy === 'number') ? data.accuracy : 0;
   if(acc > 1) acc = acc/100;
-  return { accuracy: acc, raw:data };
+  const friendly = Array.isArray(data?.details?.explain) ? data.details.explain : [];
+  return { accuracy: acc, raw:data, friendly, transcript: data?.transcript||'' };
 }
 
 // ---------- UI Render ----------
@@ -261,15 +286,17 @@ function makeBundleCard(bundle){
     btnEval.disabled = true;
     status.textContent = 'Évaluation en cours…';
     try{
-      const { accuracy, raw } = await analyzePronunciation({ referenceText: refText, audioBase64: lastRecord.base64 });
+      const { accuracy, friendly } = await analyzePronunciation({ referenceText: refText, record: lastRecord });
       const percent = Math.round((accuracy || 0)*100);
       scoreTag.textContent = `Score: ${percent}%`;
       scoreTag.classList.remove('hidden');
       status.textContent = 'Groupe évalué. Passe au suivant.';
 
       state.progress[bundle.key] = {
-        done:true, score:percent, accuracy, audioBase64:lastRecord.base64,
-        duration:lastRecord.duration, friendly: (raw?.tips||[])
+        done:true, score:percent, accuracy,
+        audioBase64: toBareBase64(lastRecord.base64),
+        duration:lastRecord.duration,
+        friendly
       };
       wrap.classList.add('wu-done');
       checkFinish();
@@ -358,7 +385,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     startBtn.disabled = true;
   });
 
-  // 모드 선택 버튼
+  // 모드 선택 버튼 (data-speed, data-cont)
   modeChooser?.querySelectorAll('button[data-speed]')?.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const sp = parseFloat(btn.dataset.speed||'1.0');
