@@ -3,317 +3,229 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coréen — Nombres | Explications + Warming up (5×5)</title>
+  <title>Warm-up Coréen — Nombres (5×5 + Choix de vitesse)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/style.css">
   <style>
-    :root{
-      --ink:#0f172a; /* slate-900 */
-      --muted:#64748b; /* slate-500 */
-      --brand:#2563eb; /* blue-600 */
-      --brand-700:#1d4ed8; /* blue-700 */
-      --accent:#10b981; /* emerald-500 */
-      --surface:#f4f6f8; /* page bg */
-      --card:#ffffff;
-      --border:#e5e7eb;
-    }
-    body{font-family:'Poppins','Noto Sans KR',sans-serif;background:var(--surface);color:var(--ink)}
-    .container{max-width:1024px;margin:0 auto;padding:0 1rem}
-
-    /* Topbar */
-    .topbar{position:sticky;top:0;z-index:40;background:#ffffffd9;backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--border)}
-
-    /* Cards */
-    .quiz-container{max-width:960px;margin:1.5rem auto;padding:1.5rem;background:var(--card);border-radius:1rem;border:1px solid var(--border);box-shadow:0 8px 20px rgba(15,23,42,.06)}
-
-    /* Buttons */
-    .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.1rem;border-radius:.8rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:.2s}
-    .btn:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 4px rgba(37,99,235,.25)}
-    .btn[disabled]{opacity:.5;cursor:not-allowed}
-    .btn-primary{background:var(--brand);color:#fff}
-    .btn-primary:hover{background:var(--brand-700)}
-    .btn-secondary{background:#f8fafc;border-color:var(--border);color:#111827}
-    .btn-secondary:hover{background:#eef2ff;border-color:#c7d2fe}
-    .btn-ghost{background:#eef2ff;color:#4338ca}
-    .btn-ghost:hover{background:#e0e7ff}
-    .btn-outline{background:#fff;border-color:var(--border);color:#111827}
-    .btn-outline:hover{border-color:#cbd5e1;background:#f8fafc}
-    .btn-sound{background:var(--accent);color:#fff}
-    .btn-sound:hover{background:#059669}
-    .btn-lg{padding:1rem 1.25rem;border-radius:1rem;font-size:1.05rem}
-
-    .kicker{color:var(--muted);letter-spacing:.02em}
-    .readable{line-height:1.85}
-    .readable p{margin:.85rem 0}
-
-    .info-card{background:#fff;border:1px solid var(--border);border-radius:1rem;padding:1.15rem 1.25rem;box-shadow:0 1px 2px rgba(16,24,40,.06)}
-    .info-card h3{font-weight:800;font-size:1.1rem;color:var(--ink);margin-bottom:.35rem}
-    .callout{background:#fff7ed;border:1px solid #fde68a;color:#9a3412;padding:.9rem 1rem;border-radius:.85rem}
-    .soft-divider{height:1px;margin:1.25rem 0;background:linear-gradient(to right, transparent, var(--border), transparent)}
-    .table-soft th{background:#f8fafc;color:var(--ink)}
-    .table-soft th,.table-soft td{padding:1rem}
-
-    /* Mode picker segmented */
-    .segmented{display:grid;grid-template-columns:1fr;gap:.75rem}
-    @media(min-width:768px){.segmented{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    .seg-btn{border-radius:1rem;padding:1rem 1.25rem;border:1px solid var(--border);background:#fff;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.35rem;font-weight:800;transition:.2s}
-    .seg-btn .sub{font-size:.85rem;color:var(--muted);font-weight:600}
-    .seg-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(2,6,23,.08)}
-    .seg-btn i{font-size:1.1rem}
-    .seg-btn.slow{border-color:#a7f3d0;background:#ecfdf5}
-    .seg-btn.normal{border-color:#bfdbfe;background:#eff6ff}
-    .seg-btn.fast{border-color:#fecaca;background:#fef2f2}
-
-    /* Progress dots */
+    body{font-family:'Poppins','Noto Sans KR',sans-serif;}
+    .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
+    .btn{padding:.75rem 1.15rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
+    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
+    .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
+    .btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+    .small-muted{ font-size:.9rem; color:#64748b; }
+    .readable { line-height: 1.9; }
+    .readable p { margin-top: 0.9rem; margin-bottom: 0.9rem; }
+    .readable .kicker { font-size: .96rem; letter-spacing: .02em; color:#64748b; }
+    .info-card { background:#fff; border:1px solid #e5e7eb; border-radius:1rem; padding:1.15rem 1.25rem; box-shadow:0 1px 2px rgba(16,24,40,.06); }
+    .info-card h3 { font-weight:700; font-size:1.125rem; color:#0f172a; margin-bottom:.5rem; }
+    .callout { background:#fef9c3; border:1px solid #fde68a; color:#92400e; padding:.9rem 1rem; border-radius:.85rem; }
+    .soft-divider { height:1px; margin:1.35rem 0; background:linear-gradient(to right, transparent, #e5e7eb, transparent); }
+    .table-soft th { background:#f8fafc; color:#0f172a; }
+    .table-soft th, .table-soft td { padding:1rem; }
+    .wu-card{background:#fff;border:1px solid #e5e7eb;border-radius:0.9rem;padding:1rem}
+    .wu-done{background:#ecfdf5;border:1px solid #a7f3d0}
     .progress-dot{width:.6rem;height:.6rem;border-radius:9999px;background:#e5e7eb}
     .progress-dot.on{background:#22c55e}
-
-    .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
-
-    /* Utility */
     .hidden{display:none}
+    .vu{width:100%;height:50px;background:#eef2ff;border-radius:.5rem;border:1px solid #c7d2fe}
+    canvas{display:block;width:100%;height:50px}
+    .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
   </style>
 </head>
-<body>
+<body class="bg-gray-50">
 
-  <!-- Topbar: brand + print -->
-  <div class="topbar">
-    <div class="container py-2 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3 text-sm text-slate-600">
-        <i class="fa-solid fa-water"></i>
-        <span>Pongdang · made by 성일</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <button onclick="window.print()" class="btn btn-outline"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
-      </div>
-    </div>
-  </div>
+  <!-- 상단 인쇄 버튼 + 제작자 -->
+  <header class="max-w-5xl mx-auto px-4 mt-4 flex items-center justify-between">
+    <div class="text-sm text-slate-500">made by 성일, Pongdang · Lapeace29@gmail.com</div>
+    <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
+  </header>
 
-  <!-- Élève -->
-  <div class="quiz-container">
-    <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève / 이름</label>
-    <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3 focus:outline-none focus:border-blue-400" placeholder="Ex. Camille / Lucas / Zoé" />
-  </div>
-
-  <!-- ===== EXPLICATIONS ===== -->
+  <!-- 설명 -->
   <div id="explanation-screen" class="quiz-container">
     <div class="mx-auto max-w-3xl readable">
-      <header class="text-center">
-        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
-        <p class="kicker mt-2">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
-      </header>
+      <h2 class="text-3xl md:text-4xl font-bold text-slate-800 tracking-tight leading-tight text-center">
+        📘 Apprendre les nombres coréens ! / 한국어 숫자 배우기!
+      </h2>
+      <p class="kicker text-center mt-2 mb-8">(Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)</p>
 
-      <!-- 1) Petite explication -->
-      <section class="info-card space-y-3 mt-6">
+      <section class="info-card space-y-3">
         <h3>1️⃣ Petite explication / 간단 설명</h3>
-        <div class="space-y-2">
-          <p>👉 Beaucoup pensent que « 한자 = langue chinoise ».</p>
-          <p class="callout">🚫 Faux !</p>
-          <ul class="list-disc list-inside text-slate-700">
-            <li><b>한자 (Hanja)</b> = système d’écriture <span class="text-slate-500">(글자 체계, logographique)</span></li>
-            <li><b>Chinois</b> = langue <span class="text-slate-500">(언어)</span></li>
-          </ul>
-        </div>
+        <p class="callout">
+          👉 Beaucoup de Français pensent que « 한자 = chinois ». Mais non ! /
+          많은 프랑스인이 ‘한자 = 중국어(언어)’라고 생각하지만 아닙니다!
+        </p>
+        <ul class="list-disc list-inside space-y-2 text-slate-700">
+          <li><strong>한자 (Hanja)</strong> = système d’écriture / 글자(문자) 체계</li>
+          <li><strong>Chinois</strong> = langue / 중국어(언어)</li>
+        </ul>
         <div class="soft-divider"></div>
         <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
-          <p class="font-semibold">⚡ Astuce (analogie)</p>
-          <p>En Europe, on écrit avec l’alphabet latin, mais les langues sont différentes :</p>
-          <ul class="list-disc list-inside mt-2">
-            <li>→ <b>Italien</b> = langue / <b>lettres</b> = alphabet latin</li>
-            <li>→ <b>Coréen</b> = langue / <b>lettres</b> = hangeul</li>
-            <li>→ <b>Caractères han (Hanja)</b> = écriture, pas une langue</li>
-          </ul>
-        </div>
-        <div class="soft-divider"></div>
-        <div class="grid gap-2">
-          <div>🇰🇷 <b>Le coréen a donc :</b></div>
-          <ul class="list-disc list-inside">
-            <li>Une <b>langue</b> = coréen</li>
-            <li>Un <b>alphabet</b> = hangeul</li>
-            <li>… mais aussi <b>deux séries de nombres</b> :</li>
-          </ul>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200"><b>순수 한국어 / natifs</b></div>
-            <div class="p-3 rounded-lg bg-green-50 border border-green-200"><b>한자어 / hanja-coréens</b></div>
-          </div>
+          <p class="font-semibold">Astuce (analogie) / 비유</p>
+          <p class="mt-1">
+            En Europe, on écrit avec <b>l'alphabet latin</b> (pas « alphabet italien »).<br>
+            → <b>Italien</b> = une <u>langue</u> / <b>lettres</b> = alphabet <u>latin</u>.<br>
+            → <b>chinois</b> = une <u>langue</u> / <b>lettres</b> = <u>caractères han (Hanja)</u>.<br>
+            🇰🇷 <b>Le coréen aussi</b> : <b>langue</b> = coréen / <b>nombres</b> = <u>2 jeux</u>
+            (순수 한국어 / natifs, 한자어 / Hanja-coréens).<br>
+            <em>Hanja ≠ chinois (la langue)</em> → « <b>caractères han</b> » = écriture, pas la langue chinoise.
+          </p>
         </div>
       </section>
 
       <div class="soft-divider"></div>
 
-      <!-- 2) Deux systèmes -->
       <section class="info-card">
-        <h3>2️⃣ Deux systèmes / 두 가지 숫자</h3>
+        <p class="mb-4">
+          En coréen, on utilise <strong>deux systèmes</strong> de nombres /
+          한국어에는 숫자 체계가 <strong>두 가지</strong> 있어요:
+        </p>
         <div class="grid md:grid-cols-2 gap-4">
           <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 class="font-bold text-lg text-blue-900">🔹 Natifs (순수 한국어)</h4>
-            <ul class="list-disc list-inside text-slate-700 space-y-1 mt-2">
-              <li>👉 Quand on compte librement dans la vie de tous les jours</li>
-              <li><b>하나, 둘, 셋…</b></li>
-              <li>Âge (나이) → <b>스무 살</b> (20 ans)</li>
-              <li>Personnes/objets (<b>명, 개, 잔, 권…</b>)</li>
-              <li>Compter la durée en heures (시간) → <b>세 시간</b> (ça fait 3&nbsp;heures; <span class="text-slate-500">s’il est 3&nbsp;h, on dit <b>3시</b>, pas <b>3시간</b></span>)</li>
-            </ul>
+            <h4 class="font-bold text-lg text-blue-900">순수 한국어 / Natifs</h4>
+            <p class="text-2xl font-bold my-2">하나, 둘, 셋…</p>
+            <p><strong>Pour / 용도:</strong> compter des choses (âge, personnes, objets…)
+              / 눈앞에서 세는 것(나이, 사람 수, 물건 개수…)</p>
           </div>
           <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 class="font-bold text-lg text-green-900">🔹 Hanja-coréens (한자어)</h4>
-            <ul class="list-disc list-inside text-slate-700 space-y-1 mt-2">
-              <li>👉 Quand c’est fixé, écrit, imprimé, standardisé</li>
-              <li><b>일, 이, 삼…</b></li>
-              <li>Dates : <b>2025년 9월 8일</b></li>
-              <li>Argent : <b>3,000원</b></li>
-              <li>Numéros (téléphone, chambre, bus)</li>
-              <li>Minutes/secondes : <b>15분, 30초</b></li>
-              <li>Maths, écrans, billets, panneaux, montres</li>
-            </ul>
+            <h4 class="font-bold text-lg text-green-900">한자어 / Hanja-coréens</h4>
+            <p class="text-2xl font-bold my-2">일, 이, 삼…</p>
+            <p><strong>Pour / 용도:</strong> noms/unités déjà <u>écrits</u>
+              (dates, argent, minutes…) / 이미 적혀 있는 이름·단위(날짜, 돈, 분 등)</p>
           </div>
         </div>
       </section>
 
       <div class="soft-divider"></div>
 
-      <!-- 3) Exception & Tendance -->
       <section class="info-card">
         <h3>⚡ Exception & Tendance / 예외와 경향</h3>
         <ul class="list-disc list-inside space-y-2">
-          <li>Heures (시) → <b>natifs</b> : <b>세 시</b></li>
-          <li>Minutes/secondes (분·초) → <b>hanja</b> : <b>15분 30초</b></li>
+          <li>Heures(시) → <b>순수 한국어 / natifs</b> · Minutes(분) → <b>한자어 / Hanja-coréens</b></li>
+          <li>« 1 h = 60 min » 체계 정착 → 오늘날 <b>시 = natifs</b> / <b>분 = Hanja</b></li>
         </ul>
-        <!-- Font size increased here -->
-        <p class="text-sm md:text-base text-slate-600 mt-2">(Autrefois on disait « 1각 ≈ 15 min », puis on est passé au système moderne 1 h = 60 min → d’où ce mélange)</p>
-        <p class="mt-2"><b>Cas où les deux s’emploient</b> (en français) : semaine = <b>한 주</b> <span class="text-slate-500">(en pur coréen)</span> / <b>일주일</b> <span class="text-slate-500">(en hanja-coréen)</span> ; mois = <b>한 달</b> / <b>일개월</b> <span class="text-slate-500">(en hanja-coréen)</span>.</p>
       </section>
 
       <div class="soft-divider"></div>
 
-      <!-- 4) Résumé -->
       <section class="info-card">
-        <h3>✅ Résumé super simple</h3>
-        <ul class="list-disc list-inside text-slate-800">
-          <li><b>Libre à compter</b> = <b>natifs</b></li>
-          <li><b>Déjà marqué/écrit</b> = <b>hanja-coréens</b></li>
-        </ul>
+        <h3>✅ Résumé facile / 요약</h3>
+        <div class="overflow-x-auto mt-3">
+          <table class="w-full text-left border-collapse text-base table-soft">
+            <thead>
+              <tr>
+                <th class="border border-slate-200">Système / 체계</th>
+                <th class="border border-slate-200">Usage / 용도</th>
+                <th class="border border-slate-200">Exemples / 예</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="odd:bg-white even:bg-gray-50">
+                <td class="border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
+                <td class="border border-slate-200">Compter, classificateurs, durées libres</td>
+                <td class="border border-slate-200">
+                  <b>한 달, 두 달</b> / <b>한 개, 두 명, 세 잔, 한 권</b> / <b>한 시, 두 시</b>
+                </td>
+              </tr>
+              <tr class="odd:bg-white even:bg-gray-50">
+                <td class="border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
+                <td class="border border-slate-200">Valeurs « écrites »</td>
+                <td class="border border-slate-200">
+                  <b>1월, 2월</b> / <b>10분, 30초</b> / <b>2025년 9월 7일, 1,000원</b> / <b>3층, 302호</b>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <!-- CTA under explanations -->
-      <div class="mt-8 flex items-center justify-center gap-3">
-        <button id="explanation-next-btn" class="btn btn-primary btn-lg">
-          <i class="fa-solid fa-bolt"></i> C'est compris, on s'échauffe ! (워밍업)
+      <div class="text-center mt-8">
+        <button id="explanation-next-btn" class="btn btn-primary text-lg">
+          C'est compris, on s'échauffe ! (워밍업) <i class="fas fa-arrow-right"></i>
         </button>
-        <button onclick="window.print()" class="btn btn-secondary btn-lg"><i class="fa-solid fa-print"></i> Imprimer</button>
       </div>
     </div>
   </div>
 
-  <!-- Mode picker (hidden by default) -->
-  <div id="mode-picker" class="quiz-container hidden">
-    <h3 class="text-2xl font-extrabold text-center mb-1">Choisis ta vitesse / 연습 속도 고르기</h3>
-    <p class="text-center text-sm text-slate-600 mb-5">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
-    <div class="segmented">
-      <button class="seg-btn slow" onclick="WU_go('slow')">
-        <div class="text-lg"><i class="fa-solid fa-turtle"></i> 초보 / Débutant</div>
-        <div class="sub">0.7×</div>
-      </button>
-      <button class="seg-btn normal" onclick="WU_go('normal')">
-        <div class="text-lg"><i class="fa-regular fa-face-smile"></i> 보통 / Normal</div>
-        <div class="sub">1.0×</div>
-      </button>
-      <button class="seg-btn fast" onclick="WU_go('fast')">
-        <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div>
-        <div class="sub">1.5× · 쉼표 제거</div>
-      </button>
+  <!-- 이름 입력 화면 -->
+  <div id="start-screen" class="quiz-container hidden">
+    <div class="max-w-3xl mx-auto">
+      <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève / 이름</label>
+      <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3" placeholder="Ex. Camille / Lucas / Zoé" />
+      <div class="p-4 bg-white rounded-lg border mt-6">
+        <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️</h2>
+        <p class="text-slate-700 text-center">Comment ? Écouter → S’enregistrer → Évaluer (score %)<br>
+          Chaque étape contient 4 groupes (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10).</p>
+      </div>
+      <div class="text-center mt-4">
+        <button id="start-btn" class="btn btn-primary text-lg">Commencer ! (시작!)</button>
+      </div>
     </div>
   </div>
 
-  <!-- Warmup -->
-  <div id="warmup-screen" class="quiz-container hidden">
-    <h2 class="text-3xl font-extrabold mb-2 text-center">Méthode 5×5 🗣️</h2>
-    <div class="p-4 bg-white rounded-lg border mb-6 text-left">
-      <p class="mb-2"><b>Comment ?</b> Écouter → S’enregistrer → Évaluer (score %)</p>
-      <p class="text-slate-700">Chaque étape contient 4 groupes (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10).</p>
+  <!-- 속도 선택 -->
+  <div id="mode-chooser" class="quiz-container hidden">
+    <h3 class="text-2xl font-bold text-center text-slate-800 mb-4">Choisis ta vitesse / 속도를 고르자!</h3>
+    <div class="grid md:grid-cols-3 gap-4">
+      <button class="btn btn-secondary w-full py-6 text-lg" data-speed="0.7" data-cont="false">🌱 Débutant · 느림 (0.7×)</button>
+      <button class="btn btn-secondary w-full py-6 text-lg" data-speed="1.0" data-cont="false">🙂 Je lis un peu · 보통 (1.0×)</button>
+      <button class="btn btn-secondary w-full py-6 text-lg" data-speed="1.5" data-cont="true">⚡ Je lis bien · 빠름 (1.5×, continu)</button>
+    </div>
+  </div>
+
+  <!-- 연습 루트 -->
+  <div id="quiz-root" class="quiz-container hidden">
+    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️</h2>
+    <div class="p-4 bg-white rounded-lg border mb-6 text-center">
+      <p><b>Comment ?</b> Écouter → S’enregistrer → Évaluer (score %)</p>
+      <p class="text-slate-600">Chaque mode contient 4 groupes (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10).</p>
+      <div id="global-progress" class="flex items-center gap-2 justify-center mt-2">
+        <span class="text-xs font-semibold text-slate-500">Étapes:</span>
+        <div class="progress-dot" data-dot="0"></div>
+        <div class="progress-dot" data-dot="1"></div>
+        <div class="progress-dot" data-dot="2"></div>
+        <div class="progress-dot" data-dot="3"></div>
+      </div>
     </div>
 
-    <div id="global-progress" class="flex items-center gap-2 mb-6 justify-center">
-      <span class="text-xs font-semibold text-slate-500">Étapes:</span>
-      <div class="progress-dot on" data-dot="0"></div>
-      <div class="progress-dot" data-dot="1"></div>
-      <div class="progress-dot" data-dot="2"></div>
-      <div class="progress-dot" data-dot="3"></div>
-      <div class="progress-dot" data-dot="4"></div>
-    </div>
-
-    <div id="stages-wrap" class="space-y-8"></div>
+    <div id="groups-wrap" class="space-y-8"></div>
 
     <div id="finish-wrap" class="hidden mt-8 text-center">
-      <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto">
-        <div class="text-lg font-extrabold">👏 Warming up terminé !</div>
-        <div class="text-slate-600 mt-1">Envoie le résultat au professeur, puis choisis la suite.</div>
+      <div class="p-4 bg-white rounded-lg border mb-4">
+        <div class="text-lg font-semibold">👏 Warming up terminé !</div>
+        <div class="text-slate-600">Envoie le résultat au professeur, puis continue.</div>
       </div>
       <div class="flex flex-wrap gap-2 justify-center">
-        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer les résultats</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
-        <a href="./numbers-exercises.html" class="btn btn-outline btn-lg"><i class="fa-solid fa-list-check"></i> Passer aux exercices</a>
+        <button id="btn-send"  class="btn btn-primary">Terminer · Envoyer les résultats</button>
+        <a href="./numbers-exercises.html" id="btn-next" class="btn btn-secondary">Aller aux exercices (실전)</a>
+        <button id="btn-retry" class="btn btn-secondary">Changer de vitesse / 다시 선택</button>
       </div>
     </div>
   </div>
 
-  <div class="brand-tag">made by 성일 · Pongdang · Lapeace29@gmail.com</div>
+  <div class="brand-tag">made by 성일, Pongdang · Lapeace29@gmail.com</div>
 
-  <!-- ===== Config ===== -->
+  <!-- 전역 설정 -->
   <script>
     window.PONGDANG_TTS = window.PONGDANG_TTS || { provider: 'openai' };
     window.PONGDANG_FN_BASE = window.PONGDANG_FN_BASE || '/.netlify/functions';
   </script>
 
-  <!-- Shared scripts (order preserved) -->
+  <!-- 공용 스크립트 + 워밍업 -->
   <script defer src="../assets/student-gate.js"></script>
-  <script defer src="../assets/pronun-utils.js"></script>
-  <script defer src="../assets/pronun-vowel-middleware.js"></script>
-  <script defer src="../assets/grading-criteria.js"></script>
+  <script defer src="../assets/warmup-chooser-5x5.js"></script>
 
-  <!-- Warming up logic -->
-  <script defer src="../assets/warmup-5x5.js"></script>
-
-  <!-- 화면 토글: CTA를 눌러야 속도/워밍업 보이기 -->
+  <!-- 화면 전환(설명 → 이름화면) -->
   <script>
     document.addEventListener('DOMContentLoaded', ()=>{
-      const m = new URLSearchParams(location.search).get('mode');
-      const exp = document.getElementById('explanation-screen');
-      const pick = document.getElementById('mode-picker');
-      const wu = document.getElementById('warmup-screen');
-
-      // Main CTA: show both speed-picker AND warmup section
+      const ex = document.getElementById('explanation-screen');
+      const st = document.getElementById('start-screen');
       document.getElementById('explanation-next-btn')?.addEventListener('click', ()=>{
-        exp.classList.add('hidden');
-        pick.classList.remove('hidden');
-        wu.classList.remove('hidden');
-        window.scrollTo({ top: pick.offsetTop - 8, behavior:'smooth' });
-      });
-
-      // If user arrived with ?mode=...
-      if(m){
-        exp.classList.add('hidden');
-        pick.classList.add('hidden');
-        wu.classList.remove('hidden');
-      } else {
-        // Default: only explanation visible
-        exp.classList.remove('hidden');
-        pick.classList.add('hidden');
-        wu.classList.add('hidden');
-      }
-
-      // Hide picker once a speed card is chosen; keep warmup visible
-      pick.addEventListener('click', (e)=>{
-        const btn = e.target.closest('.seg-btn');
-        if(btn){
-          pick.classList.add('hidden');
-          wu.classList.remove('hidden');
-          window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
-        }
+        ex.classList.add('hidden');
+        st.classList.remove('hidden');
       });
     });
   </script>
