@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coréen — Nombres | Explications + Warming up</title>
+  <title>Coréen — Nombres | Explications + Warming up (5×5)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,9 +11,9 @@
   <style>
     body{font-family:'Poppins','Noto Sans KR',sans-serif;}
     .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
-    .btn{padding:.75rem 1.25rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
-    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
-    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
+    .btn{padding:.75rem 1.1rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+    .btn-primary{background:#0047AB;color:#fff}.btn-primary:hover{background:#003c96}
+    .btn-secondary{background:#DAA520;color:#fff}.btn-secondary:hover{background:#c2921c}
     .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
     .btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
     .small-muted{ font-size:.9rem; color:#64748b; }
@@ -27,24 +27,29 @@
     .table-soft th { background:#f8fafc; color:#0f172a; }
     .table-soft th, .table-soft td { padding:1rem; }
     .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
-
-    /* Warming up */
     .wu-card{background:#fff;border:1px solid #e5e7eb;border-radius:0.9rem;padding:1rem}
     .wu-done{background:#ecfdf5;border:1px solid #a7f3d0}
     .progress-dot{width:.6rem;height:.6rem;border-radius:9999px;background:#e5e7eb}
     .progress-dot.on{background:#22c55e}
     .hidden{display:none}
-
-    /* VU meter */
     .vu{width:100%;height:50px;background:#eef2ff;border-radius:.5rem;border:1px solid #c7d2fe}
     canvas{display:block;width:100%;height:50px}
+    .made-by-top,.made-by-bottom{ text-align:center; padding:8px 0; color:#475569; font-size:12px; }
   </style>
+
+  <!-- 공용 스크립트 (이름게이트/오류로그/발음 유틸) -->
+  <script defer src="../assets/student-gate.js"></script>
+  <script defer src="../assets/pronun-utils.js"></script>
 </head>
 <body class="bg-gray-50">
 
-  <!-- ─────────────────────────────────
-       Explications — (그대로 유지 / 원문 그대로)
-       ───────────────────────────────── -->
+  <!-- 상단 프린트 버튼 + 제작자 -->
+  <div class="made-by-top">
+    <button onclick="window.print()" class="btn btn-secondary">🖨️ Imprimer / 인쇄</button>
+    <div>made by 성일, Pongdang · Lapeace29@gmail.com</div>
+  </div>
+
+  <!-- 설명 섹션 -->
   <div class="min-h-screen flex flex-col items-center justify-center text-center p-6">
     <div class="max-w-3xl w-full mx-auto readable">
       <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
@@ -97,16 +102,12 @@
                 <tr class="odd:bg-white even:bg-gray-50">
                   <td class="border border-slate-200 font-semibold">순수 한국어 / Natifs</td>
                   <td class="border border-slate-200">Compter librement, classificateurs, durées libres</td>
-                  <td class="border border-slate-200">
-                    한 달, 두 달 / 한 개, 두 명, 세 잔, 한 권 / 한 시, 두 시
-                  </td>
+                  <td class="border border-slate-200">한 달, 두 달 / 한 개, 두 명, 세 잔, 한 권 / 한 시, 두 시</td>
                 </tr>
                 <tr class="odd:bg-white even:bg-gray-50">
                   <td class="border border-slate-200 font-semibold">한자어 / Hanja-coréens</td>
                   <td class="border border-slate-200">Valeurs « écrites » (calendrier, montre, monnaie…)</td>
-                  <td class="border border-slate-200">
-                    1월, 2월 / 10분, 30초 / 2025년 9월 7일, 1,000원 / 3층, 302호
-                  </td>
+                  <td class="border border-slate-200">1월, 2월 / 10분, 30초 / 2025년 9월 7일, 1,000원 / 3층, 302호</td>
                 </tr>
               </tbody>
             </table>
@@ -118,29 +119,24 @@
     </div>
   </div>
 
-  <!-- ─────────────────────────────
-       Warming up 5×5 — Écouter → S’enregistrer → Évaluer
-       (중학생도 이해 쉬운 프랑스어 안내, 한국어 문구 제거)
-       ───────────────────────────── -->
+  <!-- Warming up 5×5 -->
   <div class="quiz-container">
     <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️</h2>
     <div class="p-4 bg-white rounded-lg border mb-6 text-left">
-      <p class="mb-2"><b>Pourquoi on fait ça ?</b> Au lieu d’apprendre <i>1 = un, 2 = deux</i> un par un, on retient mieux en lisant des <b>groupes</b>, comme une petite chanson. Tu vas :</p>
+      <p class="mb-2"><b>Pourquoi on fait ça ?</b> On retient mieux en lisant des <b>groupes</b> comme une petite chanson. Procède ainsi :</p>
       <ol class="list-decimal list-inside space-y-1">
-        <li>appuyer sur <b>Écouter</b> pour entendre le modèle,</li>
-        <li><b>répéter</b> et <b>s’enregistrer</b>,</li>
-        <li>cliquer sur <b>Évaluer ma prononciation</b> pour voir ton score en %.</li>
+        <li>appuie sur <b>Écouter</b>,</li>
+        <li><b>répète</b> et <b>enregistre-toi</b>,</li>
+        <li>clique <b>Évaluer ma prononciation</b> pour voir ton score en %.</li>
       </ol>
-      <p class="mt-2 text-slate-700"><b>Étapes :</b> 0.7× → 1.0× → 1.2× → 1.5× → 1.5× <span class="text-slate-500">(rythme continu)</span>. Chaque étape contient <b>4 groupes</b> (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10). Quand les 4 groupes sont évalués, l’étape suivante s’ouvre.</p>
+      <p class="mt-2 text-slate-700"><b>Étapes :</b> 0.7× → 1.0× → 1.2× → 1.5× → 1.5× (rythme continu). Chaque étape a <b>4 groupes</b>. Termine les 4 pour débloquer l’étape suivante.</p>
     </div>
 
-    <!-- Élève -->
     <div class="p-4 bg-white rounded-lg border mb-6">
       <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève</label>
       <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3" placeholder="Ex. Camille / Lucas / Zoé" />
     </div>
 
-    <!-- Barre d’étapes -->
     <div id="global-progress" class="flex items-center gap-2 mb-6">
       <span class="text-xs font-semibold text-slate-500">Étapes:</span>
       <div class="progress-dot on" data-dot="0"></div>
@@ -150,10 +146,8 @@
       <div class="progress-dot" data-dot="4"></div>
     </div>
 
-    <!-- Stages mount -->
     <div id="stages-wrap" class="space-y-8"></div>
 
-    <!-- Fin -->
     <div id="finish-wrap" class="hidden mt-8 text-center">
       <div class="p-4 bg-white rounded-lg border mb-4">
         <div class="text-lg font-semibold">👏 Warming up terminé !</div>
@@ -164,377 +158,14 @@
     </div>
   </div>
 
+  <div class="made-by-bottom">made by 성일, Pongdang · Lapeace29@gmail.com</div>
   <div class="brand-tag">made by 성일, Pongdang · Lapeace29@gmail.com</div>
 
-  <!-- ===== Config ===== -->
   <script>
+    // 전역 설정 (함수 경로/프로바이더)
     window.PONGDANG_TTS = window.PONGDANG_TTS || { provider: 'openai' };
     window.PONGDANG_FN_BASE = window.PONGDANG_FN_BASE || '/.netlify/functions';
   </script>
-
-  <script>
-    /* ===== Données ===== */
-    const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
-
-    const BUNDLES = [
-      { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나, 둘, 셋, 넷, 다섯',   voice:'alloy'   },
-      { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯, 일곱, 여덟, 아홉, 열', voice:'shimmer' },
-      { key:'hanja_1_5',   label:'Hanja (1–5)',   text:'일, 이, 삼, 사, 오',       voice:'alloy'   },
-      { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육, 칠, 팔, 구, 십',       voice:'alloy'   },
-    ];
-
-    const STAGES = [
-      { idx:0, title:'Étape 1', speed:0.7, continuous:false },
-      { idx:1, title:'Étape 2', speed:1.0, continuous:false },
-      { idx:2, title:'Étape 3', speed:1.2, continuous:false },
-      { idx:3, title:'Étape 4', speed:1.5, continuous:false },
-      { idx:4, title:'Étape 5 (rythme continu)', speed:1.5, continuous:true },
-    ];
-
-    // État de progression
-    const progress = {};
-    STAGES.forEach(s => {
-      progress[s.idx] = {};
-      BUNDLES.forEach(b => progress[s.idx][b.key] = { done:false, score:null, audioBase64:null, duration:null });
-    });
-
-    /* ===== Audio (TTS) ===== */
-    const VOICE_MAP = {
-      openai: { default:'alloy', alloy:'alloy', shimmer:'verse' },
-      google: { default:'ko-KR-Standard-A', alloy:'ko-KR-Standard-A', shimmer:'ko-KR-Standard-B' }
-    };
-    function mapVoice(provider, req){ const t = VOICE_MAP[provider]||{}; return t[req] || t.default || req; }
-    function base64ToBlob(base64, mime='audio/mpeg'){
-      const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
-      const byteChars = atob(cleaned);
-      const arr = new Uint8Array(byteChars.length);
-      for(let i=0;i<byteChars.length;i++) arr[i]=byteChars.charCodeAt(i);
-      return new Blob([arr],{type:mime});
-    }
-    function stripForContinuous(s){ return s.replace(/,\s*/g,' '); }
-
-    let currentAudio=null, audioLock=false, aborter=null;
-    async function playTTS(text, voice='alloy', speed=1.0, btn){
-      if(audioLock){ if(currentAudio){ if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true);} else { currentAudio.pause(); setBtnPlaying(btn,false);} } return; }
-      audioLock=true; setTimeout(()=>audioLock=false,200);
-      try{
-        if(currentAudio && currentAudio._meta === `${text}|${speed}|${voice}`){
-          if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true);} else { currentAudio.pause(); setBtnPlaying(btn,false); }
-          return;
-        }
-        if(aborter){ try{aborter.abort();}catch{} }
-        if(currentAudio){ try{currentAudio.pause();}catch{} }
-        aborter = new AbortController();
-        const provider = (window.PONGDANG_TTS?.provider) || 'openai';
-        const payload = { text, voice: mapVoice(provider, voice), provider, speed };
-        const res = await fetch(`${FN_BASE}/generate-audio`, { method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'}, body:JSON.stringify(payload), signal:aborter.signal });
-        if(!res.ok) throw new Error('TTS fail '+res.status);
-        const data = await res.json();
-        let src = null;
-        if(data.audioBase64 || data.audioContent){
-          const blob = base64ToBlob(data.audioBase64 || data.audioContent, data.mimeType || 'audio/mpeg');
-          src = URL.createObjectURL(blob);
-        } else if (data.audioUrl){ src = data.audioUrl; }
-        const audio = new Audio(src); currentAudio = audio; audio._meta = `${text}|${speed}|${voice}`;
-        audio.addEventListener('playing', ()=>setBtnPlaying(btn,true));
-        audio.addEventListener('pause',   ()=>setBtnPlaying(btn,false));
-        audio.addEventListener('ended',   ()=>setBtnPlaying(btn,false));
-        await audio.play();
-      }catch(e){ alert('Problème de lecture audio. Réessaie.'); }
-    }
-    function setBtnPlaying(btn, on){ if(!btn) return; btn.innerHTML = on ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Écouter'; }
-
-    /* ===== Enregistrement + Évaluation ===== */
-    async function analyzePronunciation({ referenceText, audioBase64 }){
-      const body = { text: referenceText, audioBase64, lang:'ko' };
-      const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(body)
-      });
-      const data = await r.json().catch(()=> ({}));
-      if(!r.ok){ throw new Error(data?.error || 'Analyse échouée'); }
-      let score = null;
-      if(typeof data.accuracy === 'number') score = data.accuracy;
-      else if(typeof data.score === 'number') score = data.score;
-      else if(typeof data.percent === 'number') score = data.percent / 100;
-      if(score != null && score > 1) score = score/100;
-      return { score: (score!=null?score:0), raw:data };
-    }
-
-    function makeRecorder(){
-      let mediaRecorder=null, chunks=[], stream=null, ctx=null, analyser=null, raf=0;
-      async function start(canvas){
-        if(stream) stop(canvas);
-        stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-        mediaRecorder = new MediaRecorder(stream, { mimeType:'audio/webm' });
-        chunks = [];
-        mediaRecorder.ondataavailable = e => chunks.push(e.data);
-
-        // VU meter
-        ctx = new (window.AudioContext||window.webkitAudioContext)();
-        const source = ctx.createMediaStreamSource(stream);
-        analyser = ctx.createAnalyser(); analyser.fftSize = 512;
-        source.connect(analyser);
-        drawVU(canvas, analyser);
-
-        mediaRecorder.start(50);
-      }
-      function drawVU(canvas, analyser){
-        if(!canvas) return;
-        const cv = canvas, g = cv.getContext('2d');
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        const w = cv.width, h = cv.height;
-        function loop(){
-          raf = requestAnimationFrame(loop);
-          analyser.getByteFrequencyData(data);
-          g.clearRect(0,0,w,h);
-          const bars = 32; const step = Math.floor(data.length / bars);
-          for(let i=0;i<bars;i++){
-            const v = data[i*step]/255; const bh = v*h;
-            g.fillStyle = '#6366f1';
-            g.fillRect(i*(w/bars)+2, h-bh, (w/bars)-4, bh);
-          }
-        }
-        loop();
-      }
-      function stop(canvas){
-        if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop();
-        if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-        if(ctx){ ctx.close(); ctx=null; }
-        if(raf) cancelAnimationFrame(raf);
-        if(canvas){ const g=canvas.getContext('2d'); g.clearRect(0,0,canvas.width,canvas.height); }
-      }
-      async function getResult(){
-        return await new Promise((resolve)=>{
-          const onStop = ()=>{
-            const blob = new Blob(chunks, { type:'audio/webm' });
-            const reader = new FileReader();
-            const audio = document.createElement('audio');
-            audio.src = URL.createObjectURL(blob);
-            audio.addEventListener('loadedmetadata', ()=>{
-              const duration = audio.duration;
-              reader.onloadend = ()=> resolve({ base64: reader.result, duration, blob });
-              reader.readAsDataURL(blob);
-            });
-          };
-          if(mediaRecorder && mediaRecorder.state==='recording'){
-            mediaRecorder.addEventListener('stop', onStop, { once:true });
-            mediaRecorder.stop();
-          }else{
-            onStop();
-          }
-        });
-      }
-      return { start, stop, getResult };
-    }
-
-    /* ===== Rendu des étapes ===== */
-    function renderStage(stage){
-      const wrap = document.createElement('section');
-      wrap.id = `stage-${stage.idx}`;
-      wrap.innerHTML = `
-        <h3 class="text-xl font-bold text-slate-800 mb-3">${stage.title} — vitesse ${stage.speed}× ${stage.continuous?'<span class="text-slate-500 text-sm">(rythme continu)</span>':''}</h3>
-        <div class="space-y-4"></div>
-      `;
-      const list = wrap.querySelector('.space-y-4');
-      BUNDLES.forEach(b => list.appendChild( makeBundleCard(stage, b) ));
-      return wrap;
-    }
-
-    function makeBundleCard(stage, bundle){
-      const wrap = document.createElement('div');
-      wrap.className = 'wu-card';
-      wrap.id = `stage-${stage.idx}-${bundle.key}`;
-
-      const referenceText = stage.continuous ? stripForContinuous(bundle.text) : bundle.text;
-
-      wrap.innerHTML = `
-        <div class="flex items-center justify-between gap-2 flex-wrap">
-          <div>
-            <div class="text-sm text-slate-500">${stage.title}</div>
-            <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${referenceText}</span></div>
-            <div class="small-muted">1) Écouter  2) S’enregistrer  3) Évaluer</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="btn btn-sound btn-play"><i class="fas fa-play"></i> Écouter</button>
-          </div>
-        </div>
-
-        <div class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60">
-          <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer</div>
-
-          <div class="flex flex-wrap gap-2 mb-2">
-            <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer l’enregistrement</button>
-            <button class="btn btn-danger btn-rec-stop" disabled><i class="fa-solid fa-stop"></i> Arrêter</button>
-            <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer ma prononciation</button>
-          </div>
-
-          <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
-
-          <audio class="mt-2 w-full audio-playback hidden" controls></audio>
-          <div class="mt-2 text-sm text-slate-600 status-line">Appuie sur “Démarrer l’enregistrement”, puis “Arrêter”, ensuite “Évaluer”.</div>
-
-          <div class="mt-2 text-sm">
-            <span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span>
-          </div>
-        </div>
-      `;
-
-      // Écouter
-      wrap.querySelector('.btn-play').addEventListener('click', (e)=>{
-        playTTS(referenceText, bundle.voice, stage.speed, e.currentTarget);
-      });
-
-      // Recorder & Eval
-      const rec = makeRecorder();
-      const btnStart = wrap.querySelector('.btn-rec-start');
-      const btnStop  = wrap.querySelector('.btn-rec-stop');
-      const btnEval  = wrap.querySelector('.btn-eval');
-      const canvas   = wrap.querySelector('.vu-canvas');
-      const status   = wrap.querySelector('.status-line');
-      const audioUI  = wrap.querySelector('.audio-playback');
-      const scoreTag = wrap.querySelector('.score-pill');
-
-      let lastRecord = null;
-
-      btnStart.addEventListener('click', async ()=>{
-        btnStart.disabled = true;
-        btnStop.disabled  = false;
-        btnEval.disabled  = true;
-        scoreTag.classList.add('hidden');
-        status.textContent = 'Enregistrement… parle comme le modèle !';
-        try{
-          await rec.start(canvas);
-        }catch(e){
-          alert("Micro non autorisé. Vérifie les permissions du navigateur.");
-          btnStart.disabled = false; btnStop.disabled = true;
-        }
-      });
-
-      btnStop.addEventListener('click', async ()=>{
-        btnStop.disabled = true;
-        try{
-          rec.stop(canvas);
-          lastRecord = await rec.getResult();
-          audioUI.src = lastRecord ? URL.createObjectURL(lastRecord.blob) : '';
-          audioUI.classList.remove('hidden');
-          btnEval.disabled = !lastRecord;
-          btnStart.disabled = false;
-          status.textContent = lastRecord ? `Enregistrement terminé (${(lastRecord.duration||0).toFixed(1)} s). Clique “Évaluer”.` : 'Réessaie.';
-        }catch(e){
-          btnStart.disabled = false;
-          status.textContent = 'Problème d’enregistrement. Réessaie.';
-        }
-      });
-
-      btnEval.addEventListener('click', async ()=>{
-        if(!lastRecord?.base64){ return; }
-        btnEval.disabled = true;
-        status.textContent = 'Évaluation en cours…';
-        try{
-          const { score } = await analyzePronunciation({ referenceText, audioBase64: lastRecord.base64 });
-          const percent = Math.round((score || 0)*100);
-          scoreTag.textContent = `Score: ${percent}%`;
-          scoreTag.classList.remove('hidden');
-          status.textContent = 'Groupe évalué. Tu peux passer au suivant.';
-          // Marquer fini et vérifier l’unlock
-          progress[stage.idx][bundle.key] = {
-            done: true,
-            score: percent,
-            audioBase64: lastRecord.base64,
-            duration: lastRecord.duration
-          };
-          wrap.classList.add('wu-done');
-          checkStageUnlock(stage.idx);
-        }catch(e){
-          status.textContent = 'Échec de l’évaluation. Réessaie.';
-        }finally{
-          btnEval.disabled = false;
-        }
-      });
-
-      return wrap;
-    }
-
-    function checkStageUnlock(idx){
-      const allDone = BUNDLES.every(b => progress[idx][b.key].done);
-      if(!allDone) return;
-
-      // all groups done -> light dot
-      const dot = document.querySelector(`.progress-dot[data-dot="${idx}"]`);
-      dot?.classList.add('on');
-
-      // show next stage or finish
-      const next = STAGES[idx+1];
-      if(next){
-        document.getElementById(`stage-${next.idx}`)?.classList.remove('hidden');
-      }else{
-        document.getElementById('finish-wrap')?.classList.remove('hidden');
-      }
-    }
-
-    /* ===== Envoi des résultats ===== */
-    async function sendResults(){
-      const questions = [];
-      STAGES.forEach(s=>{
-        BUNDLES.forEach(b=>{
-          const st = progress[s.idx][b.key];
-          const refText = s.continuous ? stripForContinuous(b.text) : b.text;
-          questions.push({
-            number: `WU-${s.idx+1}-${b.key}`,
-            type: 'warmup_pronun',
-            fr: `${b.label} — ${s.title} — vitesse ${s.speed}×${s.continuous?' (rythme continu)':''}`,
-            ko: refText,
-            userAnswer: '',
-            isCorrect: true,
-            listenCount: 1,
-            hint1Count: 0,
-            hint2Count: 0,
-            pronunciation: { percent: st.score },
-            recording: st.audioBase64 ? { base64: st.audioBase64, filename:`wu_${s.idx+1}_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration } : null
-          });
-        });
-      });
-
-      const payload = {
-        studentName: (document.getElementById('student-name')?.value || '').trim() || 'Élève',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString(),
-        totalTimeSeconds: 0,
-        assignmentTitle: 'Warming up 5×5 – Nombres coréens',
-        assignmentSummary: [
-          '4 groupes × 5 étapes (0.7/1.0/1.2/1.5/1.5 rythme continu)',
-          'Écouter → S’enregistrer → Évaluer (score en %)'
-        ],
-        questions
-      };
-
-      try{
-        const r = await fetch(`${FN_BASE}/send-results`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const j = await r.json().catch(()=> ({}));
-        if(!r.ok || j?.ok===false) throw new Error(j?.error || 'send-results failed');
-        alert('Résultat envoyé ✔️');
-        document.getElementById('btn-next')?.classList.remove('hidden');
-      }catch(e){
-        console.error(e);
-        alert('Envoi impossible. Réessaie plus tard.');
-      }
-    }
-
-    /* ===== Mount ===== */
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const mount = document.getElementById('stages-wrap');
-      STAGES.forEach((s, i)=>{
-        const el = renderStage(s);
-        if(i>0) el.classList.add('hidden'); // n’ouvrir que la première étape
-        mount.appendChild(el);
-      });
-
-      document.getElementById('btn-send')?.addEventListener('click', sendResults);
-    });
-  </script>
+  <script src="../assets/warmup-5x5.js"></script>
 </body>
 </html>
