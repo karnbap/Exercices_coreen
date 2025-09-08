@@ -357,79 +357,114 @@
       exState.forEach(s => Object.assign(s,{listenCount:0,hint1Count:0,hint2Count:0,attempts:0,koCorrect:false,frCorrect:false,pronunciation:null}));
     });
 
-    document.getElementById('finish-btn').addEventListener('click',async()=>{
-      const name = (window.StudentGate?.getName?.() || document.getElementById('student-name').value || '').trim() || 'N/A';
-      const total=exercises.length*2;
-      const got=exState.reduce((acc,s)=>acc+(s.koCorrect?1:0)+(s.frCorrect?1:0),0);
-      const score=Math.round((got/total)*100);
-
-      const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(score) : null;
-
-      if (window.Grading?.formatFinalBanner) {
-        let box = document.getElementById('final-result');
-        if (!box) {
-          box = document.createElement('div');
-          box.id = 'final-result';
-          document.querySelector('.container').appendChild(box);
+      document.getElementById('finish-btn').addEventListener('click', async () => {
+        const name = (window.StudentGate?.getName?.() || document.getElementById('student-name').value || '').trim() || 'N/A';
+      
+        // 개별 스코어 집계
+        const totalQ = exercises.length;
+        const koCorrectCount = exState.filter(s => s.koCorrect).length;
+        const frCorrectCount = exState.filter(s => s.frCorrect).length;
+        const koScore = Math.round((koCorrectCount / Math.max(1, totalQ)) * 100);
+        const frScore = Math.round((frCorrectCount / Math.max(1, totalQ)) * 100);
+      
+        const pronItems = exState
+          .map(s => s.pronunciation?.accuracy)
+          .filter(x => typeof x === 'number' && isFinite(x));
+        const pronScore = Math.round(
+          (pronItems.reduce((a, b) => a + b, 0) / Math.max(1, pronItems.length)) * 100
+        );
+      
+        // 기존 총점(= KO+FR만 반영) 유지 — 필요 시 가중치 바꾸세요
+        const overall = Math.round(((koScore + frScore) / 2));
+      
+        // 공통 채점 메시지(불/한)
+        const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
+      
+        // 페이지 배너(선택) + 분리 스코어 보드
+        if (window.Grading?.formatFinalBanner) {
+          let box = document.getElementById('final-result');
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'final-result';
+            document.querySelector('.container').appendChild(box);
+          }
+          box.innerHTML = window.Grading.formatFinalBanner(overall) +
+            `<div class="mt-2 text-center">
+               <div class="inline-flex gap-2 text-sm">
+                 <span class="pill pill-green">KO ${koScore}/100</span>
+                 <span class="pill pill-green">FR ${frScore}/100</span>
+                 <span class="pill pill-green">Pron ${pronScore}/100</span>
+               </div>
+             </div>`;
         }
-        box.innerHTML = window.Grading.formatFinalBanner(score);
-      }
-
-      const pronuArr=exState.filter(s=>s.pronunciation);
-      const avgPronun = (pronuArr.reduce((a,s)=>a+(s.pronunciation.accuracy||0),0) / Math.max(1,pronuArr.length))*100;
-      alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}총점: ${score}/100 (한국어+불어)\nMoyenne de prononciation: ${isFinite(avgPronun)?Math.round(avgPronun):0}%`);
-
-      try{
-        const payload={
-          studentName:name,
-          startTime: window._startTime || new Date().toISOString(),
-          endTime: new Date().toISOString(),
-          totalTimeSeconds: Math.round(((Date.now())-(window._startMs||Date.now()))/1000),
-
-          assignmentTitle: ASSIGNMENT_META.assignmentTitle,
-          assignmentTopic: ASSIGNMENT_META.assignmentTopic,
-          assignmentSummary: ASSIGNMENT_META.assignmentSummary,
-          gradingMessage: gm,
-
-          questions: exercises.map((ex,i)=>{
-            const card=document.querySelectorAll('.dictation-card')[i];
-            const ko=card.querySelector('.input-ko').value||'';
-            const fr=card.querySelector('.input-fr').value||'';
-            const pron=exState[i].pronunciation;
-            return {
-              number:i+1, ko: ex.sentence, fr: ex.translation,
-              userAnswer: ko, userAnswerFr: fr,
-              isCorrect: exState[i].koCorrect && exState[i].frCorrect,
-              isCorrectKo: exState[i].koCorrect, isCorrectFr: exState[i].frCorrect,
-              listenCount: exState[i].listenCount, hint1Count: exState[i].hint1Count, hint2Count: exState[i].hint2Count,
-              pronunciation: pron ? {
-                accuracy: pron.accuracy,
-                tags: pron.confusionTags || [],
-                transcript: pron.transcript || '',
-                friendly: pron.friendly || []
-              } : null,
-              recording: null
-            };
-          })
-        };
-
-        const resp = await fetch('/.netlify/functions/send-results',{
-          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
-        });
-        let j={}; try{ j=await resp.json(); }catch(e){}
-        if (!resp.ok || j.ok===false) {
-          alert("⚠️ 전송 실패 / Envoi échoué.\n서버 로그를 확인해 주세요.");
-          fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({functionName:'send-results',error:`HTTP ${resp.status} ${resp.statusText} | ${JSON.stringify(j)}`,pageUrl:location.href})}).catch(()=>{});
-        } else {
-          alert("✅ 결과가 메일로 전송됐어요 ! / Résultats envoyés par e-mail !");
+      
+        // 안내 알림
+        alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}`
+            + `총점: ${overall}/100 (KO+FR)\n`
+            + `한글 받아쓰기: ${koScore}/100\n`
+            + `불어 번역: ${frScore}/100\n`
+            + `발음: ${isFinite(pronScore)?pronScore:0}/100`);
+      
+        try {
+          const payload = {
+            studentName: name,
+            startTime: window._startTime || new Date().toISOString(),
+            endTime: new Date().toISOString(),
+            totalTimeSeconds: Math.round(((Date.now()) - (window._startMs || Date.now())) / 1000),
+      
+            assignmentTitle: ASSIGNMENT_META.assignmentTitle,
+            assignmentTopic: ASSIGNMENT_META.assignmentTopic,
+            assignmentSummary: ASSIGNMENT_META.assignmentSummary,
+            gradingMessage: gm,
+      
+            // ✅ 분리 스코어 동봉
+            categoryScores: { ko: koScore, fr: frScore, pron: pronScore, overall },
+      
+            // 문항별 상세
+            questions: exercises.map((ex, i) => {
+              const card = document.querySelectorAll('.dictation-card')[i];
+              const ko = card.querySelector('.input-ko').value || '';
+              const fr = card.querySelector('.input-fr').value || '';
+              const pron = exState[i].pronunciation;
+              return {
+                number: i + 1, ko: ex.sentence, fr: ex.translation,
+                userAnswer: ko, userAnswerFr: fr,
+                isCorrect: exState[i].koCorrect && exState[i].frCorrect,
+                isCorrectKo: exState[i].koCorrect, isCorrectFr: exState[i].frCorrect,
+                listenCount: exState[i].listenCount, hint1Count: exState[i].hint1Count, hint2Count: exState[i].hint2Count,
+                pronunciation: pron ? {
+                  accuracy: pron.accuracy,
+                  tags: pron.confusionTags || [],
+                  transcript: pron.transcript || '',
+                  friendly: pron.friendly || []
+                } : null,
+                recording: null
+              };
+            })
+          };
+      
+          const resp = await fetch('/.netlify/functions/send-results', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+          });
+          let j = {}; try { j = await resp.json(); } catch (e) {}
+          if (!resp.ok || j.ok === false) {
+            alert("⚠️ 전송 실패 / Envoi échoué.\n서버 로그를 확인해 주세요.");
+            fetch('/.netlify/functions/log-error', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ functionName: 'send-results', error: `HTTP ${resp.status} ${resp.statusText} | ${JSON.stringify(j)}`, pageUrl: location.href })
+            }).catch(() => {});
+          } else {
+            alert("✅ 결과가 메일로 전송됐어요 ! / Résultats envoyés par e-mail !");
+          }
+        } catch (err) {
+          console.error(err);
+          fetch('/.netlify/functions/log-error', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ functionName: 'finish-send-results', error: String(err), pageUrl: location.href })
+          }).catch(() => {});
         }
-      }catch(err){
-        console.error(err);
-        fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({functionName:'finish-send-results',error:String(err),pageUrl:location.href})}).catch(()=>{});
-      }
-    });
+      });
+
 
     window._startTime=new Date().toISOString();
     window._startMs=Date.now();
