@@ -3,17 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coréen — Nombres | Explications + Warming up (5×5)</title>
+  <title>Coréen — Nombres | Explications + Warming up</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- 프로젝트 공용 스타일을 사용 중이면 유지 -->
   <link rel="stylesheet" href="../assets/style.css">
-
   <style>
     body{font-family:'Poppins','Noto Sans KR',sans-serif;}
     .quiz-container{max-width:860px;margin:2rem auto;padding:2rem;background:#f9fafb;border-radius:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04)}
-    .btn{padding:.75rem 1.1rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+    .btn{padding:.75rem 1.25rem;border-radius:.65rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
     .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover{background:#2563eb}
     .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover{background:#d1d5db}
     .btn-sound{background:#10b981;color:#fff}.btn-sound:hover{background:#059669}
@@ -30,10 +28,9 @@
     .table-soft th, .table-soft td { padding:1rem; }
     .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
 
-    /* Warming up cards */
+    /* Warming up */
     .wu-card{background:#fff;border:1px solid #e5e7eb;border-radius:0.9rem;padding:1rem}
     .wu-done{background:#ecfdf5;border:1px solid #a7f3d0}
-    .wu-step-badge{font-size:.78rem;font-weight:700;padding:.25rem .5rem;border-radius:.4rem;background:#e2e8f0;color:#0f172a}
     .progress-dot{width:.6rem;height:.6rem;border-radius:9999px;background:#e5e7eb}
     .progress-dot.on{background:#22c55e}
     .hidden{display:none}
@@ -45,9 +42,9 @@
 </head>
 <body class="bg-gray-50">
 
-  <!-- ─────────────────────────────
-       Explications (가독성 레이아웃 그대로 유지)
-       ───────────────────────────── -->
+  <!-- ─────────────────────────────────
+       Explications — (그대로 유지 / 원문 그대로)
+       ───────────────────────────────── -->
   <div class="min-h-screen flex flex-col items-center justify-center text-center p-6">
     <div class="max-w-3xl w-full mx-auto readable">
       <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
@@ -122,32 +119,28 @@
   </div>
 
   <!-- ─────────────────────────────
-       Warming up 5×5 (Écouter → S’enregistrer → Évaluer)
-       네 개를 1단계로 묶고, 4개 완료 시 다음 단계 오픈
+       Warming up 5×5 — Écouter → S’enregistrer → Évaluer
+       (중학생도 이해 쉬운 프랑스어 안내, 한국어 문구 제거)
        ───────────────────────────── -->
   <div class="quiz-container">
-    <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-      <h2 class="text-3xl font-bold text-slate-800">Méthode 5×5 🗣️ / 5개씩 훈련법</h2>
-    </div>
-
-    <!-- 쉬운 불어 안내 (중학생 난이도) -->
-    <div class="p-4 bg-white rounded-lg border mb-4 text-left">
-      <p class="mb-2"><b>But de l’activité.</b> Plutôt que d’apprendre <i>1 = un, 2 = deux</i> un par un, on mémorise plus vite en lisant des <b>groupes</b> comme une petite chanson. On va :</p>
+    <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Méthode 5×5 🗣️</h2>
+    <div class="p-4 bg-white rounded-lg border mb-6 text-left">
+      <p class="mb-2"><b>Pourquoi on fait ça ?</b> Au lieu d’apprendre <i>1 = un, 2 = deux</i> un par un, on retient mieux en lisant des <b>groupes</b>, comme une petite chanson. Tu vas :</p>
       <ol class="list-decimal list-inside space-y-1">
-        <li>appuyer sur <b>Écouter</b> pour entendre le modèle ;</li>
-        <li><b>répéter</b> et <b>s’enregistrer</b> ;</li>
-        <li>cliquer sur <b>Évaluer ma prononciation</b> pour voir ton score (en %).</li>
+        <li>appuyer sur <b>Écouter</b> pour entendre le modèle,</li>
+        <li><b>répéter</b> et <b>s’enregistrer</b>,</li>
+        <li>cliquer sur <b>Évaluer ma prononciation</b> pour voir ton score en %.</li>
       </ol>
-      <p class="mt-2 text-slate-700"><b>Étapes :</b> 0.7× → 1.0× → 1.2× → 1.5× → 1.5× <span class="text-slate-500">(rythme continu)</span>. Chaque étape contient <b>4 groupes</b>. Quand les 4 sont validés, l’étape suivante s’ouvre.</p>
+      <p class="mt-2 text-slate-700"><b>Étapes :</b> 0.7× → 1.0× → 1.2× → 1.5× → 1.5× <span class="text-slate-500">(rythme continu)</span>. Chaque étape contient <b>4 groupes</b> (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10). Quand les 4 groupes sont évalués, l’étape suivante s’ouvre.</p>
     </div>
 
-    <!-- 이름 입력 -->
+    <!-- Élève -->
     <div class="p-4 bg-white rounded-lg border mb-6">
       <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève</label>
       <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3" placeholder="Ex. Camille / Lucas / Zoé" />
     </div>
 
-    <!-- 진행 표시 -->
+    <!-- Barre d’étapes -->
     <div id="global-progress" class="flex items-center gap-2 mb-6">
       <span class="text-xs font-semibold text-slate-500">Étapes:</span>
       <div class="progress-dot on" data-dot="0"></div>
@@ -157,10 +150,10 @@
       <div class="progress-dot" data-dot="4"></div>
     </div>
 
-    <!-- 스테이지 컨테이너 -->
+    <!-- Stages mount -->
     <div id="stages-wrap" class="space-y-8"></div>
 
-    <!-- 모든 단계 완료시 -->
+    <!-- Fin -->
     <div id="finish-wrap" class="hidden mt-8 text-center">
       <div class="p-4 bg-white rounded-lg border mb-4">
         <div class="text-lg font-semibold">👏 Warming up terminé !</div>
@@ -180,10 +173,9 @@
   </script>
 
   <script>
-    /* ====== 상수/데이터 ====== */
+    /* ===== Données ===== */
     const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
-    // 4개 묶음(쉼표 있는 텍스트를 기본으로 사용)
     const BUNDLES = [
       { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나, 둘, 셋, 넷, 다섯',   voice:'alloy'   },
       { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯, 일곱, 여덟, 아홉, 열', voice:'shimmer' },
@@ -191,7 +183,6 @@
       { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육, 칠, 팔, 구, 십',       voice:'alloy'   },
     ];
 
-    // 5개 단계 (마지막은 연속 리듬)
     const STAGES = [
       { idx:0, title:'Étape 1', speed:0.7, continuous:false },
       { idx:1, title:'Étape 2', speed:1.0, continuous:false },
@@ -200,14 +191,14 @@
       { idx:4, title:'Étape 5 (rythme continu)', speed:1.5, continuous:true },
     ];
 
-    // 진행 상태 저장
+    // État de progression
     const progress = {};
     STAGES.forEach(s => {
       progress[s.idx] = {};
       BUNDLES.forEach(b => progress[s.idx][b.key] = { done:false, score:null, audioBase64:null, duration:null });
     });
 
-    /* ====== 오디오(TTS) ====== */
+    /* ===== Audio (TTS) ===== */
     const VOICE_MAP = {
       openai: { default:'alloy', alloy:'alloy', shimmer:'verse' },
       google: { default:'ko-KR-Standard-A', alloy:'ko-KR-Standard-A', shimmer:'ko-KR-Standard-B' }
@@ -253,9 +244,8 @@
     }
     function setBtnPlaying(btn, on){ if(!btn) return; btn.innerHTML = on ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Écouter'; }
 
-    /* ====== 녹음 + 평가 ====== */
+    /* ===== Enregistrement + Évaluation ===== */
     async function analyzePronunciation({ referenceText, audioBase64 }){
-      // 서버 함수에 맞춰 전송 (필요시 키 이름을 text/audioBase64로 조정)
       const body = { text: referenceText, audioBase64, lang:'ko' };
       const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -263,11 +253,10 @@
       });
       const data = await r.json().catch(()=> ({}));
       if(!r.ok){ throw new Error(data?.error || 'Analyse échouée'); }
-      // 점수 키가 다를 수 있어 안전 처리
       let score = null;
-      if(typeof data.accuracy === 'number') score = data.accuracy;            // 0~1
-      else if(typeof data.score === 'number') score = data.score;             // 0~1 or 0~100
-      else if(typeof data.percent === 'number') score = data.percent / 100;   // 0~100
+      if(typeof data.accuracy === 'number') score = data.accuracy;
+      else if(typeof data.score === 'number') score = data.score;
+      else if(typeof data.percent === 'number') score = data.percent / 100;
       if(score != null && score > 1) score = score/100;
       return { score: (score!=null?score:0), raw:data };
     }
@@ -275,7 +264,7 @@
     function makeRecorder(){
       let mediaRecorder=null, chunks=[], stream=null, ctx=null, analyser=null, raf=0;
       async function start(canvas){
-        if(stream) stop(canvas); // 안전
+        if(stream) stop(canvas);
         stream = await navigator.mediaDevices.getUserMedia({ audio:true });
         mediaRecorder = new MediaRecorder(stream, { mimeType:'audio/webm' });
         chunks = [];
@@ -339,7 +328,7 @@
       return { start, stop, getResult };
     }
 
-    /* ====== 스테이지/카드 렌더 ====== */
+    /* ===== Rendu des étapes ===== */
     function renderStage(stage){
       const wrap = document.createElement('section');
       wrap.id = `stage-${stage.idx}`;
@@ -391,12 +380,12 @@
         </div>
       `;
 
-      // 듣기
+      // Écouter
       wrap.querySelector('.btn-play').addEventListener('click', (e)=>{
         playTTS(referenceText, bundle.voice, stage.speed, e.currentTarget);
       });
 
-      // 녹음/평가
+      // Recorder & Eval
       const rec = makeRecorder();
       const btnStart = wrap.querySelector('.btn-rec-start');
       const btnStop  = wrap.querySelector('.btn-rec-stop');
@@ -427,7 +416,6 @@
         try{
           rec.stop(canvas);
           lastRecord = await rec.getResult();
-          // 미리듣기
           audioUI.src = lastRecord ? URL.createObjectURL(lastRecord.blob) : '';
           audioUI.classList.remove('hidden');
           btnEval.disabled = !lastRecord;
@@ -448,8 +436,8 @@
           const percent = Math.round((score || 0)*100);
           scoreTag.textContent = `Score: ${percent}%`;
           scoreTag.classList.remove('hidden');
-          status.textContent = percent>=60 ? 'Bien joué ! Ce groupe est validé ✅' : 'Tu peux réessayer pour améliorer le score.';
-          // 완료 처리 및 다음 단계 언락 확인
+          status.textContent = 'Groupe évalué. Tu peux passer au suivant.';
+          // Marquer fini et vérifier l’unlock
           progress[stage.idx][bundle.key] = {
             done: true,
             score: percent,
@@ -472,11 +460,11 @@
       const allDone = BUNDLES.every(b => progress[idx][b.key].done);
       if(!allDone) return;
 
-      // 점등
+      // all groups done -> light dot
       const dot = document.querySelector(`.progress-dot[data-dot="${idx}"]`);
       dot?.classList.add('on');
 
-      // 다음 스테이지 표시
+      // show next stage or finish
       const next = STAGES[idx+1];
       if(next){
         document.getElementById(`stage-${next.idx}`)?.classList.remove('hidden');
@@ -485,7 +473,7 @@
       }
     }
 
-    /* ====== 결과 전송 ====== */
+    /* ===== Envoi des résultats ===== */
     async function sendResults(){
       const questions = [];
       STAGES.forEach(s=>{
@@ -536,17 +524,15 @@
       }
     }
 
-    /* ====== 초기 렌더 ====== */
+    /* ===== Mount ===== */
     document.addEventListener('DOMContentLoaded', ()=>{
-      // 스테이지 렌더 (1단계만 보이게)
       const mount = document.getElementById('stages-wrap');
       STAGES.forEach((s, i)=>{
         const el = renderStage(s);
-        if(i>0) el.classList.add('hidden');
+        if(i>0) el.classList.add('hidden'); // n’ouvrir que la première étape
         mount.appendChild(el);
       });
 
-      // 완료 버튼
       document.getElementById('btn-send')?.addEventListener('click', sendResults);
     });
   </script>
