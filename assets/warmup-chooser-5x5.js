@@ -4,10 +4,10 @@
 const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
 const BUNDLES = [
-  { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나 둘 셋 넷 다섯',   voice:'alloy'   },
-  { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯 일곱 여덟 아홉 열', voice:'shimmer' },
-  { key:'hanja_1_5',   label:'Hanja (1–5)',   text:'일 이 삼 사 오',       voice:'alloy'   },
-  { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육 칠 팔 구 십',       voice:'alloy'   },
+  { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나둘셋넷다섯',   voice:'alloy'   },
+  { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯일곱여덟아홉열', voice:'shimmer' },
+  { key:'hanja_1_5',   label:'Hanja (1–5)',   text:'일이삼사오',       voice:'alloy'   },
+  { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육칠팔구십',       voice:'alloy'   },
 ];
 
 const state = {
