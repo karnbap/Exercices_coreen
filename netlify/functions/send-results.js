@@ -1,14 +1,13 @@
 // /.netlify/functions/send-results.js
 // Node 18+
-// ✅ Gmail 또는 일반 SMTP 둘 다 지원 (환경변수 자동 감지)
-//    - Gmail: GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL
-//    - Generic SMTP: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL, TO_EMAIL
-// CORS/OPTIONS 포함, 에러 메시지 친절화
+// Gmail 또는 Generic SMTP 지원
+//  - Gmail: GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL
+//  - SMTP:  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL, TO_EMAIL
+// CORS/OPTIONS 포함
 
 const nodemailer = require('nodemailer');
 
 exports.handler = async (event) => {
-  // ---- CORS ----
   const origin = event.headers?.origin || event.headers?.Origin || '*';
   const headers = {
     'Content-Type': 'application/json',
@@ -17,16 +16,14 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Cache-Control': 'no-store'
   };
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers, body: '' };
-  }
-  if (event.httpMethod !== 'POST') {
-    return res({ error: 'Method Not Allowed' }, 405, headers);
-  }
+  if (event.httpMethod === 'OPTIONS') return ({ statusCode: 204, headers, body: '' });
+  if (event.httpMethod !== 'POST') return res({ error: 'Method Not Allowed' }, 405, headers);
 
   try {
     const payload = safeParse(event.body);
-    if (!payload.ok) return res({ error: 'Invalid JSON body' }, 400, headers);
+    if (!payload.ok) return res({ ok:false, error: 'Invalid JSON body' }, 400, headers);
+    const body = payload.value;
+
     const {
       studentName = 'Élève',
       startTime, endTime, totalTimeSeconds = 0,
@@ -34,11 +31,11 @@ exports.handler = async (event) => {
       assignmentTitle = 'Exercice de coréen',
       assignmentTopic = '',
       assignmentSummary = [],
-      gradingMessage,                    // optional
-      categoryScores                     // optional { ko, fr, pron, overall }
-    } = payload.value;
+      gradingMessage,
+      categoryScores
+    } = body;
 
-    // ---- 서버 집계(클라 누락 대비) ----
+    // 서버 집계(보수)
     const graded = questions.filter(q => typeof q.isCorrect === 'boolean');
     const correct = graded.filter(q => q.isCorrect).length;
     const overall = num(categoryScores?.overall, graded.length ? Math.round((correct/graded.length)*100) : 0);
@@ -51,22 +48,17 @@ exports.handler = async (event) => {
 
     const gm = gradingMessage || serverGetGradingMessage(overall);
 
-    // ---- 이메일 본문 ----
     const html = buildEmailHtml({
       studentName, startTime, endTime, totalTimeSeconds,
       questions, assignmentTitle, assignmentTopic, assignmentSummary,
-      overall, koScore, frScore, pronScore,
-      gradedCount: graded.length, correctCount: correct, gm
+      overall, koScore, frScore, pronScore, gradedCount: graded.length, correctCount: correct, gm
     });
     const text = stripHtml(html);
     const attachments = [
-      // 학생 녹음 첨부
       ...buildRecordingAttachments(questions),
-      // 전체 페이로드 백업
-      { filename: 'payload.json', content: Buffer.from(JSON.stringify(payload.value,null,2),'utf8'), contentType: 'application/json' }
+      { filename: 'payload.json', content: Buffer.from(JSON.stringify(body,null,2),'utf8'), contentType: 'application/json' }
     ];
 
-    // ---- 트랜스포터 ----
     const transporter = await makeTransport();
     const { from, to } = mailFromTo();
     const info = await transporter.sendMail({
@@ -76,14 +68,13 @@ exports.handler = async (event) => {
     });
 
     return res({ ok:true, messageId: info.messageId }, 200, headers);
-
   } catch (err) {
     console.error('send-results error:', err);
     return res({ ok:false, error: String(err?.message || err) }, 500, headers);
   }
 };
 
-// ---------- helpers ----------
+// helpers
 function res(obj, status=200, headers={ 'Content-Type':'application/json' }){
   return { statusCode: status, headers, body: JSON.stringify(obj) };
 }
@@ -98,9 +89,7 @@ function mailFromTo(){
 }
 
 async function makeTransport(){
-  // 1) Gmail 우선
-  const GUSER = process.env.GMAIL_USER, GPASS = process.env.GMAIL_APP_PASSWORD;
-  const RECIP = process.env.RECIPIENT_EMAIL;
+  const GUSER = process.env.GMAIL_USER, GPASS = process.env.GMAIL_APP_PASSWORD, RECIP = process.env.RECIPIENT_EMAIL;
   if (GUSER && GPASS && RECIP) {
     return nodemailer.createTransport({
       host: 'smtp.gmail.com', port: 465, secure: true,
@@ -108,10 +97,9 @@ async function makeTransport(){
       connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 30000
     });
   }
-  // 2) Generic SMTP
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-    throw new Error('Email env not set. Provide either Gmail (GMAIL_USER/GMAIL_APP_PASSWORD/RECIPIENT_EMAIL) or generic SMTP (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS, FROM_EMAIL, TO_EMAIL).');
+    throw new Error('Email env not set. Provide Gmail (GMAIL_USER/GMAIL_APP_PASSWORD/RECIPIENT_EMAIL) or SMTP (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS, FROM_EMAIL, TO_EMAIL).');
   }
   const secure = String(process.env.SMTP_SECURE||'').toLowerCase() === 'true';
   return nodemailer.createTransport({ host: SMTP_HOST, port: Number(SMTP_PORT), secure, auth: { user: SMTP_USER, pass: SMTP_PASS }});
