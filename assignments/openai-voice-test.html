@@ -147,7 +147,7 @@
     const exState = exercises.map(() => ({
       listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
       koCorrect:false, frCorrect:false, pronunciation:null
-    })));
+    }));
 
     function escapeHtml(s=''){
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
