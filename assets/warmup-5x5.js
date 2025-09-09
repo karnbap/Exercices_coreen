@@ -2,14 +2,14 @@
 const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
 const BUNDLES = [
-  { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나둘셋넷다섯',   voice:'alloy'   },
-  { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯일곱여덟아홉열', voice:'shimmer' },
-  { key:'hanja_1_5',   label:'Hanja (1–5)',   text:'일이삼사오',       voice:'alloy'   },
-  { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육칠팔구십',       voice:'alloy'   },
+  { key:'natifs_1_5',  label:'Natifs (1–5)',  text:'하나, 둘, 셋, 넷, 다섯',   voice:'alloy'   },
+  { key:'natifs_6_10', label:'Natifs (6–10)', text:'여섯, 일곱, 여덟, 아홉, 열', voice:'shimmer' },
+  { key:'hanja_1_5',   label:'Hanja (1–5)',   text:'일, 이, 삼, 사, 오',       voice:'alloy'   },
+  { key:'hanja_6_10',  label:'Hanja (6–10)',  text:'육, 칠, 팔, 구, 십',       voice:'alloy'   },
 ];
 
 const state = {
-  mode: { speed:1.0, continuous:false },
+  mode: { speed:1.0, continuous:false }, // turbo(2.0x)도 여기서 처리
   progress: {}, listenCount: {},
   startISO: null, startMs: 0, name:'Élève'
 };
@@ -17,14 +17,33 @@ const state = {
 // ---------- Utils ----------
 function splitTokens(s){ return String(s||'').split(/[,\s]+/).filter(Boolean); }
 function collapseKorean(s){ return splitTokens(s).join(''); }
+
+// 연속 읽기시 자연스러운 연음 보정(간단 규칙): "일 이" → "이리"
+// 요청 케이스: "일이삼사오"를 "이리삼사오"처럼 붙여 읽기
+function applySimpleLiaisonForNumbers(text){
+  // 토큰화 후 '일' 다음이 '이'면 '이리'로 합성
+  const t = splitTokens(text);
+  const out = [];
+  for(let i=0;i<t.length;i++){
+    if(t[i]==='일' && t[i+1]==='이'){
+      out.push('이리'); i++; // 다음 토큰(이) 스킵
+    } else {
+      out.push(t[i]);
+    }
+  }
+  return out.join(' ');
+}
+
 function makeTTSContinuous(text, speed=1.0){
-  const parts = splitTokens(text);
   const provider = (window.PONGDANG_TTS?.provider) || 'openai';
+  const raw = applySimpleLiaisonForNumbers(text);
+  const parts = splitTokens(raw);
   if(provider === 'google'){
     const rate = Math.round(speed*100)+'%';
     return { ssml: `<speak><prosody rate="${rate}">${parts.join('<break time="0ms"/>')}</prosody></speak>` };
   }
-  return { text: parts.join('\u2060') }; // WORD JOINER
+  // WORD JOINER로 끊김 없이 연속 낭독
+  return { text: parts.join('\u2060') };
 }
 function mapVoice(provider, req){
   const MAP = {
@@ -44,6 +63,24 @@ function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split('
 
 // ---------- TTS ----------
 let currentAudio=null, audioLock=false, aborter=null, currentSrc=null;
+
+// 느린 로딩시 경고가 먼저 떠버리는 문제 → 재시도 1회 + 토스트 표기(알럿 제거)
+async function fetchAudioPayload(payload, signal){
+  const res = await fetch(`${FN_BASE}/generate-audio`, {
+    method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+    body: JSON.stringify(payload), signal
+  });
+  if(!res.ok) throw new Error('TTS '+res.status);
+  return await res.json();
+}
+function showToast(msg){
+  const el = document.createElement('div');
+  el.style.cssText='position:fixed;left:12px;bottom:12px;background:#111827;color:#fff;padding:8px 10px;border-radius:10px;font:12px/1.4 ui-sans-serif;z-index:9999;opacity:.95';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), 1800);
+}
+
 async function playTTS(input, voice='alloy', speed=1.0, btn, onStart){
   const provider = (window.PONGDANG_TTS?.provider) || 'openai';
   const isSSML = typeof input === 'object' && !!input.ssml;
@@ -51,14 +88,8 @@ async function playTTS(input, voice='alloy', speed=1.0, btn, onStart){
 
   if(audioLock){
     if(currentAudio){
-      if(currentAudio.paused){
-        await currentAudio.play();
-        setBtnPlaying(btn,true);
-        // resume는 listenCount 증가 없음
-      } else {
-        currentAudio.pause();
-        setBtnPlaying(btn,false);
-      }
+      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true); }
+      else { currentAudio.pause(); setBtnPlaying(btn,false); }
     }
     return;
   }
@@ -66,14 +97,8 @@ async function playTTS(input, voice='alloy', speed=1.0, btn, onStart){
 
   try{
     if(currentAudio && currentAudio._meta === `${textOrSSML}|${speed}|${voice}|${isSSML?'ssml':'text'}`){
-      if(currentAudio.paused){
-        await currentAudio.play();
-        setBtnPlaying(btn,true);
-        // resume는 listenCount 증가 없음
-      } else {
-        currentAudio.pause();
-        setBtnPlaying(btn,false);
-      }
+      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true); }
+      else { currentAudio.pause(); setBtnPlaying(btn,false); }
       return;
     }
     aborter?.abort();
@@ -85,18 +110,21 @@ async function playTTS(input, voice='alloy', speed=1.0, btn, onStart){
       ? { ssml: textOrSSML, voice: mapVoice(provider, voice), provider, speed }
       : { text: textOrSSML, voice: mapVoice(provider, voice), provider, speed };
 
-    const res = await fetch(`${FN_BASE}/generate-audio`, {
-      method:'POST', headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
-      body: JSON.stringify(payload), signal: aborter.signal
-    });
-    if(!res.ok) throw new Error('TTS fail '+res.status);
-    const data = await res.json();
+    let data;
+    try{
+      data = await fetchAudioPayload(payload, aborter.signal);
+    }catch(e){
+      // 첫 실패 → 짧은 대기 후 1회 재시도
+      await new Promise(r=>setTimeout(r, 700));
+      data = await fetchAudioPayload(payload, aborter.signal);
+    }
 
     let src = null;
     if(data.audioBase64 || data.audioContent){
       const blob = base64ToBlob(data.audioBase64 || data.audioContent, data.mimeType || 'audio/mpeg');
       src = URL.createObjectURL(blob);
     } else if (data.audioUrl){ src = data.audioUrl; }
+    if(!src) throw new Error('No audio source');
     currentSrc = src;
 
     const audio = new Audio(src); currentAudio = audio;
@@ -106,8 +134,10 @@ async function playTTS(input, voice='alloy', speed=1.0, btn, onStart){
     audio.addEventListener('ended',   ()=>{ setBtnPlaying(btn,false); if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; } });
 
     await audio.play();
-    if(typeof onStart === 'function') onStart(); // 새 재생 시작시에만 카운트 증가
-  }catch(e){ alert('Problème de lecture audio. Réessaie.'); }
+    if(typeof onStart === 'function') onStart();
+  }catch(e){
+    showToast('⚠️ Audio: réseau lent. Réessaie / 네트워크 지연');
+  }
 }
 function setBtnPlaying(btn, on){
   if(!btn) return;
@@ -196,11 +226,18 @@ async function analyzePronunciation({ referenceText, record }){
 // ---------- Feedback ----------
 function renderFeedback(box, {friendly=[], accuracy=0, transcript='', refText=''}) {
   if(!box) return;
-  const percent = Math.round((accuracy||0)*100);
-  const lines = [];
-  if (percent === 100) lines.push('✅ Parfait ! / 완벽해요! 리듬 유지.');
+  const hasSTT = !!transcript;
+  const percent = hasSTT ? Math.round((accuracy||0)*100) : 0;
 
-  // ★ 수정: 객체가 섞여 들어와도 문자열만 표시
+  const lines = [];
+  // 불/한 병기 메시지(기본)
+  if (!hasSTT) {
+    lines.push('🎧 Reconnaissance vocale instable. Réessaie après 2–3 sec. / 음성 인식이 불안정해요. 2–3초 뒤 다시 시도하세요.');
+  } else if (percent === 100) {
+    lines.push('✅ Parfait ! Garde le rythme. / 완벽해요! 지금 리듬 유지.');
+  }
+
+  // 서버에서 온 친절 설명(객체 섞여도 문자열만)
   if (Array.isArray(friendly) && friendly.length) {
     friendly.forEach(it=>{
       if (typeof it === 'string') lines.push(it);
@@ -208,6 +245,7 @@ function renderFeedback(box, {friendly=[], accuracy=0, transcript='', refText=''
     });
   }
 
+  // 모음 힌트 미들웨어
   try{
     const extra1 = (window.PronunUtils?.quickTips?.(refText, transcript)) || [];
     const extra2 = (window.VowelMiddleware?.hints?.(refText, transcript)) || [];
@@ -216,9 +254,10 @@ function renderFeedback(box, {friendly=[], accuracy=0, transcript='', refText=''
       else if (t && (t.tip || t.message)) lines.push(String(t.tip || t.message));
     });
   }catch(_){}
+
   const sttLine = transcript ? `<div class="mt-2 text-[13px] text-slate-600">STT: ${transcript}</div>` : '';
   box.querySelector('.feedback-body').innerHTML =
-    `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
+    `<div class="text-slate-800 mb-1">Score / 점수: <b>${percent}%</b></div>
      <ul class="list-disc list-inside">${lines.map(x=>`<li>${x}</li>`).join('')}</ul>${sttLine}`;
 }
 
@@ -250,7 +289,7 @@ function makeBundleCard(bundle){
       <div>
         <div class="text-sm text-slate-500">Vitesse ${state.mode.speed}× ${state.mode.continuous?'<span class="text-slate-500 text-xs">(rythme continu)</span>':''}</div>
         <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${refDisplay}</span></div>
-        <div class="text-xs text-slate-500">1) Écouter  2) S’enregistrer  3) Évaluer</div>
+        <div class="text-xs text-slate-500">1) Écouter / 듣기  2) S’enregistrer / 녹음  3) Évaluer / 평가</div>
       </div>
       <div class="flex items-center gap-2">
         <button class="btn btn-sound btn-play"><i class="fas fa-play"></i> Écouter</button>
@@ -259,19 +298,19 @@ function makeBundleCard(bundle){
     </div>
 
     <div class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60">
-      <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer</div>
+      <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer / 녹음하고 평가받기</div>
       <div class="flex flex-wrap gap-2 mb-2">
-        <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer</button>
-        <button class="btn btn-outline btn-rec-stop" disabled><i class="fa-solid fa-stop"></i> Arrêter</button>
-        <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer</button>
+        <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer / 시작</button>
+        <button class="btn btn-outline btn-rec-stop" disabled><i class="fa-solid fa-stop"></i> Arrêter / 정지</button>
+        <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer / 평가</button>
       </div>
       <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
       <audio class="mt-2 w-full audio-playback hidden" controls></audio>
-      <div class="mt-2 text-sm text-slate-600 status-line">Démarrer → Arrêter → Évaluer.</div>
+      <div class="mt-2 text-sm text-slate-600 status-line">Démarrer → Arrêter → Évaluer / 시작 → 정지 → 평가</div>
       <div class="mt-2 text-sm"><span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span></div>
 
       <div class="mt-3 feedback-card hidden">
-        <div class="font-semibold mb-1">🧠 Explication de la note / 점수 설명</div>
+        <div class="font-semibold mb-1">🧠 Explication / 점수 설명</div>
         <div class="text-sm text-slate-700 feedback-body"></div>
       </div>
     </div>
@@ -285,7 +324,7 @@ function makeBundleCard(bundle){
       bundle.voice,
       state.mode.speed,
       e.currentTarget,
-      () => {  // 새 재생 시작시에만 듣기 횟수 증가
+      () => { // 새 재생 시작시에만 듣기 횟수 증가
         state.listenCount[bundle.key] = (state.listenCount[bundle.key]||0) + 1;
         playCountTag.textContent = String(state.listenCount[bundle.key]);
       }
@@ -307,9 +346,9 @@ function makeBundleCard(bundle){
   btnStart.addEventListener('click', async ()=>{
     btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
     scoreTag.classList.add('hidden'); fbBox.classList.add('hidden'); fbBox.querySelector('.feedback-body').innerHTML='';
-    status.textContent = 'Enregistrement… parle comme le modèle !';
+    status.textContent = 'Enregistrement… parle comme le modèle ! / 녹음 중… 모델처럼 읽어봐요!';
     try{ await rec.start(canvas); }
-    catch(e){ alert("Micro non autorisé. Vérifie les permissions du navigateur."); btnStart.disabled=false; btnStop.disabled=true; }
+    catch(e){ showToast('🎙️ Micro refusé. Autorise-le dans le navigateur. / 마이크 권한을 허용해주세요.'); btnStart.disabled=false; btnStop.disabled=true; }
   });
 
   btnStop.addEventListener('click', async ()=>{
@@ -321,22 +360,22 @@ function makeBundleCard(bundle){
       audioUI.classList.remove('hidden');
       btnEval.disabled = !lastRecord;
       btnStart.disabled = false;
-      status.textContent = lastRecord ? `Terminé (${(lastRecord.duration||0).toFixed(1)} s). Clique “Évaluer”.` : 'Réessaie.';
+      status.textContent = lastRecord ? `Terminé (${(lastRecord.duration||0).toFixed(1)} s). Clique “Évaluer”. / 완료, “평가” 버튼을 눌러요.` : 'Réessaie / 다시 시도';
     }catch(e){
       btnStart.disabled = false;
-      status.textContent = 'Problème d’enregistrement. Réessaie.';
+      status.textContent = 'Problème d’enregistrement. Réessaie. / 녹음 오류. 다시 시도.';
     }
   });
 
   btnEval.addEventListener('click', async ()=>{
     if(!lastRecord?.base64) return;
-    btnEval.disabled = true; status.textContent = 'Évaluation en cours…';
+    btnEval.disabled = true; status.textContent = 'Évaluation… / 평가 중…';
     try{
       const { accuracy, friendly, transcript } = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
-      const percent = Math.round((accuracy || 0)*100);
-      scoreTag.textContent = `Score: ${percent}%`;
+      const hasSTT = !!transcript;
+      const percent = hasSTT ? Math.round((accuracy || 0)*100) : 0;
+      scoreTag.textContent = `Score / 점수: ${percent}%`;
       scoreTag.classList.remove('hidden');
-      status.textContent = 'Groupe évalué. Passe au suivant.';
 
       state.progress[bundle.key] = {
         done:true, score:percent, accuracy,
@@ -346,9 +385,10 @@ function makeBundleCard(bundle){
       wrap.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
       renderFeedback(fbBox, { friendly, accuracy, transcript, refText: refEval });
       fbBox.classList.remove('hidden');
+      status.textContent = 'Passe au suivant. / 다음 그룹으로!';
       checkFinish();
     }catch(e){
-      status.textContent = 'Échec de l’évaluation. Réessaie.';
+      status.textContent = 'Échec de l’évaluation. Réessaie. / 평가 실패. 다시 시도.';
     }finally{
       btnEval.disabled = false;
     }
@@ -407,10 +447,10 @@ async function sendResults(){
     const r = await fetch(`${FN_BASE}/send-results`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     const j = await r.json().catch(()=> ({}));
     if(!r.ok || j?.ok===false) throw new Error(j?.error || 'send-results failed');
-    alert('Résultat envoyé ✔️');
+    showToast('📨 Résultat envoyé / 결과 전송 완료');
   }catch(e){
     console.error(e);
-    alert('Envoi impossible. Réessaie plus tard.');
+    showToast('❌ Envoi impossible. Réessaie / 전송 실패');
   }
 }
 
@@ -418,6 +458,7 @@ async function sendResults(){
 function WU_go(mode){
   if(mode === 'slow')      state.mode = { speed:0.7, continuous:false };
   else if(mode === 'fast') state.mode = { speed:1.5, continuous:true  };
+  else if(mode === 'turbo')state.mode = { speed:2.0, continuous:true  }; // 2배속 추가
   else                     state.mode = { speed:1.0, continuous:false };
 
   state.name = (document.getElementById('student-name')?.value || state.name || 'Élève');
