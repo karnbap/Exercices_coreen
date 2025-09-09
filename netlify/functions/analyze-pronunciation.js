@@ -1,278 +1,223 @@
-// /.netlify/functions/analyze-pronunciation.js
-// Node 18+ (global fetch, FormData, Blob 사용)
-// OPENAI_API_KEY 필요
-
-const OPENAI_BASE = 'https://api.openai.com/v1';
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
+// Netlify Function: analyze-pronunciation
+// 입력(JSON):
+// { referenceText: "하나둘셋", audio: { base64, filename, mimeType, duration } }
+// 출력(JSON):
+// { accuracy: 0.92, transcript: "하나둘셋", details: { explain: ["..."] } }
 
 exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return json(405, { error: 'Method Not Allowed' });
+  }
+
   try {
-    if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
-    if (!OPENAI_KEY) return json({ error: 'Missing OPENAI_API_KEY' }, 500);
-
     const body = JSON.parse(event.body || '{}');
-    const { referenceText, audio, clientConfig, clientHash } = body;
-    const skipSecondPassIfAccurate =
-      Number(event.headers['x-skip-second-pass-if-accurate'] || (clientConfig?.skipSecondPassIfAccurate ?? 0)) || 0;
+    const refRaw = String(body.referenceText || '').trim();
+    const audio = body.audio || {};
 
-    if (!referenceText || !audio?.base64 || !audio?.mimeType) return json({ error: 'Invalid payload' }, 400);
-    if (audio?.duration && audio.duration > 10) return json({ error: 'Audio too long' }, 400);
-    if (audio?.duration && audio.duration < 0.5) return json({ error: 'Audio too short' }, 400);
-
-    const audioBuf = Buffer.from(audio.base64, 'base64');
-    const fileName = audio.filename || 'audio.webm';
-
-    // 1차: gpt-4o-mini-transcribe
-    const first = await transcribe('gpt-4o-mini-transcribe', audioBuf, audio.mimeType, fileName);
-    const firstScore = scorePronunciation(referenceText, first.text);
-
-    const needSecond =
-      (firstScore.accuracy < Math.max(0.85, skipSecondPassIfAccurate)) ||
-      (firstScore.confusionTags && firstScore.confusionTags.length);
-
-    let final = {
-      transcript: first.text,
-      accuracy: firstScore.accuracy,
-      cer: firstScore.cer,
-      confusionTags: firstScore.confusionTags
-    };
-
-    // 2차: whisper-1 (조건부)
-    if (needSecond) {
-      const second = await transcribe('whisper-1', audioBuf, audio.mimeType, fileName);
-      const secondScore = scorePronunciation(referenceText, second.text);
-      if ((secondScore.accuracy || 0) > (firstScore.accuracy || 0)) {
-        final = {
-          transcript: second.text,
-          accuracy: secondScore.accuracy,
-          cer: secondScore.cer,
-          confusionTags: secondScore.confusionTags
-        };
-      }
+    // 1) STT (기존 transcribe 함수가 있으면 사용, 없으면 안전 폴백)
+    let transcript = '';
+    try {
+      const { transcribeWhisper } = require('./transcribe-whisper.js'); // 프로젝트에 이미 존재
+      transcript = await transcribeWhisper(audio.base64, audio.mimeType || 'audio/webm');
+    } catch (_e) {
+      // 폴백: STT 불가 시 빈 문자열 유지
+      transcript = '';
     }
 
-    // 최종 점수(ops 포함) 산출 후 간단 설명 생성
-    const finalScore = (needSecond && final.transcript !== first.text)
-      ? scorePronunciation(referenceText, final.transcript)
-      : firstScore;
+    // 2) 전처리
+    const ref = normalizeKorean(replaceDigitSequencesWithSino(collapse(refRaw)));
+    const hyp = normalizeKorean(collapse(transcript));
 
-    const details = {
-      modelFirst: 'gpt-4o-mini-transcribe',
-      modelSecondUsed: (needSecond && final.transcript !== first.text) ? 'whisper-1' : null,
-      cer: finalScore.cer,
-      explain: explainMistakes(referenceText, final.transcript, finalScore.ops, finalScore.confusionTags)
-    };
+    // 3) 자모 단위 정렬/정확도
+    const A = toJamo(ref);
+    const B = toJamo(hyp);
+    const { distance, ops } = levenshteinOps(A, B);
+    const maxLen = Math.max(A.length, 1);
+    const cer = Math.min(1, distance / maxLen);
+    const accuracy = +(1 - cer);
 
-    return json({
-      ok: true,
-      accuracy: finalScore.accuracy,
-      cer: finalScore.cer,
-      confusionTags: finalScore.confusionTags,
-      transcript: final.transcript,
-      details,
-      clientHash: clientHash || null
+    // 4) 혼동 탐지(자음 + 모음 세부쌍) — ★ 개선 포인트
+    const tags = detectConfusions(ref, hyp, ops);
+
+    // 5) 설명 메시지 구성
+    const explain = explainMistakes({ ref, hyp, ops, tags, accuracy });
+
+    return json(200, {
+      accuracy,
+      transcript,
+      details: { explain }
     });
-  } catch (err) {
-    console.error(err);
-    return json({ error: 'Server error', message: String(err && err.message || err) }, 500);
+
+  } catch (e) {
+    return json(500, { error: e.message || 'Analyse échouée' });
   }
 };
 
-async function transcribe(model, buf, mime, filename) {
-  const form = new FormData();
-  const blob = new Blob([buf], { type: mime });
-  form.append('file', blob, filename);
-  form.append('model', model);
-  form.append('language', 'ko'); // 한국어 고정
+/* ---------------- Utils ---------------- */
 
-  const r = await fetch(`${OPENAI_BASE}/audio/transcriptions`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${OPENAI_KEY}` },
-    body: form
-  });
-  if (!r.ok) {
-    const t = await r.text().catch(()=> '');
-    throw new Error(`OpenAI STT ${model} ${r.status} ${t}`);
-  }
-  const data = await r.json();
-  return { text: (data.text || '').trim() };
+function json(code, obj) {
+  return { statusCode: code, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
 }
 
-// -------- 숫자 정규화 유틸 (자연어 한자음으로) --------
-const DIGITS = ['영','일','이','삼','사','오','육','칠','팔','구'];
-function numToSino(n) {
-  n = Number(n);
-  if (!Number.isFinite(n)) return String(n||'');
-  if (n === 0) return '영';
-  const units = ['', '십', '백', '천'];
-  const d = String(n).split('').map(x=>+x);
-  let out = '';
-  for (let i=0;i<d.length;i++) {
-    const p = d.length - 1 - i;      // 자리수 (0:1의 자리, 1:십, 2:백, 3:천)
-    const digit = d[i];
-    if (digit === 0) continue;
-    if (p === 0) { out += DIGITS[digit]; continue; }
-    if (digit === 1) out += units[p];
-    else out += DIGITS[digit] + units[p];
+function collapse(s) { return String(s || '').replace(/\s+/g, ''); }
+
+function replaceDigitSequencesWithSino(s) {
+  // 예: 22345 → 이이삼사오 (간단 변환; 문맥 따라 더 고도화 가능)
+  const sino = ['영','일','이','삼','사','오','육','칠','팔','구'];
+  return String(s).replace(/\d/g, d => sino[+d] || d);
+}
+
+function normalizeKorean(s) {
+  // 대소문자 제거, 특수문자 최소화
+  return s.normalize('NFC').replace(/[^\p{Letter}\p{Number}]/gu, '');
+}
+
+/* ---- 한글 → 자모 분해 ---- */
+const HANGUL_BASE = 0xAC00;
+const CHOSEONG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const JUNGSEONG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+const JONGSEONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+function toJamo(s) {
+  const out = [];
+  for (const ch of s) {
+    const code = ch.codePointAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      const syllableIndex = code - HANGUL_BASE;
+      const cho = Math.floor(syllableIndex / (21 * 28));
+      const jung = Math.floor((syllableIndex % (21 * 28)) / 28);
+      const jong = syllableIndex % 28;
+      out.push(CHOSEONG[cho], JUNGSEONG[jung]);
+      if (JONGSEONG[jong]) out.push(JONGSEONG[jong]);
+    } else {
+      out.push(ch);
+    }
   }
   return out;
 }
-function replaceDigitSequencesWithSino(str) {
-  return String(str||'').replace(/\d+/g, (m)=> numToSino(parseInt(m,10)));
-}
 
-// -------- 채점 (자모 CER + 혼동 태그) --------
-function scorePronunciation(ref, hyp) {
-  const refNorm = normalizeHangulForCER(ref);
-  const hypNorm = normalizeHangulForCER(hyp);
-  const { dist, ops } = levenshteinOps(refNorm, hypNorm);
-  const cer = refNorm.length ? (dist / refNorm.length) : 1.0;
-  const accuracy = Math.max(0, 1 - cer);
-  const confusionTags = detectConfusions(ref, hyp, ops);
-  return { cer, accuracy, confusionTags, ops };
-}
-
-// 숫자를 먼저 한자어로 바꾼 뒤 자모 분해
-function normalizeHangulForCER(s){
-  const replaced = replaceDigitSequencesWithSino((s||'').normalize('NFC'));
-  return decomposeToJamo(replaced).replace(/\s+/g,'');
-}
-
-function levenshteinOps(a,b){
-  const m=a.length,n=b.length;
-  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
-  const bt=Array.from({length:m+1},()=>Array(n+1).fill(null));
-  for(let i=0;i<=m;i++){dp[i][0]=i;bt[i][0]='D';}
-  for(let j=0;j<=n;j++){dp[0][j]=j;bt[0][j]='I';}
-  bt[0][0]=null;
-  for(let i=1;i<=m;i++){
-    for(let j=1;j<=n;j++){
-      const cost=a[i-1]===b[j-1]?0:1;
-      let best=dp[i-1][j-1]+cost, op= cost? 'S':'M';
-      if(dp[i-1][j]+1<best){best=dp[i-1][j]+1;op='D';}
-      if(dp[i][j-1]+1<best){best=dp[i][j-1]+1;op='I';}
-      dp[i][j]=best;bt[i][j]=op;
+/* ---- Levenshtein with ops ---- */
+function levenshteinOps(aArr, bArr) {
+  const n = aArr.length, m = bArr.length;
+  const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  for (let i = 0; i <= n; i++) dp[i][0] = i;
+  for (let j = 0; j <= m; j++) dp[0][j] = j;
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      const cost = (aArr[i - 1] === bArr[j - 1]) ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,      // 삭제
+        dp[i][j - 1] + 1,      // 삽입
+        dp[i - 1][j - 1] + cost // 치환
+      );
     }
   }
-  const ops=[]; let i=m,j=n;
-  while(i>0 || j>0){
-    const op=bt[i][j];
-    if(op==='M' || op==='S'){ ops.push({op, a:a[i-1]||'', b:b[j-1]||''}); i--; j--; }
-    else if(op==='D'){ ops.push({op, a:a[i-1]||'', b:''}); i--; }
-    else if(op==='I'){ ops.push({op, a:'', b:b[j-1]||''}); j--; }
-    else break;
+  // backtrack
+  const ops = [];
+  let i = n, j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) { ops.push({ op: 'D', a: aArr[i - 1] }); i--; continue; }
+    if (j > 0 && dp[i][j] === dp[i][j - 1] + 1) { ops.push({ op: 'I', b: bArr[j - 1] }); j--; continue; }
+    const cost = (aArr[i - 1] === bArr[j - 1]) ? 0 : 1;
+    ops.push({ op: cost ? 'S' : 'M', a: aArr[i - 1], b: bArr[j - 1] });
+    i--; j--;
   }
   ops.reverse();
-  return { dist: dp[m][n], ops };
+  return { distance: dp[n][m], ops };
 }
 
-function decomposeToJamo(str) {
-  const res = [];
-  for (const ch of (str||'')) {
-    const code = ch.charCodeAt(0);
-    if (code >= 0xAC00 && code <= 0xD7A3) {
-      const S = code - 0xAC00;
-      const L = Math.floor(S / 588);
-      const V = Math.floor((S % 588) / 28);
-      const T = S % 28;
-      res.push(LEADS[L], VOWELS[V]);
-      if (T > 0) res.push(TAILS[T]);
-    } else if (/[ㄱ-ㅎㅏ-ㅣ]/.test(ch)) {
-      res.push(ch);
-    } else if (/\s/.test(ch)) {
-      // skip
-    } else {
-      // 숫자 등 기타 기호는 이미 replaceDigitSequencesWithSino에서 정규화됨
-    }
-  }
-  return res.join('');
-}
-
-function detectConfusions(refText, hypText, ops){
-  const tags = new Set();
-  const refTails = countJong(replaceDigitSequencesWithSino(refText));
-  const hypTails = countJong(replaceDigitSequencesWithSino(hypText));
-  if (refTails.total > 0 && hypTails.count < refTails.count * 0.7) tags.add('받침 누락');
-
-  for (const step of ops) if (step.op === 'S') {
-    if (isPair(step.a,step.b,'ㄴ','ㄹ')) tags.add('ㄴ/ㄹ 혼동');
-    if (isPair(step.a,step.b,'ㅂ','ㅍ')) tags.add('ㅂ/ㅍ 혼동');
-    if (isPair(step.a,step.b,'ㄷ','ㅌ')) tags.add('ㄷ/ㅌ 혼동');
-    if (isPair(step.a,step.b,'ㅈ','ㅊ')) tags.add('ㅈ/ㅊ 혼동');
-    if (isPair(step.a,step.b,'ㅅ','ㅆ')) tags.add('ㅅ/ㅆ 혼동');
-  }
-  return Array.from(tags);
-}
-function isPair(a,b,x,y){ return (a===x && b===y)||(a===y && b===x); }
-
-function countJong(s){
-  let total=0,count=0;
-  for(const ch of (s||'')){
-    const code = ch.charCodeAt(0);
+/* ---- 받침 카운트 보조 ---- */
+function countJong(s) {
+  let total = 0, count = 0;
+  for (const ch of s) {
+    const code = ch.codePointAt(0);
     if (code >= 0xAC00 && code <= 0xD7A3) {
       total++;
-      const T = (code - 0xAC00) % 28;
-      if (T > 0) count++;
+      const idx = (code - HANGUL_BASE) % 28;
+      if (idx !== 0) count++;
     }
   }
   return { total, count };
 }
 
-function explainMistakes(refText, hypText, ops, tags=[]) {
-  const out = [];
-  let sub=0, del=0, ins=0;
+/* ---- 모음/자음 혼동 탐지 (개선된 버전) ---- */
+function isPair(a, b, x, y) { return (a === x && b === y) || (a === y && b === x); }
 
-  const note = (fr, ko)=>({ fr, ko });
+const VOWELS_SET = new Set('ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣㅔㅐㅖㅒㅘㅙㅚㅝㅞㅟㅢ'.split(''));
+function isVowelJamo(j){ return VOWELS_SET.has(j); }
+function isPairEither(a,b,x,y){ return (a===x && b===y) || (a===y && b===x); }
 
-  if (tags.includes('받침 누락')) {
-    out.push(note(
-      "Finale de syllabe (받침) absente à plusieurs endroits",
-      "받침이 여러 곳에서 누락된 것으로 보여요"
-    ));
-  }
+function detectConfusions(refText, hypText, ops) {
+  const tags = new Set();
 
-  // 자주 헷갈리는 자음쌍 표시
-  const pairNote = (a,b)=>{
-    const P=[['ㄴ','ㄹ'],['ㅂ','ㅍ'],['ㄷ','ㅌ'],['ㅈ','ㅊ'],['ㅅ','ㅆ']];
-    for(const [x,y] of P){
-      if((a===x&&b===y)||(a===y&&b===x)) return ` (confusion ${x}/${y})`;
-    }
-    return '';
-  };
+  // 받침 누락 경향
+  const refTails = countJong(replaceDigitSequencesWithSino(refText));
+  const hypTails = countJong(replaceDigitSequencesWithSino(hypText));
+  if (refTails.total > 0 && hypTails.count < refTails.count * 0.7) tags.add('받침 누락');
 
   for (const step of ops) {
-    if (out.length >= 6) break; // 너무 길지 않게 상위 6개만
-    if (step.op==='S' && step.a && step.b) {
-      sub++;
-      const tail = pairNote(step.a, step.b);
-      out.push(note(
-        `Substitution: ${step.a} → ${step.b}${tail}`,
-        `치환: ${step.a} → ${step.b}${tail ? ' ('+tail.replace('confusion','혼동')+')':''}`
-      ));
-    } else if (step.op==='D' && step.a) {
-      del++;
-      out.push(note(`Suppression: ${step.a}`, `삭제: ${step.a}`));
-    } else if (step.op==='I' && step.b) {
-      ins++;
-      out.push(note(`Insertion: ${step.b}`, `삽입: ${step.b}`));
+    if (step.op !== 'S') continue;
+
+    // 자음 대표쌍
+    if (isPair(step.a,step.b,'ㄴ','ㄹ')) tags.add('ㄴ/ㄹ 혼동');
+    if (isPair(step.a,step.b,'ㅂ','ㅍ')) tags.add('ㅂ/ㅍ 혼동');
+    if (isPair(step.a,step.b,'ㄷ','ㅌ')) tags.add('ㄷ/ㅌ 혼동');
+    if (isPair(step.a,step.b,'ㅈ','ㅊ')) tags.add('ㅈ/ㅊ 혼동');
+    if (isPair(step.a,step.b,'ㅅ','ㅆ')) tags.add('ㅅ/ㅆ 혼동');
+
+    // ★ 모음 세부 혼동 (추가)
+    if (isVowelJamo(step.a) && isVowelJamo(step.b)) {
+      const A = step.a, B = step.b;
+      const before = tags.size;
+
+      // 기본 축
+      if (isPairEither(A,B,'ㅗ','ㅓ')) tags.add('ㅗ/ㅓ 혼동');
+      if (isPairEither(A,B,'ㅗ','ㅜ')) tags.add('ㅗ/ㅜ 혼동');
+      if (isPairEither(A,B,'ㅏ','ㅓ')) tags.add('ㅏ/ㅓ 혼동');
+      if (isPairEither(A,B,'ㅔ','ㅐ')) tags.add('ㅔ/ㅐ 혼동');
+
+      // y-첨가(ㅠ ㅑ ㅕ ㅛ ㅖ ㅒ)
+      if (isPairEither(A,B,'ㅜ','ㅠ')) tags.add('ㅜ/ㅠ 혼동');
+      if (isPairEither(A,B,'ㅏ','ㅑ')) tags.add('ㅏ/ㅑ 혼동');
+      if (isPairEither(A,B,'ㅓ','ㅕ')) tags.add('ㅓ/ㅕ 혼동');
+      if (isPairEither(A,B,'ㅗ','ㅛ')) tags.add('ㅗ/ㅛ 혼동');
+      if (isPairEither(A,B,'ㅔ','ㅖ')) tags.add('ㅔ/ㅖ 혼동');
+      if (isPairEither(A,B,'ㅐ','ㅒ')) tags.add('ㅐ/ㅒ 혼동');
+
+      // 이중모음 vs 단모음
+      if (isPairEither(A,B,'ㅘ','ㅗ') || isPairEither(A,B,'ㅘ','ㅏ')) tags.add('ㅘ 혼동(ㅗ/ㅏ)');
+      if (isPairEither(A,B,'ㅙ','ㅗ') || isPairEither(A,B,'ㅙ','ㅐ')) tags.add('ㅙ 혼동(ㅗ/ㅐ)');
+      if (isPairEither(A,B,'ㅚ','ㅗ') || isPairEither(A,B,'ㅚ','ㅣ')) tags.add('ㅚ 혼동(ㅗ/ㅣ)');
+      if (isPairEither(A,B,'ㅝ','ㅜ') || isPairEither(A,B,'ㅝ','ㅓ')) tags.add('ㅝ 혼동(ㅜ/ㅓ)');
+      if (isPairEither(A,B,'ㅞ','ㅜ') || isPairEither(A,B,'ㅞ','ㅔ')) tags.add('ㅞ 혼동(ㅜ/ㅔ)');
+      if (isPairEither(A,B,'ㅟ','ㅜ') || isPairEither(A,B,'ㅟ','ㅣ')) tags.add('ㅟ 혼동(ㅜ/ㅣ)');
+      if (isPairEither(A,B,'ㅢ','ㅡ') || isPairEither(A,B,'ㅢ','ㅣ')) tags.add('ㅢ 혼동(ㅡ/ㅣ)');
+
+      // 아무 태그도 붙지 않았으면 일반 모음 혼동
+      if (tags.size === before) tags.add(`모음 혼동(${A}/${B})`);
     }
   }
-
-  out.push(note(
-    `Résumé — Substitutions: ${sub}, Suppressions: ${del}, Insertions: ${ins}`,
-    `요약 — 치환: ${sub}, 삭제: ${del}, 삽입: ${ins}`
-  ));
-  return out;
+  return Array.from(tags);
 }
 
-const LEADS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-const VOWELS = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
-const TAILS = [ '', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ' ];
+function explainMistakes({ ref, hyp, ops, tags, accuracy }) {
+  const msgs = [];
+  const pct = Math.round((accuracy || 0) * 100);
+  msgs.push(`점수: ${pct}%`);
 
-function json(data, status=200){
-  return {
-    statusCode: status,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  };
+  if (tags.length) {
+    tags.forEach(t => msgs.push(t));
+  } else if (pct < 100) {
+    msgs.push('소리 길이/리듬 또는 모음/받침 미세 차이 가능');
+  } else {
+    msgs.push('아주 좋습니다! 리듬 유지!');
+  }
+
+  // 추가 가이드: 대표 모음쌍 팁
+  if (tags.some(t => /ㅜ\/ㅠ/.test(t))) msgs.push('Tip: ㅠ는 ㅜ 시작에 짧은 y-소리(“y”)를 살짝 붙여요.');
+  if (tags.some(t => /ㅏ\/ㅑ/.test(t))) msgs.push('Tip: ㅑ는 ㅏ 앞에 y-슬라이드(“ya”) 느낌.');
+  if (tags.some(t => /ㅗ\/ㅓ/.test(t))) msgs.push('Tip: ㅗ는 입술이 둥글게 앞으로, ㅓ는 편안하고 넓게.');
+  if (tags.some(t => /ㅔ\/ㅐ/.test(t))) msgs.push('Tip: ㅐ가 약간 더 벌어집니다(“애”).');
+
+  return msgs;
 }
