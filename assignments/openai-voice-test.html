@@ -97,8 +97,7 @@
   <script>
   window.addEventListener('DOMContentLoaded', () => {
     // ---- 이름 동기화 ----
-    (window.StudentGate||={init(){},requireBeforeInteraction(){},getName(){return''},setName(){}})
-      .init();
+    (window.StudentGate||={init(){},requireBeforeInteraction(){},getName(){return''},setName(){}}).init();
     StudentGate.requireBeforeInteraction(document);
     const $name = document.getElementById('student-name');
     const syncName = () => { $name.value = StudentGate.getName() || ''; };
@@ -148,7 +147,11 @@
     const exState = exercises.map(() => ({
       listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
       koCorrect:false, frCorrect:false, pronunciation:null
-    }));
+    })));
+
+    function escapeHtml(s=''){
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
 
     function base64ToBlob(base64, mime="audio/wav") {
       const bin = atob(base64); const len = bin.length; const bytes = new Uint8Array(len);
@@ -207,8 +210,10 @@
       const rawKO = koInput.value || '';
       const rawFR = frInput.value || '';
 
-      // 받아쓰기: 부분 포함 허용 ❌
+      // 받아쓰기: 부분 포함 허용 ❌ (자모/받침 다르면 즉시 오답, 공백·구두점 ≤5% 허용)
       const koRes = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:false });
+
+      // FR: 악센트/구두점 무시, 의미 90% or 오타 ≤15%, 빈 답 ❌
       const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
 
       exState[index].attempts++;
@@ -240,8 +245,8 @@
         <div class="feedback incorrect">
           <strong class="text-lg">👍 거의 맞았어요! 한 번만 더! / Presque réussi·e ! Réessaie 😉</strong>
           <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
-          <p class="korean-font mt-1"><strong>내 답(한):</strong> ${rawKO.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</p>
-          <p><strong>Ma réponse (FR):</strong> ${rawFR.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</p>
+          <p class="korean-font mt-1"><strong>내 답(한):</strong> ${escapeHtml(rawKO)}</p>
+          <p><strong>Ma réponse (FR):</strong> ${escapeHtml(rawFR)}</p>
           <p class="korean-font"><strong>정답(한):</strong> ${exercises[index].sentence}</p>
           <p><strong>Traduction (FR):</strong> ${exercises[index].translation}</p>
           ${tags.length?`<p class="small-muted mt-1">${tags.join(' · ')}</p>`:''}
@@ -338,7 +343,7 @@
       const pronItems = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
       const pronScore = Math.round((pronItems.reduce((a,b)=>a+b,0) / Math.max(1,pronItems.length)) * 100);
 
-      const overall = Math.round((koScore + frScore) / 2); // ✅ 발음 미반영
+      const overall = Math.round((koScore + frScore) / 2); // ✅ 발음 미반영 (녹음 1개만 해도 총점에 영향 없음)
       const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
 
       alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}`
