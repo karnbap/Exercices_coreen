@@ -1,4 +1,3 @@
-<script>
 /* KO: 철자 엄격(초/중/종성 다르면 ×), 공백·구두점은 무시
    FR: 악센트·구두점 무시, 의미 90%≈(자카드 0.9) 또는 편집거리 15% 이내면 ○
    - allowSubstring: 받아쓰기(false)에서는 부분포함 금지, 일반 문항(true)에서만 허용
@@ -102,4 +101,3 @@
 
   w.AnswerJudge={ gradeKO, gradeFR, checkRegister };
 })(window);
-</script>
