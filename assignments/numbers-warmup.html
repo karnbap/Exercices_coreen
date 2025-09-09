@@ -17,14 +17,11 @@
     .container{max-width:1024px;margin:0 auto;padding:0 1rem}
     .topbar{position:sticky;top:0;z-index:40;background:#ffffffd9;backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--border)}
     .quiz-container{max-width:960px;margin:1.5rem auto;padding:1.5rem;background:var(--card);border-radius:1rem;border:1px solid var(--border);box-shadow:0 8px 20px rgba(15,23,42,.06)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.1rem;border-radius:.8rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:.2s}
-    .btn:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 4px rgba(37,99,235,.25)}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 1.1rem;border-radius:.8rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:.2s}
     .btn[disabled]{opacity:.5;cursor:not-allowed}
     .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-700)}
-    .btn-secondary{background:#f8fafc;border-color:var(--border);color:#111827}
-    .btn-secondary:hover{background:#eef2ff;border-color:#c7d2fe}
-    .btn-outline{background:#fff;border-color:var(--border);color:#111827}
-    .btn-outline:hover{border-color:#cbd5e1;background:#f8fafc}
+    .btn-secondary{background:#f8fafc;border-color:var(--border);color:#111827}.btn-secondary:hover{background:#eef2ff;border-color:#c7d2fe}
+    .btn-outline{background:#fff;border-color:var(--border);color:#111827}.btn-outline:hover{border-color:#cbd5e1;background:#f8fafc}
     .btn-sound{background:var(--accent);color:#fff}.btn-sound:hover{background:#059669}
     .btn-lg{padding:1rem 1.25rem;border-radius:1rem;font-size:1.05rem}
     .kicker{color:var(--muted);letter-spacing:.02em}
@@ -41,8 +38,7 @@
     .seg-btn.slow{border-color:#a7f3d0;background:#ecfdf5}
     .seg-btn.normal{border-color:#bfdbfe;background:#eff6ff}
     .seg-btn.fast{border-color:#fecaca;background:#fef2f2}
-    .progress-dot{width:.6rem;height:.6rem;border-radius:9999px;background:#e5e7eb}
-    .progress-dot.on{background:#22c55e}
+    .progress-dot{width:.6rem;height:.6rem;border-radius:9999px;background:#e5e7eb}.progress-dot.on{background:#22c55e}
     .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
     .hidden{display:none}
     .vu{width:100%;height:50px;background:#eef2ff;border-radius:.5rem;border:1px solid #c7d2fe}
@@ -50,62 +46,49 @@
 </head>
 <body>
 
-  <!-- Topbar -->
   <div class="topbar">
-    <div class="container py-2 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3 text-sm text-slate-600">
-        <i class="fa-solid fa-water"></i><span>Pongdang · made by 성일</span>
-      </div>
+    <div class="container py-2 flex items-center justify-between">
+      <div class="text-sm text-slate-600"><i class="fa-solid fa-water"></i> Pongdang · made by 성일</div>
       <button onclick="window.print()" class="btn btn-outline"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
     </div>
   </div>
 
-  <!-- Nom -->
   <div class="quiz-container">
     <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève / 이름</label>
     <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3 focus:outline-none focus:border-blue-400" placeholder="Ex. Camille / Lucas / Zoé" />
   </div>
 
-  <!-- Explications -->
+  <!-- 설명 -->
   <div id="explanation-screen" class="quiz-container">
     <div class="mx-auto max-w-3xl readable">
-      <header class="text-center">
-        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
-        <p class="kicker mt-2">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
-      </header>
+      <h2 class="text-3xl md:text-4xl font-bold text-slate-800 text-center">📘 Apprendre les nombres coréens ! / 한국어 숫자 배우기!</h2>
+      <p class="kicker text-center mt-2 mb-8">(Ft. 한자(Hanja = écriture) vs chinois (la langue) ?!)</p>
 
-      <section class="info-card space-y-3 mt-6">
+      <section class="info-card space-y-3">
         <h3>1️⃣ Petite explication / 간단 설명</h3>
-        <div class="space-y-2">
-          <p>👉 Beaucoup pensent que « 한자 = langue chinoise ».</p>
-          <p class="callout">🚫 Faux !</p>
-          <ul class="list-disc list-inside text-slate-700">
-            <li><b>한자 (Hanja)</b> = système d’écriture <span class="text-slate-500">(글자 체계, logographique)</span></li>
-            <li><b>Chinois</b> = langue <span class="text-slate-500">(언어)</span></li>
-          </ul>
-        </div>
+        <p class="callout">👉 Beaucoup pensent que « 한자 = langue chinoise ». 🚫 Faux !</p>
+        <ul class="list-disc list-inside">
+          <li><b>한자 (Hanja)</b> = système d’écriture (글자 체계, logographique)</li>
+          <li><b>Chinois</b> = langue (언어)</li>
+        </ul>
         <div class="soft-divider"></div>
         <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
           <p class="font-semibold">⚡ Astuce (analogie)</p>
           <p>En Europe, on écrit avec l’alphabet latin, mais les langues sont différentes :</p>
           <ul class="list-disc list-inside mt-2">
-            <li>→ <b>Italien</b> = langue / <b>lettres</b> = alphabet latin</li>
-            <li>→ <b>Coréen</b> = langue / <b>lettres</b> = hangeul</li>
-            <li>→ <b>Caractères han (Hanja)</b> = écriture, pas une langue</li>
+            <li>→ Italien = langue / lettres = alphabet latin</li>
+            <li>→ Coréen = langue / lettres = hangeul</li>
+            <li>→ Caractères han (Hanja) = écriture, pas une langue</li>
           </ul>
         </div>
         <div class="soft-divider"></div>
-        <div class="grid gap-2">
-          <div>🇰🇷 <b>Le coréen a donc :</b></div>
+        <div>
+          <p>🇰🇷 Le coréen a donc :</p>
           <ul class="list-disc list-inside">
-            <li>Une <b>langue</b> = coréen</li>
-            <li>Un <b>alphabet</b> = hangeul</li>
-            <li>… mais aussi <b>deux séries de nombres</b> :</li>
+            <li>Une langue = coréen</li>
+            <li>Un alphabet = hangeul</li>
+            <li>… mais aussi deux séries de nombres : <b>순수 한국어</b> / <b>한자어</b></li>
           </ul>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200"><b>순수 한국어 / natifs</b></div>
-            <div class="p-3 rounded-lg bg-green-50 border border-green-200"><b>한자어 / hanja-coréens</b></div>
-          </div>
         </div>
       </section>
 
@@ -121,7 +104,7 @@
               <li><b>하나, 둘, 셋…</b></li>
               <li>Âge (나이) → <b>스무 살</b> (20 ans)</li>
               <li>Personnes/objets (<b>명, 개, 잔, 권…</b>)</li>
-              <li>Compter la durée en heures (시간) → <b>세 시간</b> (ça fait 3&nbsp;heures; <span class="text-slate-500">s’il est 3&nbsp;h, on dit <b>3시</b>, pas <b>3시간</b></span>)</li>
+              <li>Compter la durée en heures (시간) → <b>세 시간</b> (ça fait 3 h; s’il est 3 h, on dit <b>3시</b>, pas <b>3시간</b>)</li>
             </ul>
           </div>
           <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -148,115 +131,86 @@
           <li>Minutes/secondes (분·초) → <b>hanja</b> : <b>15분 30초</b></li>
         </ul>
         <p class="text-sm md:text-base text-slate-600 mt-2">(Autrefois on disait « 1각 ≈ 15 min », puis on est passé au système moderne 1 h = 60 min → d’où ce mélange)</p>
-        <p class="mt-2"><b>Cas où les deux s’emploient</b> (en français) : semaine = <b>한 주</b> <span class="text-slate-500">(en pur coréen)</span> / <b>일주일</b> <span class="text-slate-500">(en hanja-coréen)</span> ; mois = <b>한 달</b> / <b>일개월</b> <span class="text-slate-500">(en hanja-coréen)</span>.</p>
       </section>
 
       <div class="soft-divider"></div>
 
       <section class="info-card">
         <h3>✅ Résumé super simple</h3>
-        <ul class="list-disc list-inside text-slate-800">
-          <li><b>Libre à compter</b> = <b>natifs</b></li>
-          <li><b>Déjà marqué/écrit</b> = <b>hanja-coréens</b></li>
+        <ul class="list-disc list-inside">
+          <li><b>Libre à compter</b> = natifs</li>
+          <li><b>Déjà marqué/écrit</b> = hanja-coréens</li>
         </ul>
       </section>
 
-      <div class="mt-8 flex items-center justify-center gap-3">
+      <div class="mt-8 text-center">
         <button id="explanation-next-btn" class="btn btn-primary btn-lg">
-          <i class="fa-solid fa-bolt"></i> C'est compris, on s'échauffe ! (워밍업)
+          C'est compris, on s'échauffe ! (워밍업) <i class="fas fa-arrow-right"></i>
         </button>
-        <button onclick="window.print()" class="btn btn-secondary btn-lg"><i class="fa-solid fa-print"></i> Imprimer</button>
       </div>
     </div>
   </div>
 
-  <!-- Mode / Speed -->
+  <!-- 속도 선택 -->
   <div id="mode-picker" class="quiz-container hidden">
     <h3 class="text-2xl font-extrabold text-center mb-1">Choisis ta vitesse / 연습 속도 고르기</h3>
     <p class="text-center text-sm text-slate-600 mb-5">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
     <div class="segmented">
-      <button class="seg-btn slow" onclick="WU_go('slow')">
-        <div class="text-lg"><i class="fa-solid fa-turtle"></i> 초보 / Débutant</div><div class="sub">0.7×</div>
-      </button>
-      <button class="seg-btn normal" onclick="WU_go('normal')">
-        <div class="text-lg"><i class="fa-regular fa-face-smile"></i> 보통 / Normal</div><div class="sub">1.0×</div>
-      </button>
-      <button class="seg-btn fast" onclick="WU_go('fast')">
-        <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div><div class="sub">1.5× · 쉼표 제거</div>
-      </button>
+      <button class="seg-btn slow"   onclick="WU_go('slow')">🐢 초보 / Débutant <div class="sub">0.7×</div></button>
+      <button class="seg-btn normal" onclick="WU_go('normal')">🙂 보통 / Normal <div class="sub">1.0×</div></button>
+      <button class="seg-btn fast"   onclick="WU_go('fast')">🏃 잘 읽음 / Rapide <div class="sub">1.5× · continu</div></button>
     </div>
   </div>
 
-  <!-- Warmup -->
+  <!-- 워밍업 화면 -->
   <div id="warmup-screen" class="quiz-container hidden">
     <h2 class="text-3xl font-extrabold mb-2 text-center">Méthode 5×5 🗣️</h2>
     <div class="p-4 bg-white rounded-lg border mb-6 text-left">
       <p class="mb-2"><b>Comment ?</b> Écouter → S’enregistrer → Évaluer (score %)</p>
       <p class="text-slate-700">Chaque étape contient 4 groupes (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10).</p>
     </div>
-
     <div id="global-progress" class="flex items-center gap-2 mb-6 justify-center">
       <span class="text-xs font-semibold text-slate-500">Étapes:</span>
-      <div class="progress-dot on" data-dot="0"></div>
-      <div class="progress-dot" data-dot="1"></div>
-      <div class="progress-dot" data-dot="2"></div>
-      <div class="progress-dot" data-dot="3"></div>
-      <div class="progress-dot" data-dot="4"></div>
+      <div class="progress-dot on"></div><div class="progress-dot"></div><div class="progress-dot"></div><div class="progress-dot"></div><div class="progress-dot"></div>
     </div>
-
     <div id="stages-wrap" class="space-y-8"></div>
-
     <div id="finish-wrap" class="hidden mt-8 text-center">
       <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto">
         <div class="text-lg font-extrabold">👏 Warming up terminé !</div>
         <div class="text-slate-600 mt-1">Envoie le résultat au professeur, puis choisis la suite.</div>
       </div>
       <div class="flex flex-wrap gap-2 justify-center">
-        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer les résultats</button>
+        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer</button>
         <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
         <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
         <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
-        <a href="./numbers-exercises.html" class="btn btn-outline btn-lg"><i class="fa-solid fa-list-check"></i> Passer aux exercices</a>
       </div>
     </div>
   </div>
 
   <div class="brand-tag">made by 성일 · Pongdang · Lapeace29@gmail.com</div>
 
-  <!-- Config -->
   <script>
-    window.PONGDANG_TTS = window.PONGDANG_TTS || { provider: 'openai' };
-    window.PONGDANG_FN_BASE = window.PONGDANG_FN_BASE || '/.netlify/functions';
+    window.PONGDANG_TTS = { provider:'openai' };
+    window.PONGDANG_FN_BASE = '/.netlify/functions';
   </script>
 
-  <!-- Deps -->
   <script defer src="../assets/student-gate.js"></script>
   <script defer src="../assets/pronun-utils.js"></script>
   <script defer src="../assets/pronun-vowel-middleware.js"></script>
   <script defer src="../assets/grading-criteria.js"></script>
-
-  <!-- Warmup logic -->
+  <!-- ⬇️ 파일명: warmup-5x5.js -->
   <script defer src="../assets/warmup-5x5.js"></script>
 
-  <!-- Toggle screens -->
   <script>
     document.addEventListener('DOMContentLoaded', ()=>{
-      const m = new URLSearchParams(location.search).get('mode');
       const exp = document.getElementById('explanation-screen');
       const pick = document.getElementById('mode-picker');
-      const wu = document.getElementById('warmup-screen');
+      const wu   = document.getElementById('warmup-screen');
 
       document.getElementById('explanation-next-btn')?.addEventListener('click', ()=>{
         exp.classList.add('hidden'); pick.classList.remove('hidden'); wu.classList.remove('hidden');
-        window.scrollTo({ top: pick.offsetTop - 8, behavior:'smooth' });
-      });
-
-      if(m){ exp.classList.add('hidden'); pick.classList.add('hidden'); wu.classList.remove('hidden'); }
-      else { exp.classList.remove('hidden'); pick.classList.add('hidden'); wu.classList.add('hidden'); }
-
-      pick.addEventListener('click', (e)=>{
-        const btn = e.target.closest('.seg-btn');
-        if(btn){ pick.classList.add('hidden'); wu.classList.remove('hidden'); window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' }); }
+        window.scrollTo({ top: pick.offsetTop-8, behavior:'smooth' });
       });
     });
   </script>
