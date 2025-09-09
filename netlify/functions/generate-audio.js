@@ -1,174 +1,60 @@
-// /.netlify/functions/generate-audio.js
-// Node 18+ (global fetch 사용)
+// netlify/functions/generate-audio.js
+const fetch = global.fetch || require("node-fetch");
 
-const textToSpeech = require('@google-cloud/text-to-speech');
-
-// --- Google TTS 클라이언트 준비 ---
-let gClient = null;
-try {
-  const creds = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON || '{}');
-  if (creds.client_email && creds.private_key) {
-    gClient = new textToSpeech.TextToSpeechClient({ credentials: creds });
-  }
-} catch (e) {
-  console.error('Google credentials parse error:', e);
-}
-
-// --- 보이스 세트 ---
-const OPENAI_VOICES = new Set(['alloy', 'shimmer', 'nova', 'echo', 'fable']);
-const GOOGLE_KO_VOICES = new Set([
-  'ko-KR-Neural2-A','ko-KR-Neural2-B','ko-KR-Neural2-C','ko-KR-Neural2-D','ko-KR-Neural2-E',
-  'ko-KR-Standard-A','ko-KR-Standard-B','ko-KR-Standard-C','ko-KR-Standard-D',
-  'ko-KR-Wavenet-A','ko-KR-Wavenet-B','ko-KR-Wavenet-C','ko-KR-Wavenet-D',
-]);
-
-const GOOGLE_DEFAULT = 'ko-KR-Neural2-D';
-const OPENAI_DEFAULT  = 'alloy';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const GOOGLE_TTS_KEY = process.env.GOOGLE_TTS_KEY || "";
 
 exports.handler = async (event) => {
   try {
-    if (event.httpMethod !== 'POST') {
-      return resp({ error: 'Method Not Allowed' }, 405);
-    }
+    const { text = "", voice = "alloy", speed = 1.0 } = JSON.parse(event.body || "{}");
+    if (!text) return resp(400, { message: "text required" });
 
-    const body = JSON.parse(event.body || '{}');
-    const {
-      text = '',
-      voice = OPENAI_DEFAULT,
-      provider = 'auto',      // 'openai' | 'google' | 'auto'
-      speed,                  // OpenAI 전용 (0.5~2.0)
-      speakingRate            // Google 전용 (0.25~4.0)
-    } = body;
-
-    if (!String(text).trim()) {
-      return resp({ error: 'Text is required' }, 400);
-    }
-
-    const decided = decideProvider(provider, voice);
-
-    // 1차: OpenAI (요청이 openai거나 auto+openai 보이스) → 실패 시 Google 폴백
-    if (decided === 'openai') {
-      try {
-        const r = await synthOpenAI({ text, voice, speed });
-        return resp(r, 200);
-      } catch (e) {
-        console.warn('OpenAI failed, fallback to Google if available:', e?.message);
-        if (gClient) {
-          const r = await synthGoogle({
-            text,
-            voice: GOOGLE_KO_VOICES.has(voice) ? voice : GOOGLE_DEFAULT,
-            speakingRate: (typeof speakingRate === 'number' && speakingRate > 0) ? speakingRate : 1.0
-          });
-          return resp(r, 200);
-        }
-        return resp({ error: friendlyOpenAIError(e) }, 502);
+    // 1) OpenAI TTS → WAV (초두 클리핑 방지)
+    try {
+      const r = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-4o-mini-tts",
+          input: text,
+          voice,
+          speed,
+          format: "wav" // ★ mp3 → wav
+        })
+      });
+      if (r.ok) {
+        const buf = Buffer.from(await r.arrayBuffer());
+        return resp(200, { audioData: buf.toString("base64"), mimeType: "audio/wav" });
       }
-    }
+    } catch (_) {}
 
-    // 1차: Google
-    if (!gClient) return resp({ error: 'Google credentials not configured' }, 500);
-    const r = await synthGoogle({
-      text,
-      voice: GOOGLE_KO_VOICES.has(voice) ? voice : GOOGLE_DEFAULT,
-      speakingRate: (typeof speakingRate === 'number' && speakingRate > 0) ? speakingRate : 1.0
+    // 2) Fallback: Google TTS → OGG_OPUS (+ 150ms 무음)
+    if (!GOOGLE_TTS_KEY) throw new Error("no TTS available");
+
+    const ssml = `<speak><break time="150ms"/>${escapeXml(text)}</speak>`;
+    const gr = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: { ssml },
+        // 한국어 중심이라 ko-KR 기본, 필요시 다른 voiceName 전달
+        voice: { languageCode: "ko-KR" },
+        audioConfig: { audioEncoding: "OGG_OPUS", speakingRate: speed }
+      })
     });
-    return resp(r, 200);
+    if (!gr.ok) throw new Error(`google tts ${gr.status}`);
+    const gj = await gr.json();
+    return resp(200, { audioData: gj.audioContent, mimeType: "audio/ogg" });
 
-  } catch (e) {
-    console.error('generate-audio fatal:', e);
-    return resp({ error: 'TTS failed', detail: String(e?.message || e) }, 500);
+  } catch (err) {
+    console.error(err);
+    return resp(500, { message: "generate-audio failed", error: String(err) });
   }
 };
 
-function decideProvider(provider, voice) {
-  if (provider === 'openai') return 'openai';
-  if (provider === 'google') return 'google';
-
-  // auto 일 때: OPENAI_KEY가 있으면 일단 OpenAI 먼저 시도, 실패 시 Google로 폴백
-  if (process.env.OPENAI_API_KEY) return 'openai';
-
-  // OpenAI 키가 없으면 Google로
-  return 'google';
+function resp(code, obj) {
+  return { statusCode: code, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
-
-
-async function synthOpenAI({ text, voice, speed }) {
-  if (!process.env.OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
-  const v = OPENAI_VOICES.has(voice) ? voice : OPENAI_DEFAULT;
-
-  const res = await fetch('https://api.openai.com/v1/audio/speech', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini-tts',
-      voice: v,
-      input: String(text),
-      format: 'mp3',
-      speed: (typeof speed === 'number' && speed > 0) ? speed : 1.0
-    })
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    let msg = `OpenAI TTS ${res.status}`;
-    try {
-      const j = JSON.parse(errText);
-      msg = j?.error?.message || msg;
-    } catch {}
-    throw new Error(msg);
-  }
-
-  // 바이너리 → base64
-  const arr = await res.arrayBuffer();
-  const b64 = Buffer.from(arr).toString('base64');
-  return {
-    mimeType: 'audio/mpeg',
-    audioBase64: b64,
-    audioData: b64,               // 구페이지 호환 키
-    providerUsed: 'openai',
-    voiceUsed: v
-  };
+function escapeXml(s = "") {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&apos;" }[c]));
 }
-
-async function synthGoogle({ text, voice, speakingRate }) {
-  const name = GOOGLE_KO_VOICES.has(voice) ? voice : GOOGLE_DEFAULT;
-  const [gRes] = await gClient.synthesizeSpeech({
-    input: { text: String(text) },
-    voice: { languageCode: 'ko-KR', name },
-    audioConfig: {
-      audioEncoding: 'MP3',
-      speakingRate: (typeof speakingRate === 'number' && speakingRate > 0) ? speakingRate : 1.0
-    }
-  });
-  const b64 = Buffer.from(gRes.audioContent || Buffer.alloc(0)).toString('base64');
-  return {
-    mimeType: 'audio/mpeg',
-    audioBase64: b64,
-    audioData: b64,               // 구페이지 호환 키
-    providerUsed: 'google',
-    voiceUsed: name
-  };
-}
-
-function resp(obj, status = 200) {
-  return {
-    statusCode: status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store'
-    },
-    body: JSON.stringify(obj)
-  };
-}
-
-function friendlyOpenAIError(e) {
-  const m = String(e?.message || e);
-  if (/insufficient_quota|quota|429/i.test(m)) {
-    return 'OpenAI 잔액/월 한도가 부족합니다. Billing을 확인하세요.';
-  }
-  return m;
-}
-
