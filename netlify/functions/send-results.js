@@ -38,13 +38,18 @@ exports.handler = async (event) => {
     // 서버 집계(보수)
     const graded = questions.filter(q => typeof q.isCorrect === 'boolean');
     const correct = graded.filter(q => q.isCorrect).length;
-    const overall = num(categoryScores?.overall, graded.length ? Math.round((correct/graded.length)*100) : 0);
 
-    const totalQ = questions.length || 0;
-    const koScore = num(categoryScores?.ko, totalQ ? Math.round((questions.filter(q=>q.isCorrectKo).length/totalQ)*100) : 0);
-    const frScore = num(categoryScores?.fr, totalQ ? Math.round((questions.filter(q=>q.isCorrectFr).length/totalQ)*100) : 0);
-    const pronVals = questions.map(q=>q?.pronunciation?.accuracy).filter(x=>typeof x==='number'&&isFinite(x));
-    const pronScore = num(categoryScores?.pron, pronVals.length ? Math.round((pronVals.reduce((a,b)=>a+b,0)/pronVals.length)*100) : 0);
+    // 카테고리 점수: 클라이언트가 categoryScores 넘기면 우선, 없으면 유도 계산
+    const koScore   = num(categoryScores?.ko,   deriveCategoryScore(questions, 'ko'));
+    const frScore   = num(categoryScores?.fr,   deriveCategoryScore(questions, 'fr'));
+    const pronScore = num(categoryScores?.pron, deriveCategoryScore(questions, 'pron'));
+
+    // 전체 점수: KO/FR 평균 기본값 (필요시 정책에 맞게 조정 가능)
+    const overall = num(
+      categoryScores?.overall,
+      (koScore || frScore) ? Math.round((koScore + frScore) / 2) :
+      (graded.length ? Math.round((correct / graded.length) * 100) : 0)
+    );
 
     const gm = gradingMessage || serverGetGradingMessage(overall);
 
@@ -81,6 +86,42 @@ function res(obj, status=200, headers={ 'Content-Type':'application/json' }){
 function safeParse(s){ try { return { ok:true, value: JSON.parse(s||'{}') }; } catch { return { ok:false }; } }
 function num(x, fallback=0){ const n=Number(x); return Number.isFinite(n)?n:fallback; }
 function stripHtml(s=''){ return s.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); }
+
+function avg(nums){ return nums.length ? Math.round(nums.reduce((a,b)=>a+b,0)/nums.length) : 0; }
+function deriveCategoryScore(questions=[], category){
+  const numeric = [];
+  const bools = [];
+
+  for (const q of questions){
+    if (q?.scores && typeof q.scores[category] === 'number') {
+      numeric.push(Number(q.scores[category]));
+      continue;
+    }
+    if (category === 'pron') {
+      if (typeof q?.pronunciation?.score === 'number') {
+        numeric.push(Number(q.pronunciation.score));
+        continue;
+      }
+      if (typeof q?.pronunciation?.accuracy === 'number' && isFinite(q.pronunciation.accuracy)) {
+        numeric.push(Math.round(q.pronunciation.accuracy * 100));
+        continue;
+      }
+      continue;
+    }
+    if (category === 'ko' && typeof q?.isCorrectKo === 'boolean') {
+      bools.push(q.isCorrectKo);
+      continue;
+    }
+    if (category === 'fr' && typeof q?.isCorrectFr === 'boolean') {
+      bools.push(q.isCorrectFr);
+      continue;
+    }
+  }
+
+  if (numeric.length) return avg(numeric);
+  if (bools.length)  return Math.round((bools.filter(Boolean).length / bools.length) * 100);
+  return 0;
+}
 
 function mailFromTo(){
   const GUSER = process.env.GMAIL_USER, GPASS = process.env.GMAIL_APP_PASSWORD, RECIP = process.env.RECIPIENT_EMAIL;
