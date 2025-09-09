@@ -206,59 +206,72 @@
     </div>
   </div>
 
-  <!-- Mode picker (hidden by default) -->
-  <div id="mode-picker" class="quiz-container hidden">
-    <h3 class="text-2xl font-extrabold text-center mb-1">Choisis ta vitesse / 연습 속도 고르기</h3>
-    <p class="text-center text-sm text-slate-600 mb-5">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
-    <div class="segmented">
-      <button class="seg-btn slow" onclick="WU_go('slow')">
-        <div class="text-lg"><i class="fa-solid fa-turtle"></i> 초보 / Débutant</div>
-        <div class="sub">0.7×</div>
-      </button>
-      <button class="seg-btn normal" onclick="WU_go('normal')">
-        <div class="text-lg"><i class="fa-regular fa-face-smile"></i> 보통 / Normal</div>
-        <div class="sub">1.0×</div>
-      </button>
-      <button class="seg-btn fast" onclick="WU_go('fast')">
-        <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div>
-        <div class="sub">1.5× · 쉼표 제거</div>
-      </button>
-    </div>
+ <!-- Mode picker (hidden by default) -->
+<div id="mode-picker" class="quiz-container hidden">
+  <h3 class="text-2xl font-extrabold text-center mb-1">Choisis ta vitesse / 연습 속도 고르기</h3>
+  <p class="text-center text-sm text-slate-600 mb-5">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
+  <div class="segmented">
+    <button class="seg-btn slow" onclick="WU_go('slow')">
+      <div class="text-lg"><i class="fa-solid fa-turtle"></i> 초보 / Débutant</div>
+      <div class="sub">0.7×</div>
+    </button>
+    <button class="seg-btn normal" onclick="WU_go('normal')">
+      <div class="text-lg"><i class="fa-regular fa-face-smile"></i> 보통 / Normal</div>
+      <div class="sub">1.0×</div>
+    </button>
+    <button class="seg-btn fast" onclick="WU_go('fast')">
+      <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div>
+      <div class="sub">1.5×</div>
+    </button>
+    <button class="seg-btn fast" onclick="WU_go('turbo')">
+      <div class="text-lg"><i class="fa-solid fa-bolt"></i> 2배속 / Turbo</div>
+      <div class="sub">2.0×</div>
+    </button>
+  </div>
+</div>
+
+<!-- Warmup -->
+<div id="warmup-screen" class="quiz-container hidden">
+  <!-- 단계 이동 내비게이션 -->
+  <div class="flex flex-wrap gap-2 justify-center mb-4">
+    <a href="./numbers-exercises.html?step=1" class="btn btn-outline"><i class="fa-solid fa-book-open"></i> 1단계 개념 / Compréhension</a>
+    <a href="./numbers-exercises.html?step=2" class="btn btn-outline"><i class="fa-solid fa-pen"></i> 2단계 써보기 / Écriture</a>
+    <a href="./numbers-exercises.html?step=3" class="btn btn-outline"><i class="fa-solid fa-lines-leaning"></i> 3단계 문장 / Phrases</a>
+    <a href="./numbers-exercises.html?step=4" class="btn btn-outline"><i class="fa-solid fa-headphones"></i> 4단계 받아쓰기 / Dictée</a>
   </div>
 
-  <!-- Warmup -->
-  <div id="warmup-screen" class="quiz-container hidden">
-    <h2 class="text-3xl font-extrabold mb-2 text-center">Méthode 5×5 🗣️</h2>
-    <div class="p-4 bg-white rounded-lg border mb-6 text-left">
-      <p class="mb-2"><b>Comment ?</b> Écouter → S’enregistrer → Évaluer (score %)</p>
-      <p class="text-slate-700">Chaque étape contient 4 groupes (Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10).</p>
+  <h2 class="text-3xl font-extrabold mb-2 text-center">Méthode 5×5 🗣️</h2>
+  <div class="p-4 bg-white rounded-lg border mb-6 text-left">
+    <p class="mb-2"><b>Comment ?</b> Écouter → S’enregistrer → Évaluer (score %) / 듣기 → 녹음 → 평가</p>
+    <p class="text-slate-700">4 groupes: Natifs 1–5, Natifs 6–10, Hanja 1–5, Hanja 6–10</p>
+  </div>
+
+  <div id="global-progress" class="flex items-center gap-2 mb-6 justify-center">
+    <span class="text-xs font-semibold text-slate-500">Étapes:</span>
+    <div class="progress-dot on" data-dot="0"></div>
+    <div class="progress-dot" data-dot="1"></div>
+    <div class="progress-dot" data-dot="2"></div>
+    <div class="progress-dot" data-dot="3"></div>
+    <div class="progress-dot" data-dot="4"></div>
+  </div>
+
+  <div id="stages-wrap" class="space-y-8"></div>
+
+  <div id="finish-wrap" class="hidden mt-8 text-center">
+    <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto">
+      <div class="text-lg font-extrabold">👏 Warming up terminé !</div>
+      <div class="text-slate-600 mt-1">Envoie le résultat au professeur, puis choisis la suite.</div>
     </div>
-
-    <div id="global-progress" class="flex items-center gap-2 mb-6 justify-center">
-      <span class="text-xs font-semibold text-slate-500">Étapes:</span>
-      <div class="progress-dot on" data-dot="0"></div>
-      <div class="progress-dot" data-dot="1"></div>
-      <div class="progress-dot" data-dot="2"></div>
-      <div class="progress-dot" data-dot="3"></div>
-      <div class="progress-dot" data-dot="4"></div>
-    </div>
-
-    <div id="stages-wrap" class="space-y-8"></div>
-
-    <div id="finish-wrap" class="hidden mt-8 text-center">
-      <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto">
-        <div class="text-lg font-extrabold">👏 Warming up terminé !</div>
-        <div class="text-slate-600 mt-1">Envoie le résultat au professeur, puis choisis la suite.</div>
-      </div>
-      <div class="flex flex-wrap gap-2 justify-center">
-        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer les résultats</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
-        <a href="./numbers-exercises.html" class="btn btn-outline btn-lg"><i class="fa-solid fa-list-check"></i> Passer aux exercices</a>
-      </div>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer les résultats</button>
+      <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
+      <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
+      <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
+      <button class="btn btn-secondary btn-lg" onclick="WU_go('turbo')">2.0× Refaire</button>
+      <a href="./numbers-exercises.html" class="btn btn-outline btn-lg"><i class="fa-solid fa-list-check"></i> Passer aux exercices</a>
     </div>
   </div>
+</div>
 
   <div class="brand-tag">made by 성일 · Pongdang · Lapeace29@gmail.com</div>
 
