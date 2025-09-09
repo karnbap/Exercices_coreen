@@ -1,58 +1,98 @@
 // netlify/functions/generate-audio.js
-const fetch = global.fetch || require("node-fetch");
+// TTS: OpenAI 우선 → 실패 시 Google 폴백
+// 요청: { text?:string, ssml?:string, voice?:string, speed?:number, provider?:string }
+// 응답: { audioBase64:string, mimeType:string }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const GOOGLE_TTS_KEY = process.env.GOOGLE_TTS_KEY || "";
+const fetch = global.fetch || require('node-fetch');
 
-const SAFE_VOICES = new Set(["alloy","shimmer","verse","nova","fable","echo"]);
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const GOOGLE_TTS_KEY = process.env.GOOGLE_TTS_KEY || '';
+
+const SAFE_VOICES = new Set(['alloy','shimmer','verse','nova','fable','echo']);
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization,Accept',
+  'Cache-Control': 'no-store',
+  'Content-Type': 'application/json'
+};
 
 exports.handler = async (event) => {
+  // Preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers: CORS, body: '' };
+  }
+  if (event.httpMethod !== 'POST') {
+    return json(405, { message: 'Method Not Allowed' });
+  }
+
   try {
-    const { text = "", voice = "alloy", speed = 1.0 } = JSON.parse(event.body || "{}");
-    if (!text) return resp(400, { message: "text required" });
+    const body = JSON.parse(event.body || '{}');
+    const provider = String(body.provider || 'openai').toLowerCase();
+    const voiceReq = String(body.voice || 'alloy');
+    const voice = SAFE_VOICES.has(voiceReq) ? voiceReq : 'alloy';
+    const speed = clamp(Number(body.speed ?? 1.0), 0.5, 2.0);
 
-    const v = SAFE_VOICES.has(String(voice)) ? String(voice) : "alloy";
+    // 입력 텍스트 결정 (ssml 우선)
+    const text = typeof body.text === 'string' ? body.text : '';
+    const ssmlIn = typeof body.ssml === 'string' ? body.ssml : '';
 
-    // 1) OpenAI TTS → WAV (초두 클리핑 방지)
-    try {
-      const r = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-4o-mini-tts",
-          input: text,
-          voice: v,
-          speed,
-          format: "wav"
-        })
-      });
-      if (r.ok) {
-        const buf = Buffer.from(await r.arrayBuffer());
-        return resp(200, { audioData: buf.toString("base64"), mimeType: "audio/wav" });
+    if (!text && !ssmlIn) return json(400, { message: 'text or ssml required' });
+
+    // 1) OpenAI (텍스트 기반)
+    if (provider === 'openai' || !GOOGLE_TTS_KEY) {
+      try {
+        // OpenAI는 SSML이 아니라 plain text만 받으므로 ssml인 경우 태그 제거
+        const input = ssmlIn ? stripXml(ssmlIn) : text;
+        const r = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini-tts',
+            input,
+            voice,
+            speed,
+            format: 'wav' // 초두 클리핑 방지에 유리
+          })
+        });
+        if (r.ok) {
+          const buf = Buffer.from(await r.arrayBuffer());
+          return json(200, { audioBase64: buf.toString('base64'), mimeType: 'audio/wav' });
+        }
+      } catch (_) {
+        // fallthrough to Google
       }
-    } catch (_) {}
+    }
 
-    // 2) Fallback: Google TTS → OGG_OPUS (+ 150ms 무음)
-    if (!GOOGLE_TTS_KEY) throw new Error("no TTS available");
-    const ssml = `<speak><break time="150ms"/>${escapeXml(text)}</speak>`;
+    // 2) Google TTS (SSML 지원, 무음 150ms 추가)
+    if (!GOOGLE_TTS_KEY) throw new Error('No TTS provider available');
+    const ssml = ssmlIn || `<speak><break time="150ms"/>${escapeXml(text)}</speak>`;
     const gr = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: { ssml },
-        voice: { languageCode: "ko-KR" },
-        audioConfig: { audioEncoding: "OGG_OPUS", speakingRate: speed }
+        voice: { languageCode: 'ko-KR' }, // 필요하면 name: 'ko-KR-Standard-A'
+        audioConfig: { audioEncoding: 'OGG_OPUS', speakingRate: speed }
       })
     });
     if (!gr.ok) throw new Error(`google tts ${gr.status}`);
     const gj = await gr.json();
-    return resp(200, { audioData: gj.audioContent, mimeType: "audio/ogg" });
+    return json(200, { audioBase64: gj.audioContent, mimeType: 'audio/ogg' });
 
   } catch (err) {
     console.error(err);
-    return resp(500, { message: "generate-audio failed", error: String(err) });
+    return json(500, { message: 'generate-audio failed', error: String(err) });
   }
 };
 
-function resp(code, obj) { return { statusCode: code, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }; }
-function escapeXml(s = "") { return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&apos;" }[c])); }
+function json(statusCode, obj) {
+  return { statusCode, headers: CORS, body: JSON.stringify(obj) };
+}
+function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, isFinite(n) ? n : 1)); }
+function escapeXml(s=''){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;' }[c])); }
+function stripXml(s=''){ return String(s).replace(/<[^>]*>/g,''); }
