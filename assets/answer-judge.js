@@ -1,88 +1,105 @@
-<!-- /assets/answer-judge.js -->
 <script>
-/*
-KO: 자/모음/받침 하나라도 다르면 오답. 공백/부호 차이는 무시(듣기에 영향 없음).
-    allowSubstring=false(받아쓰기)일 때 부분포함 금지.
-FR: 악상/구두점/대소문자 무시. 빈 답안은 오답.
-    - 의미 유사 허용: 간단 유의어 치환 후 단어집합 Jaccard ≥ 0.90 → 정답
-    - 철자 관대: Levenshtein ≤ 15% → 정답
+/* KO: 철자 엄격(초/중/종성 다르면 ×), 공백·구두점은 무시
+   FR: 악센트·구두점 무시, 의미 90%≈(자카드 0.9) 또는 편집거리 15% 이내면 ○
+   - allowSubstring: 받아쓰기(false)에서는 부분포함 금지, 일반 문항(true)에서만 허용
 */
 (function (w) {
   const RX_PUNCT=/[\p{P}\p{S}]/gu, RX_SPACE=/\s+/g, RX_MARKS=/\p{M}/gu, RX_HANGUL=/[가-힣]/g;
+
   const NFD=s=>String(s||'').normalize('NFD');
   const deacc=s=>NFD(s).replace(RX_MARKS,'');
-  const trimWs=s=>String(s||'').replace(RX_SPACE,' ').trim();
-  const onlyKO=s=>(String(s||'').match(RX_HANGUL)||[]).join('');
-  const normKO=s=>onlyKO(String(s).replace(RX_PUNCT,'')).replace(RX_SPACE,'');
-  const normFR=s=>trimWs(deacc(String(s).toLowerCase()).replace(RX_PUNCT,''));
+  const onlyHangul=s=>(String(s||'').match(RX_HANGUL)||[]).join('');
+  const trimSpaces=s=>String(s||'').replace(RX_SPACE,' ').trim();
 
-  const S=0xAC00, Lc=19, Vc=21, Tc=28, N=Vc*Tc, Sc=Lc*N;
-  function decomp(ch){const c=ch.codePointAt(0); if(c<S||c>=S+Sc) return null;
-    const i=c-S; return {L:Math.floor(i/N),V:Math.floor((i%N)/Tc),T:i%Tc};}
-  function lev(a,b){const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
-    const d=new Array(n+1); for(let j=0;j<=n;j++) d[j]=j;
-    for(let i=1;i<=m;i++){let p=d[0]; d[0]=i;
-      for(let j=1;j<=n;j++){const t=d[j];
-        d[j]=(a[i-1]===b[j-1])?p:1+Math.min(p,d[j-1],d[j]); p=t;}}
-    return d[n];
+  // Hangul L/V/T 분해
+  const S0=0xAC00, Lc=19, Vc=21, Tc=28, N=Vc*Tc, Sc=Lc*N;
+  function decomp(ch){
+    const cp=ch.codePointAt(0); if(cp<S0||cp>=S0+Sc) return null;
+    const i=cp-S0; return {L:Math.floor(i/N), V:Math.floor((i%N)/Tc), T:i%Tc};
   }
 
-  function gradeKO(ref, ans, {allowSubstring=false}={}){
+  // Levenshtein(메모리 절약형)
+  function lev(a,b){
+    const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+    const d=new Array(n+1); for(let j=0;j<=n;j++) d[j]=j;
+    for(let i=1;i<=m;i++){ let prev=d[0]; d[0]=i;
+      for(let j=1;j<=n;j++){ const tmp=d[j];
+        d[j]=(a[i-1]===b[j-1])?prev:1+Math.min(prev,d[j-1],d[j]); prev=tmp;
+      }
+    } return d[n];
+  }
+
+  // ---------- 정규화 ----------
+  function normKO(s){ // 공백/구두점 제거 + 한글만
+    return onlyHangul(String(s||'').replace(RX_PUNCT,'')).replace(/\s+/g,'');
+  }
+  function normFR(s){ // 악센트/구두점 제거 + 소문자 + 공백정리
+    return trimSpaces(deacc(String(s||'').toLowerCase()).replace(RX_PUNCT,''));
+  }
+
+  // ---------- KO: 받아쓰기 엄격 ----------
+  function gradeKO(ref, ans, opts={}){
+    const { allowSubstring=false } = opts;
     const R=normKO(ref), S=normKO(ans);
     if(!S) return {score:0,isCorrect:false,note:'빈 답안'};
-    if(allowSubstring && S.includes(R) && S.length<=Math.ceil(R.length*1.15))
-      return {score:100,isCorrect:true,note:'부분 포함(정답 전체 포함) 인정'};
 
-    if(S===R){
-      // 공백/부호 차이율은 참고용으로만 표시
-      const keepW=s=>(String(s).match(/[\s\p{P}]+/gu)||[]).join('').replace(RX_SPACE,' ');
-      const d=lev(keepW(ref),keepW(ans));
-      const L=Math.max(1,keepW(ref).length);
-      const pct=Math.round((d/L)*100);
-      return {score:100,isCorrect:true,note:pct?`공백/부호 차이(~${pct}%) 허용`:'철자 일치'};
-    }
+    if(allowSubstring && (S.includes(R) || R.includes(S)))
+      return {score:100,isCorrect:true,note:'부분 포함(일반 문항)'};
 
-    if(S.length!==R.length) return {score:0,isCorrect:false,note:'한글 글자 수 다름'};
-    let diffV=false,diffL=false,diffT=false;
+    if(S===R) return {score:100,isCorrect:true,note:'철자 일치'};
+
+    if(S.length!==R.length)
+      return {score:0,isCorrect:false,note:'글자 수 다름(공백/부호 제외)'};
+
+    // 글자별로 초/중/종성 비교 — 하나라도 다르면 ×
+    let vowelErr=false, consErr=false, batchimErr=false;
     for(let i=0;i<R.length;i++){
       if(R[i]===S[i]) continue;
       const a=decomp(R[i]), b=decomp(S[i]);
-      if(a && b){ if(a.V!==b.V) diffV=true; if(a.L!==b.L) diffL=true; if(a.T!==b.T) diffT=true; }
-      else diffL=true;
+      if(a&&b){
+        if(a.V!==b.V) vowelErr=true;     // 모음
+        if(a.L!==b.L) consErr=true;      // 초성
+        if(a.T!==b.T) batchimErr=true;   // 종성
+      }else{ consErr=true; } // 비한글 혼입 등
     }
-    const parts=[]; if(diffV) parts.push('모음'); if(diffL) parts.push('초성/자음'); if(diffT) parts.push('받침');
-    return {score:0,isCorrect:false,note:parts.length?parts.join('·')+' 오류':'철자 불일치'};
+    const bits=[]; if(vowelErr) bits.push('모음 오류'); if(consErr) bits.push('자음 오류'); if(batchimErr) bits.push('받침 오류');
+    return {score:0,isCorrect:false,note:bits.length?bits.join('·'):'철자 불일치'};
   }
 
-  const FR_DICT=Object.freeze({
-    'elle':'il','elles':'il','ils':'il','une':'un',
-    'actrice':'acteur','chanteuse':'chanteur','amie':'ami',
-    'cest':'est','c\'est':'est','ces':'est',
-    'tel':'comme','telle':'comme','tels':'comme','telles':'comme',
-    'pareil':'comme','pareille':'comme','semblable':'comme'
-  });
-  const canonFR=s=>String(s).split(' ').filter(Boolean).map(w=>FR_DICT[w]||w).join(' ');
-  const jacc=(a,b)=>{const A=new Set(a.split(' ').filter(Boolean)), B=new Set(b.split(' ').filter(Boolean));
-    const inter=[...A].filter(x=>B.has(x)).length; const uni=new Set([...A,...B]).size; return inter/Math.max(1,uni);};
+  // ---------- FR: 의미 위주(≈90%) ----------
+  function gradeFR(ref, ans, opts={}){
+    const R=normFR(ref), S=normFR(ans);
+    if(!S) return {score:0,isCorrect:false,note:'réponse vide'};
 
-  function gradeFR(ref, ans){
-    const R0=normFR(ref), S0=normFR(ans);
-    if(!S0) return {score:0,isCorrect:false,note:'réponse vide'};
-    const R=canonFR(R0), S=canonFR(S0);
-    if(S===R || S.includes(R)) return {score:100,isCorrect:true,note:'accents/ponctuation ignorés'};
-    if(jacc(S,R) >= 0.90) return {score:95,isCorrect:true,note:'mots clés/équivalents concordants'};
-    const d=lev(S,R), L=Math.max(1,R.length), ok=d<=Math.ceil(L*0.15);
-    return {score:Math.max(0,Math.round((1-d/L)*100)),isCorrect:!!ok,note:ok?'variantes mineures admises':'écart trop grand / sens différent'};
+    // 완전일치 먼저
+    if(S===R) return {score:100,isCorrect:true,note:'accents/ponctuation ignorés'};
+
+    // (선택) 대체 참조문장 허용
+    const alts = Array.isArray(opts.altRefs)?opts.altRefs:[];
+    for(const alt of alts){ const A=normFR(alt); if(S===A) return {score:100,isCorrect:true,note:'variante acceptée'}; }
+
+    // 토큰 기준 의미 유사도(자카드) ≥ 0.90 → 의미 90% 이상
+    const set=t=>new Set(String(t).split(' ').filter(Boolean));
+    const a=set(S), b=set(R);
+    const inter=[...a].filter(x=>b.has(x)).length;
+    const uni=new Set([...a,...b]).size;
+    const jacc = inter/Math.max(1,uni);
+    if(jacc>=0.90) return {score:Math.round(95),isCorrect:true,note:'mots essentiels concordants'};
+
+    // 철자 오차 허용(15%)
+    const d=lev(R,S), L=Math.max(1,R.length), rate=d/L, ok=rate<=0.15;
+    return {score:Math.max(0,Math.round((1-rate)*100)),isCorrect:ok,note:ok?'variantes mineures admises':'écart trop grand'};
   }
 
+  // 말투 가이드(참고용)
   function checkRegister(ans){
     const je=/(저는|전)\b/.test(ans), na=/(나는|난)\b/.test(ans), tr=String(ans||'').trim();
     const yo=/요[.?!]*$/.test(tr), sm=/니다[.?!]*$/.test(tr), hae=/[다]$/.test(tr);
-    if(je&&hae) return {ok:false,ko:'저는/전 ↔ 해체 ❌ → -요/-(스)ㅂ니다',fr:'« je/jeon » → -yo / -seumnida'};
+    if(je&&hae) return {ok:false,ko:'저는/전 ↔ -아/어(해체) ❌ → -요/-(스)ㅂ니다',fr:'« je/jeon » → -yo / -seumnida'};
     if(na&&(yo||sm)) return {ok:false,ko:'나는/난 ↔ -요/-(스)ㅂ니다 ❌ → -아/어',fr:'« na/nan » → style familier'};
     return {ok:true};
   }
 
-  w.AnswerJudge={gradeKO,gradeFR,checkRegister};
+  w.AnswerJudge={ gradeKO, gradeFR, checkRegister };
 })(window);
 </script>
