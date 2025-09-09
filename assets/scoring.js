@@ -1,4 +1,3 @@
-<script>
 /* 공통 점수 집계
    - weights: { ko, fr, pron } 합=1 (과제별로 override 가능)
    - pron.mode:
@@ -63,4 +62,3 @@
 
   w.Scoring = { DEFAULT_PROFILE, compute, normalizeWeights };
 })(window);
-</script>
