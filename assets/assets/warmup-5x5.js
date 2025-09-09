@@ -1,6 +1,6 @@
 // assets/warmup-5x5.js
 // 속도 선택(WU_go) → 4그룹 발음 연습 렌더 → 평가/전송
-// 연속 발화(TTS): Google=SSML 0ms break / OpenAI=U+2060(WORD JOINER)
+// 연속 발화(TTS): Google=SSML 0ms / OpenAI=U+2060
 // 평가 설명: pronun-utils.js / pronun-vowel-middleware.js 팁 병합
 
 const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
@@ -19,9 +19,10 @@ const state = {
 };
 window.state = state;
 
-// ===== 유틸 =====
+// ===== util =====
+function $(s, r=document){ return r.querySelector(s); }
 function splitTokens(s){ return String(s||'').split(/[,\s]+/).filter(Boolean); }
-function collapseKorean(s){ return splitTokens(s).join(''); } // 평가/저장용: 완전 붙임
+function collapseKorean(s){ return splitTokens(s).join(''); }
 function makeTTSContinuous(text, speed=1.0){
   const parts = splitTokens(text);
   const provider = (window.PONGDANG_TTS?.provider) || 'openai';
@@ -29,8 +30,7 @@ function makeTTSContinuous(text, speed=1.0){
     const rate = Math.round(speed*100)+'%';
     return { ssml: `<speak><prosody rate="${rate}">${parts.join('<break time="0ms"/>')}</prosody></speak>` };
   }
-  // OpenAI: 단어 사이 WORD JOINER(U+2060) → 보기는 띄고 발화는 붙임
-  return { text: parts.join('\u2060') };
+  return { text: parts.join('\u2060') }; // WORD JOINER
 }
 function mapVoice(provider, req){
   const VOICE_MAP = {
@@ -103,7 +103,10 @@ async function playTTS(input, voice='alloy', speed=1.0, btn){
     await audio.play();
   }catch(e){ alert('Problème de lecture audio. Réessaie.'); }
 }
-function setBtnPlaying(btn, on){ if(!btn) return; btn.innerHTML = on ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Écouter'; }
+function setBtnPlaying(btn, on){
+  if(!btn) return;
+  btn.innerHTML = on ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Écouter';
+}
 
 // ---------- Recorder ----------
 function makeRecorder(){
@@ -127,4 +130,295 @@ function makeRecorder(){
     const w = cv.width, h = cv.height;
     function loop(){
       raf = requestAnimationFrame(loop);
-      analyser.getByteFrequen
+      analyser.getByteFrequencyData(data);
+      g.clearRect(0,0,w,h);
+      const bars = 32; const step = Math.floor(data.length / bars);
+      g.fillStyle = '#6366f1';
+      for(let i=0;i<bars;i++){
+        const v = data[i*step]/255; const bh = v*h;
+        g.fillRect(i*(w/bars)+2, h-bh, (w/bars)-4, bh);
+      }
+    }
+    loop();
+  }
+  function stop(canvas){
+    if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop();
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    if(ctx){ ctx.close(); ctx=null; }
+    if(raf) cancelAnimationFrame(raf);
+    if(canvas){ const g=canvas.getContext('2d'); g.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  async function getResult(){
+    return await new Promise((resolve)=>{
+      const onStop = ()=>{
+        const blob = new Blob(chunks, { type:'audio/webm' });
+        const reader = new FileReader();
+        const audio = document.createElement('audio');
+        audio.src = URL.createObjectURL(blob);
+        audio.addEventListener('loadedmetadata', ()=>{
+          const duration = audio.duration;
+          reader.onloadend = ()=> resolve({ base64: reader.result, duration, blob });
+          reader.readAsDataURL(blob);
+        });
+      };
+      if(mediaRecorder && mediaRecorder.state==='recording'){
+        mediaRecorder.addEventListener('stop', onStop, { once:true });
+        mediaRecorder.stop();
+      }else{ onStop(); }
+    });
+  }
+  return { start, stop, getResult };
+}
+
+// ---------- Pronunciation API ----------
+async function analyzePronunciation({ referenceText, record }){
+  const payload = {
+    referenceText,
+    audio: { base64: toBareBase64(record.base64), filename:`rec_${Date.now()}.webm`, mimeType:'audio/webm', duration: record.duration }
+  };
+  const r = await fetch(`${FN_BASE}/analyze-pronunciation`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const data = await r.json().catch(()=> ({}));
+  if(!r.ok) throw new Error(data?.error || 'Analyse échouée');
+  let acc = (typeof data.accuracy === 'number') ? data.accuracy : 0;
+  if(acc > 1) acc = acc/100;
+  const friendly = Array.isArray(data?.details?.explain) ? data.details.explain : [];
+  return { accuracy: acc, friendly, transcript: data?.transcript||'' };
+}
+
+// ---------- Feedback ----------
+function renderFeedback(box, {friendly=[], accuracy=0, transcript='', refText=''}) {
+  if(!box) return;
+  const percent = Math.round((accuracy||0)*100);
+  const lines = [];
+  if (percent === 100) lines.push('✅ Parfait ! / 완벽해요! 리듬 유지.');
+  if (Array.isArray(friendly) && friendly.length) lines.push(...friendly);
+  try{
+    const extra1 = (window.PronunUtils?.quickTips?.(refText, transcript)) || [];
+    const extra2 = (window.VowelMiddleware?.hints?.(refText, transcript)) || [];
+    [...extra1, ...extra2].forEach(t => t && lines.push(t));
+  }catch(_){ }
+  if (!lines.length){
+    const modeTip = (state.mode?.continuous) ? '끊지 않고 한 호흡(continu)으로 읽기 연습 👍' : '쉼표마다 살짝 쉬고 또박또박 👍';
+    lines.push(modeTip, '받침/연음(여덟, 아홉) 연결을 또렷하게!');
+  }
+  const sttLine = transcript ? `<div class="mt-2 text-[13px] text-slate-600">STT: ${transcript}</div>` : '';
+  box.querySelector('.feedback-body').innerHTML =
+    `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
+     <ul class="list-disc list-inside">${lines.map(x=>`<li>${x}</li>`).join('')}</ul>${sttLine}`;
+}
+
+// ---------- UI Render ----------
+function renderAll(){
+  const wrap = document.getElementById('stages-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  state.progress = {}; state.listenCount = {};
+  BUNDLES.forEach(b=>{
+    state.progress[b.key] = { done:false, score:null, accuracy:null, audioBase64:null, duration:null, friendly:[] };
+    state.listenCount[b.key] = 0;
+    wrap.appendChild(makeBundleCard(b));
+  });
+  updateProgress(0);
+  document.getElementById('finish-wrap')?.classList.add('hidden');
+}
+
+function makeBundleCard(bundle){
+  const wrap = document.createElement('div');
+  wrap.className = 'p-4 bg-white rounded-lg border';
+
+  const refDisplay = state.mode.continuous ? splitTokens(bundle.text).join(' ') : bundle.text;
+  const refEval    = collapseKorean(bundle.text);
+  const ttsInput   = makeTTSContinuous(bundle.text, state.mode.speed);
+
+  wrap.innerHTML = `
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <div>
+        <div class="text-sm text-slate-500">Vitesse ${state.mode.speed}× ${state.mode.continuous?'<span class="text-slate-500 text-xs">(rythme continu)</span>':''}</div>
+        <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${refDisplay}</span></div>
+        <div class="text-xs text-slate-500">1) Écouter  2) S’enregistrer  3) Évaluer</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="btn btn-sound btn-play"><i class="fas fa-play"></i> Écouter</button>
+        <span class="text-sm text-slate-500">écoutes: <b class="play-count">0</b></span>
+      </div>
+    </div>
+
+    <div class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60">
+      <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer</div>
+      <div class="flex flex-wrap gap-2 mb-2">
+        <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer l’enregistrement</button>
+        <button class="btn btn-outline btn-rec-stop" disabled><i class="fa-solid fa-stop"></i> Arrêter</button>
+        <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer ma prononciation</button>
+      </div>
+      <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
+      <audio class="mt-2 w-full audio-playback hidden" controls></audio>
+      <div class="mt-2 text-sm text-slate-600 status-line">Appuie sur “Démarrer l’enregistrement”, puis “Arrêter”, ensuite “Évaluer”.</div>
+      <div class="mt-2 text-sm"><span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span></div>
+
+      <div class="mt-3 feedback-card hidden">
+        <div class="font-semibold mb-1">🧠 Explication de la note / 점수 설명</div>
+        <div class="text-sm text-slate-700 feedback-body"></div>
+      </div>
+    </div>
+  `;
+
+  // 듣기
+  const btnPlay = wrap.querySelector('.btn-play');
+  const playCountTag = wrap.querySelector('.play-count');
+  btnPlay.addEventListener('click', async (e)=>{
+    await playTTS(ttsInput, bundle.voice, state.mode.speed, e.currentTarget);
+    state.listenCount[bundle.key] = (state.listenCount[bundle.key]||0) + 1;
+    playCountTag.textContent = String(state.listenCount[bundle.key]);
+  });
+
+  // 녹음/평가
+  const rec = makeRecorder();
+  const btnStart = wrap.querySelector('.btn-rec-start');
+  const btnStop  = wrap.querySelector('.btn-rec-stop');
+  const btnEval  = wrap.querySelector('.btn-eval');
+  const canvas   = wrap.querySelector('.vu-canvas');
+  const status   = wrap.querySelector('.status-line');
+  const audioUI  = wrap.querySelector('.audio-playback');
+  const scoreTag = wrap.querySelector('.score-pill');
+  const fbBox    = wrap.querySelector('.feedback-card');
+
+  let lastRecord = null;
+
+  btnStart.addEventListener('click', async ()=>{
+    btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
+    scoreTag.classList.add('hidden'); fbBox.classList.add('hidden'); fbBox.querySelector('.feedback-body').innerHTML='';
+    status.textContent = 'Enregistrement… parle comme le modèle !';
+    try{ await rec.start(canvas); }
+    catch(e){ alert("Micro non autorisé. Vérifie les permissions du navigateur."); btnStart.disabled=false; btnStop.disabled=true; }
+  });
+
+  btnStop.addEventListener('click', async ()=>{
+    btnStop.disabled = true;
+    try{
+      rec.stop(canvas);
+      lastRecord = await rec.getResult();
+      audioUI.src = lastRecord ? URL.createObjectURL(lastRecord.blob) : '';
+      audioUI.classList.remove('hidden');
+      btnEval.disabled = !lastRecord;
+      btnStart.disabled = false;
+      status.textContent = lastRecord ? `Enregistrement terminé (${(lastRecord.duration||0).toFixed(1)} s). Clique “Évaluer”.` : 'Réessaie.';
+    }catch(e){
+      btnStart.disabled = false;
+      status.textContent = 'Problème d’enregistrement. Réessaie.';
+    }
+  });
+
+  btnEval.addEventListener('click', async ()=>{
+    if(!lastRecord?.base64) return;
+    btnEval.disabled = true; status.textContent = 'Évaluation en cours…';
+    try{
+      const { accuracy, friendly, transcript } = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
+      const percent = Math.round((accuracy || 0)*100);
+      scoreTag.textContent = `Score: ${percent}%`;
+      scoreTag.classList.remove('hidden');
+      status.textContent = 'Groupe évalué. Passe au suivant.';
+
+      state.progress[bundle.key] = {
+        done:true, score:percent, accuracy,
+        audioBase64: toBareBase64(lastRecord.base64),
+        duration:lastRecord.duration,
+        friendly
+      };
+      wrap.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
+      renderFeedback(fbBox, { friendly, accuracy, transcript, refText: refEval });
+      fbBox.classList.remove('hidden');
+      checkFinish();
+    }catch(e){
+      status.textContent = 'Échec de l’évaluation. Réessaie.';
+    }finally{
+      btnEval.disabled = false;
+    }
+  });
+
+  return wrap;
+}
+
+function updateProgress(doneCount){
+  const dots = document.querySelectorAll('#global-progress .progress-dot');
+  dots.forEach((d,idx)=> d.classList.toggle('on', idx < doneCount));
+}
+function checkFinish(){
+  const keys = BUNDLES.map(b=>b.key);
+  const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
+  updateProgress(doneCount);
+  if(doneCount === keys.length){
+    document.getElementById('finish-wrap')?.classList.remove('hidden');
+  }
+}
+
+// ---------- Results ----------
+async function sendResults(){
+  const questions = BUNDLES.map(b=>{
+    const st = state.progress[b.key] || {};
+    const refText = collapseKorean(b.text);
+    return {
+      number: `WU-${b.key}`,
+      type: 'warmup_pronun',
+      fr: `${b.label} — vitesse ${state.mode.speed}×${state.mode.continuous?' (rythme continu)':''}`,
+      ko: refText,
+      userAnswer: '',
+      isCorrect: true,
+      listenCount: state.listenCount[b.key] || 0,
+      hint1Count: 0, hint2Count: 0,
+      pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100), friendly: st.friendly || [] },
+      recording: st.audioBase64 ? { base64: st.audioBase64, filename:`wu_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration } : null
+    };
+  });
+
+  const payload = {
+    studentName: ($('#student-name')?.value || state.name || 'Élève'),
+    startTime: state.startISO || new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    totalTimeSeconds: Math.max(0, Math.round((Date.now() - (state.startMs||Date.now()))/1000)),
+    assignmentTitle: `Warm-up – Nombres (vitesse ${state.mode.speed}×${state.mode.continuous?' / continu':''})`,
+    assignmentSummary: [
+      '4 groupes: Natifs(1–5,6–10) + Hanja(1–5,6–10)',
+      'Écouter → S’enregistrer → Évaluer (score en %)'
+    ],
+    questions
+  };
+
+  try{
+    const r = await fetch(`${FN_BASE}/send-results`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const j = await r.json().catch(()=> ({}));
+    if(!r.ok || j?.ok===false) throw new Error(j?.error || 'send-results failed');
+    alert('Résultat envoyé ✔️');
+  }catch(e){
+    console.error(e);
+    alert('Envoi impossible. Réessaie plus tard.');
+  }
+}
+
+// ---------- Public API ----------
+function WU_go(mode){
+  if(mode === 'slow')      state.mode = { speed:0.7, continuous:false };
+  else if(mode === 'fast') state.mode = { speed:1.5, continuous:true  };
+  else                     state.mode = { speed:1.0, continuous:false };
+
+  state.name = ($('#student-name')?.value || state.name || 'Élève');
+  state.startISO = new Date().toISOString();
+  state.startMs = Date.now();
+
+  renderAll();
+
+  const wu = document.getElementById('warmup-screen');
+  if(wu){ wu.classList.remove('hidden'); window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' }); }
+
+  document.getElementById('btn-send')?.addEventListener('click', sendResults, { once:true });
+}
+window.WU_go = WU_go;
+
+// ---------- Mount ----------
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{
+    window.StudentGate?.init?.();
+    window.StudentGate?.requireBeforeInteraction?.(document);
+  }catch(_){}
+
+  document.getElementById('btn-send')?.addEventListener('click', sendResults);
+});
