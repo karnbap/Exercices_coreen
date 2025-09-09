@@ -1,12 +1,12 @@
 {
+  "name": "exercices_coreen",
+  "private": true,
+  "engines": { "node": ">=18" },
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.2.0",
     "google-auth-library": "^10.2.1",
     "node-fetch": "^2.7.0",
-    "nodemailer": "^7.0.5"
-    "form-data": "^4.0.0",
+    "nodemailer": "^7.0.5",
+    "form-data": "^4.0.0"
   }
 }
-
-
-
