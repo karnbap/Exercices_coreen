@@ -44,15 +44,21 @@ function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split('
 
 // ---------- TTS ----------
 let currentAudio=null, audioLock=false, aborter=null, currentSrc=null;
-async function playTTS(input, voice='alloy', speed=1.0, btn){
+async function playTTS(input, voice='alloy', speed=1.0, btn, onStart){
   const provider = (window.PONGDANG_TTS?.provider) || 'openai';
   const isSSML = typeof input === 'object' && !!input.ssml;
   const textOrSSML = (typeof input === 'object') ? (input.ssml || input.text) : input;
 
   if(audioLock){
     if(currentAudio){
-      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true); }
-      else { currentAudio.pause(); setBtnPlaying(btn,false); }
+      if(currentAudio.paused){
+        await currentAudio.play();
+        setBtnPlaying(btn,true);
+        // resume는 listenCount 증가 없음
+      } else {
+        currentAudio.pause();
+        setBtnPlaying(btn,false);
+      }
     }
     return;
   }
@@ -60,8 +66,14 @@ async function playTTS(input, voice='alloy', speed=1.0, btn){
 
   try{
     if(currentAudio && currentAudio._meta === `${textOrSSML}|${speed}|${voice}|${isSSML?'ssml':'text'}`){
-      if(currentAudio.paused){ await currentAudio.play(); setBtnPlaying(btn,true); }
-      else { currentAudio.pause(); setBtnPlaying(btn,false); }
+      if(currentAudio.paused){
+        await currentAudio.play();
+        setBtnPlaying(btn,true);
+        // resume는 listenCount 증가 없음
+      } else {
+        currentAudio.pause();
+        setBtnPlaying(btn,false);
+      }
       return;
     }
     aborter?.abort();
@@ -92,7 +104,9 @@ async function playTTS(input, voice='alloy', speed=1.0, btn){
     audio.addEventListener('playing', ()=>setBtnPlaying(btn,true));
     audio.addEventListener('pause',   ()=>setBtnPlaying(btn,false));
     audio.addEventListener('ended',   ()=>{ setBtnPlaying(btn,false); if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; } });
+
     await audio.play();
+    if(typeof onStart === 'function') onStart(); // 새 재생 시작시에만 카운트 증가
   }catch(e){ alert('Problème de lecture audio. Réessaie.'); }
 }
 function setBtnPlaying(btn, on){
@@ -185,11 +199,22 @@ function renderFeedback(box, {friendly=[], accuracy=0, transcript='', refText=''
   const percent = Math.round((accuracy||0)*100);
   const lines = [];
   if (percent === 100) lines.push('✅ Parfait ! / 완벽해요! 리듬 유지.');
-  if (Array.isArray(friendly) && friendly.length) lines.push(...friendly);
+
+  // ★ 수정: 객체가 섞여 들어와도 문자열만 표시
+  if (Array.isArray(friendly) && friendly.length) {
+    friendly.forEach(it=>{
+      if (typeof it === 'string') lines.push(it);
+      else if (it && (it.tip || it.message || it.tag)) lines.push(String(it.tip || it.message || it.tag));
+    });
+  }
+
   try{
     const extra1 = (window.PronunUtils?.quickTips?.(refText, transcript)) || [];
     const extra2 = (window.VowelMiddleware?.hints?.(refText, transcript)) || [];
-    [...extra1, ...extra2].forEach(t => t && lines.push(t));
+    [...extra1, ...extra2].forEach(t => {
+      if (typeof t === 'string') lines.push(t);
+      else if (t && (t.tip || t.message)) lines.push(String(t.tip || t.message));
+    });
   }catch(_){}
   const sttLine = transcript ? `<div class="mt-2 text-[13px] text-slate-600">STT: ${transcript}</div>` : '';
   box.querySelector('.feedback-body').innerHTML =
@@ -255,9 +280,16 @@ function makeBundleCard(bundle){
   const btnPlay = wrap.querySelector('.btn-play');
   const playCountTag = wrap.querySelector('.play-count');
   btnPlay.addEventListener('click', async (e)=>{
-    await playTTS(ttsInput, bundle.voice, state.mode.speed, e.currentTarget);
-    state.listenCount[bundle.key] = (state.listenCount[bundle.key]||0) + 1;
-    playCountTag.textContent = String(state.listenCount[bundle.key]);
+    await playTTS(
+      ttsInput,
+      bundle.voice,
+      state.mode.speed,
+      e.currentTarget,
+      () => {  // 새 재생 시작시에만 듣기 횟수 증가
+        state.listenCount[bundle.key] = (state.listenCount[bundle.key]||0) + 1;
+        playCountTag.textContent = String(state.listenCount[bundle.key]);
+      }
+    );
   });
 
   const rec = makeRecorder();
@@ -392,12 +424,12 @@ function WU_go(mode){
   state.startISO = new Date().toISOString();
   state.startMs = Date.now();
 
-  // 화면 토글
   document.getElementById('mode-picker')?.classList.add('hidden');
   document.getElementById('warmup-screen')?.classList.remove('hidden');
 
   renderAll();
-  window.scrollTo({ top: document.getElementById('warmup-screen').offsetTop-8, behavior:'smooth' });
+  const target = document.getElementById('warmup-screen');
+  if(target) window.scrollTo({ top: target.offsetTop-8, behavior:'smooth' });
 }
 window.WU_go = WU_go;
 
