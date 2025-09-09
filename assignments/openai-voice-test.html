@@ -93,11 +93,10 @@
     </div>
   </div>
 
-  <!-- 진단 바 -->
   <div id="diag" class="no-print" style="position:fixed;right:12px;bottom:12px;background:#111827;color:#fff;padding:.4rem .6rem;border-radius:.6rem;font-size:12px;opacity:.85;z-index:9999"></div>
 
   <script>
-  // ---------- 라이브러리 보강 로더 (ESM/전역 둘 다 커버) ----------
+  // ---------- 라이브러리 보강 로더 ----------
   async function ensureLibs() {
     if (!window.AnswerJudge) {
       try {
@@ -113,9 +112,8 @@
     }
   }
 
-  // ---- Fallbacks & Diagnostics ----
+  // ---------- Fallback & Diagnostics ----------
   (function(){
-    // 채점 폴백
     if (!window.AnswerJudge) {
       const RX_PUNCT=/[\p{P}\p{S}]/gu, RX_SPACE=/\s+/g, RX_MARKS=/\p{M}/gu;
       const NFD=s=>String(s||'').normalize('NFD');
@@ -133,21 +131,15 @@
           const ok = (1-lev(R,S)/Math.max(1,R.length,S.length))>=0.95;
           return {isCorrect:ok,note:ok?'경미한 차이 허용':'철자 불일치'};
         },
-        gradeFR(ref, ans){
+        gradeFR(ref, ans, opts={}){
           const R=normFR(ref), S=normFR(ans); if(!S) return {isCorrect:false,note:'réponse vide'};
           if(S===R) return {isCorrect:true,note:'ponctuation/accents ignorés'};
+          const alts = Array.isArray(opts.altRefs)?opts.altRefs:[];
+          for(const a of alts){ if(S===normFR(a)) return {isCorrect:true,note:'variante acceptée'}; }
           const d=lev(R,S), rate=d/Math.max(1,R.length); return {isCorrect:rate<=0.15,note:rate<=0.15?'variantes mineures':'écart trop grand'};
-        },
-        checkRegister(ans){
-          const je=/(저는|전)\b/.test(ans), na=/(나는|난)\b/.test(ans), tr=String(ans||'').trim();
-          const yo=/요[.?!]*$/.test(tr)||/니다[.?!]*$/.test(tr); if(je&&!yo) return {ok:false,ko:'저는/전 → -요/-(스)ㅂ니다로',fr:'terminez en -yo/-seumnida'};
-          if(na&&yo) return {ok:false,ko:'나는/난 → 반말(-아/어)로',fr:'style familier'}; return {ok:true};
         }
       };
-      console.warn('AnswerJudge fallback active');
     }
-
-    // 진단 수집
     window.__diagInfo = { errors: [] };
     window.addEventListener('error',e=>__diagInfo.errors.push(String(e.message||e)));
     window.addEventListener('unhandledrejection',e=>__diagInfo.errors.push(String(e.reason||e)));
@@ -176,7 +168,7 @@
       ]
     };
 
-    // ---- 문항 (주어 명시, 자연스러운 구어체) ----
+    // ---- 문항 (주어 명시) ----
     const exercises = [
       { sentence: "혜진 언니는 천사 같아요.", translation: "Hyejin (ma grande sœur) est comme un ange.", hint1:"ㅎㅈ ㅇㄴㄴ ㅊㅅ ㄱㅇㅇ", hint2:"천사 = ange", voice:"alloy" },
       { sentence: "오늘 이 소식은 꿈 같아요.", translation: "Cette nouvelle d'aujourd'hui est comme un rêve.", hint1:"ㅇㄴ ㅇ ㅅㅅㅇ ㄲ ㄱㅇㅇ", hint2:"꿈 = rêve", voice:"Puck" },
@@ -200,13 +192,48 @@
       { sentence: "태현은 영화배우처럼 잘생겼어요.", translation: "Taehyeon est beau comme un acteur de cinéma.", hint1:"ㅌㅎㄴ ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2:"영화배우 = acteur de cinéma", voice:"Schedar" }
     ];
 
-    // ---- 상태/오디오 ----
+    // ---- 상태/오디오/분석 ----
     const audioCache = {};
     const exState = exercises.map(() => ({
       listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
       koCorrect:false, frCorrect:false, pronunciation:null, recording:null
     }));
     const recState = exercises.map(() => ({ mr:null, stream:null, chunks:[], blob:null, base64:null, mime:'audio/webm', startedAt:0, duration:0 }));
+
+    // 한글 분해(초/중/종성) → 차이 설명
+    const S0=0xAC00, Lc=19, Vc=21, Tc=28, N=Vc*Tc, Sc=Lc*N;
+    function decomp(ch){
+      const cp=ch.codePointAt(0); if(cp<S0||cp>=S0+Sc) return null;
+      const i=cp-S0; return {L:Math.floor(i/N), V:Math.floor((i%N)/Tc), T:i%Tc};
+    }
+    function analyzeHangulDiff(base, got){
+      const B=[...String(base||'').replace(/[^\uAC00-\uD7A3]/g,'')];
+      const G=[...String(got||'').replace(/[^\uAC00-\uD7A3]/g,'')];
+      const len = Math.min(B.length, G.length);
+      const notes=[];
+      for(let i=0;i<len;i++){
+        if(B[i]===G[i]) continue;
+        const a=decomp(B[i]), b=decomp(G[i]);
+        if(a&&b){
+          if(a.L===b.L && a.T===b.T && a.V!==b.V){
+            notes.push(`“${G[i]}”가 아니라 “${B[i]}”라고 발음해야 해요. / Dites « ${B[i]} », pas « ${G[i]} ».`);
+          }else if(a.L!==b.L){
+            notes.push(`“${G[i]}”의 초성이 달라요 → “${B[i]}”처럼 시작해요. / Consonne initiale différente.`);
+          }else if(a.T!==b.T){
+            notes.push(`“${G[i]}”의 받침이 달라요 → “${B[i]}”처럼 마무리해요. / Batchim différent.`);
+          }else{
+            notes.push(`“${G[i]}” ↔ “${B[i]}” 발음 차이. / Différence de prononciation.`);
+          }
+        }else if(B[i]!==G[i]){
+          notes.push(`“${G[i]}” 대신 “${B[i]}”가 맞아요. / Utilisez « ${B[i]} ».`);
+        }
+        if (notes.length>=3) break;
+      }
+      if (G.length!==B.length){
+        notes.push(`길이가 달라요(빠짐/추가). / Longueur différente (manque/ajout).`);
+      }
+      return notes;
+    }
 
     function escapeHtml(s=''){
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -265,6 +292,15 @@
       return '';
     }
 
+    // FR 대체 정답 생성: 괄호 제거 + il/elle 허용
+    function buildFrAlts(fr){
+      const base = String(fr||'').replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+      const core = base.replace(/^[a-zàâçéèêëîïôûùüÿñæœ'-]+\s+/i,'');
+      const alts = [base];
+      if (core) { alts.push(`il ${core}`.trim()); alts.push(`elle ${core}`.trim()); }
+      return Array.from(new Set(alts));
+    }
+
     function mountPronunUI(cardEl, i){
       const box = cardEl.querySelector('.pronun-display');
       if (!box) return;
@@ -272,22 +308,24 @@
         <div class="flex flex-wrap items-center gap-2 mt-2 no-print">
           <button type="button" class="btn btn-secondary btn-rec">🎙️ Enregistrer / 녹음</button>
           <button type="button" class="btn btn-secondary btn-stop" disabled>⏹️ Stop / 중지</button>
-          <button type="button" class="btn btn-secondary btn-eval" disabled>🧪 Évaluer / 평가</button>
           <span class="small-muted tip">Autorisez le micro / 마이크 허용</span>
         </div>
         <div class="mt-2 text-sm">
           <div><b>Fichier:</b> <span class="file">–</span> · <b>Durée:</b> <span class="dur">0s</span></div>
           <div><b>Transcription:</b> <span class="korean-font tr">–</span></div>
           <div><b>Score:</b> <span class="acc">–</span></div>
+          <ul class="diffs list-disc pl-5 mt-1"></ul>
         </div>
       `;
       const $rec = box.querySelector('.btn-rec');
       const $stop = box.querySelector('.btn-stop');
-      const $eval = box.querySelector('.btn-eval');
       const $file = box.querySelector('.file');
       const $dur  = box.querySelector('.dur');
       const $tr   = box.querySelector('.tr');
       const $acc  = box.querySelector('.acc');
+      const $diffs= box.querySelector('.diffs');
+
+      let sr=null, srText='';
 
       async function start(){
         try{
@@ -298,6 +336,19 @@
           const mr = new MediaRecorder(stream, { mimeType: mime });
           recState[i] = { mr, stream, chunks:[], blob:null, base64:null, mime, startedAt: Date.now(), duration:0 };
 
+          // 실시간 받아쓰기(Web Speech)
+          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (SR){
+            sr = new SR(); sr.lang='ko-KR'; sr.interimResults=true; sr.maxAlternatives=1;
+            sr.onresult = e => {
+              let s=''; for(const r of e.results){ s += r[0].transcript; }
+              srText = s.trim(); $tr.textContent = srText || '–';
+            };
+            try{ sr.start(); }catch{}
+          } else {
+            box.querySelector('.tip').textContent = '실시간 받아쓰기는 브라우저가 지원하지 않아요.';
+          }
+
           mr.ondataavailable = e => { if (e.data && e.data.size) recState[i].chunks.push(e.data); };
           mr.onstop = async () => {
             try{
@@ -307,19 +358,53 @@
               r.base64 = await blobToBase64(r.blob);
               $file.textContent = r.mime.replace('audio/','');
               $dur.textContent  = r.duration + 's';
-              $eval.disabled = !r.base64;
+
+              // 서버 분석 우선
+              let usedTranscript = srText;
+              let usedAcc = null;
+              try{
+                const resp = await fetch('/.netlify/functions/analyze-pronunciation', {
+                  method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({
+                    audioBase64: r.base64, mimeType: r.mime,
+                    referenceText: exercises[i].sentence
+                  })
+                });
+                const J = await resp.json();
+                if (!resp.ok) throw new Error(JSON.stringify(J));
+                usedAcc = Math.round((J.accuracy||0)*100);
+                usedTranscript = J.transcript || usedTranscript;
+              }catch(e){
+                const base = (exercises[i].sentence||'').replace(/[^\uAC00-\uD7A3]/g,'');
+                const got  = (usedTranscript||'').replace(/[^\uAC00-\uD7A3]/g,'');
+                const sim=(a,b)=>{const A=a,B=b,dp=Array(A.length+1).fill().map(_=>Array(B.length+1).fill(0));
+                  for(let x=0;x<=A.length;x++)dp[x][0]=x; for(let y=0;y<=B.length;y++)dp[0][y]=y;
+                  for(let x=1;x<=A.length;x++)for(let y=1;y<=B.length;y++){const c=A[x-1]===B[y-1]?0:1;
+                    dp[x][y]=Math.min(dp[x-1][y]+1,dp[x][y-1]+1,dp[x-1][y-1]+c);} return 1-dp[A.length][B.length]/Math.max(1,A.length,B.length);};
+                usedAcc = Math.round(sim(base,got)*100);
+              }
+
+              $tr.textContent = usedTranscript || '–';
+              $acc.textContent = usedAcc + '/100';
+
+              // 차이 설명
+              $diffs.innerHTML = '';
+              const tips = analyzeHangulDiff(exercises[i].sentence, usedTranscript||'');
+              tips.forEach(t => { const li=document.createElement('li'); li.textContent=t; $diffs.appendChild(li); });
+
+              exState[i].pronunciation = { accuracy: usedAcc/100, transcript: usedTranscript||'', friendly: tips };
               exState[i].recording = {
                 base64: r.base64,
                 filename: `q${i+1}.${r.mime==='audio/mp4'?'m4a':'webm'}`,
                 mimeType: r.mime,
                 duration: r.duration
               };
-            }catch(err){ console.error(err); $eval.disabled=true; }
+            }catch(err){ console.error(err); }
             $rec.disabled = false; $stop.disabled = true;
           };
 
           mr.start();
-          $rec.disabled = true; $stop.disabled = false; $eval.disabled = true;
+          $rec.disabled = true; $stop.disabled = false;
         }catch(err){
           console.error(err);
           box.querySelector('.tip').textContent = '마이크 권한을 확인하세요.';
@@ -331,66 +416,12 @@
         const r = recState[i];
         try{ r.mr && r.mr.state!=='inactive' && r.mr.stop(); }catch{}
         try{ r.stream && r.stream.getTracks().forEach(t=>t.stop()); }catch{}
+        try{ sr && sr.stop && sr.stop(); }catch{}
         $rec.disabled = false; $stop.disabled = true;
-      }
-
-      async function evaluate(){
-        const r = recState[i];
-        if (!r || !r.base64){ alert('녹음을 먼저 완료하세요.'); return; }
-
-        // 1차: 서버 분석 시도(있으면 정확)
-        try{
-          const resp = await fetch('/.netlify/functions/analyze-pronunciation', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({
-              audioBase64: r.base64,
-              mimeType: r.mime,
-              referenceText: exercises[i].sentence
-            })
-          });
-          const J = await resp.json();
-          if (!resp.ok) throw new Error(JSON.stringify(J));
-          const acc = Math.round((J.accuracy||0)*100);
-          $acc.textContent = acc + '/100';
-          $tr.textContent  = J.transcript || '(aucune transcription)';
-          exState[i].pronunciation = { accuracy: (acc/100), transcript: J.transcript||'', friendly: J.notes||[] };
-          return;
-        }catch(e){
-          console.warn('server analyze fallback → Web Speech', e);
-        }
-
-        // 2차: Web Speech 폴백
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR){
-          $acc.textContent = 'N/A';
-          $tr.textContent  = '(Web Speech non supporté)';
-          alert('브라우저가 오프라인 평가만 가능해요. Chrome을 권장합니다.');
-          return;
-        }
-        const rec = new SR();
-        rec.lang = 'ko-KR';
-        rec.interimResults = false;
-        rec.maxAlternatives = 1;
-        rec.onresult = e => {
-          const txt = e.results[0]?.[0]?.transcript?.trim() || '';
-          $tr.textContent = txt || '(vide)';
-          const base = (exercises[i].sentence||'').replace(/[^\uAC00-\uD7A3]/g,'');
-          const got  = (txt||'').replace(/[^\uAC00-\uD7A3]/g,'');
-          const sim=(a,b)=>{const A=a,B=b,dp=Array(A.length+1).fill().map(_=>Array(B.length+1).fill(0));
-            for(let x=0;x<=A.length;x++)dp[x][0]=x; for(let y=0;y<=B.length;y++)dp[0][y]=y;
-            for(let x=1;x<=A.length;x++)for(let y=1;y<=B.length;y++){const c=A[x-1]===B[y-1]?0:1;
-              dp[x][y]=Math.min(dp[x-1][y]+1,dp[x][y-1]+1,dp[x-1][y-1]+c);} return 1-dp[A.length][B.length]/Math.max(1,A.length,B.length);};
-          const acc = Math.round(sim(base,got)*100);
-          $acc.textContent = acc + '/100';
-          exState[i].pronunciation = { accuracy: acc/100, transcript: txt, friendly: [] };
-        };
-        alert('“참고: 폴백 평가 — 아래 문장을 한 번 크게 읽어주세요”\n' + exercises[i].sentence);
-        rec.start();
       }
 
       $rec.addEventListener('click', start);
       $stop.addEventListener('click', stop);
-      $eval.addEventListener('click', evaluate);
     }
 
     function gradeBoth(index){
@@ -404,7 +435,7 @@
       const rawFR = frInput.value || '';
 
       const koRes = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:false });
-      const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
+      const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR, { altRefs: buildFrAlts(exercises[index].translation) });
 
       exState[index].attempts++;
       exState[index].koCorrect = koRes.isCorrect;
@@ -444,7 +475,6 @@
       `;
     }
 
-    // ✅ 안전 렌더(오류 잡아서 표시 + 에러 메일링)
     function renderExercises(){
       const $wrap = document.getElementById('dictation-exercises');
       try{
@@ -471,16 +501,11 @@
               <div class="hint-display"></div>
               <div class="feedback-display"></div>
               <div class="pronun-display small-muted"></div>
-              <div class="flex items-center gap-2 mt-2 no-print">
-                <button type="button" class="btn btn-secondary btn-prev">⬅️ Précédent / 이전</button>
-                <button type="button" class="btn btn-secondary btn-next">➡️ Suivant / 다음</button>
-              </div>
             </div>
           `;
           $wrap.appendChild(el);
         });
 
-        // 이벤트
         document.querySelectorAll('.play-btn').forEach((btn, i) => {
           btn.addEventListener('click', e => {
             const b = e.currentTarget;
@@ -490,41 +515,29 @@
         document.querySelectorAll('.hint1-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
           document.querySelectorAll('.hint-display')[i].innerHTML =
             `<p class="text-sm text-amber-700 korean-font"><strong>🙏 Aidez-moi (초성):</strong> ${exercises[i].hint1}</p>`;
-          exState[i].hint1Count++;
-          btn.disabled = true;
+          exState[i].hint1Count++; btn.disabled = true;
         }));
         document.querySelectorAll('.hint2-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
           const box = document.querySelectorAll('.hint-display')[i];
           const prev = box.querySelector('p')?.outerHTML || '';
           box.innerHTML = prev + `<p class="text-sm text-amber-700 korean-font mt-1"><strong>🦺 Au secours (단어):</strong> ${exercises[i].hint2}</p>`;
-          exState[i].hint2Count++;
-          btn.disabled = true;
+          exState[i].hint2Count++; btn.disabled = true;
         }));
         document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
         document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
           inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
         });
 
-        // 카드 이동
-        document.querySelectorAll('.dictation-card').forEach((card, i) => {
-          card.querySelector('.btn-prev').addEventListener('click',()=>{
-            const p = document.getElementById(`q${Math.max(1,i)}`);
-            p && p.scrollIntoView({behavior:'smooth',block:'start'});
-          });
-          card.querySelector('.btn-next').addEventListener('click',()=>{
-            const n = document.getElementById(`q${Math.min(exercises.length,i+2)}`);
-            n && n.scrollIntoView({behavior:'smooth',block:'start'});
-          });
-        });
-
-        // 발음 모듈(있으면 그걸로), 없으면 폴백 UI 주입
+        // 발음 모듈(있으면 우선), 없으면 폴백 UI
         if (window.Pronun && typeof Pronun.mount === 'function') {
           document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
             Pronun.mount(cardEl, {
               getReferenceText: () => exercises[i].sentence,
               isKoCorrect: () => exState[i].koCorrect,
               onResult: ({ accuracy, transcript, friendly }) => {
-                exState[i].pronunciation = { accuracy, transcript: transcript||'', friendly: friendly||[] };
+                // (선택) 커스텀 힌트 병행 표시
+                const tips = analyzeHangulDiff(exercises[i].sentence, transcript||'');
+                exState[i].pronunciation = { accuracy, transcript: transcript||'', friendly: tips.concat(friendly||[]) };
               }
             });
           });
@@ -535,10 +548,7 @@
 
       } catch (err){
         console.error(err);
-        $wrap.innerHTML = `
-          <div class="card bg-red-50 border border-red-200 text-red-700">
-            스크립트 오류로 문항을 표시하지 못했어요. 콘솔(DevTools)을 열어 에러를 확인해 주세요.
-          </div>`;
+        $wrap.innerHTML = `<div class="card bg-red-50 border border-red-200 text-red-700">스크립트 오류로 문항을 표시하지 못했어요.</div>`;
         fetch('/.netlify/functions/log-error', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({ functionName:'renderExercises', error:String(err), pageUrl:location.href })
@@ -564,8 +574,8 @@
       const koScore = Math.round((koCorrectCount / Math.max(1,totalQ)) * 100);
       const frScore = Math.round((frCorrectCount / Math.max(1,totalQ)) * 100);
 
-      const pronItems = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
-      const pronScore = Math.round((pronItems.reduce((a,b)=>a+b,0) / Math.max(1,pronItems.length||1)) * 100);
+      const accs = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
+      const pronScore = Math.round((accs.reduce((a,b)=>a+b,0) / Math.max(1,accs.length||1)) * 100);
 
       const overall = Math.round((koScore + frScore) / 2);
       const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
@@ -634,7 +644,6 @@
     try { await ensureLibs(); } catch(e){ console.warn('ensureLibs failed', e); }
     renderExercises();
 
-    // 진단 바 출력
     document.getElementById('diag').textContent =
       `AJ:${!!window.AnswerJudge?'ok':'fallback'} · PR:${!!window.Pronun?'ok':'fallback'} · cards:${document.querySelectorAll('.dictation-card').length} · err:${(__diagInfo.errors[0]||'-')}`;
   });
