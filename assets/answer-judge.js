@@ -5,21 +5,27 @@
   function stripDiacritics(s = "") { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
   function normSpaces(s = "") { return s.replace(/\s+/g, " ").trim(); }
 
+  // 불용어 강화(주어/관사/전치사 등) + 소유한정어 추가
   const STOP_FR = new Set([
     "le","la","les","un","une","des","du","de","d","l","au","aux","a","à","en","dans","sur","sous","par","pour","avec","sans","chez",
-    "que","qui","dont","ce","cet","cette","ces","se","sa","son",
+    "que","qui","dont","ce","cet","cette","ces","se","sa","son","ma","mon","mes",
     "je","tu","il","elle","on","nous","vous","ils","elles","moi","toi","lui","leur","me","te","se",
-    "c","qu","j","n","s","t","m","y"
+    "c","qu","j","n","s","t","m","y","ceci","cela"
   ]);
 
   function preprocessContractionsFR(s = "") {
-    s = s.replace(/([cdjlmnstqu])['’]([aeiouyh])/gi, "$1 $2"); // d’aujourd’hui → d aujourd’hui
+    // d’aujourd’hui → d aujourd’hui
+    s = s.replace(/([cdjlmnstqu])['’]([aeiouyh])/gi, "$1 $2");
     return s;
   }
 
+  function squashParentheses(s=""){ return String(s||"").replace(/\([^)]*\)/g," "); }
+
   function tokenizeFR(s=""){
     s = preprocessContractionsFR(String(s||"")).toLowerCase();
-    s = stripDiacritics(s).replace(/\baujourdhui\b/g,"aujourdhui").replace(/\bd aujourdhui\b/g,"aujourdhui");
+    s = stripDiacritics(s)
+          .replace(/\baujourdhui\b/g,"aujourdhui")
+          .replace(/\bd aujourdhui\b/g,"aujourdhui");
     s = s.replace(RX_PUNCT," ");
     s = normSpaces(s);
     const raw = s.split(" ").filter(Boolean);
@@ -28,7 +34,6 @@
   }
 
   function normFR(s=""){ return tokenizeFR(s).filtered.join(" "); }
-
   function normKO(s=""){ return normSpaces(String(s||"").replace(RX_PUNCT," ")); }
 
   function lev(a,b){
@@ -53,38 +58,45 @@
     return { score:Math.max(0,Math.round((1-rate)*100)), isCorrect:ok, note:ok?"소폭 오차 허용":"차이 큼" };
   }
 
-  function looksLikeProperName(tok){
-    // 알파벳만, 길이>=2, 첫 글자 자주 쓰는 인명 패턴 허용
-    return /^[a-z]{2,}$/i.test(tok);
-  }
+  function looksLikeProperName(tok){ return /^[a-z]{2,}$/i.test(tok); }
 
   function gradeFR(ref, ans, opts = {}) {
-    const Rnorm = normFR(ref||"");
-    const { filtered:Af, raw:Ar } = tokenizeFR(ans||"");
-    const { filtered:Bf } = tokenizeFR(ref||"");
+    // 괄호 속 보충어 제거한 참조 버전도 함께 비교
+    const refLite = squashParentheses(ref||"");
+    const { filtered:Af } = tokenizeFR(ans||"");
+    const { filtered:BfFull } = tokenizeFR(ref||"");
+    const { filtered:BfLite } = tokenizeFR(refLite||"");
 
     if(!Af.length) return { score:0, isCorrect:false, note:"vide/빈값" };
-    if(Af.join(" ")===Rnorm) return { score:100, isCorrect:true, note:"accents/ponctuation ignorés" };
+    const Anorm = Af.join(" ");
 
-    // 대체 참조 허용
-    const alts = Array.isArray(opts.altRefs)?opts.altRefs:[];
-    for(const alt of alts){ if(normFR(alt)===Af.join(" ")) return { score:100, isCorrect:true, note:"variante acceptée" }; }
+    // 완전 일치
+    if(Anorm===normFR(ref||"") || Anorm===normFR(refLite||"")) {
+      return { score:100, isCorrect:true, note:"accents/ponctuation ignorés" };
+    }
 
-    // 의미 일치(자카드)
-    const Aset=new Set(Af), Bset=new Set(Bf);
-    const inter=[...Aset].filter(x=>Bset.has(x)).length;
-    const uni=new Set([...Aset,...Bset]).size;
-    let jacc=inter/Math.max(1,uni);
+    // 의미 일치(자카드) — 괄호 제거 버전까지 고려
+    const toJac = (Bf) => {
+      const Aset=new Set(Af), Bset=new Set(Bf);
+      const inter=[...Aset].filter(x=>Bset.has(x)).length;
+      const uni=new Set([...Aset,...Bset]).size;
+      let jacc=inter/Math.max(1,uni);
 
-    // ★ 고유명사(주어)만 추가된 경우 허용 (Hyejin ↔ il/elle)
-    const extra=[...Aset].filter(x=>!Bset.has(x));
-    const onlyProper=extra.length>0 && extra.every(looksLikeProperName);
-    if(onlyProper){ jacc = Math.max(jacc, 0.9); } // 사실상 정답 처리
+      // 고유명사만 추가된 경우(주어 사람 이름) — 정답 처리
+      const extra=[...Aset].filter(x=>!Bset.has(x));
+      const onlyProper = extra.length>0 && extra.every(looksLikeProperName);
+      if(onlyProper) jacc = Math.max(jacc, 0.9);
 
-    if(jacc>=0.85) return { score:95, isCorrect:true, note:"mots essentiels concordants (variante ok)" };
+      return jacc;
+    };
+
+    const j1 = toJac(BfFull);
+    const j2 = toJac(BfLite);
+    const j = Math.max(j1, j2);
+    if(j>=0.85) return { score:95, isCorrect:true, note:"variante acceptée / 주어 변형 허용" };
 
     // 철자 오차 허용(15%)
-    const d = lev(Rnorm, Af.join(" ")), L = Math.max(1, Rnorm.length), rate=d/L;
+    const d = lev(normFR(refLite), Anorm), L = Math.max(1, normFR(refLite).length), rate=d/L;
     const ok = rate<=0.15;
     return { score:Math.max(0,Math.round((1-rate)*100)), isCorrect:ok, note:ok?"variantes mineures admises":"écart trop grand" };
   }
