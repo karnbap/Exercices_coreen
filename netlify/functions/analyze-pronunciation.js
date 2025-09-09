@@ -3,12 +3,12 @@
 // 응답: { accuracy:number(0..1), transcript:string, confusionTags:string[] }
 
 const fetch = global.fetch || require('node-fetch');
-const FormData = require('form-data');
+const FormData = require('form-data');               // ← 그대로 사용
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers:hdr(), body:'' };
-  if (event.httpMethod !== 'POST') return j(405,{ message:'Method Not Allowed' });
+  if (event.httpMethod !== 'POST')    return j(405,{ message:'Method Not Allowed' });
 
   try {
     const body = JSON.parse(event.body || '{}');
@@ -17,11 +17,8 @@ exports.handler = async (event) => {
     const b64 = String(audio.base64 || '');
     const mime = String(audio.mimeType || 'audio/webm');
     const duration = Number(audio.duration || 0);
-
     if (!b64) return j(400, { message:'audio base64 required' });
-
     if (duration && duration < 0.6) {
-      // 너무 짧으면 분석 무의미
       return j(200, { accuracy:0, transcript:'', confusionTags:['trop-court'] });
     }
 
@@ -31,10 +28,12 @@ exports.handler = async (event) => {
     fd.append('file', buf, { filename: audio.filename || 'rec.webm', contentType: mime });
     fd.append('model', 'whisper-1');
     fd.append('language', 'ko');
+    // 🚑 중요: 멀티파트 헤더(boundary) 포함
+    const headers = { Authorization:`Bearer ${OPENAI_API_KEY}`, ...fd.getHeaders() };
 
     const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method:'POST',
-      headers:{ Authorization:`Bearer ${OPENAI_API_KEY}` },
+      headers,
       body: fd
     });
 
@@ -45,11 +44,10 @@ exports.handler = async (event) => {
     const tj = await r.json();
     const hyp = String(tj.text || '').trim();
 
-    // 정규화
     const norm = s => String(s||'').replace(/\s+/g,'').replace(/[.,!?;:()"'’“”\-–—]/g,'');
     const R = norm(ref), H = norm(hyp);
 
-    // 레벤슈타인 기반 유사도
+    // 레벤슈타인 유사도
     const sim = (a,b) => {
       const n=a.length, m=b.length; if(!n&&!m) return 1; if(!n||!m) return 0;
       const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
@@ -63,9 +61,8 @@ exports.handler = async (event) => {
 
     let acc = sim(R,H);
 
-    // 혼동 태그(예: 요→유)
     const tags = [];
-    if (/요/.test(ref) && /유/.test(hyp)) tags.push('요→유');     // “요”를 “유”로
+    if (/요/.test(ref) && /유/.test(hyp)) tags.push('요→유');
     if (/으/.test(ref) && /우/.test(hyp)) tags.push('으→우');
     if (/에/.test(ref) && /애/.test(hyp)) tags.push('에↔애');
     if (/ㅅ/.test(ref) && /ㅆ/.test(hyp)) tags.push('ㅅ↔ㅆ');
