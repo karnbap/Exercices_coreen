@@ -12,8 +12,6 @@
   <!-- 공통 스크립트 -->
   <script defer src="/assets/student-gate.js"></script>
   <script defer src="/assets/grading-criteria.js"></script>
-
-  <!-- ✅ 채점 공용 모듈 (전역 또는 ESM 어느 쪽이든 로더가 보강) -->
   <script defer src="/assets/answer-judge.js"></script>
 
   <!-- 발음 분석(선택) -->
@@ -85,6 +83,7 @@
     <section id="dictation-exercises"></section>
 
     <section class="mt-8 flex flex-wrap items-center gap-3 no-print">
+      <a href="/index.html" class="btn btn-secondary">⬅️ Exercices précédents / 이전 연습문제로 가기</a>
       <button type="button" class="btn btn-secondary" id="restart-btn">↺ Réessayer / 다시하기</button>
       <button type="button" class="btn btn-primary" id="finish-btn">✅ Terminer / 끝내기</button>
     </section>
@@ -93,6 +92,9 @@
       made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
     </div>
   </div>
+
+  <!-- 진단 바 -->
+  <div id="diag" class="no-print" style="position:fixed;right:12px;bottom:12px;background:#111827;color:#fff;padding:.4rem .6rem;border-radius:.6rem;font-size:12px;opacity:.85;z-index:9999"></div>
 
   <script>
   // ---------- 라이브러리 보강 로더 (ESM/전역 둘 다 커버) ----------
@@ -110,6 +112,46 @@
       } catch (e) { console.warn('Pronun import fail:', e); }
     }
   }
+
+  // ---- Fallbacks & Diagnostics ----
+  (function(){
+    // 채점 폴백
+    if (!window.AnswerJudge) {
+      const RX_PUNCT=/[\p{P}\p{S}]/gu, RX_SPACE=/\s+/g, RX_MARKS=/\p{M}/gu;
+      const NFD=s=>String(s||'').normalize('NFD');
+      const deacc=s=>NFD(s).replace(RX_MARKS,'');
+      const normKO=s=>String(s||'').replace(RX_PUNCT,'').replace(/\s+/g,'').replace(/[^가-힣]/g,'');
+      const normFR=s=>deacc(String(s||'').toLowerCase()).replace(RX_PUNCT,'').replace(RX_SPACE,' ').trim();
+      function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;const d=new Array(n+1);for(let j=0;j<=n;j++)d[j]=j;
+        for(let i=1;i<=m;i++){let prev=d[0];d[0]=i;for(let j=1;j<=n;j++){const tmp=d[j];d[j]=(a[i-1]===b[j-1])?prev:1+Math.min(prev,d[j-1],d[j]);prev=tmp;}}return d[n];}
+      window.AnswerJudge={
+        gradeKO(ref, ans, {allowSubstring=false}={}) {
+          const R=normKO(ref), S=normKO(ans); if(!S) return {isCorrect:false,note:'빈 답'};
+          if(allowSubstring && (S.includes(R)||R.includes(S))) return {isCorrect:true,note:'부분 포함'};
+          if(S===R) return {isCorrect:true,note:'철자 일치'};
+          if(Math.abs(R.length-S.length)/Math.max(1,R.length)>0.05) return {isCorrect:false,note:'길이 차이'};
+          const ok = (1-lev(R,S)/Math.max(1,R.length,S.length))>=0.95;
+          return {isCorrect:ok,note:ok?'경미한 차이 허용':'철자 불일치'};
+        },
+        gradeFR(ref, ans){
+          const R=normFR(ref), S=normFR(ans); if(!S) return {isCorrect:false,note:'réponse vide'};
+          if(S===R) return {isCorrect:true,note:'ponctuation/accents ignorés'};
+          const d=lev(R,S), rate=d/Math.max(1,R.length); return {isCorrect:rate<=0.15,note:rate<=0.15?'variantes mineures':'écart trop grand'};
+        },
+        checkRegister(ans){
+          const je=/(저는|전)\b/.test(ans), na=/(나는|난)\b/.test(ans), tr=String(ans||'').trim();
+          const yo=/요[.?!]*$/.test(tr)||/니다[.?!]*$/.test(tr); if(je&&!yo) return {ok:false,ko:'저는/전 → -요/-(스)ㅂ니다로',fr:'terminez en -yo/-seumnida'};
+          if(na&&yo) return {ok:false,ko:'나는/난 → 반말(-아/어)로',fr:'style familier'}; return {ok:true};
+        }
+      };
+      console.warn('AnswerJudge fallback active');
+    }
+
+    // 진단 수집
+    window.__diagInfo = { errors: [] };
+    window.addEventListener('error',e=>__diagInfo.errors.push(String(e.message||e)));
+    window.addEventListener('unhandledrejection',e=>__diagInfo.errors.push(String(e.reason||e)));
+  })();
 
   window.addEventListener('DOMContentLoaded', async () => {
     // ---- 이름 동기화 ----
@@ -134,45 +176,52 @@
       ]
     };
 
-    // ---- 문항 ----
+    // ---- 문항 (주어 명시, 자연스러운 구어체) ----
     const exercises = [
-      { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1:"ㅊㅅ ㄱㅇㅇ", hint2:"천사 = ange", voice:"alloy" },
-      { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1:"ㅇㄱ ㄲ ㄱㅇㅇ", hint2:"꿈 = rêve", voice:"Puck" },
-      { sentence: "가족 같은 친구예요.", translation: "C'est une amie comme ma famille.", hint1:"ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2:"가족 = famille", voice:"Charon" },
-      { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1:"ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2:"바다 = mer", voice:"alloy" },
-      { sentence: "소처럼 먹어요.", translation: "Il/Elle mange comme une vache.", hint1:"ㅅㅊㄹ ㅁㅇㅇ", hint2:"소 = vache", voice:"Fenrir" },
-      { sentence: "그 사람은 바람처럼 달려요.", translation: "Il court comme le vent.", hint1:"ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2:"바람 = vent", voice:"Orus" },
-      { sentence: "가수같이 노래를 잘해요.", translation: "Il/Elle chante bien comme un(e) chanteur(se).", hint1:"ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2:"가수 = chanteur", voice:"Aoede" },
-      { sentence: "로봇같이 걸어요.", translation: "Il/Elle marche comme un robot.", hint1:"ㄹㅂㄱㅇ ㄱㅇㅇ", hint2:"로봇 = robot", voice:"Callirrhoe" },
-      { sentence: "친구랑 같이 갔어요.", translation: "Je suis allé(e) avec mon ami(e).", hint1:"ㅊㄱㄹ ㄱㅇ ㄱㅇㅇ", hint2:"같이 = ensemble", voice:"Zephyr" },
-      { sentence: "별처럼 춤을 춰요.", translation: "Il/Elle danse comme une étoile.", hint1:"ㅂㅊㄹ ㅊㅇ ㅊㅇ", hint2:"별 = étoile", voice:"Enceladus" },
-      { sentence: "오늘은 어제 같아요.", translation: "Aujourd'hui est comme hier.", hint1:"ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2:"어제 = hier", voice:"Iapetus" },
-      { sentence: "그 사람은 배우 같아요.", translation: "Cette personne est comme un(e) acteur/actrice.", hint1:"ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2:"배우 = acteur", voice:"Umbriel" },
-      { sentence: "얼음 같은 손.", translation: "Une main (froide) comme la glace.", hint1:"ㅇㅇ ㄱㅇ ㅅ", hint2:"얼음 = glace", voice:"Despina" },
-      { sentence: "설탕 같은 목소리.", translation: "Une voix (douce) comme le sucre.", hint1:"ㅅㅌ ㄱㅇ ㅁㅅㄹ", hint2:"설탕 = sucre", voice:"Erinome" },
-      { sentence: "인형 같은 아이.", translation: "Un enfant comme une poupée.", hint1:"ㅇㅎ ㄱㅇ ㅇㅇ", hint2:"인형 = poupée", voice:"Algenib" },
-      { sentence: "물처럼 돈을 써요.", translation: "Il/Elle dépense de l'argent comme de l'eau.", hint1:"ㅁㅊㄹ ㄷㅇ ㅆㅇ", hint2:"물 = eau", voice:"Rasalgethi" },
-      { sentence: "거북이처럼 느려요.", translation: "Il/Elle est lent(e) comme une tortue.", hint1:"ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2:"거북이 = tortue", voice:"Laomedeia" },
-      { sentence: "전문가처럼 말해요.", translation: "Il/Elle parle comme un expert.", hint1:"ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2:"전문가 = expert", voice:"Achernar" },
-      { sentence: "아기같이 자요.", translation: "Il/Elle dort comme un bébé.", hint1:"ㅇㄱㄱㅇ ㅈㅇ", hint2:"아기 = bébé", voice:"Alnilam" },
-      { sentence: "영화배우처럼 잘생겼어요.", translation: "Il est beau comme un acteur de cinéma.", hint1:"ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2:"영화배우 = acteur de cinéma", voice:"Schedar" }
+      { sentence: "혜진 언니는 천사 같아요.", translation: "Hyejin (ma grande sœur) est comme un ange.", hint1:"ㅎㅈ ㅇㄴㄴ ㅊㅅ ㄱㅇㅇ", hint2:"천사 = ange", voice:"alloy" },
+      { sentence: "오늘 이 소식은 꿈 같아요.", translation: "Cette nouvelle d'aujourd'hui est comme un rêve.", hint1:"ㅇㄴ ㅇ ㅅㅅㅇ ㄲ ㄱㅇㅇ", hint2:"꿈 = rêve", voice:"Puck" },
+      { sentence: "민수는 가족 같은 친구예요.", translation: "Minsu est un ami comme la famille.", hint1:"ㅁㅅㄴ ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2:"가족 = famille", voice:"Charon" },
+      { sentence: "우리 아빠는 바다 같은 넓은 마음이에요.", translation: "Mon père a un grand cœur comme la mer.", hint1:"ㅇㄹ ㅇㅃㄴ ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇㅇㅇㅇ", hint2:"바다 = mer", voice:"alloy" },
+      { sentence: "준호는 소처럼 먹어요.", translation: "Junho mange comme une vache.", hint1:"ㅈㅎㄴ ㅅㅊㄹ ㅁㅇㅇ", hint2:"소 = vache", voice:"Fenrir" },
+      { sentence: "지훈이는 바람처럼 달려요.", translation: "Jihoon court comme le vent.", hint1:"ㅈㅎㅇㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2:"바람 = vent", voice:"Orus" },
+      { sentence: "제 동생은 가수같이 노래를 잘해요.", translation: "Mon petit frère (ou ma petite sœur) chante bien comme un(e) chanteur(se).", hint1:"ㅈ ㄷㅅㅇ ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2:"가수 = chanteur", voice:"Aoede" },
+      { sentence: "민재는 로봇같이 걸어요.", translation: "Minjae marche comme un robot.", hint1:"ㅁㅈㄴ ㄹㅂㄱㅇ ㄱㅇㅇ", hint2:"로봇 = robot", voice:"Callirrhoe" },
+      { sentence: "저는 친구랑 같이 갔어요.", translation: "Je suis allé(e) avec mon ami(e).", hint1:"ㅈㄴ ㅊㄱㄹ ㄱㅇ ㄱㅇㅇ", hint2:"같이 = ensemble", voice:"Zephyr" },
+      { sentence: "수아는 별처럼 춤을 춰요.", translation: "Sua danse comme une étoile.", hint1:"ㅅㅇㄴ ㅂㅊㄹ ㅊㅇ ㅊㅇ", hint2:"별 = étoile", voice:"Enceladus" },
+      { sentence: "오늘 하루는 어제랑 같아요.", translation: "La journée d'aujourd'hui est comme hier.", hint1:"ㅇㄴ ㅎㄹㄴ ㅇㅈㄹ ㄱㅌㅇ", hint2:"어제 = hier", voice:"Iapetus" },
+      { sentence: "민서는 배우 같아요.", translation: "Minseo est comme un(e) acteur/actrice.", hint1:"ㅁㅅㄴ ㅂㅇ ㄱㅇㅇ", hint2:"배우 = acteur", voice:"Umbriel" },
+      { sentence: "현수의 손은 얼음 같아요.", translation: "La main de Hyun-su est comme la glace.", hint1:"ㅎㅅㅇ ㅅㅇ ㅇㅇ ㄱㅇㅇ", hint2:"얼음 = glace", voice:"Despina" },
+      { sentence: "지아의 목소리는 설탕 같아요.", translation: "La voix de Jia est douce comme le sucre.", hint1:"ㅈㅇㅇ ㅁㅅㄹㄴ ㅅㅌ ㄱㅇㅇ", hint2:"설탕 = sucre", voice:"Erinome" },
+      { sentence: "소윤이는 인형 같은 아이예요.", translation: "Soyun est un enfant comme une poupée.", hint1:"ㅅㅇㅇㄴ ㅇㅎ ㄱㅇ ㅇㅇㅇㅇ", hint2:"인형 = poupée", voice:"Algenib" },
+      { sentence: "재훈이는 물처럼 돈을 써요.", translation: "Jaehun dépense de l'argent comme de l'eau.", hint1:"ㅈㅎㅇㄴ ㅁㅊㄹ ㄷㅇ ㅆㅇ", hint2:"물 = eau", voice:"Rasalgethi" },
+      { sentence: "우리 컴퓨터는 거북이처럼 느려요.", translation: "Notre ordinateur est lent comme une tortue.", hint1:"ㅇㄹ ㅋㅍㅌㄴ ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2:"거북이 = tortue", voice:"Laomedeia" },
+      { sentence: "민준이는 전문가처럼 말해요.", translation: "Minjun parle comme un expert.", hint1:"ㅁㅈㅇㄴ ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2:"전문가 = expert", voice:"Achernar" },
+      { sentence: "강호는 아기같이 자요.", translation: "Gangho dort comme un bébé.", hint1:"ㄱㅎㄴ ㅇㄱㄱㅇ ㅈㅇ", hint2:"아기 = bébé", voice:"Alnilam" },
+      { sentence: "태현은 영화배우처럼 잘생겼어요.", translation: "Taehyeon est beau comme un acteur de cinéma.", hint1:"ㅌㅎㄴ ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2:"영화배우 = acteur de cinéma", voice:"Schedar" }
     ];
 
     // ---- 상태/오디오 ----
     const audioCache = {};
     const exState = exercises.map(() => ({
       listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
-      koCorrect:false, frCorrect:false, pronunciation:null
+      koCorrect:false, frCorrect:false, pronunciation:null, recording:null
     }));
+    const recState = exercises.map(() => ({ mr:null, stream:null, chunks:[], blob:null, base64:null, mime:'audio/webm', startedAt:0, duration:0 }));
 
     function escapeHtml(s=''){
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
-
     function base64ToBlob(base64, mime="audio/wav") {
       const bin = atob(base64); const len = bin.length; const bytes = new Uint8Array(len);
       for (let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
       return new Blob([bytes], { type: mime });
+    }
+    async function blobToBase64(blob){
+      return new Promise((resolve,reject)=>{
+        const r=new FileReader();
+        r.onloadend=()=>{ const s=String(r.result||''); const b64=s.split(',')[1]||''; resolve(b64); };
+        r.onerror=reject; r.readAsDataURL(blob);
+      });
     }
 
     async function playAudio(text, voice, btn, idx){
@@ -216,6 +265,134 @@
       return '';
     }
 
+    function mountPronunUI(cardEl, i){
+      const box = cardEl.querySelector('.pronun-display');
+      if (!box) return;
+      box.innerHTML = `
+        <div class="flex flex-wrap items-center gap-2 mt-2 no-print">
+          <button type="button" class="btn btn-secondary btn-rec">🎙️ Enregistrer / 녹음</button>
+          <button type="button" class="btn btn-secondary btn-stop" disabled>⏹️ Stop / 중지</button>
+          <button type="button" class="btn btn-secondary btn-eval" disabled>🧪 Évaluer / 평가</button>
+          <span class="small-muted tip">Autorisez le micro / 마이크 허용</span>
+        </div>
+        <div class="mt-2 text-sm">
+          <div><b>Fichier:</b> <span class="file">–</span> · <b>Durée:</b> <span class="dur">0s</span></div>
+          <div><b>Transcription:</b> <span class="korean-font tr">–</span></div>
+          <div><b>Score:</b> <span class="acc">–</span></div>
+        </div>
+      `;
+      const $rec = box.querySelector('.btn-rec');
+      const $stop = box.querySelector('.btn-stop');
+      const $eval = box.querySelector('.btn-eval');
+      const $file = box.querySelector('.file');
+      const $dur  = box.querySelector('.dur');
+      const $tr   = box.querySelector('.tr');
+      const $acc  = box.querySelector('.acc');
+
+      async function start(){
+        try{
+          const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+          const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm'
+                    : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+                    : 'audio/webm';
+          const mr = new MediaRecorder(stream, { mimeType: mime });
+          recState[i] = { mr, stream, chunks:[], blob:null, base64:null, mime, startedAt: Date.now(), duration:0 };
+
+          mr.ondataavailable = e => { if (e.data && e.data.size) recState[i].chunks.push(e.data); };
+          mr.onstop = async () => {
+            try{
+              const r = recState[i];
+              r.duration = Math.round((Date.now() - r.startedAt)/1000);
+              r.blob = new Blob(r.chunks, { type: r.mime });
+              r.base64 = await blobToBase64(r.blob);
+              $file.textContent = r.mime.replace('audio/','');
+              $dur.textContent  = r.duration + 's';
+              $eval.disabled = !r.base64;
+              exState[i].recording = {
+                base64: r.base64,
+                filename: `q${i+1}.${r.mime==='audio/mp4'?'m4a':'webm'}`,
+                mimeType: r.mime,
+                duration: r.duration
+              };
+            }catch(err){ console.error(err); $eval.disabled=true; }
+            $rec.disabled = false; $stop.disabled = true;
+          };
+
+          mr.start();
+          $rec.disabled = true; $stop.disabled = false; $eval.disabled = true;
+        }catch(err){
+          console.error(err);
+          box.querySelector('.tip').textContent = '마이크 권한을 확인하세요.';
+          alert('마이크 권한이 필요합니다.');
+        }
+      }
+
+      function stop(){
+        const r = recState[i];
+        try{ r.mr && r.mr.state!=='inactive' && r.mr.stop(); }catch{}
+        try{ r.stream && r.stream.getTracks().forEach(t=>t.stop()); }catch{}
+        $rec.disabled = false; $stop.disabled = true;
+      }
+
+      async function evaluate(){
+        const r = recState[i];
+        if (!r || !r.base64){ alert('녹음을 먼저 완료하세요.'); return; }
+
+        // 1차: 서버 분석 시도(있으면 정확)
+        try{
+          const resp = await fetch('/.netlify/functions/analyze-pronunciation', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              audioBase64: r.base64,
+              mimeType: r.mime,
+              referenceText: exercises[i].sentence
+            })
+          });
+          const J = await resp.json();
+          if (!resp.ok) throw new Error(JSON.stringify(J));
+          const acc = Math.round((J.accuracy||0)*100);
+          $acc.textContent = acc + '/100';
+          $tr.textContent  = J.transcript || '(aucune transcription)';
+          exState[i].pronunciation = { accuracy: (acc/100), transcript: J.transcript||'', friendly: J.notes||[] };
+          return;
+        }catch(e){
+          console.warn('server analyze fallback → Web Speech', e);
+        }
+
+        // 2차: Web Speech 폴백
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR){
+          $acc.textContent = 'N/A';
+          $tr.textContent  = '(Web Speech non supporté)';
+          alert('브라우저가 오프라인 평가만 가능해요. Chrome을 권장합니다.');
+          return;
+        }
+        const rec = new SR();
+        rec.lang = 'ko-KR';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.onresult = e => {
+          const txt = e.results[0]?.[0]?.transcript?.trim() || '';
+          $tr.textContent = txt || '(vide)';
+          const base = (exercises[i].sentence||'').replace(/[^\uAC00-\uD7A3]/g,'');
+          const got  = (txt||'').replace(/[^\uAC00-\uD7A3]/g,'');
+          const sim=(a,b)=>{const A=a,B=b,dp=Array(A.length+1).fill().map(_=>Array(B.length+1).fill(0));
+            for(let x=0;x<=A.length;x++)dp[x][0]=x; for(let y=0;y<=B.length;y++)dp[0][y]=y;
+            for(let x=1;x<=A.length;x++)for(let y=1;y<=B.length;y++){const c=A[x-1]===B[y-1]?0:1;
+              dp[x][y]=Math.min(dp[x-1][y]+1,dp[x][y-1]+1,dp[x-1][y-1]+c);} return 1-dp[A.length][B.length]/Math.max(1,A.length,B.length);};
+          const acc = Math.round(sim(base,got)*100);
+          $acc.textContent = acc + '/100';
+          exState[i].pronunciation = { accuracy: acc/100, transcript: txt, friendly: [] };
+        };
+        alert('“참고: 폴백 평가 — 아래 문장을 한 번 크게 읽어주세요”\n' + exercises[i].sentence);
+        rec.start();
+      }
+
+      $rec.addEventListener('click', start);
+      $stop.addEventListener('click', stop);
+      $eval.addEventListener('click', evaluate);
+    }
+
     function gradeBoth(index){
       if (!window.AnswerJudge) { alert('채점 모듈 로딩 실패'); return; }
       const card = document.querySelectorAll('.dictation-card')[index];
@@ -226,10 +403,7 @@
       const rawKO = koInput.value || '';
       const rawFR = frInput.value || '';
 
-      // 받아쓰기: 부분 포함 허용 ❌ (자모/받침 다르면 즉시 오답, 공백·구두점 ≤5% 허용)
       const koRes = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:false });
-
-      // FR: 악센트/구두점 무시, 의미 90% 또는 오타 ≤15%, 빈 답 ❌
       const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
 
       exState[index].attempts++;
@@ -278,6 +452,7 @@
         exercises.forEach((ex, i) => {
           const el = document.createElement('div');
           el.className = 'dictation-card';
+          el.id = `q${i+1}`;
           el.innerHTML = `
             <div class="flex items-center gap-4">
               <span class="text-2xl font-bold text-indigo-500">${i+1}</span>
@@ -296,11 +471,16 @@
               <div class="hint-display"></div>
               <div class="feedback-display"></div>
               <div class="pronun-display small-muted"></div>
+              <div class="flex items-center gap-2 mt-2 no-print">
+                <button type="button" class="btn btn-secondary btn-prev">⬅️ Précédent / 이전</button>
+                <button type="button" class="btn btn-secondary btn-next">➡️ Suivant / 다음</button>
+              </div>
             </div>
           `;
           $wrap.appendChild(el);
         });
 
+        // 이벤트
         document.querySelectorAll('.play-btn').forEach((btn, i) => {
           btn.addEventListener('click', e => {
             const b = e.currentTarget;
@@ -325,6 +505,19 @@
           inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
         });
 
+        // 카드 이동
+        document.querySelectorAll('.dictation-card').forEach((card, i) => {
+          card.querySelector('.btn-prev').addEventListener('click',()=>{
+            const p = document.getElementById(`q${Math.max(1,i)}`);
+            p && p.scrollIntoView({behavior:'smooth',block:'start'});
+          });
+          card.querySelector('.btn-next').addEventListener('click',()=>{
+            const n = document.getElementById(`q${Math.min(exercises.length,i+2)}`);
+            n && n.scrollIntoView({behavior:'smooth',block:'start'});
+          });
+        });
+
+        // 발음 모듈(있으면 그걸로), 없으면 폴백 UI 주입
         if (window.Pronun && typeof Pronun.mount === 'function') {
           document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
             Pronun.mount(cardEl, {
@@ -336,6 +529,10 @@
             });
           });
         }
+        document.querySelectorAll('.dictation-card').forEach((el, idx) => {
+          if(!el.querySelector('.btn-rec')) mountPronunUI(el, idx);
+        });
+
       } catch (err){
         console.error(err);
         $wrap.innerHTML = `
@@ -354,7 +551,7 @@
       document.querySelectorAll('.input-ko,.input-fr').forEach(i=>i.value='');
       document.querySelectorAll('.hint-display,.feedback-display,.pronun-display').forEach(d => { d.innerHTML = ''; });
       document.querySelectorAll('.btn-hint').forEach(b=>b.disabled=false);
-      exState.forEach(s => Object.assign(s, { listenCount:0, hint1Count:0, hint2Count:0, attempts:0, koCorrect:false, frCorrect:false, pronunciation:null }));
+      exState.forEach(s => Object.assign(s, { listenCount:0, hint1Count:0, hint2Count:0, attempts:0, koCorrect:false, frCorrect:false, pronunciation:null, recording:null }));
     });
 
     // 끝내기(총점은 KO+FR 평균만, 발음은 표시에만 사용)
@@ -368,9 +565,9 @@
       const frScore = Math.round((frCorrectCount / Math.max(1,totalQ)) * 100);
 
       const pronItems = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
-      const pronScore = Math.round((pronItems.reduce((a,b)=>a+b,0) / Math.max(1,pronItems.length)) * 100);
+      const pronScore = Math.round((pronItems.reduce((a,b)=>a+b,0) / Math.max(1,pronItems.length||1)) * 100);
 
-      const overall = Math.round((koScore + frScore) / 2); // ✅ 발음 미반영
+      const overall = Math.round((koScore + frScore) / 2);
       const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
 
       alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}`
@@ -402,8 +599,9 @@
               listenCount: exState[i].listenCount,
               hint1Count: exState[i].hint1Count,
               hint2Count: exState[i].hint2Count,
+              attempts: exState[i].attempts,
               pronunciation: exState[i].pronunciation || null,
-              recording: null
+              recording: exState[i].recording || null
             };
           })
         };
@@ -433,9 +631,12 @@
     window._startTime = new Date().toISOString();
     window._startMs = Date.now();
 
-    // ✅ 라이브러리 로딩 실패해도 렌더는 강행
     try { await ensureLibs(); } catch(e){ console.warn('ensureLibs failed', e); }
     renderExercises();
+
+    // 진단 바 출력
+    document.getElementById('diag').textContent =
+      `AJ:${!!window.AnswerJudge?'ok':'fallback'} · PR:${!!window.Pronun?'ok':'fallback'} · cards:${document.querySelectorAll('.dictation-card').length} · err:${(__diagInfo.errors[0]||'-')}`;
   });
   </script>
 </body>
