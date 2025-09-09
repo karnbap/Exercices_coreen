@@ -1,10 +1,9 @@
 [functions]
-
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  external_node_modules = ["form-data"]
-
+directory = "netlify/functions"
+node_bundler = "esbuild"
+external_node_modules = ["form-data"]
 
 [build.environment]
-  NODE_VERSION = "18"
-
+NODE_VERSION = "18"
+# 선택: 설치 속도/안정성
+NPM_FLAGS = "--no-audit --no-fund"
