@@ -1,6 +1,6 @@
 /* KO: 철자 엄격(초/중/종성 다르면 ×), 공백·구두점은 무시
    FR: 악센트·구두점 무시, 의미 90%≈(자카드 0.9) 또는 편집거리 15% 이내면 ○
-   - allowSubstring: 받아쓰기(false)에서는 부분포함 금지, 일반 문항(true)에서만 허용
+   - opts.altRefs: 대체 정답 배열(이름/il/elle 등 허용)
 */
 (function (w) {
   const RX_PUNCT=/[\p{P}\p{S}]/gu, RX_SPACE=/\s+/g, RX_MARKS=/\p{M}/gu, RX_HANGUL=/[가-힣]/g;
@@ -65,7 +65,7 @@
     return {score:0,isCorrect:false,note:bits.length?bits.join('·'):'철자 불일치'};
   }
 
-  // ---------- FR: 의미 위주(≈90%) ----------
+  // ---------- FR: 의미 위주 ----------
   function gradeFR(ref, ans, opts={}){
     const R=normFR(ref), S=normFR(ans);
     if(!S) return {score:0,isCorrect:false,note:'réponse vide'};
@@ -73,17 +73,17 @@
     // 완전일치 먼저
     if(S===R) return {score:100,isCorrect:true,note:'accents/ponctuation ignorés'};
 
-    // (선택) 대체 참조문장 허용
+    // 대체 참조문장 허용 (예: 이름 주어/ il / elle)
     const alts = Array.isArray(opts.altRefs)?opts.altRefs:[];
     for(const alt of alts){ const A=normFR(alt); if(S===A) return {score:100,isCorrect:true,note:'variante acceptée'}; }
 
-    // 토큰 기준 의미 유사도(자카드) ≥ 0.90 → 의미 90% 이상
+    // 토큰 기준 의미 유사도(자카드) ≥ 0.90
     const set=t=>new Set(String(t).split(' ').filter(Boolean));
     const a=set(S), b=set(R);
     const inter=[...a].filter(x=>b.has(x)).length;
     const uni=new Set([...a,...b]).size;
     const jacc = inter/Math.max(1,uni);
-    if(jacc>=0.90) return {score:Math.round(95),isCorrect:true,note:'mots essentiels concordants'};
+    if(jacc>=0.90) return {score:95,isCorrect:true,note:'mots essentiels concordants'};
 
     // 철자 오차 허용(15%)
     const d=lev(R,S), L=Math.max(1,R.length), rate=d/L, ok=rate<=0.15;
