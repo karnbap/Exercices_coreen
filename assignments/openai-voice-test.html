@@ -13,7 +13,7 @@
   <script defer src="/assets/student-gate.js"></script>
   <script defer src="/assets/grading-criteria.js"></script>
 
-  <!-- ✅ 채점 공용 모듈 (필수) -->
+  <!-- ✅ 채점 공용 모듈 (전역 또는 ESM 어느 쪽이든 로더가 보강) -->
   <script defer src="/assets/answer-judge.js"></script>
 
   <!-- 발음 분석(선택) -->
@@ -95,7 +95,23 @@
   </div>
 
   <script>
-  window.addEventListener('DOMContentLoaded', () => {
+  // ---------- 라이브러리 보강 로더 (ESM/전역 둘 다 커버) ----------
+  async function ensureLibs() {
+    if (!window.AnswerJudge) {
+      try {
+        const m = await import('/assets/answer-judge.js?v=' + Date.now());
+        window.AnswerJudge = window.AnswerJudge || m.default || m.AnswerJudge || m;
+      } catch (e) { console.warn('AnswerJudge import fail:', e); }
+    }
+    if (!window.Pronun) {
+      try {
+        const m = await import('/assets/pronun-client.js?v=' + Date.now());
+        window.Pronun = window.Pronun || m.default || m.Pronun || m;
+      } catch (e) { console.warn('Pronun import fail:', e); }
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', async () => {
     // ---- 이름 동기화 ----
     (window.StudentGate||={init(){},requireBeforeInteraction(){},getName(){return''},setName(){}}).init();
     StudentGate.requireBeforeInteraction(document);
@@ -306,7 +322,7 @@
       document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
       document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
         inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
-      });
+      }));
 
       // 발음 모듈(있을 때만)
       if (window.Pronun && typeof Pronun.mount === 'function') {
@@ -325,7 +341,8 @@
     // 다시하기
     document.getElementById('restart-btn').addEventListener('click',()=>{
       document.querySelectorAll('.input-ko,.input-fr').forEach(i=>i.value='');
-      document.querySelectorAll('.hint-display,.feedback-display,.pronun-display').forEach(d=>d.innerHTML='');
+      document.querySelectorAll('.hint-display,.feedback-display,.pronun-display').forEach(d=>d.innerHTML='';
+      );
       document.querySelectorAll('.btn-hint').forEach(b=>b.disabled=false);
       exState.forEach(s => Object.assign(s, { listenCount:0, hint1Count:0, hint2Count:0, attempts:0, koCorrect:false, frCorrect:false, pronunciation:null }));
     });
@@ -343,7 +360,7 @@
       const pronItems = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
       const pronScore = Math.round((pronItems.reduce((a,b)=>a+b,0) / Math.max(1,pronItems.length)) * 100);
 
-      const overall = Math.round((koScore + frScore) / 2); // ✅ 발음 미반영 (녹음 1개만 해도 총점에 영향 없음)
+      const overall = Math.round((koScore + frScore) / 2); // ✅ 발음 미반영
       const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
 
       alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}`
@@ -405,6 +422,441 @@
     // init
     window._startTime = new Date().toISOString();
     window._startMs = Date.now();
+
+    // ✅ 필수 라이브러리 확보 후 렌더
+    await ensureLibs();
+    renderExercises();
+  });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exercice de Dictée : Comme en Coréen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- 공통 스크립트 -->
+  <script defer src="/assets/student-gate.js"></script>
+  <script defer src="/assets/grading-criteria.js"></script>
+
+  <!-- ✅ 채점 공용 모듈 (전역 또는 ESM 어느 쪽이든 로더가 보강) -->
+  <script defer src="/assets/answer-judge.js"></script>
+
+  <!-- 발음 분석(선택) -->
+  <script defer src="/assets/pronun-utils.js"></script>
+  <script defer src="/assets/pronun-vowel-middleware.js"></script>
+  <script defer src="/assets/pronun-client.js"></script>
+
+  <style>
+    body{font-family:'Inter',sans-serif;background:#f3f4f6}
+    .korean-font{font-family:'Gowun Dodum',sans-serif}
+    .card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 4px 6px -1px rgb(0 0 0 / .1),0 2px 4px -2px rgb(0 0 0 / .1)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.2rem;border-radius:.75rem;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;border:none}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover:not(:disabled){background:#2563eb}
+    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover:not(:disabled){background:#d1d5db}
+    .btn-hint{background:#fefce8;color:#a16207;padding:.4rem .8rem;font-size:.875rem;border:1px solid #fde047}.btn-hint:hover:not(:disabled){background:#fef08a}
+    .dictation-card{padding:1.5rem;border:1px solid #e5e7eb;border-radius:1rem;margin-bottom:1.5rem;background:#fff}
+    .feedback{padding:1rem;border-radius:.75rem;margin-top:1rem;font-size:.95rem}
+    .feedback.correct{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .feedback.incorrect{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+    .small-muted{font-size:.875rem;color:#6b7280}
+    .pill{display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem}
+    .pill-green{background:#e7f8ee;color:#0a7a3b;border:1px solid #9be4b8}
+    .pill-red{background:#fde8e8;color:#9b1c1c;border:1px solid #f7b4b4}
+    .spinner{width:18px;height:18px;border:3px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media print {.no-print{display:none!important}}
+  </style>
+</head>
+<body class="text-slate-800">
+  <div class="container mx-auto p-4 md:p-8 max-w-3xl">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-indigo-600 mb-2">Dictée : Comme en Coréen 🎧</h1>
+      <p class="text-lg text-slate-600">Écoutez → Écrivez en coréen → Traduisez en français → Enregistrez votre prononciation.</p>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3 no-print">
+        <button type="button" class="btn btn-secondary" onclick="window.print()" aria-label="Imprimer la page">🖨️ Imprimer / 페이지 인쇄</button>
+      </div>
+      <div class="mt-3 text-sm text-slate-500 text-center">
+        made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+      </div>
+    </header>
+
+    <section class="card mb-8 no-print">
+      <label class="block font-semibold mb-2">Nom de l'étudiant / 학생 이름</label>
+      <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500" placeholder="Ex. Camille, Noé, Chloé..." />
+      <p class="small-muted mt-2">
+        Nous enregistrons : votre nom, le nombre d’écoutes/indices/essais, et vos scores de prononciation. /
+        시작하면 이름, 듣기·힌트·시도 횟수, 발음 점수까지 기록돼요.
+      </p>
+    </section>
+
+    <section id="explanations" class="mb-10 card">
+      <h2 class="text-2xl font-bold mb-3 text-slate-700">“Comme” — Je décris quoi ? / 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
+      <div class="space-y-3 text-slate-700">
+        <p class="text-slate-600">
+          <strong>Comme…</strong> décrit <u>quoi</u> ? →
+          <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">un verbe (une action)</span>
+          ou <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">un nom</span>
+          ou <span class="inline-block bg-indigo-50 px-2 py-0.5 rounded">le verbe “être”</span> ?
+        </p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li><span class="font-semibold">nom + comme</span> → <span class="korean-font">명사 + 처럼/같이</span></li>
+          <li><span class="font-semibold">être + comme</span> → <span class="korean-font">~와/과 같다</span></li>
+          <li><span class="font-semibold">verbe/adj + comme</span> → <span class="korean-font">동사 + 처럼/같이</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="dictation-exercises"></section>
+
+    <section class="mt-8 flex flex-wrap items-center gap-3 no-print">
+      <button type="button" class="btn btn-secondary" id="restart-btn">↺ Réessayer / 다시하기</button>
+      <button type="button" class="btn btn-primary" id="finish-btn">✅ Terminer / 끝내기</button>
+    </section>
+
+    <div class="mt-6 text-sm text-slate-500 text-center">
+      made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+    </div>
+  </div>
+
+  <script>
+  // ---------- 라이브러리 보강 로더 (ESM/전역 둘 다 커버) ----------
+  async function ensureLibs() {
+    if (!window.AnswerJudge) {
+      try {
+        const m = await import('/assets/answer-judge.js?v=' + Date.now());
+        window.AnswerJudge = window.AnswerJudge || m.default || m.AnswerJudge || m;
+      } catch (e) { console.warn('AnswerJudge import fail:', e); }
+    }
+    if (!window.Pronun) {
+      try {
+        const m = await import('/assets/pronun-client.js?v=' + Date.now());
+        window.Pronun = window.Pronun || m.default || m.Pronun || m;
+      } catch (e) { console.warn('Pronun import fail:', e); }
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    // ---- 이름 동기화 ----
+    (window.StudentGate||={init(){},requireBeforeInteraction(){},getName(){return''},setName(){}}).init();
+    StudentGate.requireBeforeInteraction(document);
+    const $name = document.getElementById('student-name');
+    const syncName = () => { $name.value = StudentGate.getName() || ''; };
+    document.addEventListener('student-ready', syncName);
+    $name.addEventListener('change', e => {
+      const v = String(e.target.value||'').trim();
+      if (v) StudentGate.setName(v);
+    });
+
+    // ---- 메타 ----
+    const ASSIGNMENT_META = {
+      assignmentTitle: "Dictée – Comme en coréen",
+      assignmentTopic: "같아요 / 같은 / 처럼 / 같이",
+      assignmentSummary: [
+        "Comparaison de deux noms: être comme (같아요)",
+        "Nom + 같은 (qui est comme …)",
+        "Comparer une action: verbe + 처럼/같이 (« 같이 » = ensemble)"
+      ]
+    };
+
+    // ---- 문항 ----
+    const exercises = [
+      { sentence: "천사 같아요.", translation: "Elle est comme un ange.", hint1:"ㅊㅅ ㄱㅇㅇ", hint2:"천사 = ange", voice:"alloy" },
+      { sentence: "이건 꿈 같아요.", translation: "Ceci est comme un rêve.", hint1:"ㅇㄱ ㄲ ㄱㅇㅇ", hint2:"꿈 = rêve", voice:"Puck" },
+      { sentence: "가족 같은 친구예요.", translation: "C'est une amie comme ma famille.", hint1:"ㄱㅈ ㄱㅇ ㅊㄱㅇㅇ", hint2:"가족 = famille", voice:"Charon" },
+      { sentence: "바다 같은 넓은 마음.", translation: "Un coeur large comme la mer.", hint1:"ㅂㄷ ㄱㅇ ㄴㅇ ㅁㅇ", hint2:"바다 = mer", voice:"alloy" },
+      { sentence: "소처럼 먹어요.", translation: "Il/Elle mange comme une vache.", hint1:"ㅅㅊㄹ ㅁㅇㅇ", hint2:"소 = vache", voice:"Fenrir" },
+      { sentence: "그 사람은 바람처럼 달려요.", translation: "Il court comme le vent.", hint1:"ㄱㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2:"바람 = vent", voice:"Orus" },
+      { sentence: "가수같이 노래를 잘해요.", translation: "Il/Elle chante bien comme un(e) chanteur(se).", hint1:"ㄱㅅㄱㅇ ㄴㄹㄹ ㅈㅎㅇ", hint2:"가수 = chanteur", voice:"Aoede" },
+      { sentence: "로봇같이 걸어요.", translation: "Il/Elle marche comme un robot.", hint1:"ㄹㅂㄱㅇ ㄱㅇㅇ", hint2:"로봇 = robot", voice:"Callirrhoe" },
+      { sentence: "친구랑 같이 갔어요.", translation: "Je suis allé(e) avec mon ami(e).", hint1:"ㅊㄱㄹ ㄱㅇ ㄱㅇㅇ", hint2:"같이 = ensemble", voice:"Zephyr" },
+      { sentence: "별처럼 춤을 춰요.", translation: "Il/Elle danse comme une étoile.", hint1:"ㅂㅊㄹ ㅊㅇ ㅊㅇ", hint2:"별 = étoile", voice:"Enceladus" },
+      { sentence: "오늘은 어제 같아요.", translation: "Aujourd'hui est comme hier.", hint1:"ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2:"어제 = hier", voice:"Iapetus" },
+      { sentence: "그 사람은 배우 같아요.", translation: "Cette personne est comme un(e) acteur/actrice.", hint1:"ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2:"배우 = acteur", voice:"Umbriel" },
+      { sentence: "얼음 같은 손.", translation: "Une main (froide) comme la glace.", hint1:"ㅇㅇ ㄱㅇ ㅅ", hint2:"얼음 = glace", voice:"Despina" },
+      { sentence: "설탕 같은 목소리.", translation: "Une voix (douce) comme le sucre.", hint1:"ㅅㅌ ㄱㅇ ㅁㅅㄹ", hint2:"설탕 = sucre", voice:"Erinome" },
+      { sentence: "인형 같은 아이.", translation: "Un enfant comme une poupée.", hint1:"ㅇㅎ ㄱㅇ ㅇㅇ", hint2:"인형 = poupée", voice:"Algenib" },
+      { sentence: "물처럼 돈을 써요.", translation: "Il/Elle dépense de l'argent comme de l'eau.", hint1:"ㅁㅊㄹ ㄷㅇ ㅆㅇ", hint2:"물 = eau", voice:"Rasalgethi" },
+      { sentence: "거북이처럼 느려요.", translation: "Il/Elle est lent(e) comme une tortue.", hint1:"ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2:"거북이 = tortue", voice:"Laomedeia" },
+      { sentence: "전문가처럼 말해요.", translation: "Il/Elle parle comme un expert.", hint1:"ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2:"전문가 = expert", voice:"Achernar" },
+      { sentence: "아기같이 자요.", translation: "Il/Elle dort comme un bébé.", hint1:"ㅇㄱㄱㅇ ㅈㅇ", hint2:"아기 = bébé", voice:"Alnilam" },
+      { sentence: "영화배우처럼 잘생겼어요.", translation: "Il est beau comme un acteur de cinéma.", hint1:"ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅇㅇ", hint2:"영화배우 = acteur de cinéma", voice:"Schedar" }
+    ];
+
+    // ---- 상태/오디오 ----
+    const audioCache = {};
+    const exState = exercises.map(() => ({
+      listenCount:0, hint1Count:0, hint2Count:0, attempts:0,
+      koCorrect:false, frCorrect:false, pronunciation:null
+    }));
+
+    function escapeHtml(s=''){
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function base64ToBlob(base64, mime="audio/wav") {
+      const bin = atob(base64); const len = bin.length; const bytes = new Uint8Array(len);
+      for (let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: mime });
+    }
+
+    async function playAudio(text, voice, btn, idx){
+      try{
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+        const key = `${voice}|${text}`;
+        if (audioCache[key] instanceof Blob){
+          const url = URL.createObjectURL(audioCache[key]);
+          const a = new Audio(url);
+          a.onended = () => URL.revokeObjectURL(url);
+          exState[idx].listenCount++; await a.play(); return;
+        }
+        const res = await fetch('/.netlify/functions/generate-audio', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ text, voice })
+        });
+        if(!res.ok) throw new Error('TTS '+res.status);
+        const { audioData, mimeType } = await res.json();
+        const blob = base64ToBlob(audioData, mimeType||'audio/wav');
+        audioCache[key] = blob;
+        const url = URL.createObjectURL(blob);
+        const a = new Audio(url);
+        a.onended = () => URL.revokeObjectURL(url);
+        exState[idx].listenCount++; await a.play();
+      }catch(e){
+        console.error(e);
+        alert('Désolé, une erreur audio.');
+        fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ functionName:'getAudio', error:String(e), pageUrl:location.href })}).catch(()=>{});
+      }finally{
+        btn.disabled = false;
+        btn.innerHTML = '🔊';
+      }
+    }
+
+    function styleHint(raw){
+      const hasJeoneun = /(저는|전)/.test(raw), hasNaneun = /(나는|난)/.test(raw);
+      const politeEnd = /(요|니다)[\s.]*$/.test(raw);
+      if(hasJeoneun && !politeEnd) return "“저는/전”을 썼으면 문장 끝을 -요/-(스)ㅂ니다로.";
+      if(hasNaneun && politeEnd) return "“나는/난”을 썼으면 반말(-아/어)로 끝내요.";
+      return '';
+    }
+
+    function gradeBoth(index){
+      if (!window.AnswerJudge) { alert('채점 모듈 로딩 실패'); return; }
+      const card = document.querySelectorAll('.dictation-card')[index];
+      const koInput = card.querySelector('.input-ko');
+      const frInput = card.querySelector('.input-fr');
+      const feedback = card.querySelector('.feedback-display');
+
+      const rawKO = koInput.value || '';
+      const rawFR = frInput.value || '';
+
+      // 받아쓰기: 부분 포함 허용 ❌ (자모/받침 다르면 즉시 오답, 공백·구두점 ≤5% 허용)
+      const koRes = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:false });
+
+      // FR: 악센트/구두점 무시, 의미 90% or 오타 ≤15%, 빈 답 ❌
+      const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
+
+      exState[index].attempts++;
+      exState[index].koCorrect = koRes.isCorrect;
+      exState[index].frCorrect = frRes.isCorrect;
+
+      const romanWarn = /[A-Za-z]/.test(rawKO) ? "한글 발음 표기 로마자는 쓰지 마세요.(ga, teun 등)" : "";
+      const styleMsg = styleHint(rawKO);
+
+      const tags = [];
+      if (romanWarn) tags.push(`⚠️ ${romanWarn}`);
+      if (styleMsg)  tags.push(`💡 ${styleMsg}`);
+      if (koRes.note) tags.push(`KO: ${koRes.note}`);
+      if (frRes.note) tags.push(`FR: ${frRes.note}`);
+
+      const koPill = koRes.isCorrect ? `<span class="pill pill-green">KO ✓</span>` : `<span class="pill pill-red">KO ✗</span>`;
+      const frPill = frRes.isCorrect ? `<span class="pill pill-green">FR ✓</span>` : `<span class="pill pill-red">FR ✗</span>`;
+
+      const ok = koRes.isCorrect && frRes.isCorrect;
+      feedback.innerHTML = ok ? `
+        <div class="feedback correct">
+          <strong class="text-lg">🎉 Super ! 잘했어요!</strong>
+          <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
+          <p class="korean-font mt-1"><strong>정답(한):</strong> ${exercises[index].sentence}</p>
+          <p><strong>Traduction (FR):</strong> ${exercises[index].translation}</p>
+          ${tags.length?`<p class="small-muted mt-1">${tags.join(' · ')}</p>`:''}
+        </div>
+      ` : `
+        <div class="feedback incorrect">
+          <strong class="text-lg">👍 거의 맞았어요! 한 번만 더! / Presque réussi·e ! Réessaie 😉</strong>
+          <div class="mt-1 flex gap-2">${koPill}${frPill}</div>
+          <p class="korean-font mt-1"><strong>내 답(한):</strong> ${escapeHtml(rawKO)}</p>
+          <p><strong>Ma réponse (FR):</strong> ${escapeHtml(rawFR)}</p>
+          <p class="korean-font"><strong>정답(한):</strong> ${exercises[index].sentence}</p>
+          <p><strong>Traduction (FR):</strong> ${exercises[index].translation}</p>
+          ${tags.length?`<p class="small-muted mt-1">${tags.join(' · ')}</p>`:''}
+        </div>
+      `;
+    }
+
+    function renderExercises(){
+      const $wrap = document.getElementById('dictation-exercises');
+      $wrap.innerHTML = '';
+      exercises.forEach((ex, i) => {
+        const el = document.createElement('div');
+        el.className = 'dictation-card';
+        el.innerHTML = `
+          <div class="flex items-center gap-4">
+            <span class="text-2xl font-bold text-indigo-500">${i+1}</span>
+            <button type="button" class="btn btn-primary play-btn" data-voice="${ex.voice}" data-text="${ex.sentence}" aria-label="Lire l'audio ${i+1}">🔊</button>
+            <div class="text-sm text-slate-500">Écouter / 듣기 → KO(한글) → FR(불어)</div>
+          </div>
+
+          <div class="mt-3 ml-12 grid gap-3">
+            <input type="text" class="input-ko korean-font text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
+            <input type="text" class="input-fr text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-hint hint1-btn">🙏 Aidez-moi (초성)</button>
+              <button type="button" class="btn btn-hint hint2-btn">🦺 Au secours (단어)</button>
+              <button type="button" class="btn btn-secondary check-btn">Vérifier (정답 확인)</button>
+            </div>
+            <div class="hint-display"></div>
+            <div class="feedback-display"></div>
+            <div class="pronun-display small-muted"></div>
+          </div>
+        `;
+        $wrap.appendChild(el);
+      });
+
+      // 이벤트
+      document.querySelectorAll('.play-btn').forEach((btn, i) => {
+        btn.addEventListener('click', e => {
+          const b = e.currentTarget;
+          playAudio(b.dataset.text, b.dataset.voice, b, i);
+        });
+      });
+      document.querySelectorAll('.hint1-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
+        document.querySelectorAll('.hint-display')[i].innerHTML =
+          `<p class="text-sm text-amber-700 korean-font"><strong>🙏 Aidez-moi (초성):</strong> ${exercises[i].hint1}</p>`;
+        exState[i].hint1Count++;
+        btn.disabled = true;
+      }));
+      document.querySelectorAll('.hint2-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
+        const box = document.querySelectorAll('.hint-display')[i];
+        const prev = box.querySelector('p')?.outerHTML || '';
+        box.innerHTML = prev + `<p class="text-sm text-amber-700 korean-font mt-1"><strong>🦺 Au secours (단어):</strong> ${exercises[i].hint2}</p>`;
+        exState[i].hint2Count++;
+        btn.disabled = true;
+      }));
+      document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
+      document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
+        inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
+      }));
+
+      // 발음 모듈(있을 때만)
+      if (window.Pronun && typeof Pronun.mount === 'function') {
+        document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
+          Pronun.mount(cardEl, {
+            getReferenceText: () => exercises[i].sentence,
+            isKoCorrect: () => exState[i].koCorrect,
+            onResult: ({ accuracy, transcript, friendly }) => {
+              exState[i].pronunciation = { accuracy, transcript: transcript||'', friendly: friendly||[] };
+            }
+          });
+        });
+      }
+    }
+
+    // 다시하기
+    document.getElementById('restart-btn').addEventListener('click',()=>{
+      document.querySelectorAll('.input-ko,.input-fr').forEach(i=>i.value='');
+      document.querySelectorAll('.hint-display,.feedback-display,.pronun-display').forEach(d=>d.innerHTML='';
+      );
+      document.querySelectorAll('.btn-hint').forEach(b=>b.disabled=false);
+      exState.forEach(s => Object.assign(s, { listenCount:0, hint1Count:0, hint2Count:0, attempts:0, koCorrect:false, frCorrect:false, pronunciation:null }));
+    });
+
+    // 끝내기(총점은 KO+FR 평균만, 발음은 표시에만 사용)
+    document.getElementById('finish-btn').addEventListener('click', async () => {
+      const name = (StudentGate?.getName?.() || document.getElementById('student-name').value || '').trim() || 'N/A';
+
+      const totalQ = exercises.length;
+      const koCorrectCount = exState.filter(s => s.koCorrect).length;
+      const frCorrectCount = exState.filter(s => s.frCorrect).length;
+      const koScore = Math.round((koCorrectCount / Math.max(1,totalQ)) * 100);
+      const frScore = Math.round((frCorrectCount / Math.max(1,totalQ)) * 100);
+
+      const pronItems = exState.map(s => s.pronunciation?.accuracy).filter(x => typeof x === 'number' && isFinite(x));
+      const pronScore = Math.round((pronItems.reduce((a,b)=>a+b,0) / Math.max(1,pronItems.length)) * 100);
+
+      const overall = Math.round((koScore + frScore) / 2); // ✅ 발음 미반영
+      const gm = (window.Grading?.getGradingMessage) ? window.Grading.getGradingMessage(overall) : null;
+
+      alert(`${gm ? gm.emoji+' '+gm.fr+' / '+gm.ko+'\n' : ''}`
+        + `총점: ${overall}/100 (KO+FR)\n`
+        + `한글 받아쓰기: ${koScore}/100\n`
+        + `불어 번역: ${frScore}/100\n`
+        + `발음: ${isFinite(pronScore)?pronScore:0}/100`);
+
+      try {
+        const payload = {
+          studentName: name,
+          startTime: window._startTime || new Date().toISOString(),
+          endTime: new Date().toISOString(),
+          totalTimeSeconds: Math.round(((Date.now()) - (window._startMs || Date.now())) / 1000),
+          assignmentTitle: ASSIGNMENT_META.assignmentTitle,
+          assignmentTopic: ASSIGNMENT_META.assignmentTopic,
+          assignmentSummary: ASSIGNMENT_META.assignmentSummary,
+          gradingMessage: gm,
+          categoryScores: { ko: koScore, fr: frScore, pron: pronScore, overall },
+          questions: exercises.map((ex,i)=>{
+            const card = document.querySelectorAll('.dictation-card')[i];
+            return {
+              number: i+1, ko: ex.sentence, fr: ex.translation,
+              userAnswer: card.querySelector('.input-ko').value || '',
+              userAnswerFr: card.querySelector('.input-fr').value || '',
+              isCorrect: exState[i].koCorrect && exState[i].frCorrect,
+              isCorrectKo: exState[i].koCorrect,
+              isCorrectFr: exState[i].frCorrect,
+              listenCount: exState[i].listenCount,
+              hint1Count: exState[i].hint1Count,
+              hint2Count: exState[i].hint2Count,
+              pronunciation: exState[i].pronunciation || null,
+              recording: null
+            };
+          })
+        };
+        const resp = await fetch('/.netlify/functions/send-results', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+        });
+        let j = {}; try { j = await resp.json(); } catch {}
+        if (!resp.ok || j.ok === false) {
+          alert("⚠️ 전송 실패 / Envoi échoué.");
+          fetch('/.netlify/functions/log-error', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ functionName:'send-results', error:`HTTP ${resp.status} ${resp.statusText} | ${JSON.stringify(j)}`, pageUrl:location.href })
+          }).catch(()=>{});
+        } else {
+          alert("✅ 결과가 메일로 전송됐어요 ! / Résultats envoyés par e-mail !");
+        }
+      } catch (err) {
+        console.error(err);
+        fetch('/.netlify/functions/log-error', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ functionName:'finish-send-results', error:String(err), pageUrl:location.href })
+        }).catch(()=>{});
+      }
+    });
+
+    // init
+    window._startTime = new Date().toISOString();
+    window._startMs = Date.now();
+
+    // ✅ 필수 라이브러리 확보 후 렌더
+    await ensureLibs();
     renderExercises();
   });
   </script>
