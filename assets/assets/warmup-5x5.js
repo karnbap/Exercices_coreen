@@ -1,8 +1,4 @@
-// assets/warmup-5x5.js
 // 속도 선택(WU_go) → 4그룹 발음 연습 렌더 → 평가/전송
-// 연속 발화(TTS): Google=SSML 0ms / OpenAI=U+2060
-// 평가 설명: pronun-utils.js / pronun-vowel-middleware.js 팁 병합
-
 const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
 const BUNDLES = [
@@ -17,10 +13,8 @@ const state = {
   progress: {}, listenCount: {},
   startISO: null, startMs: 0, name:'Élève'
 };
-window.state = state;
 
-// ===== util =====
-function $(s, r=document){ return r.querySelector(s); }
+// ---------- Utils ----------
 function splitTokens(s){ return String(s||'').split(/[,\s]+/).filter(Boolean); }
 function collapseKorean(s){ return splitTokens(s).join(''); }
 function makeTTSContinuous(text, speed=1.0){
@@ -33,11 +27,11 @@ function makeTTSContinuous(text, speed=1.0){
   return { text: parts.join('\u2060') }; // WORD JOINER
 }
 function mapVoice(provider, req){
-  const VOICE_MAP = {
+  const MAP = {
     openai: { default:'alloy', alloy:'alloy', shimmer:'verse' },
     google: { default:'ko-KR-Standard-A', alloy:'ko-KR-Standard-A', shimmer:'ko-KR-Standard-B' }
   };
-  const t = VOICE_MAP[provider]||{}; return t[req] || t.default || req;
+  const t = MAP[provider]||{}; return t[req] || t.default || req;
 }
 function base64ToBlob(base64, mime='audio/mpeg'){
   const cleaned = base64.includes(',') ? base64.split(',')[1] : base64;
@@ -46,9 +40,7 @@ function base64ToBlob(base64, mime='audio/mpeg'){
   for(let i=0;i<byteChars.length;i++) arr[i]=byteChars.charCodeAt(i);
   return new Blob([arr],{type:mime});
 }
-function toBareBase64(dataUrlOrB64){
-  return String(dataUrlOrB64||'').includes(',') ? String(dataUrlOrB64).split(',')[1] : String(dataUrlOrB64||'');
-}
+function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split(',')[1] : String(s||''); }
 
 // ---------- TTS ----------
 let currentAudio=null, audioLock=false, aborter=null, currentSrc=null;
@@ -72,8 +64,8 @@ async function playTTS(input, voice='alloy', speed=1.0, btn){
       else { currentAudio.pause(); setBtnPlaying(btn,false); }
       return;
     }
-    if(aborter){ try{aborter.abort();}catch{} }
-    if(currentAudio){ try{currentAudio.pause();}catch{} }
+    aborter?.abort();
+    currentAudio?.pause();
     if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; }
 
     aborter = new AbortController();
@@ -176,7 +168,9 @@ async function analyzePronunciation({ referenceText, record }){
     referenceText,
     audio: { base64: toBareBase64(record.base64), filename:`rec_${Date.now()}.webm`, mimeType:'audio/webm', duration: record.duration }
   };
-  const r = await fetch(`${FN_BASE}/analyze-pronunciation`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
   const data = await r.json().catch(()=> ({}));
   if(!r.ok) throw new Error(data?.error || 'Analyse échouée');
   let acc = (typeof data.accuracy === 'number') ? data.accuracy : 0;
@@ -196,11 +190,7 @@ function renderFeedback(box, {friendly=[], accuracy=0, transcript='', refText=''
     const extra1 = (window.PronunUtils?.quickTips?.(refText, transcript)) || [];
     const extra2 = (window.VowelMiddleware?.hints?.(refText, transcript)) || [];
     [...extra1, ...extra2].forEach(t => t && lines.push(t));
-  }catch(_){ }
-  if (!lines.length){
-    const modeTip = (state.mode?.continuous) ? '끊지 않고 한 호흡(continu)으로 읽기 연습 👍' : '쉼표마다 살짝 쉬고 또박또박 👍';
-    lines.push(modeTip, '받침/연음(여덟, 아홉) 연결을 또렷하게!');
-  }
+  }catch(_){}
   const sttLine = transcript ? `<div class="mt-2 text-[13px] text-slate-600">STT: ${transcript}</div>` : '';
   box.querySelector('.feedback-body').innerHTML =
     `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
@@ -246,13 +236,13 @@ function makeBundleCard(bundle){
     <div class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60">
       <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer</div>
       <div class="flex flex-wrap gap-2 mb-2">
-        <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer l’enregistrement</button>
+        <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer</button>
         <button class="btn btn-outline btn-rec-stop" disabled><i class="fa-solid fa-stop"></i> Arrêter</button>
-        <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer ma prononciation</button>
+        <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer</button>
       </div>
       <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
       <audio class="mt-2 w-full audio-playback hidden" controls></audio>
-      <div class="mt-2 text-sm text-slate-600 status-line">Appuie sur “Démarrer l’enregistrement”, puis “Arrêter”, ensuite “Évaluer”.</div>
+      <div class="mt-2 text-sm text-slate-600 status-line">Démarrer → Arrêter → Évaluer.</div>
       <div class="mt-2 text-sm"><span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span></div>
 
       <div class="mt-3 feedback-card hidden">
@@ -262,7 +252,6 @@ function makeBundleCard(bundle){
     </div>
   `;
 
-  // 듣기
   const btnPlay = wrap.querySelector('.btn-play');
   const playCountTag = wrap.querySelector('.play-count');
   btnPlay.addEventListener('click', async (e)=>{
@@ -271,7 +260,6 @@ function makeBundleCard(bundle){
     playCountTag.textContent = String(state.listenCount[bundle.key]);
   });
 
-  // 녹음/평가
   const rec = makeRecorder();
   const btnStart = wrap.querySelector('.btn-rec-start');
   const btnStop  = wrap.querySelector('.btn-rec-stop');
@@ -301,7 +289,7 @@ function makeBundleCard(bundle){
       audioUI.classList.remove('hidden');
       btnEval.disabled = !lastRecord;
       btnStart.disabled = false;
-      status.textContent = lastRecord ? `Enregistrement terminé (${(lastRecord.duration||0).toFixed(1)} s). Clique “Évaluer”.` : 'Réessaie.';
+      status.textContent = lastRecord ? `Terminé (${(lastRecord.duration||0).toFixed(1)} s). Clique “Évaluer”.` : 'Réessaie.';
     }catch(e){
       btnStart.disabled = false;
       status.textContent = 'Problème d’enregistrement. Réessaie.';
@@ -321,8 +309,7 @@ function makeBundleCard(bundle){
       state.progress[bundle.key] = {
         done:true, score:percent, accuracy,
         audioBase64: toBareBase64(lastRecord.base64),
-        duration:lastRecord.duration,
-        friendly
+        duration:lastRecord.duration, friendly
       };
       wrap.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
       renderFeedback(fbBox, { friendly, accuracy, transcript, refText: refEval });
@@ -348,6 +335,7 @@ function checkFinish(){
   updateProgress(doneCount);
   if(doneCount === keys.length){
     document.getElementById('finish-wrap')?.classList.remove('hidden');
+    document.getElementById('btn-send')?.addEventListener('click', sendResults, { once:true });
   }
 }
 
@@ -371,7 +359,7 @@ async function sendResults(){
   });
 
   const payload = {
-    studentName: ($('#student-name')?.value || state.name || 'Élève'),
+    studentName: (document.getElementById('student-name')?.value || state.name || 'Élève'),
     startTime: state.startISO || new Date().toISOString(),
     endTime: new Date().toISOString(),
     totalTimeSeconds: Math.max(0, Math.round((Date.now() - (state.startMs||Date.now()))/1000)),
@@ -400,16 +388,16 @@ function WU_go(mode){
   else if(mode === 'fast') state.mode = { speed:1.5, continuous:true  };
   else                     state.mode = { speed:1.0, continuous:false };
 
-  state.name = ($('#student-name')?.value || state.name || 'Élève');
+  state.name = (document.getElementById('student-name')?.value || state.name || 'Élève');
   state.startISO = new Date().toISOString();
   state.startMs = Date.now();
 
+  // 화면 토글
+  document.getElementById('mode-picker')?.classList.add('hidden');
+  document.getElementById('warmup-screen')?.classList.remove('hidden');
+
   renderAll();
-
-  const wu = document.getElementById('warmup-screen');
-  if(wu){ wu.classList.remove('hidden'); window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' }); }
-
-  document.getElementById('btn-send')?.addEventListener('click', sendResults, { once:true });
+  window.scrollTo({ top: document.getElementById('warmup-screen').offsetTop-8, behavior:'smooth' });
 }
 window.WU_go = WU_go;
 
@@ -419,6 +407,4 @@ document.addEventListener('DOMContentLoaded', ()=>{
     window.StudentGate?.init?.();
     window.StudentGate?.requireBeforeInteraction?.(document);
   }catch(_){}
-
-  document.getElementById('btn-send')?.addEventListener('click', sendResults);
 });
