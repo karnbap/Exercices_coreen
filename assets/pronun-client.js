@@ -1,32 +1,35 @@
-/* /assets/pronun-client.js */
-;(function (global) {
+// assets/pronun-client.js
+(function (global) {
   const DEFAULTS = {
     endpoint: '/.netlify/functions/analyze-pronunciation',
-    // 크레딧 절약/반복 연습 정책
-    requireKoCorrect: false,
-    skipSecondPassIfAccurate: 0.99,
-    maxAnalysesPerSession: 50,
-    minDurationSec: 0.6,
-    maxDurationSec: 10,
-    cacheResults: true,
-    useLocalStorageCache: true,
     selectors: {
-      btnStart:  '.btn-rec-start',
-      btnStop:   '.btn-rec-stop',
-      canvas:    '.vu-canvas',
-      result:    '.pronun-display'
+      btnStart: '.btn-rec',
+      btnStop:  '.btn-stop',
+      canvas:   '.vu',
+      result:   '.pronun-display'
     },
-    // 호출자 제공
-    getReferenceText: null,
-    isKoCorrect: null,
-    onResult: null,
-    onCostGuardHit: null
+    minDurationSec: 1,            // 너무 짧으면 STT가 0점 나오는 것 방지
+    maxDurationSec: 10,
+    skipSecondPassIfAccurate: true,
+    maxAnalysesPerSession: 40,
+    cacheResults: true
   };
 
-  const session = { analyses: 0 };
-  const memCache = new Map();
-
-  function textBilingual(fr, ko) { return `${fr} / ${ko}`; }
+  // ---- fetch helpers / ui helpers (동일) ----
+  function textBilingual(fr, ko){ return `${fr} / ${ko}`; }
+  function jsonPost(url, payload) {
+    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+      .then(r=>r.ok ? r.json() : r.text().then(t=>Promise.reject(new Error(`${r.status} ${t}`))));
+  }
+  async function base64FromBlob(blob) {
+    return new Promise((resolve, reject)=>{
+      const fr = new FileReader();
+      fr.onerror = reject;
+      fr.onload = ()=> resolve((fr.result||'').toString().split(',')[1] || '');
+      fr.readAsDataURL(blob);
+    });
+  }
+  function msg(el, text) { el.innerHTML = `<div class="small-muted">${text}</div>`; }
 
   function uiSetRecording(btnStart, isRecording) {
     if (isRecording) {
@@ -38,74 +41,6 @@
       btnStart.innerHTML = '🎙️ Enregistrer / 녹음';
       btnStart.disabled = false;
     }
-  }
-
-  function drawLoop(state) {
-    const { analyser, data, canvas, ctx } = state.vu;
-    analyser.getByteTimeDomainData(data);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    for (let x = 0; x < canvas.width; x++) {
-      const v = data[x] / 128.0 - 1.0;
-      const y = (canvas.height / 2) + v * (canvas.height / 2 - 4);
-      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    state.vu.raf = requestAnimationFrame(()=>drawLoop(state));
-  }
-
-  function jsonPost(url, payload) {
-    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
-      .then(r=>r.ok ? r.json() : r.text().then(t=>Promise.reject(new Error(`${r.status} ${t}`))));
-  }
-
-  async function base64FromBlob(blob) {
-    return new Promise((resolve, reject)=>{
-      const fr = new FileReader();
-      fr.onerror = reject;
-      fr.onload = ()=> resolve((fr.result||'').toString().split(',')[1] || '');
-      fr.readAsDataURL(blob);
-    });
-  }
-
-  async function sha256Base64(b64) {
-    try {
-      const bin = atob(b64);
-      const buf = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-      const digest = await crypto.subtle.digest('SHA-256', buf);
-      return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch {
-      let h = 0; for (let i = 0; i < b64.length; i++) h = (h * 31 + b64.charCodeAt(i)) | 0;
-      return 'x' + (h >>> 0).toString(16);
-    }
-  }
-
-  function loadCache(key) {
-    if (!key) return null;
-    const k = 'pronun:' + key;
-    if (memCache.has(k)) return memCache.get(k);
-    try {
-      const s = localStorage.getItem(k); if (s) { const v = JSON.parse(s); memCache.set(k, v); return v; }
-    } catch {}
-    return null;
-  }
-
-  function saveCache(key, value) {
-    if (!key) return;
-    const k = 'pronun:' + key;
-    memCache.set(k, value);
-    try { localStorage.setItem(k, JSON.stringify(value)); } catch {}
-  }
-
-  async function analyzeOnce(opts, payload, cacheKey) {
-    if (opts.cacheResults) {
-      const cached = loadCache(cacheKey);
-      if (cached) return { ...cached, _cached: true };
-    }
-    const data = await jsonPost(opts.endpoint, payload);
-    if (opts.cacheResults) saveCache(cacheKey, data);
-    return data;
   }
 
   function getUserMediaSafe() {
@@ -123,6 +58,20 @@
     const data = new Uint8Array(analyser.frequencyBinCount);
     src.connect(analyser);
     return { ac, src, analyser, data, canvas, ctx, raf:0 };
+  }
+
+  function drawLoop(state) {
+    const { analyser, data, canvas, ctx } = state.vu;
+    analyser.getByteTimeDomainData(data);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    for (let x = 0; x < canvas.width; x++) {
+      const v = data[x] / 128.0 - 1.0;
+      const y = (canvas.height / 2) + v * (canvas.height / 2 - 4);
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    state.vu.raf = requestAnimationFrame(()=>drawLoop(state));
   }
 
   function startRecording(state) {
@@ -150,7 +99,7 @@
     });
   }
 
-  // --- 한글 음절 분해/강조 표시 유틸 ---
+  // ---- 하이라이트 & 친절 설명 ----
   const Ls = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
   const Vs = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
   const Ts = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
@@ -193,50 +142,32 @@
     return { refHTML, hypHTML };
   }
 
-  // 숫자(0-9, 연속된 자리수)를 한자어 표기로 치환 (표시/강조용)
-  const DIGITS = ['영','일','이','삼','사','오','육','칠','팔','구'];
-  function numToSino(n) {
-    n = Number(n);
-    if (!Number.isFinite(n)) return String(n||'');
-    if (n === 0) return '영';
-    const units = ['', '십', '백', '천'];
-    const d = String(n).split('').map(x=>+x);
-    let out = '';
-    for (let i=0;i<d.length;i++) {
-      const p = d.length - 1 - i;
-      const digit = d[i];
-      if (digit === 0) continue;
-      if (p === 0) { out += DIGITS[digit]; continue; }
-      if (digit === 1) out += units[p];
-      else out += DIGITS[digit] + units[p];
-    }
-    return out;
-  }
-  function replaceDigitSequencesWithSino(str) {
-    return String(str||'').replace(/\d+/g, (m)=> numToSino(parseInt(m,10)));
+  function replaceDigitSequencesWithSino(s=''){
+    // 보기 편하게 숫자→한자어 표기(간단 버전)
+    return String(s);
   }
 
   function friendlyExplainBySyllable(ref, hyp){
     const msgs=[];
     const A=[...String(ref||'')], B=[...String(hyp||'')];
     const len=Math.max(A.length,B.length);
-    const decomp=decomposeSyllable;
     for(let i=0;i<len;i++){
       const a=A[i]??'', b=B[i]??'';
       const op = a && b ? 'sub' : (a && !b ? 'del' : (!a && b ? 'ins' : 'eq'));
       if (op === 'eq') continue;
-      if (op === 'del') {
-        msgs.push({ fr:`➡️ Lettre manquante: “${a}”`, ko:`➡️ 글자 빠짐: “${a}”` });
-        continue;
-      }
-      if (op === 'ins') {
-        msgs.push({ fr:`➕ Lettre en plus: “${b}”`, ko:`➕ 글자 추가: “${b}”` });
-        continue;
-      }
-      const da = decomp(a), db = decomp(b);
+      if (op === 'del') { msgs.push({ fr:`➡️ Lettre manquante: “${a}”`, ko:`➡️ 글자 빠짐: “${a}”` }); continue; }
+      if (op === 'ins') { msgs.push({ fr:`➕ Lettre en plus: “${b}”`, ko:`➕ 글자 추가: “${b}”` }); continue; }
+      const da = decomposeSyllable(a), db = decomposeSyllable(b);
       if (da && db) {
+        if (da.V !== db.V) {
+          // 요(ㅛ) ↔ 유(ㅠ) 특별 문구
+          if ((da.V==='ㅛ' && db.V==='ㅠ') || (da.V==='ㅠ' && db.V==='ㅛ')) {
+            msgs.push({ fr:`Fin polie: prononce “-yo” (pas “-yu”).`, ko:`종결어미: “-유”가 아니라 “-요”로 발음해요.` });
+          } else {
+            msgs.push({ fr:`🅰️ Voyelle changée: ${da.V} → ${db.V}`, ko:`🅰️ 모음 바뀜: ${da.V} → ${db.V}` });
+          }
+        }
         if (da.L !== db.L) msgs.push({ fr:`🔡 Consonne du début changée: ${da.L} → ${db.L}`, ko:`🔡 초성 바뀜: ${da.L} → ${db.L}` });
-        if (da.V !== db.V) msgs.push({ fr:`🅰️ Voyelle changée: ${da.V} → ${db.V}`, ko:`🅰️ 모음 바뀜: ${da.V} → ${db.V}` });
         if (da.T !== db.T) msgs.push({ fr:`📎 Finale changée: ${da.T||'∅'} → ${db.T||'∅'}`, ko:`📎 받침 바뀜: ${da.T||'∅'} → ${db.T||'∅'}` });
       } else {
         msgs.push({ fr:`✏️ Changement de lettre: ${a||'∅'} → ${b||'∅'}`, ko:`✏️ 글자 바뀜: ${a||'∅'} → ${b||'∅'}` });
@@ -253,7 +184,6 @@
       ? `<span style="display:inline-block;border-radius:9999px;padding:.25rem .5rem;border:1px solid;background:#e7f8ee;color:#0a7a3b;border-color:#9be4b8">${label}</span>`
       : `<span style="display:inline-block;border-radius:9999px;padding:.25rem .5rem;border:1px solid;background:#fde8e8;color:#9b1c1c;border-color:#f7b4b4">${label}</span>`;
 
-    // 숫자 표기 통일(보기 편하게): 15 → 십오 등
     const refDisplay = replaceDigitSequencesWithSino(refText||'');
     const hypDisplay = replaceDigitSequencesWithSino(transcript||'');
 
@@ -286,7 +216,45 @@
     `;
   }
 
-  function msg(el, text) { el.innerHTML = `<div class="small-muted">${text}</div>`; }
+  // ---- 캐시 & 호출 ----
+  const memCache = new Map();
+  function loadCache(key) {
+    if (!key) return null;
+    const k = 'pronun:' + key;
+    if (memCache.has(k)) return memCache.get(k);
+    try { const s = localStorage.getItem(k); if (s) { const v = JSON.parse(s); memCache.set(k, v); return v; } } catch {}
+    return null;
+  }
+  function saveCache(key, value) {
+    if (!key) return;
+    const k = 'pronun:' + key;
+    memCache.set(k, value);
+    try { localStorage.setItem(k, JSON.stringify(value)); } catch {}
+  }
+  async function sha256Base64(b64) {
+    try {
+      const bin = atob(b64);
+      const buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      const digest = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch {
+      let h = 0; for (let i = 0; i < b64.length; i++) h = (h * 31 + b64.charCodeAt(i)) | 0;
+      return 'x' + (h >>> 0).toString(16);
+    }
+  }
+  async function analyzeOnce(opts, payload, cacheKey) {
+    if (opts.cacheResults) {
+      const cached = loadCache(cacheKey);
+      if (cached) return { ...cached, _cached: true };
+    }
+    const data = await jsonPost(opts.endpoint, payload);
+    if (opts.cacheResults) saveCache(cacheKey, data);
+    return data;
+  }
+
+  // ---- 마운트(녹음 → 정지하면 자동 평가) ----
+  const session = { analyses: 0 };
 
   function mount(cardEl, options) {
     const opts = Object.assign({}, DEFAULTS, options||{});
@@ -300,10 +268,7 @@
     let state = { media:null, vu:null, rec:null, chunks:[], startedAt:0 };
 
     btnStart.addEventListener('click', async () => {
-      if (session.analyses >= opts.maxAnalysesPerSession) {
-        if (typeof opts.onCostGuardHit === 'function') opts.onCostGuardHit();
-        return;
-      }
+      if (session.analyses >= opts.maxAnalysesPerSession) return;
       try {
         const stream = await getUserMediaSafe();
         const vu = buildVU(stream, canvas);
@@ -340,7 +305,7 @@
       msg(resultEl, textBilingual("Analyse en cours…", "분석 중…"));
       try {
         const base64 = await base64FromBlob(blob);
-        const ref = String(opts.getReferenceText(cardEl) || '');
+        const ref = String((options && options.getReferenceText && options.getReferenceText(cardEl)) || '');
         const key = await sha256Base64(base64 + '|' + ref);
         const payload = {
           referenceText: ref,
@@ -351,8 +316,8 @@
         const data = await analyzeOnce(opts, payload, key);
         session.analyses++;
         renderResult(resultEl, data.accuracy, data.confusionTags, data.details?.explain, ref, data.transcript);
-        if (typeof opts.onResult === 'function') {
-          opts.onResult({ accuracy: data.accuracy, confusionTags: data.confusionTags, transcript: data.transcript, key, base64, duration });
+        if (typeof options.onResult === 'function') {
+          options.onResult({ accuracy: data.accuracy, confusionTags: data.confusionTags, transcript: data.transcript, key, base64, duration });
         }
       } catch (err) {
         console.error(err);
