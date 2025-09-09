@@ -4,10 +4,14 @@ const fetch = global.fetch || require("node-fetch");
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const GOOGLE_TTS_KEY = process.env.GOOGLE_TTS_KEY || "";
 
+const SAFE_VOICES = new Set(["alloy","shimmer","verse","nova","fable","echo"]);
+
 exports.handler = async (event) => {
   try {
     const { text = "", voice = "alloy", speed = 1.0 } = JSON.parse(event.body || "{}");
     if (!text) return resp(400, { message: "text required" });
+
+    const v = SAFE_VOICES.has(String(voice)) ? String(voice) : "alloy";
 
     // 1) OpenAI TTS → WAV (초두 클리핑 방지)
     try {
@@ -17,9 +21,9 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           model: "gpt-4o-mini-tts",
           input: text,
-          voice,
+          voice: v,
           speed,
-          format: "wav" // ★ mp3 → wav
+          format: "wav"
         })
       });
       if (r.ok) {
@@ -30,14 +34,12 @@ exports.handler = async (event) => {
 
     // 2) Fallback: Google TTS → OGG_OPUS (+ 150ms 무음)
     if (!GOOGLE_TTS_KEY) throw new Error("no TTS available");
-
     const ssml = `<speak><break time="150ms"/>${escapeXml(text)}</speak>`;
     const gr = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         input: { ssml },
-        // 한국어 중심이라 ko-KR 기본, 필요시 다른 voiceName 전달
         voice: { languageCode: "ko-KR" },
         audioConfig: { audioEncoding: "OGG_OPUS", speakingRate: speed }
       })
@@ -52,9 +54,5 @@ exports.handler = async (event) => {
   }
 };
 
-function resp(code, obj) {
-  return { statusCode: code, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) };
-}
-function escapeXml(s = "") {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&apos;" }[c]));
-}
+function resp(code, obj) { return { statusCode: code, headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }; }
+function escapeXml(s = "") { return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&apos;" }[c])); }
