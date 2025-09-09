@@ -229,7 +229,7 @@
       // 받아쓰기: 부분 포함 허용 ❌ (자모/받침 다르면 즉시 오답, 공백·구두점 ≤5% 허용)
       const koRes = AnswerJudge.gradeKO(exercises[index].sentence, rawKO, { allowSubstring:false });
 
-      // FR: 악센트/구두점 무시, 의미 90% or 오타 ≤15%, 빈 답 ❌
+      // FR: 악센트/구두점 무시, 의미 90% 또는 오타 ≤15%, 빈 답 ❌
       const frRes = AnswerJudge.gradeFR(exercises[index].translation, rawFR);
 
       exState[index].attempts++;
@@ -270,71 +270,82 @@
       `;
     }
 
+    // ✅ 안전 렌더(오류 잡아서 표시 + 에러 메일링)
     function renderExercises(){
       const $wrap = document.getElementById('dictation-exercises');
-      $wrap.innerHTML = '';
-      exercises.forEach((ex, i) => {
-        const el = document.createElement('div');
-        el.className = 'dictation-card';
-        el.innerHTML = `
-          <div class="flex items-center gap-4">
-            <span class="text-2xl font-bold text-indigo-500">${i+1}</span>
-            <button type="button" class="btn btn-primary play-btn" data-voice="${ex.voice}" data-text="${ex.sentence}" aria-label="Lire l'audio ${i+1}">🔊</button>
-            <div class="text-sm text-slate-500">Écouter / 듣기 → KO(한글) → FR(불어)</div>
-          </div>
-
-          <div class="mt-3 ml-12 grid gap-3">
-            <input type="text" class="input-ko korean-font text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
-            <input type="text" class="input-fr text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
-            <div class="flex items-center gap-2">
-              <button type="button" class="btn btn-hint hint1-btn">🙏 Aidez-moi (초성)</button>
-              <button type="button" class="btn btn-hint hint2-btn">🦺 Au secours (단어)</button>
-              <button type="button" class="btn btn-secondary check-btn">Vérifier (정답 확인)</button>
+      try{
+        $wrap.innerHTML = '';
+        exercises.forEach((ex, i) => {
+          const el = document.createElement('div');
+          el.className = 'dictation-card';
+          el.innerHTML = `
+            <div class="flex items-center gap-4">
+              <span class="text-2xl font-bold text-indigo-500">${i+1}</span>
+              <button type="button" class="btn btn-primary play-btn" data-voice="${ex.voice}" data-text="${ex.sentence}" aria-label="Lire l'audio ${i+1}">🔊</button>
+              <div class="text-sm text-slate-500">Écouter / 듣기 → KO(한글) → FR(불어)</div>
             </div>
-            <div class="hint-display"></div>
-            <div class="feedback-display"></div>
-            <div class="pronun-display small-muted"></div>
-          </div>
-        `;
-        $wrap.appendChild(el);
-      });
 
-      // 이벤트
-      document.querySelectorAll('.play-btn').forEach((btn, i) => {
-        btn.addEventListener('click', e => {
-          const b = e.currentTarget;
-          playAudio(b.dataset.text, b.dataset.voice, b, i);
+            <div class="mt-3 ml-12 grid gap-3">
+              <input type="text" class="input-ko korean-font text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
+              <input type="text" class="input-fr text-lg p-2 border-2 border-slate-300 rounded-lg w-full focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
+              <div class="flex items-center gap-2">
+                <button type="button" class="btn btn-hint hint1-btn">🙏 Aidez-moi (초성)</button>
+                <button type="button" class="btn btn-hint hint2-btn">🦺 Au secours (단어)</button>
+                <button type="button" class="btn btn-secondary check-btn">Vérifier (정답 확인)</button>
+              </div>
+              <div class="hint-display"></div>
+              <div class="feedback-display"></div>
+              <div class="pronun-display small-muted"></div>
+            </div>
+          `;
+          $wrap.appendChild(el);
         });
-      });
-      document.querySelectorAll('.hint1-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
-        document.querySelectorAll('.hint-display')[i].innerHTML =
-          `<p class="text-sm text-amber-700 korean-font"><strong>🙏 Aidez-moi (초성):</strong> ${exercises[i].hint1}</p>`;
-        exState[i].hint1Count++;
-        btn.disabled = true;
-      }));
-      document.querySelectorAll('.hint2-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
-        const box = document.querySelectorAll('.hint-display')[i];
-        const prev = box.querySelector('p')?.outerHTML || '';
-        box.innerHTML = prev + `<p class="text-sm text-amber-700 korean-font mt-1"><strong>🦺 Au secours (단어):</strong> ${exercises[i].hint2}</p>`;
-        exState[i].hint2Count++;
-        btn.disabled = true;
-      }));
-      document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
-      document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
-        inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
-      }));
 
-      // 발음 모듈(있을 때만)
-      if (window.Pronun && typeof Pronun.mount === 'function') {
-        document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
-          Pronun.mount(cardEl, {
-            getReferenceText: () => exercises[i].sentence,
-            isKoCorrect: () => exState[i].koCorrect,
-            onResult: ({ accuracy, transcript, friendly }) => {
-              exState[i].pronunciation = { accuracy, transcript: transcript||'', friendly: friendly||[] };
-            }
+        document.querySelectorAll('.play-btn').forEach((btn, i) => {
+          btn.addEventListener('click', e => {
+            const b = e.currentTarget;
+            playAudio(b.dataset.text, b.dataset.voice, b, i);
           });
         });
+        document.querySelectorAll('.hint1-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
+          document.querySelectorAll('.hint-display')[i].innerHTML =
+            `<p class="text-sm text-amber-700 korean-font"><strong>🙏 Aidez-moi (초성):</strong> ${exercises[i].hint1}</p>`;
+          exState[i].hint1Count++;
+          btn.disabled = true;
+        }));
+        document.querySelectorAll('.hint2-btn').forEach((btn,i)=>btn.addEventListener('click',()=>{
+          const box = document.querySelectorAll('.hint-display')[i];
+          const prev = box.querySelector('p')?.outerHTML || '';
+          box.innerHTML = prev + `<p class="text-sm text-amber-700 korean-font mt-1"><strong>🦺 Au secours (단어):</strong> ${exercises[i].hint2}</p>`;
+          exState[i].hint2Count++;
+          btn.disabled = true;
+        }));
+        document.querySelectorAll('.check-btn').forEach((btn,i)=>btn.addEventListener('click',()=>gradeBoth(i)));
+        document.querySelectorAll('.input-ko,.input-fr').forEach((inp,i)=>{
+          inp.addEventListener('keydown',e=>{ if(e.key==='Enter') gradeBoth(i); });
+        });
+
+        if (window.Pronun && typeof Pronun.mount === 'function') {
+          document.querySelectorAll('.dictation-card').forEach((cardEl, i) => {
+            Pronun.mount(cardEl, {
+              getReferenceText: () => exercises[i].sentence,
+              isKoCorrect: () => exState[i].koCorrect,
+              onResult: ({ accuracy, transcript, friendly }) => {
+                exState[i].pronunciation = { accuracy, transcript: transcript||'', friendly: friendly||[] };
+              }
+            });
+          });
+        }
+      } catch (err){
+        console.error(err);
+        $wrap.innerHTML = `
+          <div class="card bg-red-50 border border-red-200 text-red-700">
+            스크립트 오류로 문항을 표시하지 못했어요. 콘솔(DevTools)을 열어 에러를 확인해 주세요.
+          </div>`;
+        fetch('/.netlify/functions/log-error', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ functionName:'renderExercises', error:String(err), pageUrl:location.href })
+        }).catch(()=>{});
       }
     }
 
@@ -422,8 +433,8 @@
     window._startTime = new Date().toISOString();
     window._startMs = Date.now();
 
-    // ✅ 필수 라이브러리 확보 후 렌더
-    await ensureLibs();
+    // ✅ 라이브러리 로딩 실패해도 렌더는 강행
+    try { await ensureLibs(); } catch(e){ console.warn('ensureLibs failed', e); }
     renderExercises();
   });
   </script>
