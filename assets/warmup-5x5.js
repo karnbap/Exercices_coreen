@@ -217,21 +217,68 @@ function bestSimAgainstRef(refCollapsed, hypRaw){
   }
 
   // ---------- 서버 채점 ----------
-  async function analyzePronunciation({ referenceText, record }){
-let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
-let transcript = String(data.transcript||'');
-const ref = collapse(referenceText||'');
-
-// 1) 서버 점수 그대로
-let best = acc;
-// 2) 서버 전사에 숫자가 섞였으면 → 한글(일/이/삼/사/오 / 하나/둘/...) 후보로 바꿔서 최고 유사도 사용
-if (transcript) best = Math.max(best, bestSimAgainstRef(ref, transcript));
-// 3) 폴백(기존 로직 보강)
-if (!best && transcript) best = similarity(ref, collapse(transcript));
-
-return { accuracy: best, transcript };
-
+// ---------- 서버 채점 ----------
+async function analyzePronunciation({ referenceText, record }){
+  // 1) 서버(STT) 호출
+  let data = {};
+  try{
+    const payload = {
+      referenceText,
+      audio: {
+        base64: (record.base64.includes(',') ? record.base64.split(',')[1] : record.base64),
+        filename: `rec_${Date.now()}.webm`,
+        mimeType: record.mime || 'audio/webm',
+        duration: record.duration
+      }
+    };
+    const r = await fetch((window.PONGDANG_FN_BASE||'/.netlify/functions') + '/analyze-pronunciation', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(payload)
+    });
+    data = await r.json().catch(()=>({}));
+  }catch(_){
+    data = {};
   }
+
+  // 2) 점수 계산(숫자→한글 보정 + 레벤슈타인 폴백)
+  let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
+  let transcript = String(data.transcript||'');
+  const ref = (referenceText||'').replace(/\s+/g,'');
+
+  // 서버 전사에 숫자(1 2 3…)가 섞였으면: 일이삼/하나둘셋 후보로 바꿔 최고 유사도 사용
+  const DIGIT_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
+  const DIGIT_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+  function collapse(s){ return String(s||'').replace(/\s+/g,''); }
+  function levSim(a,b){
+    const s=String(a), t=String(b); const n=s.length, m=t.length;
+    if(!n&&!m) return 1; if(!n||!m) return 0;
+    const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
+    for(let i=0;i<=n;i++) dp[i][0]=i; for(let j=0;j<=m;j++) dp[0][j]=j;
+    for(let i=1;i<=n;i++){ for(let j=1;j<=m;j++){
+      const c=s[i-1]===t[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+c);
+    }}
+    const d=dp[n][m]; return Math.max(0,1 - d/Math.max(n,1));
+  }
+  function expandDigitsCandidates(s=''){
+    if(!/\d/.test(s)) return [s];
+    const rep = (map)=> s.replace(/\d/g, d => map[d] || d);
+    return [s, rep(DIGIT_SINO), rep(DIGIT_NATIVE)];
+  }
+
+  let best = acc;
+  if (transcript){
+    const cands = expandDigitsCandidates(transcript).map(c=>collapse(c));
+    for(const c of cands){ best = Math.max(best, levSim(ref, c)); }
+    if (best > acc) acc = best;
+  }
+  // 서버가 빈 문자열을 줬어도 마지막 안전망
+  if (!acc && transcript) acc = levSim(ref, collapse(transcript));
+
+  return { accuracy: acc, transcript };
+}
+
 
   // ---------- 속도 툴바 ----------
   function renderSpeedToolbar(){
