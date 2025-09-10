@@ -80,11 +80,14 @@
     stopBtn.addEventListener('click', ()=>{ try{ rec && rec.stop(); }catch(_){ } });
   }
 
-  function init(){
-    document.querySelectorAll('.quiz-container, #warmup-screen').forEach(container=>{
-      container.querySelectorAll('.p-4.bg-white.rounded-lg.border, .quiz-card, .bundle-card').forEach(attach);
-    });
-  }
+  function init(rootSel = '#dictation-exercises, .quiz-container, #warmup-screen'){
+  document.querySelectorAll(rootSel).forEach(container=>{
+    container
+      .querySelectorAll('.p-4.bg-white.rounded-lg.border, .quiz-card, .bundle-card, .dictation-card')
+      .forEach(attach);
+  });
+}
+
 
   w.LiveSTT = { init, supported };
   document.addEventListener('DOMContentLoaded', ()=>{ try{ init(); }catch(_){} });
