@@ -254,6 +254,13 @@
   </div>
 </div>
 
+  <!-- 실시간 인식/비교 라벨 (전역 레전드) -->
+<div class="flex justify-between items-center text-xs text-slate-500 mb-2 mx-auto" style="max-width:760px">
+  <span>FR: Référence · KO: 원문</span>
+  <span>FR: Ma prononciation · KO: 내 발음</span>
+</div>
+
+
   <div id="global-progress" class="flex items-center gap-2 mb-6 justify-center">
     <span class="text-xs font-semibold text-slate-500">Étapes:</span>
     <div class="progress-dot on" data-dot="0"></div>
@@ -325,5 +332,16 @@
       });
     });
   </script>
+
+<script>
+    window.addEventListener('DOMContentLoaded', ()=>{
+      if(!window.__sg_init_done){
+        (window.StudentGate||={init(){},requireBeforeInteraction(){}}).init();
+        StudentGate.requireBeforeInteraction(document);
+        window.__sg_init_done = true; // 중복 실행 방지
+      }
+    });
+  </script>
+
 </body>
 </html>
