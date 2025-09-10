@@ -1,11 +1,10 @@
-// assets/warmup-5x5.js
+// /assets/warmup-5x5.js
 // 5×5 숫자 워밍업 (듣기→따라 말하기→평가)
-// 요구 반영:
-// - 속도 바(0.7× / 1.0× / 1.5× / 1.7×)를 워밍업 화면 상단에 '항상' 표시(선택 후에도 변경 가능)
-// - 2.0× → 1.7×로 교체
-// - 완료 구역: [끝내기(자동 전송)] + [연습문제로 가기] 버튼 2개
-// - 텍스트: 프랑스어 우선, 'FR: / KO:' 라벨 및 남/여 목소리 안내 제거
-// - 라이브 STT(live-stt.js) 있으면 실시간 표시·폴백 점수 사용(없어도 동작)
+// - 속도바(0.7×/1.0×/1.5×/1.7×) 항상 표시
+// - 재생/생성 모두 state.speed 반영
+// - LiveSTT.init() 자동 연결 (카드별 mount 불필요)
+// - 실시간 자막 상자 .pronun-live는 숨김 제거
+// - 서버 STT 실패 시 Live STT로 폴백 유사도
 
 (function(){
   'use strict';
@@ -14,7 +13,7 @@
 
   const state = {
     speed: 1.0,      // 0.7 / 1.0 / 1.5 / 1.7
-    repeats: 2,      // ×2 기본, 카드에서 ×3 선택 가능
+    repeats: 2,      // ×2 기본
     progress: {}, listenCount: {},
     startISO: null, startMs: 0, name:'Élève'
   };
@@ -23,22 +22,21 @@
     { val:0.7,  label:'0.7× Débutant' },
     { val:1.0,  label:'1.0× Normal'   },
     { val:1.5,  label:'1.5× Rapide'   },
-    { val:1.7,  label:'1.7× Turbo'    }, // 2.0× → 1.7×
+    { val:1.7,  label:'1.7× Turbo'    },
   ];
 
   const BUNDLES = [
     { key:'natifs_1_5',  label:'Natifs 1–5',  text:'하나 둘 셋 넷 다섯',     voice:'alloy'   },
     { key:'natifs_6_10', label:'Natifs 6–10', text:'여섯 일곱 여덟 아홉 열', voice:'shimmer' },
-    { key:'hanja_1_5',   label:'Hanja 1–5',   text:'일 이 삼 사 오',        voice:'verse'   }, // '일' 또렷
+    { key:'hanja_1_5',   label:'Hanja 1–5',   text:'일 이 삼 사 오',        voice:'verse'   },
     { key:'hanja_6_10',  label:'Hanja 6–10',  text:'육 칠 팔 구 십',         voice:'nova'    }
   ];
 
   // ---------- utils ----------
   const $  = (s,r=document)=>r.querySelector(s);
-  const esc = (s='')=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc = (s='')=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const collapse = s=>String(s||'').replace(/\s+/g,'');
   function splitTokens(s){ return String(s||'').split(/[,\s]+/).filter(Boolean); }
-  function chipsHtml(text){ return text.split(/\s+/).map(t=>`<span class="chip">${esc(t)}</span>`).join(''); }
   function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split(',')[1] : String(s||''); }
   function similarity(a,b){
     const s=String(a||''), t=String(b||''); const n=s.length, m=t.length;
@@ -120,6 +118,7 @@
 
       const audio = new Audio(src); currentAudio = audio;
       audio._meta = `${textOrSSML}|${speed}|${voice}|${isSSML?'ssml':'text'}`;
+      audio.playbackRate = state.speed; // 실제 재생도 선택 속도 적용
       audio.addEventListener('playing', ()=>setBtnPlaying(btn,true));
       audio.addEventListener('pause',   ()=>setBtnPlaying(btn,false));
       audio.addEventListener('ended',   ()=>{ setBtnPlaying(btn,false); if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; } });
@@ -130,14 +129,14 @@
   }
   function setBtnPlaying(btn,on){ if(btn) btn.innerHTML = on? '⏸️ Pause' : '▶️ Écouter'; }
 
-  // ---------- Recorder(Chrome 호환) ----------
+  // ---------- Recorder ----------
   function pickMime(){
     const M = window.MediaRecorder;
     if (!M) return '';
     const c = (t)=> M.isTypeSupported && M.isTypeSupported(t);
     if (c('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
     if (c('audio/webm'))             return 'audio/webm';
-    if (c('audio/mp4;codecs=mp4a.40.2')) return 'audio/mp4'; // Safari 대비
+    if (c('audio/mp4;codecs=mp4a.40.2')) return 'audio/mp4';
     return '';
   }
   function makeRecorder(){
@@ -147,7 +146,7 @@
       stream = await navigator.mediaDevices.getUserMedia({ audio:true });
       mime = pickMime();
       mediaRecorder = mime ? new MediaRecorder(stream, { mimeType:mime }) : new MediaRecorder(stream);
-      chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      chunks = []; mediaRecorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
 
       const AC = window.AudioContext||window.webkitAudioContext;
       ctx = new AC(); const source = ctx.createMediaStreamSource(stream);
@@ -215,11 +214,12 @@
     let transcript = String(data.transcript||'');
     const ref = collapse(referenceText||'');
 
+    // 서버 실패 태그 대비(0% 나오는 케이스) → live STT 폴백은 카드에서 수행
     if(!acc && transcript) acc = similarity(ref, collapse(transcript));
     return { accuracy: acc, transcript };
   }
 
-  // ---------- 속도 툴바(항상 보이게) ----------
+  // ---------- 속도 툴바 ----------
   function renderSpeedToolbar(){
     const wu = $('#warmup-screen'); if(!wu) return;
     let bar = $('#speed-toolbar', wu);
@@ -261,7 +261,7 @@
 
     document.getElementById('finish-wrap')?.classList.add('hidden');
 
-    // live-stt 연결(있으면): 새 카드 DOM에 바인딩
+    // LiveSTT: 전역 init만 호출(카드별 mount 불필요)
     ensureLiveSTT().then(()=>{ window.LiveSTT?.init?.(); }).catch(()=>{});
   }
 
@@ -312,7 +312,7 @@
       </div>
     `;
 
-    // 반복 칩
+    // 반복 선택
     card.querySelector('.rep-2').addEventListener('click', ()=>{
       state.repeats=2;
       card.querySelector('.rep-2').classList.add('text-indigo-700','font-bold');
@@ -334,7 +334,7 @@
       playCountTag.textContent = String(state.listenCount[bundle.key]);
     });
 
-    // 녹음
+    // 녹음 + 평가
     const liveBox = card.querySelector('.pronun-live');
     const rec = makeRecorder();
     const btnStart = card.querySelector('.btn-rec-start');
@@ -349,11 +349,10 @@
     let lastRecord = null;
     let liveText = ''; // live-stt 최종 텍스트
 
-  // live-stt 장착 (있으면) — 전역 init만 사용
-card.addEventListener('livestt:final', (e)=>{
-  if (e?.detail?.text) liveText = String(e.detail.text).trim();
-});
-
+    // live-stt 이벤트만 리슨(전역 init은 renderAll()에서 수행)
+    card.addEventListener('livestt:final', (e)=>{
+      if (e?.detail?.text) liveText = String(e.detail.text).trim();
+    });
 
     btnStart.addEventListener('click', async ()=>{
       btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
@@ -417,7 +416,7 @@ card.addEventListener('livestt:final', (e)=>{
         };
         card.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
 
-        // 피드백: 라벨 단순화(불필요한 FR/KO 표시는 삭제)
+        // 피드백
         fbBox.querySelector('.feedback-body').innerHTML =
           `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
            <div class="text-sm">
@@ -464,7 +463,6 @@ card.addEventListener('livestt:final', (e)=>{
       </div>`;
     box.classList.remove('hidden');
 
-    // 끝내기: 자동 전송
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
       const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> ...';
       try{ await sendResults(); alert('✅ Résultats envoyés.'); }catch(_){ alert('⚠️ Envoi échoué — réessaie.'); }
@@ -524,7 +522,6 @@ card.addEventListener('livestt:final', (e)=>{
 
   // ---------- 공개 API ----------
   function WU_go(mode){
-    // mode는 페이지 외부 버튼에서만 사용(초기 진입). 이후엔 상단 속도바로 언제든 변경 가능.
     state.speed = (mode==='slow')?0.7 : (mode==='fast')?1.5 : 1.0;
 
     state.name = (document.getElementById('student-name')?.value || state.name || 'Élève');
