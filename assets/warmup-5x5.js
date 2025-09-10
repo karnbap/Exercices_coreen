@@ -300,7 +300,7 @@
           <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer</button>
         </div>
         <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
-        <div class="pronun-live hidden mt-2 text-sm p-2 rounded border bg-white" data-ref="${esc(refDisplay)}"></div>
+        <div class="pronun-live mt-2 text-sm p-2 rounded border bg-white" data-ref="${esc(refDisplay)}"></div>
         <audio class="mt-2 w-full audio-playback hidden" controls></audio>
         <div class="mt-2 text-sm text-slate-600 status-line">Démarrer → Arrêter → Évaluer.</div>
         <div class="mt-2 text-sm"><span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span></div>
@@ -349,11 +349,11 @@
     let lastRecord = null;
     let liveText = ''; // live-stt 최종 텍스트
 
-    // live-stt 장착 (있으면)
-    ensureLiveSTT().then(()=>{ window.LiveSTT?.mount?.(card, { lang:'ko-KR', target: liveBox }); }).catch(()=>{});
-    card.addEventListener('livestt:final', (e)=>{
-      if (e?.detail?.text) liveText = String(e.detail.text).trim();
-    });
+  // live-stt 장착 (있으면) — 전역 init만 사용
+card.addEventListener('livestt:final', (e)=>{
+  if (e?.detail?.text) liveText = String(e.detail.text).trim();
+});
+
 
     btnStart.addEventListener('click', async ()=>{
       btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
