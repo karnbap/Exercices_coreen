@@ -142,3 +142,30 @@
 
   global.Pronun = { mount };
 })(window);
+
+
+
+// (추가) 서버 결과 받은 직후 폴백 로직 — stt-fail이면 LiveSTT 텍스트로 유사도 계산
+function _norm(s){ return String(s||'').replace(/\s+/g,'').replace(/[.,!?;:()"'’“”\-–—]/g,''); }
+function _sim(a,b){
+  const n=a.length, m=b.length; if(!n&&!m) return 1; if(!n||!m) return 0;
+  const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
+  for(let i=0;i<=n;i++) dp[i][0]=i; for(let j=0;j<=m;j++) dp[0][j]=j;
+  for(let i=1;i<=n;i++){ for(let j=1;j<=m;j++){
+    const c=a[i-1]===b[j-1]?0:1; dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+c);
+  }} const d=dp[n][m]; return Math.max(0,1 - d/Math.max(n,1));
+}
+
+// 서버 호출 직후 data를 받는 부분 근처에서:
+if (Array.isArray(data.confusionTags) && data.confusionTags.some(t=>String(t).startsWith('stt-fail'))) {
+  // 카드에서 마지막 LiveSTT 문자열 찾기
+  const liveBox = cardEl.querySelector('.pronun-live');
+  const liveText = liveBox ? liveBox.textContent.replace(/^Live:\s*/,'').trim() : '';
+  if (liveText) {
+    const accFallback = _sim(_norm(ref), _norm(liveText));
+    data.accuracy = Math.max(data.accuracy||0, accFallback); // 더 좋은 쪽 사용
+    data.transcript = data.transcript || liveText;
+    data.confusionTags.push('fallback:live-stt');
+  }
+}
+
