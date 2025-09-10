@@ -218,10 +218,7 @@
         <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div>
         <div class="sub">1.5×</div>
       </button>
-      <button class="seg-btn turbo"  onclick="WU_go('turbo')">
-        <div class="text-lg"><i class="fa-solid fa-bolt"></i> 2배속 / Turbo</div>
-        <div class="sub">2.0×</div>
-      </button>
+
     </div>
   </div>
 
@@ -237,29 +234,29 @@
       </span>
     </div>
 
-    <!-- 노래하듯 묶음 학습 설명 (FR/KO) -->
-    <div class="mx-auto row-tight p-4 bg-white rounded-lg border mb-6">
-      <p class="mb-2">
-        <b>FR</b> — On apprend les nombres coréens <b>par paquets de 5</b>, répétés comme une petite chanson 🎵.
-        C’est plus efficace que mémoriser « 1 = un, 2 = deux » séparément ; les enfants coréens s’exercent aussi comme ça.
-      </p>
-      <p class="mb-0">
-        <b>KO</b> — 숫자는 <b>5개씩 묶어서</b> <b>노래하듯</b> 여러 번 반복해요 🎶.
-        1=un, 2=deux처럼 따로 외우는 것보다 효과적이고, 한국 아이들도 어릴 때 이렇게 배워요.
-      </p>
-    </div>
+<div class="p-4 bg-white rounded-lg border mb-6 text-left">
+  <p class="mb-2"><b>Explication / 설명</b></p>
+  <p class="text-slate-700">
+    📌 Apprendre les nombres coréens en <b>groupes de 5</b>, comme une petite chanson.
+    C’est plus efficace que de mémoriser séparément (1=un, 2=deux…). Les enfants coréens
+    eux-mêmes répètent ces paquets comme une chanson 🎵.
+  </p>
+  <p class="text-slate-700 mt-2">
+    📌 한국어 숫자는 <b>5개씩 묶어서</b> 노래처럼 반복하면 훨씬 잘 외워져요 🎶
+  </p>
+  <div class="chips-wrap mt-3">
+    <span class="chip">Natifs 1–5 : 하나·둘·셋·넷·다섯</span>
+    <span class="chip">Natifs 6–10 : 여섯·일곱·여덟·아홉·열</span>
+    <span class="chip">Hanja 1–5 : 일·이·삼·사·오</span>
+    <span class="chip">Hanja 6–10 : 육·칠·팔·구·십</span>
+  </div>
+  <p class="mt-3 text-slate-600">
+    🔁 <b>Répétitions</b> : <b>2× par défaut</b> (recommandé <b>3×</b>) /
+    <b>기본 2회</b>(권장 <b>3회</b>)
+  </p>
+  <p class="mt-2 text-slate-600">→ Étapes: Écouter / 듣기 → S’enregistrer / 녹음 → Évaluer / 평가</p>
+</div>
 
-    <!-- 반복 설정: 기본 2회 / 2↔3 토글 -->
-    <div class="mb-3 flex items-center justify-center gap-2 text-sm">
-      <span class="px-2 py-1 rounded bg-slate-50 border">FR: Paquet de 5 → <b>×2</b> par défaut / <b>×3</b> option</span>
-    </div>
-    <div class="flex items-center justify-center gap-2 mb-2">
-      <button id="btn-repeat-2" class="btn btn-secondary">2×</button>
-      <button id="btn-repeat-3" class="btn btn-outline">3×</button>
-    </div>
-    <p class="text-slate-600 text-sm mt-1 text-center">
-      Par défaut: <b>×2</b> répétitions / 기본: <b>2회</b> 반복
-    </p>
 
     <!-- 진행 점 표시 -->
     <div id="global-progress" class="flex items-center gap-2 mb-4 justify-center">
@@ -281,17 +278,22 @@
     <div id="stages-wrap" class="space-y-8"></div>
 
     <!-- 종료 -->
-    <div id="finish-wrap" class="hidden mt-8 text-center">
+       <div id="finish-wrap" class="hidden mt-8 text-center">
       <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto">
-        <div class="text-lg font-extrabold">👏 Warming up terminé !</div>
-        <div class="text-slate-600 mt-1">Envoie le résultat au professeur.</div>
+        <div class="text-lg font-extrabold">🎉 Warming up terminé · faire des exercices</div>
+        <div class="text-slate-600 mt-1">결과를 선생님께 보내고, 바로 연습문제로 넘어가요.</div>
       </div>
       <div class="flex flex-wrap gap-2 justify-center">
-        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer</button>
+        <button id="btn-send" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer les résultats
+        </button>
         <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
         <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
         <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('turbo')">2.0× Refaire</button>
+        <!-- 2.0× 버튼 없음 -->
+        <a href="./numbers-exercises.html" class="btn btn-outline btn-lg">
+          <i class="fa-solid fa-list-check"></i> Passer aux exercices
+        </a>
       </div>
     </div>
   </div>
