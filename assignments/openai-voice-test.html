@@ -22,8 +22,6 @@
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
     .kof{font-family:'Gowun Dodum',sans-serif}
     .card{background:#fff;border-radius:1rem;padding:1.25rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.07),0 4px 6px -2px rgba(0,0,0,.05)}
-    .chip{padding:.25rem .6rem;border-radius:9999px;border:1px solid #c7d2fe;background:#eef2ff;font-weight:600;color:#4338ca;cursor:pointer}
-    .chip.active{background:#4338ca;color:#fff;border-color:#4338ca}
     .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.75rem;padding:.55rem 1.1rem;font-weight:700}
     .btn-primary{background:#2563eb;color:#fff}.btn-primary:disabled{opacity:.6}
     .btn-ghost{background:#e5e7eb}.btn-ghost:disabled{opacity:.6}
@@ -38,7 +36,7 @@
   <main class="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
     <header class="text-center space-y-2">
       <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-600">Dictée : Comme en Coréen 🎧</h1>
-      <p class="text-slate-600">Écoutez → KO(한글) → FR(불어) → 🎙️ Prononciation (Stop 시 자동 평가)</p>
+      <p class="text-slate-600">Écoutez → KO(한글) → FR(불어) → 🎙️ Prononciation (⏹️ 정지하면 자동 평가)</p>
       <div class="mt-3 flex items-center justify-center gap-2 no-print">
         <button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer / 페이지 인쇄</button>
       </div>
@@ -51,25 +49,6 @@
       <p class="text-sm text-slate-500 mt-2">시작하면 이름, 듣기·힌트·시도·발음 점수 등이 기록돼요.</p>
     </section>
 
-    <!-- 워밍업 스타일 상단 컨트롤 -->
-    <section class="card no-print" id="top-controls">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <span class="font-semibold text-slate-600">Vitesse</span>
-          <button class="chip speed" data-v="0.7">0.7×</button>
-          <button class="chip speed active" data-v="1.0">1.0×</button>
-          <button class="chip speed" data-v="1.5">1.5×</button>
-          <button class="chip speed" data-v="1.7">1.7×</button>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="font-semibold text-slate-600">Répétitions</span>
-          <button class="chip rep active" data-r="2">×2</button>
-          <button class="chip rep" data-r="3">×3</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 설명 -->
     <section class="card">
       <h2 class="text-2xl font-bold mb-2 text-slate-700">“Comme” — 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
       <ul class="list-disc pl-6 text-slate-700 space-y-1">
@@ -79,10 +58,8 @@
       </ul>
     </section>
 
-    <!-- 문제 렌더 -->
     <section id="dictee-root" class="space-y-4"></section>
 
-    <!-- 하단 액션 -->
     <section class="no-print flex flex-wrap items-center gap-3">
       <button type="button" id="restart-btn" class="btn btn-ghost">↺ Réessayer / 다시하기</button>
       <button type="button" id="finish-btn" class="btn btn-primary">✅ Terminer / 끝내기</button>
