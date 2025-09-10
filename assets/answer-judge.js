@@ -36,10 +36,16 @@
   const __KO_NUM_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
   const __KO_NUM_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
   
-  function koCanon(s){
-    // 라틴 알파벳 제거 + 구두점/공백 정리(채점용)
-    return normSpaces(String(s||'').toLowerCase().replace(/[a-z]+/g,'').replace(RX_PUNCT,' '));
-  }
+ function koCanon(s){
+  // 라틴 알파벳 제거 + 구두점 제거 + 공백 전부 제거(← 핵심 수정)
+  return String(s||'')
+    .toLowerCase()
+    .replace(/[a-z]+/g,'')      // ga teun 같은 로마자 표기 강제 제거
+    .replace(RX_PUNCT,' ')      // 약한 구두점 무시
+    .replace(/\s+/g,'')         // ✅ 모든 공백 제거 (일 이 삼 → 일이삼)
+    .trim();
+}
+
   function koNumExpand(s){
     // STT가 1 2 3 4 5처럼 숫자로 내보낸 경우 후보 3가지 생성
     if (!/\d/.test(s)) return [s];
