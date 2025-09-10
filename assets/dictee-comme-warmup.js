@@ -1,56 +1,54 @@
-/* Dictee “Comme” — Warmup UX & Auto-Eval
+/* Dictee “Comme” — Warmup UX & Auto-Eval (속도/반복 제거 버전)
    - TTS: /.netlify/functions/generate-audio
    - 결과: /.netlify/functions/send-results
    - KO/FR 채점: AnswerJudge
-   - 라이브 STT: live-stt.js (있으면 자동 연결)
+   - 라이브 STT: live-stt.js (부분/최종 자막 이벤트 연동)
 */
-
 (function(){
-  const $ = (s, r=document)=>r.querySelector(s);
+  const $  = (s, r=document)=>r.querySelector(s);
   const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
 
-  // ====== 상태 ======
+  // ===== 데이터 =====
   const SAFE_VOICES = ['alloy','shimmer','verse','nova','fable','echo'];
   const vAt = i => SAFE_VOICES[i % SAFE_VOICES.length];
-  let speed = 1.0, repeats = 2;
 
   const ex = [
-    { ko:"혜진이는 천사 같아요.", fr:"Hyejin est comme un ange.", hint1:"ㅎㅈㅇㄴ ㅊㅅ ㄱㅇㅇ", hint2:"천사=ange", voice:vAt(0) },
-    { ko:"오늘 이 소식은 꿈 같아요.", fr:"Cette nouvelle d'aujourd'hui est comme un rêve.", hint1:"ㅇㄴ ㅇ ㅅㅅㅇ ㄲ ㄱㅇㅇ", hint2:"꿈=rêve", voice:vAt(1) },
-    { ko:"민수의 친구는 가족 같아요.", fr:"L'ami de Minsu est comme de la famille.", hint1:"ㅁㅅㅇ ㅊㄱㄴ ㄱㅈ ㄱㅇㅇ", hint2:"가족=famille", voice:vAt(2) },
+    { ko:"혜진이는 천사 같아요.", fr:"Hyejin est comme un ange.", hint1:"ㅎㅈㅇㄴ ㅊㅅ ㄱㅇㅇ", hint2:"천사=ange",          voice:vAt(0) },
+    { ko:"오늘 이 소식은 꿈 같아요.", fr:"Cette nouvelle d'aujourd'hui est comme un rêve.", hint1:"ㅇㄴ ㅇ ㅅㅅㅇ ㄲ ㄱㅇㅇ", hint2:"꿈=rêve",           voice:vAt(1) },
+    { ko:"민수의 친구는 가족 같아요.", fr:"L'ami de Minsu est comme de la famille.",       hint1:"ㅁㅅㅇ ㅊㄱㄴ ㄱㅈ ㄱㅇㅇ", hint2:"가족=famille",     voice:vAt(2) },
     { ko:"우리 아빠 마음은 바다처럼 넓어요.", fr:"Le cœur de mon père est large comme la mer.", hint1:"ㅇㄹ ㅇㅃ ㅁㅇㅇ ㅂㄷㅊㄹ ㄴㄹㅇㅇ", hint2:"바다=mer", voice:vAt(3) },
-    { ko:"그 친구는 소처럼 많이 먹어요.", fr:"Cet(te) ami(e) mange beaucoup, comme une vache.", hint1:"ㄱ ㅊㄱㄴ ㅅㅊㄹ ㅁㅇ ㅁㅇㅇ", hint2:"소=vache", voice:vAt(4) },
-    { ko:"저 남자는 바람처럼 달려요.", fr:"Cet homme court comme le vent.", hint1:"ㅈ ㄴㅈㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2:"바람=vent", voice:vAt(5) },
-    { ko:"민지는 가수처럼 노래를 잘해요.", fr:"Minji chante bien comme une chanteuse.", hint1:"ㅁㅈㄴ ㄱㅅㅊㄹ ㄴㄹㄹ ㅈㅎㅇ", hint2:"가수=chanteur", voice:vAt(0) },
-    { ko:"준호는 로봇처럼 걸어요.", fr:"Junho marche comme un robot.", hint1:"ㅈㅎㄴ ㄹㅂㅊㄹ ㄱㄹㅇ", hint2:"로봇=robot", voice:vAt(1) },
-    { ko:"저는 친구랑 같이 갔어요.", fr:"Je suis allé(e) avec mon ami(e).", hint1:"ㅈㄴ ㅊㄱㄹ ㄱㅊ  ㄱㅆㅇㅇ", hint2:"같이=ensemble", voice:vAt(2) },
-    { ko:"그 아이는 별처럼 춤을 춰요.", fr:"Cet enfant danse comme une étoile.", hint1:"ㄱ ㅇㅇㄴ ㅂㅊㄹ ㅊㅇ ㅊㅇ", hint2:"별=étoile", voice:vAt(3) },
-    { ko:"오늘은 어제 같아요.", fr:"Aujourd'hui est comme hier.", hint1:"ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2:"어제=hier", voice:vAt(4) },
-    { ko:"그 사람은 배우 같아요.", fr:"Cette personne est comme un(e) acteur/actrice.", hint1:"ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2:"배우=acteur", voice:vAt(5) },
-    { ko:"제 손은 얼음 같아요.", fr:"Ma main est comme de la glace (froide).", hint1:"ㅈ ㅅㅇ ㅇㅇ ㄱㅇㅇ", hint2:"얼음=glace", voice:vAt(0) },
-    { ko:"그 가수의 목소리는 설탕 같아요.", fr:"La voix de ce chanteur est douce comme le sucre.", hint1:"ㄱ ㄱㅅㅇ ㅁㅅㄹㄴ ㅅㅌ ㄱㅇㅇ", hint2:"설탕=sucre", voice:vAt(1) },
-    { ko:"그 아이는 인형 같아요.", fr:"Cet enfant est comme une poupée.", hint1:"ㄱ ㅇㅇㄴ ㅇㅎ ㄱㅇㅇ", hint2:"인형=poupée", voice:vAt(2) },
-    { ko:"그 사람은 물처럼 돈을 써요.", fr:"Cette personne dépense de l'argent comme de l'eau.", hint1:"ㄱ ㅅㄹㅇ ㅁㅊㄹ ㄷㄴ ㅆㅇ", hint2:"물=eau", voice:vAt(3) },
-    { ko:"그 친구는 거북이처럼 느려요.", fr:"Cet(te) ami(e) est lent(e) comme une tortue.", hint1:"ㄱ ㅊㄱㄴ ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2:"거북이=tortue", voice:vAt(4) },
-    { ko:"민수는 전문가처럼 말해요.", fr:"Minsu parle comme un expert.", hint1:"ㅁㅅㄴ ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2:"전문가=expert", voice:vAt(5) },
-    { ko:"우리 아기는 아기처럼 잘 자요.", fr:"Notre bébé dort comme un bébé.", hint1:"ㅇㄹ ㅇㄱㄴ ㅇㄱㅊㄹ ㅈ  ㅈㅇ", hint2:"아기=bébé", voice:vAt(0) },
-    { ko:"그 남자는 영화배우처럼 잘생겼어요.", fr:"Cet homme est beau comme un acteur de cinéma.", hint1:"ㄱ ㄴㅈㄴ ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅆㅇㅇ", hint2:"영화배우=acteur", voice:vAt(1) }
+    { ko:"그 친구는 소처럼 많이 먹어요.", fr:"Cet(te) ami(e) mange beaucoup, comme une vache.", hint1:"ㄱ ㅊㄱㄴ ㅅㅊㄹ ㅁㅇ ㅁㅇㅇ", hint2:"소=vache",       voice:vAt(4) },
+    { ko:"저 남자는 바람처럼 달려요.", fr:"Cet homme court comme le vent.",                   hint1:"ㅈ ㄴㅈㄴ ㅂㄹㅊㄹ ㄷㄹㅇ", hint2:"바람=vent",        voice:vAt(5) },
+    { ko:"민지는 가수처럼 노래를 잘해요.", fr:"Minji chante bien comme une chanteuse.",         hint1:"ㅁㅈㄴ ㄱㅅㅊㄹ ㄴㄹㄹ ㅈㅎㅇ", hint2:"가수=chanteur", voice:vAt(0) },
+    { ko:"준호는 로봇처럼 걸어요.", fr:"Junho marche comme un robot.",                         hint1:"ㅈㅎㄴ ㄹㅂㅊㄹ ㄱㄹㅇ", hint2:"로봇=robot",        voice:vAt(1) },
+    { ko:"저는 친구랑 같이 갔어요.", fr:"Je suis allé(e) avec mon ami(e).",                   hint1:"ㅈㄴ ㅊㄱㄹ ㄱㅊ  ㄱㅆㅇㅇ", hint2:"같이=ensemble", voice:vAt(2) },
+    { ko:"그 아이는 별처럼 춤을 춰요.", fr:"Cet enfant danse comme une étoile.",               hint1:"ㄱ ㅇㅇㄴ ㅂㅊㄹ ㅊㅇ ㅊㅇ", hint2:"별=étoile",      voice:vAt(3) },
+    { ko:"오늘은 어제 같아요.", fr:"Aujourd'hui est comme hier.",                               hint1:"ㅇㄴㅇ ㅇㅈ ㄱㅇㅇ", hint2:"어제=hier",           voice:vAt(4) },
+    { ko:"그 사람은 배우 같아요.", fr:"Cette personne est comme un(e) acteur/actrice.",       hint1:"ㄱ ㅅㄹㅇ ㅂㅇ ㄱㅇㅇ", hint2:"배우=acteur",       voice:vAt(5) },
+    { ko:"제 손은 얼음 같아요.", fr:"Ma main est comme de la glace (froide).",                 hint1:"ㅈ ㅅㅇ ㅇㅇ ㄱㅇㅇ", hint2:"얼음=glace",         voice:vAt(0) },
+    { ko:"그 가수의 목소리는 설탕 같아요.", fr:"La voix de ce chanteur est douce comme le sucre.", hint1:"ㄱ ㄱㅅㅇ ㅁㅅㄹㄴ ㅅㅌ ㄱㅇㅇ", hint2:"설탕=sucre",   voice:vAt(1) },
+    { ko:"그 아이는 인형 같아요.", fr:"Cet enfant est comme une poupée.",                       hint1:"ㄱ ㅇㅇㄴ ㅇㅎ ㄱㅇㅇ", hint2:"인형=poupée",       voice:vAt(2) },
+    { ko:"그 사람은 물처럼 돈을 써요.", fr:"Cette personne dépense de l'argent comme de l'eau.",   hint1:"ㄱ ㅅㄹㅇ ㅁㅊㄹ ㄷㄴ ㅆㅇ", hint2:"물=eau",        voice:vAt(3) },
+    { ko:"그 친구는 거북이처럼 느려요.", fr:"Cet(te) ami(e) est lent(e) comme une tortue.",       hint1:"ㄱ ㅊㄱㄴ ㄱㅂㅇㅊㄹ ㄴㄹㅇ", hint2:"거북이=tortue",  voice:vAt(4) },
+    { ko:"민수는 전문가처럼 말해요.", fr:"Minsu parle comme un expert.",                          hint1:"ㅁㅅㄴ ㅈㅁㄱㅊㄹ ㅁㅎㅇ", hint2:"전문가=expert",   voice:vAt(5) },
+    { ko:"우리 아기는 아기처럼 잘 자요.", fr:"Notre bébé dort comme un bébé.",                     hint1:"ㅇㄹ ㅇㄱㄴ ㅇㄱㅊㄹ ㅈ  ㅈㅇ", hint2:"아기=bébé",  voice:vAt(0) },
+    { ko:"그 남자는 영화배우처럼 잘생겼어요.", fr:"Cet homme est beau comme un acteur de cinéma.",  hint1:"ㄱ ㄴㅈㄴ ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅆㅇㅇ", hint2:"영화배우=acteur", voice:vAt(1) }
   ];
 
   const st = ex.map(()=>({listen:0,h1:0,h2:0,koOK:false,frOK:false,recBase64:null,recDur:0,acc:null,trans:''}));
 
-  // ====== 유틸 ======
+  // ===== 유틸 =====
   function base64ToBlob(b64, mime="audio/wav"){
     const bin=atob(b64), u8=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
     return new Blob([u8],{type:mime});
   }
   const audioCache=new Map();
-  async function ttsPlay(text, voice, mult=1){
-    const key=`${voice}|${text}|${mult}`;
-    const play = async (blob)=>{
+  async function ttsPlay(text, voice){
+    const key=`${voice}|${text}|1.0`;
+    const play=async(blob)=>{
       const url=URL.createObjectURL(blob);
-      const a=new Audio(); a.playbackRate=mult; a.src=url; a.preload='auto';
+      const a=new Audio(); a.playbackRate=1.0; a.src=url; a.preload='auto';
       await new Promise(res=>a.addEventListener('canplaythrough',res,{once:true}));
       a.addEventListener('ended',()=>URL.revokeObjectURL(url),{once:true});
       await a.play();
@@ -69,13 +67,9 @@
     return '';
   }
 
-  // ====== 렌더 ======
+  // ===== 렌더 =====
   function render(){
-    // top chips
-    $$('.chip.speed').forEach(b=>b.onclick=()=>{$$('.chip.speed').forEach(x=>x.classList.remove('active')); b.classList.add('active'); speed=Number(b.dataset.v||'1');});
-    $$('.chip.rep').forEach(b=>b.onclick=()=>{$$('.chip.rep').forEach(x=>x.classList.remove('active')); b.classList.add('active'); repeats=Number(b.dataset.r||'2');});
-
-    const root = $('#dictee-root'); root.innerHTML='';
+    const root=$('#dictee-root'); root.innerHTML='';
     ex.forEach((q,i)=>{
       const el=document.createElement('section'); el.className='card';
       el.innerHTML=`
@@ -85,7 +79,7 @@
             <button class="btn btn-primary play">▶ Écouter</button>
             <span class="text-sm text-slate-500">écoutes: <b class="listen">0</b></span>
           </div>
-          <div class="text-xs text-slate-500">Écouter → Répéter ×${repeats} → Évaluer</div>
+          <div class="text-xs text-slate-500">Écouter → KO → FR → 🎙️ Arrêter = évaluer</div>
         </div>
 
         <div class="mt-3 grid gap-2 ml-10">
@@ -112,14 +106,11 @@
 
       // 듣기
       const btnPlay=$('.play',el), listen=$('.listen',el);
-      btnPlay.onclick=async()=>{
-        for(let r=0;r<repeats;r++){ await ttsPlay(q.ko,q.voice,speed); }
-        st[i].listen++; listen.textContent=String(st[i].listen);
-      };
+      btnPlay.onclick=async()=>{ await ttsPlay(q.ko,q.voice); st[i].listen++; listen.textContent=String(st[i].listen); };
 
       // 힌트
-      $('.hint1',el).onclick=(e)=>{e.target.disabled=true; st[i].h1++; $('.hints',el).innerHTML=`<div>🙏 초성: ${q.hint1}</div>`;}
-      $('.hint2',el).onclick=(e)=>{e.target.disabled=true; st[i].h2++; $('.hints',el).innerHTML+=`<div class="mt-1">🦺 단어: ${q.hint2}</div>`;}
+      $('.hint1',el).onclick=(e)=>{e.target.disabled=true; st[i].h1++; $('.hints',el).innerHTML=`<div>🙏 초성: ${q.hint1}</div>`;};
+      $('.hint2',el).onclick=(e)=>{e.target.disabled=true; st[i].h2++; $('.hints',el).innerHTML+=`<div class="mt-1">🦺 단어: ${q.hint2}</div>`;};
 
       // 채점
       const koInp=$('.ko',el), frInp=$('.fr',el), out=$('.out',el);
@@ -130,7 +121,7 @@
         const gf=window.AnswerJudge.gradeFR(q.fr, fr);
         st[i].koOK=gk.isCorrect; st[i].frOK=gf.isCorrect;
         const style=styleHintKO(ko);
-        const roman=/[A-Za-z]/.test(ko)?'라틴 문자(ga teun 등) 금지':''; 
+        const roman=/[A-Za-z]/.test(ko)?'라틴 문자(ga teun 등) 금지':'';
         const notes=[gk.note&&('KO: '+gk.note), gf.note&&('FR: '+gf.note), style, roman].filter(Boolean).join(' · ');
         const ok=gk.isCorrect&&gf.isCorrect;
         out.innerHTML = ok
@@ -141,28 +132,34 @@
       koInp.addEventListener('keydown',e=>{ if(e.key==='Enter') grade(); });
       frInp.addEventListener('keydown',e=>{ if(e.key==='Enter') grade(); });
 
-      // ===== 워밍업식 녹음/정지/자동평가 =====
-      let media=null, mr=null, chunks=[], started=0;
+      // ===== 녹음/정지/평가 (+VU 막대, 실시간 자막) =====
+      let media=null, mr=null, chunks=[], started=0, lastBlob=null, lastDur=0;
       const vuCanvas=$('.vu',el), live=$('.live',el), btnRec=$('.rec',el), btnStop=$('.stop',el), btnEval=$('.eval',el);
-      const ctx=vuCanvas.getContext('2d'); let an,src,ac,raf=0,data;
-      function draw(){
-        raf=requestAnimationFrame(draw);
-        if(!an) return; an.getByteTimeDomainData(data);
-        ctx.clearRect(0,0,vuCanvas.width,vuCanvas.height);
-        ctx.fillStyle='#eef2ff'; ctx.fillRect(0,0,vuCanvas.width,vuCanvas.height);
-        ctx.beginPath(); const mid=vuCanvas.height/2;
-        for(let x=0;x<vuCanvas.width;x++){
-          const v=data[Math.floor(x/vuCanvas.width*data.length)]/128-1, y=mid+v*(mid-4);
-          x?ctx.lineTo(x,y):ctx.moveTo(x,y);
+      const ctx=vuCanvas.getContext('2d'); let an,src,ac,raf=0;
+
+      function drawBars(){
+        raf=requestAnimationFrame(drawBars);
+        if(!an) return;
+        const buf=new Uint8Array(an.frequencyBinCount);
+        an.getByteFrequencyData(buf);
+        const W=vuCanvas.width,H=vuCanvas.height,bars=24,barW=Math.max(2,Math.floor((W-(bars-1)*2)/bars)),step=Math.floor(buf.length/bars);
+        ctx.clearRect(0,0,W,H);
+        ctx.fillStyle='#eef2ff'; ctx.fillRect(0,0,W,H);
+        for(let b=0;b<bars;b++){
+          const slice=buf.slice(b*step,(b+1)*step);
+          const avg=slice.reduce((a,c)=>a+c,0)/Math.max(1,slice.length);
+          const h=Math.max(4,(avg/255)*(H-6)), x=b*(barW+2), y=H-h;
+          ctx.fillStyle='#6366f1'; ctx.fillRect(x,y,barW,h);
+          ctx.fillStyle='#a5b4fc'; ctx.fillRect(x,y,barW,3);
         }
-        ctx.strokeStyle='#6366f1'; ctx.lineWidth=2; ctx.stroke();
       }
       async function startVu(stream){
-        ac=new (window.AudioContext||window.webkitAudioContext)(); src=ac.createMediaStreamSource(stream);
-        an=ac.createAnalyser(); an.fftSize=1024; data=new Uint8Array(an.fftSize); src.connect(an);
+        ac=new (window.AudioContext||window.webkitAudioContext)();
+        src=ac.createMediaStreamSource(stream);
+        an=ac.createAnalyser(); an.fftSize=2048;
         if(!vuCanvas.width) vuCanvas.width=vuCanvas.clientWidth||640;
         if(!vuCanvas.height) vuCanvas.height=vuCanvas.clientHeight||48;
-        draw();
+        drawBars();
       }
       function stopVu(){
         cancelAnimationFrame(raf);
@@ -181,24 +178,31 @@
         await startVu(media); mr.start();
         btnRec.disabled=true; btnStop.disabled=false; btnEval.disabled=true;
         live.textContent='En direct / 실시간…';
-        // Live STT 연결(있으면)
+
+        // Live STT 연결 + 이벤트 (부분/최종)
         if(window.LiveSTT){
           const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
           if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
         }
+        el.addEventListener('live-stt-partial', (e)=>{ live.textContent = e.detail?.text || ''; });
+        el.addEventListener('live-stt-final',   (e)=>{ live.textContent = 'En direct / 실시간 (final): ' + (e.detail?.text || ''); });
       }
+
       async function onStop(){
-        stopVu(); const dur=(Date.now()-started)/1000;
+        stopVu();
+        const dur=(Date.now()-started)/1000;
         const blob=new Blob(chunks,{type:'audio/webm'}); chunks=[];
         btnRec.disabled=false; btnStop.disabled=true; btnEval.disabled=false;
         try{ media.getTracks().forEach(t=>t.stop()); }catch(_){}
         mr=null; media=null;
 
-        // KO가 맞아야 발음평가 (규칙)
-        if(!st[i].koOK){ out.innerHTML+='<div class="text-xs text-slate-500 mt-1">KO 정답 확인 후 발음 평가가 정확해져요.</div>'; return; }
+        lastBlob=blob; lastDur=dur; // 저장
 
-        // 자동 평가
-        await evaluate(blob, dur);
+        if(!st[i].koOK){
+          out.innerHTML+='<div class="text-xs text-slate-500 mt-1">KO 정답 확인 후 발음 평가가 정확해져요.</div>';
+          return;
+        }
+        await evaluate(blob, dur); // 자동 평가
       }
       async function recStop(){ if(!mr) return; mr.stop(); }
 
@@ -230,11 +234,11 @@
 
       btnRec.onclick=recStart;
       btnStop.onclick=recStop;
-      btnEval.onclick=()=>{}; // 필요시 수동 평가 버튼용 (자동평가가 이미 수행됨)
+      btnEval.onclick=async()=>{ if(!lastBlob){ out.innerHTML+='<div class="text-xs text-slate-500 mt-1">녹음 후 평가할 수 있어요.</div>'; return; } await evaluate(lastBlob,lastDur); };
     });
   }
 
-  // ====== 컨트롤 버튼 ======
+  // ===== 컨트롤 =====
   $('#restart-btn')?.addEventListener('click',()=>{
     $('#dictee-root').innerHTML=''; for(const s of st){ Object.assign(s,{listen:0,h1:0,h2:0,koOK:false,frOK:false,recBase64:null,recDur:0,acc:null,trans:''}); }
     render();
@@ -283,7 +287,7 @@
     }
   });
 
-  // ====== init ======
+  // ===== init =====
   window._startTime=new Date().toISOString(); window._startMs=Date.now();
   document.addEventListener('DOMContentLoaded', render);
 })();
