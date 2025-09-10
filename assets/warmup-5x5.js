@@ -379,7 +379,7 @@ function makeBundleCard(bundle){
     if(!lastRecord?.base64) return;
     btnEval.disabled = true; status.textContent = 'Évaluation en cours…';
     try{
-      const { accuracy, friendly, transcript } = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
+      const { accuracy, friendly, transcript } = await analyzePronunciation({ referenceText: refEval, record: lastRecord, card: wrap });
       const percent = Math.round((accuracy || 0)*100);
       scoreTag.textContent = `Score: ${percent}%`;
       scoreTag.classList.remove('hidden');
