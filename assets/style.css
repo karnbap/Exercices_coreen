@@ -66,4 +66,10 @@ body {
 .chips-wrap { display:flex; flex-wrap:wrap; gap:.4rem .5rem }
 .chip { display:inline-block; padding:.2rem .55rem; border-radius:.5rem; background:#fff; border:1px solid var(--border-color) }
 @media (min-width: 768px){ .chip { font-size:1.05rem } }
-
+.flash-on { animation: flashbg .9s ease-out; }
+/* 재시작 시 영역 하이라이트 */
+@keyframes flashbg {
+  0%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:#fffbe6 }
+  25%{ box-shadow:0 0 0 3px rgba(99,102,241,.35) inset }
+  100%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:transparent }
+}
