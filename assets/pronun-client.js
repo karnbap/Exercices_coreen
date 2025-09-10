@@ -1,174 +1,252 @@
-// 공통 발음 마운터(녹음/분석 UI) – 작은 VU + REC 점 + 길이 측정 보정
-(function(w){
-  'use strict';
-  const FN_BASE = (w.PONGDANG_FN_BASE || '/.netlify/functions');
+/* assets/pronun-client.js
+   - 각 문제 카드 안에서: 녹음 시작/정지 + 파형(VU) + 자동 평가(정지 시)
+   - 백엔드: /.netlify/functions/analyze-pronunciation
+   - 외부에서 제공해야 할 요소들(카드 내부):
+     .btn-rec  .btn-stop  canvas.vu  .pronun-display  (선택) .pronun-live
+   - mount(rootEl, { getReferenceText, isKoCorrect, onResult })
+*/
 
-  function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split(',')[1] : String(s||''); }
+(function (global) {
+  const DEFAULTS = {
+    endpoint: '/.netlify/functions/analyze-pronunciation',
+    minDurationSec: 0.7,
+    maxDurationSec: 12,
+    maxAnalysesPerCard: 40
+  };
 
-  // ===== 녹음기(작은 VU) =====
-  function pickMime(){
-    const M = w.MediaRecorder; if(!M) return '';
-    const c = (t)=> M.isTypeSupported && M.isTypeSupported(t);
-    if (c('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
-    if (c('audio/webm'))             return 'audio/webm';
-    if (c('audio/mp4;codecs=mp4a.40.2')) return 'audio/mp4';
-    return '';
+  function qs(sel, el = document) { return el.querySelector(sel); }
+  function qsa(sel, el = document) { return Array.from(el.querySelectorAll(sel)); }
+
+  async function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = reject;
+      fr.onload = () => resolve(String(fr.result || '').split(',')[1] || '');
+      fr.readAsDataURL(blob);
+    });
   }
 
-  function makeRecorder(){
-    let mediaRecorder=null, chunks=[], stream=null, ctx=null, analyser=null, raf=0;
-    let mime='', startedAt=0; // ← 시작 시각(밀리초)
+  async function jsonPost(url, payload) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
 
-    async function start(canvas){
-      if(stream) stop(canvas);
-      stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-      mime = pickMime();
-      mediaRecorder = mime ? new MediaRecorder(stream, { mimeType:mime }) : new MediaRecorder(stream);
-      chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data);
+  // ------- VU (작고 가벼운 파형 표시) -------
+  function makeVu(canvas) {
+    if (!canvas) return { start() {}, stop() {} };
+    const ctx = canvas.getContext('2d');
+    let raf = 0, analyser, dataArr, src, ac;
 
-      // 작은 VU
-      if(canvas){
-        canvas.classList.add('vu-mini'); canvas.height = 16;
-        ctx = new (w.AudioContext||w.webkitAudioContext)();
-        const source = ctx.createMediaStreamSource(stream);
-        analyser = ctx.createAnalyser(); analyser.fftSize = 512;
-        source.connect(analyser);
-        const g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        (function loop(){
-          raf = requestAnimationFrame(loop);
-          analyser.getByteFrequencyData(data);
-          g.clearRect(0,0,W,H);
-          const bars = 24, step = Math.floor(data.length/bars);
-          g.fillStyle = '#6366f1';
-          for(let i=0;i<bars;i++){
-            const v=data[i*step]/255, bh=v*H;
-            g.fillRect(i*(W/bars)+1, H-bh, (W/bars)-2, bh);
-          }
-        })();
+    function draw() {
+      raf = requestAnimationFrame(draw);
+      if (!analyser) return;
+      analyser.getByteTimeDomainData(dataArr);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#eef2ff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      const mid = canvas.height / 2;
+      for (let x = 0; x < canvas.width; x++) {
+        const v = dataArr[Math.floor(x / canvas.width * dataArr.length)] / 128.0 - 1.0;
+        const y = mid + v * (mid - 4);
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
-      startedAt = performance.now();           // ← 시작 시각 기록
-      mediaRecorder.start(50);
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
 
-    function stop(canvas){
-      try{ if(mediaRecorder?.state==='recording') mediaRecorder.stop(); }catch(_){}
-      try{ stream?.getTracks().forEach(t=>t.stop()); }catch(_){}
-      try{ ctx?.close(); }catch(_){}
-      stream=null; ctx=null; analyser=null; if(raf) cancelAnimationFrame(raf); raf=0;
-      if(canvas){ const g=canvas.getContext('2d'); g.clearRect(0,0,canvas.width,canvas.height); }
-    }
-
-    async function getResult(){
-      return await new Promise((resolve)=>{
-        const finish = ()=>{
-          const blob = new Blob(chunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
-          const reader = new FileReader();
-          const audio = new Audio(URL.createObjectURL(blob));
-          audio.addEventListener('loadedmetadata', ()=>{
-            // 1차: 오디오 메타에서 길이
-            let duration = Number(audio.duration);
-            // 2차 폴백: 시작~지금까지의 경과시간(ms)
-            if(!isFinite(duration) || duration<=0) duration = (performance.now()-startedAt)/1000;
-            // 3차 안전망: 최소 0.1초
-            if(!isFinite(duration) || duration<=0) duration = 0.1;
-
-            reader.onloadend = ()=> resolve({
-              base64: reader.result,
-              duration,
-              blob,
-              mime: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm'
-            });
-            reader.readAsDataURL(blob);
-          }, { once:true });
-        };
-        if(mediaRecorder && mediaRecorder.state==='recording'){
-          mediaRecorder.addEventListener('stop', finish, { once:true }); mediaRecorder.stop();
-        } else finish();
-      });
-    }
-    return { start, stop, getResult };
-  }
-
-  // ===== 서버 분석 =====
-  async function analyzePronunciation({ referenceText, record }){
-    const payload = {
-      referenceText,
-      audio: { base64: toBareBase64(record.base64), filename:`rec_${Date.now()}.webm`, mimeType: record.mime || 'audio/webm', duration: record.duration }
+    return {
+      async start(stream) {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        src = ac.createMediaStreamSource(stream);
+        analyser = ac.createAnalyser();
+        analyser.fftSize = 1024;
+        dataArr = new Uint8Array(analyser.fftSize);
+        src.connect(analyser);
+        if (!canvas.width) { canvas.width = canvas.clientWidth || 640; }
+        if (!canvas.height) { canvas.height = canvas.clientHeight || 48; }
+        draw();
+      },
+      stop() {
+        cancelAnimationFrame(raf);
+        try { src && src.disconnect(); } catch (_) {}
+        try { analyser && analyser.disconnect(); } catch (_) {}
+        try { ac && ac.close(); } catch (_) {}
+        analyser = dataArr = src = ac = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     };
-    const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-    });
-    const data = await r.json().catch(()=> ({}));
-    let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
-    const transcript = String(data.transcript||'');
-    const friendly = Array.isArray(data?.details?.explain)?data.details.explain:[];
-    return { accuracy: acc, transcript, friendly };
   }
 
-  // ===== 마운트 =====
-  function mount(root, opts){
-    const recBtn  = root.querySelector('.btn-rec, .btn-rec-start');
-    const stopBtn = root.querySelector('.btn-stop, .btn-rec-stop');
-    const stat    = root.querySelector('.pronun-display') || root.querySelector('.status-line');
-    const vu      = root.querySelector('canvas.vu, canvas');
+  // ------- 카드 하나에 mount -------
+  function mount(cardEl, opts) {
+    const getRef = opts?.getReferenceText || (() => '');
+    const isKoCorrect = opts?.isKoCorrect || (() => true);
+    const onResult = typeof opts?.onResult === 'function' ? opts.onResult : () => {};
 
-    if(vu){ vu.classList.add('vu-mini'); vu.height = 16; }
+    const btnRec = qs('.btn-rec', cardEl);
+    const btnStop = qs('.btn-stop', cardEl);
+    const canvas = qs('canvas.vu', cardEl);
+    const liveBox = qs('.pronun-live', cardEl);       // 선택(있으면 Live STT가 채움)
+    const disp = qs('.pronun-display', cardEl);
 
-    // REC 점(없으면 생성)
-    let recDot = root.querySelector('.rec-indicator');
-    if(!recDot){ recDot = document.createElement('span'); recDot.className='rec-indicator'; recDot.textContent='● REC';
-      (recBtn?.parentElement||root).appendChild(recDot);
+    const vu = makeVu(canvas);
+    let media, rec, chunks = [], startedAt = 0, analyses = 0;
+
+    function setState(recOn) {
+      if (btnRec) btnRec.disabled = !!recOn;
+      if (btnStop) btnStop.disabled = !recOn;
     }
 
-    if(!recBtn || !stopBtn || !stat) return;
-    const recorder = makeRecorder();
-    let last=null;
+    function note(msg, ok = true) {
+      if (!disp) return;
+      disp.innerHTML = `<div class="mt-2 p-2 rounded ${ok ? 'bg-emerald-50 border border-emerald-200' : 'bg-rose-50 border border-rose-200'}">${msg}</div>`;
+    }
 
-    recBtn.addEventListener('click', async ()=>{
-      recBtn.disabled=true; stopBtn.disabled=false;
-      root.classList.add('is-recording');               // REC 켜기
-      stat.textContent = 'Enregistrement… / 녹음 중…';
-      try{
-        await recorder.start(vu||null);
-        // Web Speech 시작(라이브 STT)
-        root.dispatchEvent(new CustomEvent('recording:start'));
-      }catch(_){
-        stat.textContent='Micro non autorisé / 마이크 권한';
-        root.classList.remove('is-recording');
-        recBtn.disabled=false; stopBtn.disabled=true;
+    async function start() {
+      if (rec) return;
+      try {
+        media = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        note('🎙️ 마이크 접근이 거부되었어요. 브라우저 권한을 확인하세요.', false);
+        return;
       }
+
+      chunks = [];
+      rec = new MediaRecorder(media, { mimeType: 'audio/webm' });
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = handleStop; // ⏹️ 정지 시 자동 평가
+
+      startedAt = Date.now();
+      await vu.start(media);
+      rec.start();
+      setState(true);
+      if (liveBox) liveBox.textContent = 'En direct / 실시간…';
+    }
+
+    async function handleStop() {
+      try {
+        vu.stop();
+        const dur = (Date.now() - startedAt) / 1000;
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        chunks = [];
+
+        // 길이 필터 (너무 짧거나 너무 김)
+        if (dur < DEFAULTS.minDurationSec) {
+          setState(false);
+          note('발화가 너무 짧아요. 조금만 더 길게 말해보세요.', false);
+          cleanupStream();
+          return;
+        }
+        if (dur > DEFAULTS.maxDurationSec) {
+          note('발화가 너무 길어요. 문장 단위로 짧게 녹음해 주세요.', false);
+        }
+
+        if (!isKoCorrect()) {
+          // 받아쓰기(한글)가 정답일 때만 발음 평가 권장 — 규칙에 맞춰 안내
+          note('먼저 KO(한글) 답을 맞춘 다음 발음을 평가해요. (정답 확인 버튼으로 KO를 맞춰주세요)', false);
+          cleanupStream();
+          setState(false);
+          return;
+        }
+
+        if (analyses >= DEFAULTS.maxAnalysesPerCard) {
+          note('평가 한도를 초과했어요. 다음 문제로 넘어가 주세요.', false);
+          cleanupStream();
+          setState(false);
+          return;
+        }
+
+        // 서버로 전송
+        const base64 = await blobToBase64(blob);
+        const refText = String(getRef() || '').replace(/\s+/g, '');
+        const payload = {
+          referenceText: refText,
+          audio: { base64, mimeType: 'audio/webm', filename: 'rec.webm', duration: Math.round(dur * 100) / 100 }
+        };
+
+        disp && (disp.innerHTML = '<div class="mt-2 text-sm text-slate-500">⏳ 평가 중…</div>');
+        const res = await jsonPost(DEFAULTS.endpoint, payload);
+        analyses++;
+
+        // 표준 형태: { accuracy(0..1), transcript, confusionTags[] }
+        const acc = Math.max(0, Math.min(1, Number(res.accuracy || 0)));
+        const pct = Math.round(acc * 100);
+
+        const transcript = String(res.transcript || '').trim();
+        const friendly = [];
+        if (res.confusionTags && Array.isArray(res.confusionTags) && res.confusionTags.length) {
+          friendly.push('• 발음 유의: ' + res.confusionTags.join(', '));
+        }
+
+        // 결과 표시 (두번째 스샷 스타일 요약)
+        const html = `
+          <div class="mt-2 p-3 rounded border bg-white">
+            <div class="text-sm text-slate-600 mb-1">Explication de la note / 점수 설명</div>
+            <div class="text-lg font-semibold">Score: ${pct}%</div>
+            <div class="mt-1 text-sm"><b>Référence:</b> ${refText || '(vide)'}</div>
+            <div class="mt-1 text-sm"><b>Ma prononciation:</b> ${transcript || '(vide)'}</div>
+            ${friendly.length ? `<div class="mt-2 text-xs text-slate-600">${friendly.join('<br>')}</div>` : ''}
+          </div>`;
+        note(html);
+
+        // 콜백 제공 (상위에서 성적 집계)
+        onResult({ accuracy: acc, transcript, friendly });
+
+      } catch (err) {
+        console.error(err);
+        note('평가 중 오류가 발생했어요. 다시 시도해 주세요.', false);
+        // 서버 로깅
+        fetch('/.netlify/functions/log-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ functionName: 'analyze-pronunciation(client)', error: String(err), pageUrl: location.href })
+        }).catch(() => {});
+      } finally {
+        cleanupStream();
+        setState(false);
+        if (liveBox && liveBox.textContent && /실시간/.test(liveBox.textContent)) {
+          // 라이브 자막 박스는 남겨두되, 상태 문구만 정리
+          liveBox.textContent = 'En direct / 실시간 (final): ' + (liveBox.dataset.finalText || '');
+        }
+      }
+    }
+
+    function cleanupStream() {
+      try {
+        if (rec && rec.state !== 'inactive') rec.stop();
+      } catch(_) {}
+      try {
+        media && media.getTracks().forEach(t => t.stop());
+      } catch(_) {}
+      rec = null; media = null;
+    }
+
+    async function stop() {
+      if (!rec) return;
+      rec.stop(); // ⏹️ → handleStop()에서 자동 평가
+      vu.stop();
+    }
+
+    // 바인딩
+    btnRec && btnRec.addEventListener('click', start);
+    btnStop && btnStop.addEventListener('click', stop);
+    setState(false);
+
+    // Live STT가 있다면 최종 텍스트를 저장(표시 정리용)
+    document.addEventListener('live-stt-final', (e) => {
+      if (!cardEl.contains(e.target)) return;
+      if (liveBox) liveBox.dataset.finalText = e.detail?.text || '';
     });
-
-    stopBtn.addEventListener('click', async ()=>{
-      stopBtn.disabled=true;
-      try{
-        // Web Speech 정지
-        root.dispatchEvent(new CustomEvent('recording:stop'));
-        last = await recorder.getResult();
-        root.classList.remove('is-recording');          // REC 끄기
-        if(last?.duration) stat.textContent = `Terminé (${last.duration.toFixed(1)}s).`;
-        else stat.textContent = 'Terminé.';
-      }catch(_){
-        stat.textContent='Problème enregistrement';
-      }finally{
-        recBtn.disabled=false;
-      }
-    });
-
-    // 자동 평가(정지 후, KO가 맞은 카드만)
-    root.addEventListener('recording:stop', async ()=>{
-      if(!opts?.isKoCorrect || !opts.isKoCorrect()) return;
-      try{
-        const ref = (opts.getReferenceText?opts.getReferenceText():'').replace(/\s+/g,'');
-        const { accuracy, transcript, friendly } = await analyzePronunciation({ referenceText: ref, record: last });
-        stat.innerHTML = `Prononciation <b>${Math.round((accuracy||0)*100)}%</b> · STT: <span class="korean-font">${(transcript||'')}</span>`;
-        if (opts.onResult) opts.onResult({ accuracy, transcript, friendly });
-      }catch(_){
-        // 조용히 통과 (폴백은 페이지에서 할 수 있음)
-      }
-    }, { once:false });
   }
 
-  w.Pronun = { mount };
+  // ------- 공개 API -------
+  global.Pronun = { mount };
+
 })(window);
