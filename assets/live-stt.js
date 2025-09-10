@@ -1,73 +1,102 @@
-// assets/live-stt.js
-// 브라우저 Web Speech API 기반 실시간 STT 모듈
-// - LiveSTT.mount(cardEl, { lang:'ko-KR', target: <.pronun-live 엘리먼트> })
-// - cardEl에서 'recording:start' → SR 시작, 'recording:stop' → SR 중지
-// - 종료 시 cardEl로 'livestt:final' 이벤트 디스패치(detail:{ text })
-
+<script>
+/* 실시간 받아쓰기(Web Speech API)
+   - ko-KR 인식, interim(중간결과) 표시
+   - 자동 연결: .dictation-card / .quiz-card / .bundle-card
+   - 버튼: .btn-rec(.btn-rec-start) 시작, .btn-stop(.btn-rec-stop) 정지
+   - 표시는 .pronun-live 박스에 타이핑처럼 출력
+   - mount(card, {lang?, target?}) 지원 (명시 장착용)
+   - 이벤트: 'livestt:partial' / 'livestt:final'  (detail: { text, card })
+*/
 (function(w){
-  'use strict';
   const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
   const supported = !!SR;
 
-  // 카드별 상태를 저장
-  const store = new WeakMap(); // cardEl -> { rec, finalText, target }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,(c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]))); }
 
-  function mount(cardEl, opts={}){
-    if(!cardEl || store.has(cardEl)) return;
-    const lang   = opts.lang || 'ko-KR';
-    const target = opts.target || cardEl.querySelector('.pronun-live');
-
-    const state = { rec:null, finalText:'', target };
-    store.set(cardEl, state);
-
-    const onStart = ()=>{
-      if(!supported || !state.target) return;
-      if(state.rec){ try{ state.rec.stop(); }catch(_){} state.rec=null; }
-      const rec = new SR();
-      state.rec = rec; state.finalText = '';
-      rec.lang = lang; rec.interimResults = true; rec.continuous = true;
-
-      let interim = '';
-      rec.onresult = (e)=>{
-        interim = '';
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const r = e.results[i];
-          if(r.isFinal) state.finalText += r[0].transcript;
-          else interim += r[0].transcript;
-        }
-        state.target.classList.remove('hidden');
-        state.target.innerHTML =
-          `<div class="text-sm">
-            <b>Live (Référence / 정답):</b> <span class="korean-font">${state.target.dataset.ref||''}</span><br/>
-            <b>Live (Moi / 내 발음):</b> <span>${state.finalText}</span><span class="opacity-60">${interim}</span>
-           </div>`;
-      };
-      rec.onerror = ()=>{};
-      rec.onend   = ()=>{
-        try{
-          const evt = new CustomEvent('livestt:final',{ detail:{ text: (state.finalText||'').trim() }});
-          cardEl.dispatchEvent(evt);
-        }catch(_){}
-      };
-      try{ rec.start(); }catch(_){}
-    };
-
-    const onStop = ()=>{
-      if(state.rec){ try{ state.rec.stop(); }catch(_){}
-        state.rec = null;
-      }
-    };
-
-    cardEl.addEventListener('recording:start', onStart);
-    cardEl.addEventListener('recording:stop',  onStop);
+  function ensureBox(card, target){
+    if (target) return target;
+    let box = card.querySelector('.pronun-live');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'pronun-live mt-2 text-sm p-2 rounded border bg-white';
+      const anchor = card.querySelector('.status-line') || card.firstElementChild || card;
+      anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    }
+    return box;
   }
 
-  function init(){
-    document.querySelectorAll('.pronun-live').forEach(el=>{
-      const card = el.closest('[data-card="warmup"]') || el.parentElement;
-      if(card) mount(card, { lang:'ko-KR', target: el });
+  // 타이핑 효과(이전 결과와 차이만 반투명)
+  function renderTyping(el, prev, next){
+    let i=0; const L=Math.min(prev.length, next.length);
+    while(i<L && prev[i]===next[i]) i++;
+    const frozen = next.slice(0,i), typing = next.slice(i);
+    el.innerHTML =
+      `<div><b>Live:</b> <span class="text-slate-800">${escapeHtml(frozen)}</span>`+
+      `<span class="opacity-60">${escapeHtml(typing)}</span></div>`;
+  }
+
+  function attach(card, opts={}){
+    const startBtn = card.querySelector('.btn-rec, .btn-rec-start');
+    const stopBtn  = card.querySelector('.btn-stop, .btn-rec-stop');
+    if(!startBtn || !stopBtn) return;
+
+    const box = ensureBox(card, opts.target);
+    if(!supported){
+      box.innerHTML = '🗣️ Live STT indisponible. / 이 브라우저는 실시간 받아쓰기를 지원하지 않아요.';
+      return;
+    }
+
+    const lang = opts.lang || 'ko-KR';
+    let rec=null, started=false, prevShown='';
+    function make(){
+      const r = new SR();
+      r.lang = lang; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
+      let finalText='', interim='';
+      r.onresult = (e)=>{
+        interim='';
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          const res=e.results[i];
+          if(res.isFinal){ finalText += res[0].transcript; }
+          else { interim += res[0].transcript; }
+        }
+        const merged = (finalText + interim).trim();
+        renderTyping(box, prevShown, merged);
+        prevShown = merged;
+        card.dispatchEvent(new CustomEvent('livestt:partial',{ detail:{ text: merged, card }, bubbles:true }));
+        if (interim==='') {
+          card.dispatchEvent(new CustomEvent('livestt:final',{ detail:{ text: finalText.trim(), card }, bubbles:true }));
+        }
+      };
+      r.onerror = ()=>{}; r.onend = ()=>{ started=false; };
+      return r;
+    }
+
+    // 녹음 시작/정지 신호에 맞춰 STT 동작 (외부에서 커스텀 이벤트로도 제어 가능)
+    startBtn.addEventListener('click', ()=>{
+      try{
+        prevShown=''; box.innerHTML = '<div class="opacity-60">🎧 실시간 인식 중…</div>';
+        if(!rec) rec=make();
+        if(!started){ rec.start(); started=true; }
+      }catch(_){}
+    });
+    stopBtn.addEventListener('click', ()=>{ try{ rec && rec.stop(); }catch(_){ } });
+
+    card.addEventListener('recording:start', ()=>{ startBtn.click(); });
+    card.addEventListener('recording:stop',  ()=>{ stopBtn.click();  });
+  }
+
+  function init(rootSel = '#dictation-exercises, .quiz-container, #warmup-screen'){
+    document.querySelectorAll(rootSel).forEach(container=>{
+      container
+        .querySelectorAll('.p-4.bg-white.rounded-lg.border, .quiz-card, .bundle-card, .dictation-card')
+        .forEach(card=>attach(card));
     });
   }
 
-  w.LiveSTT = { supported, mount, init };
+  // 명시 장착 API
+  function mount(card, opts){ try{ attach(card, opts||{}); }catch(_){ } }
+
+  w.LiveSTT = { init, supported, mount };
+  document.addEventListener('DOMContentLoaded', ()=>{ try{ init(); }catch(_){} });
 })(window);
+</script>
