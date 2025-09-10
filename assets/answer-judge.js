@@ -32,6 +32,20 @@
   }
   const normFR = (s="") => tokenizeFR(s).filtered.join(" ");
   const normKO = (s="") => normSpaces(String(s||"").replace(RX_PUNCT," "));
+  // 숫자 → 한글(한자어/고유어) 확장 유틸 (ADD)
+  const __KO_NUM_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
+  const __KO_NUM_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+  
+  function koCanon(s){
+    // 라틴 알파벳 제거 + 구두점/공백 정리(채점용)
+    return normSpaces(String(s||'').toLowerCase().replace(/[a-z]+/g,'').replace(RX_PUNCT,' '));
+  }
+  function koNumExpand(s){
+    // STT가 1 2 3 4 5처럼 숫자로 내보낸 경우 후보 3가지 생성
+    if (!/\d/.test(s)) return [s];
+    const rep = (map) => s.replace(/\d/g, d => map[d] || d);
+    return [s, rep(__KO_NUM_SINO), rep(__KO_NUM_NATIVE)];  // ①그대로 ②일이삼사오 ③하나둘셋넷다섯
+  }
 
   function lev(a,b){
     const s=String(a), t=String(b); const n=s.length, m=t.length;
@@ -44,16 +58,36 @@
     }} return dp[n][m];
   }
 
-  // --- KO 채점(받아쓰기) ---
-  function gradeKO(ref, ans, opts = {}) {
-    const R = normKO(ref||""), S = normKO(ans||"");
-    if(!S) return { score:0, isCorrect:false, note:"vide/빈값" };
-    if(S===R) return { score:100, isCorrect:true, note:"공백·구두점 무시" };
-    if(opts.allowSubstring && R.includes(S)) return { score:90, isCorrect:true, note:"부분 일치 허용" };
-    const d=lev(R,S), L=Math.max(1,R.length), rate=d/L;
-    const ok = rate<=0.12;
-    return { score:Math.max(0,Math.round((1-rate)*100)), isCorrect:ok, note:ok?"소폭 오차 허용":"차이 큼" };
-  }
+// --- KO 채점(받아쓰기) --- (REPLACE)
+function gradeKO(ref, ans, opts = {}) {
+    const R = koCanon(ref || "");
+    const base = koCanon(ans || "");
+    if (!base) return { score: 0, isCorrect: false, note: "vide/빈값" };
+
+    // 후보 3가지(숫자 그대로/한자어/고유어) 중 최고 점수 채택
+    const cands = koNumExpand(base);
+
+    let bestScore = 0;
+    let bestRate  = 1;
+
+    for (const S of cands) {
+      if (S === R) {
+        return { score: 100, isCorrect: true, note: "숫자/공백 보정" };
+      }
+      if (opts.allowSubstring && R.includes(S)) {
+        bestScore = Math.max(bestScore, 90);
+        bestRate  = Math.min(bestRate, 0.1);
+        continue;
+      }
+      const d = lev(R, S), L = Math.max(1, R.length), rate = d / L;
+      const score = Math.max(0, Math.round((1 - rate) * 100));
+      if (score > bestScore) { bestScore = score; bestRate = rate; }
+    }
+
+    const ok = bestRate <= 0.12 || bestScore >= 90; // 기존 관대한 기준 유지
+    return { score: bestScore, isCorrect: ok, note: ok ? "숫자/공백 보정" : "차이 큼" };
+}
+
 
   const PRON_SUBJ = new Set(["il","elle","ils","elles","on"]);
   const looksLikeProperName = tok => /^[a-z]{2,}$/i.test(tok);
