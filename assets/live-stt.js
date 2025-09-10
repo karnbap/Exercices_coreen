@@ -1,99 +1,101 @@
-<script>
-/* 실시간 받아쓰기(Web Speech API)
-   - ko-KR 인식, interim 결과를 타이핑처럼 반투명으로
-   - 자동 연결: .dictation-card / .quiz-card / .bundle-card
-   - 버튼: .btn-rec(.btn-rec-start) 시작, .btn-stop(.btn-rec-stop) 정지
-   - mount(card,{lang?,target?}) 지원
-   - 이벤트: 'livestt:partial' / 'livestt:final'  (detail: { text, card })
-*/
-(function(w){
+// /assets/live-stt.js
+// 브라우저 실시간 받아쓰기(ko-KR) 표시 + 최종 텍스트 고정 + 이벤트 전파
+// - LiveSTT.init() 호출만 하면 현재 페이지의 카드들에 자동 연결
+// - 카드 구조 가정: .btn-rec-start / .btn-rec-stop / .pronun-live (있으면 표시)
+// - 이벤트: 'livestt:final'({ detail:{ text, card } })
+
+(function (w) {
   const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
-  const supported = !!SR;
 
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,(c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]))); }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-  function ensureBox(card, target){
-    if (target) return target;
+  function ensureBox(card){
     let box = card.querySelector('.pronun-live');
     if (!box) {
       box = document.createElement('div');
       box.className = 'pronun-live mt-2 text-sm p-2 rounded border bg-white';
+      // status-line 바로 아래에 삽입
       const anchor = card.querySelector('.status-line') || card.firstElementChild || card;
       anchor.parentNode.insertBefore(box, anchor.nextSibling);
     }
+    box.classList.remove('hidden'); // 숨김 방지
     return box;
   }
 
-  function renderTyping(el, prev, next){
-    let i=0; const L=Math.min(prev.length, next.length);
-    while(i<L && prev[i]===next[i]) i++;
-    const frozen = next.slice(0,i), typing = next.slice(i);
-    el.innerHTML =
-      `<div><b>Live:</b> <span class="text-slate-800">${escapeHtml(frozen)}</span>`+
-      `<span class="opacity-60">${escapeHtml(typing)}</span></div>`;
+  function render(box, finalText, interim){
+    const merged = String(finalText||'') + String(interim||'');
+    const safe = escapeHtml(merged);
+    box.innerHTML = `<div><b>En direct / 실시간:</b> ${safe}</div>`;
   }
 
-  function attach(card, opts={}){
-    const startBtn = card.querySelector('.btn-rec, .btn-rec-start');
-    const stopBtn  = card.querySelector('.btn-stop, .btn-rec-stop');
-    if(!startBtn || !stopBtn) return;
+  function attachOneCard(card) {
+    if (!SR) return;
 
-    const box = ensureBox(card, opts.target);
-    if(!supported){
-      box.innerHTML = '🗣️ Live STT indisponible. / 이 브라우저는 실시간 받아쓰기를 지원하지 않아요.';
-      return;
-    }
+    const startBtn = card.querySelector('.btn-rec-start, .btn-rec');
+    const stopBtn  = card.querySelector('.btn-rec-stop, .btn-stop');
+    if (!startBtn || !stopBtn) return;
 
-    const lang = opts.lang || 'ko-KR';
-    let rec=null, started=false, prevShown='';
-    function make(){
+    const box = ensureBox(card);
+
+    let rec = null, started = false, finalText = '';
+    function make() {
       const r = new SR();
-      r.lang = lang; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
-      let finalText='', interim='';
-      r.onresult = (e)=>{
-        interim='';
-        for(let i=e.resultIndex;i<e.results.length;i++){
-          const res=e.results[i];
-          if(res.isFinal){ finalText += res[0].transcript; }
-          else { interim += res[0].transcript; }
+      r.lang = 'ko-KR';
+      r.interimResults = true;
+      r.continuous = true;
+      r.maxAlternatives = 1;
+
+      r.onresult = (ev) => {
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const res = ev.results[i];
+          if (res.isFinal) finalText += res[0].transcript;
+          else interim += res[0].transcript;
         }
-        const merged = (finalText + interim).trim();
-        renderTyping(box, prevShown, merged);
-        prevShown = merged;
-        card.dispatchEvent(new CustomEvent('livestt:partial',{ detail:{ text: merged, card }, bubbles:true }));
-        if (interim==='') {
-          card.dispatchEvent(new CustomEvent('livestt:final',{ detail:{ text: finalText.trim(), card }, bubbles:true }));
+        render(box, finalText, interim);
+
+        // 최종 덩어리 하나가 확정되면 이벤트도 쏴 준다
+        if (interim === '') {
+          card.dispatchEvent(new CustomEvent('livestt:final', {
+            detail: { text: String(finalText||'').trim(), card }, bubbles: true
+          }));
         }
       };
-      r.onerror = ()=>{}; r.onend = ()=>{ started=false; };
+      r.onerror = () => {};
+      r.onend = () => { started = false; };
       return r;
     }
 
-    // 버튼/커스텀 이벤트 모두로 제어
-    function start(){ try{
-      prevShown=''; box.innerHTML = '<div class="opacity-60">🎧 실시간 인식 중…</div>';
-      if(!rec) rec=make();
-      if(!started){ rec.start(); started=true; }
-    }catch(_){} }
-    function stop(){ try{ rec && rec.stop(); }catch(_){ } }
+    // 시작
+    startBtn.addEventListener('click', () => {
+      if (!SR) { box.innerHTML = '🗣️ En direct indisponible / 실시간 미지원'; return; }
+      try {
+        finalText = '';
+        box.innerHTML = '<div class="opacity-60">🎧 Reconnaissance… / 실시간 인식 중…</div>';
+        if (!rec) rec = make();
+        if (!started) { rec.start(); started = true; }
+      } catch (e) {}
+    });
 
-    startBtn.addEventListener('click', start);
-    stopBtn.addEventListener('click',  stop);
-    card.addEventListener('recording:start', start);
-    card.addEventListener('recording:stop',  stop);
-  }
-
-  function init(rootSel = '#dictation-exercises, .quiz-container, #warmup-screen'){
-    document.querySelectorAll(rootSel).forEach(container=>{
-      container
-        .querySelectorAll('.p-4.bg-white.rounded-lg.border, .quiz-card, .bundle-card, .dictation-card')
-        .forEach(card=>attach(card));
+    // 정지
+    stopBtn.addEventListener('click', () => {
+      try { if (rec) rec.stop(); } catch(e) {}
+      // 마지막 결과 고정
+      const safe = escapeHtml(String(finalText||'').trim());
+      if (safe) box.innerHTML = `<div><b>En direct / 실시간 (final):</b> ${safe}</div>`;
     });
   }
 
-  function mount(card, opts){ try{ attach(card, opts||{}); }catch(_){ } }
+  function init(rootSel) {
+    if (!SR) return;
+    // 기본: 전체 문서에서 워밍업 카드나 퀴즈 카드를 탐색
+    const roots = rootSel ? document.querySelectorAll(rootSel) : [document];
+    roots.forEach(root => {
+      root.querySelectorAll('[data-card="warmup"], .quiz-card, .dictation-card, .p-4.bg-white.rounded-lg.border')
+        .forEach(attachOneCard);
+    });
+  }
 
-  w.LiveSTT = { init, supported, mount };
-  document.addEventListener('DOMContentLoaded', ()=>{ try{ init(); }catch(_){} });
+  w.LiveSTT = { init, supported: !!SR };
+  document.addEventListener('DOMContentLoaded', () => { try { init(); } catch(_){} });
 })(window);
-</script>
