@@ -1,10 +1,9 @@
 <script>
 /* 실시간 받아쓰기(Web Speech API)
-   - ko-KR 인식, interim(중간결과) 표시
+   - ko-KR 인식, interim 결과를 타이핑처럼 반투명으로
    - 자동 연결: .dictation-card / .quiz-card / .bundle-card
    - 버튼: .btn-rec(.btn-rec-start) 시작, .btn-stop(.btn-rec-stop) 정지
-   - 표시는 .pronun-live 박스에 타이핑처럼 출력
-   - mount(card, {lang?, target?}) 지원 (명시 장착용)
+   - mount(card,{lang?,target?}) 지원
    - 이벤트: 'livestt:partial' / 'livestt:final'  (detail: { text, card })
 */
 (function(w){
@@ -25,7 +24,6 @@
     return box;
   }
 
-  // 타이핑 효과(이전 결과와 차이만 반투명)
   function renderTyping(el, prev, next){
     let i=0; const L=Math.min(prev.length, next.length);
     while(i<L && prev[i]===next[i]) i++;
@@ -71,18 +69,18 @@
       return r;
     }
 
-    // 녹음 시작/정지 신호에 맞춰 STT 동작 (외부에서 커스텀 이벤트로도 제어 가능)
-    startBtn.addEventListener('click', ()=>{
-      try{
-        prevShown=''; box.innerHTML = '<div class="opacity-60">🎧 실시간 인식 중…</div>';
-        if(!rec) rec=make();
-        if(!started){ rec.start(); started=true; }
-      }catch(_){}
-    });
-    stopBtn.addEventListener('click', ()=>{ try{ rec && rec.stop(); }catch(_){ } });
+    // 버튼/커스텀 이벤트 모두로 제어
+    function start(){ try{
+      prevShown=''; box.innerHTML = '<div class="opacity-60">🎧 실시간 인식 중…</div>';
+      if(!rec) rec=make();
+      if(!started){ rec.start(); started=true; }
+    }catch(_){} }
+    function stop(){ try{ rec && rec.stop(); }catch(_){ } }
 
-    card.addEventListener('recording:start', ()=>{ startBtn.click(); });
-    card.addEventListener('recording:stop',  ()=>{ stopBtn.click();  });
+    startBtn.addEventListener('click', start);
+    stopBtn.addEventListener('click',  stop);
+    card.addEventListener('recording:start', start);
+    card.addEventListener('recording:stop',  stop);
   }
 
   function init(rootSel = '#dictation-exercises, .quiz-container, #warmup-screen'){
@@ -93,7 +91,6 @@
     });
   }
 
-  // 명시 장착 API
   function mount(card, opts){ try{ attach(card, opts||{}); }catch(_){ } }
 
   w.LiveSTT = { init, supported, mount };
