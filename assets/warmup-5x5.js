@@ -48,6 +48,26 @@
     }}
     const d=dp[n][m]; return Math.max(0,1 - d/Math.max(n,1));
   }
+// --- 숫자→한글 보정 유틸 (한자어/고유어 둘 다) ---
+const DIGIT_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
+const DIGIT_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+
+function expandDigitsCandidates(s=''){
+  const str = String(s||'');
+  if(!/\d/.test(str)) return [str];
+  const rep = (map)=> str.replace(/\d/g, d => map[d] || d);
+  return [str, rep(DIGIT_SINO), rep(DIGIT_NATIVE)];
+}
+function bestSimAgainstRef(refCollapsed, hypRaw){
+  const cands = expandDigitsCandidates(hypRaw).map(c => collapse(c));
+  let best = 0;
+  for(const c of cands){
+    const sim = similarity(refCollapsed, c);
+    if(sim > best) best = sim;
+  }
+  return best;
+}
+
 
   // ---------- TTS ----------
   function base64ToBlob(base64, mime='audio/mpeg'){
@@ -198,25 +218,19 @@
 
   // ---------- 서버 채점 ----------
   async function analyzePronunciation({ referenceText, record }){
-    let data = {};
-    try{
-      const payload = {
-        referenceText,
-        audio: { base64: toBareBase64(record.base64), filename:`rec_${Date.now()}.webm`, mimeType: record.mime || 'audio/webm', duration: record.duration }
-      };
-      const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-      });
-      data = await r.json().catch(()=> ({}));
-    }catch(_){ data = {}; }
+let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
+let transcript = String(data.transcript||'');
+const ref = collapse(referenceText||'');
 
-    let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
-    let transcript = String(data.transcript||'');
-    const ref = collapse(referenceText||'');
+// 1) 서버 점수 그대로
+let best = acc;
+// 2) 서버 전사에 숫자가 섞였으면 → 한글(일/이/삼/사/오 / 하나/둘/...) 후보로 바꿔서 최고 유사도 사용
+if (transcript) best = Math.max(best, bestSimAgainstRef(ref, transcript));
+// 3) 폴백(기존 로직 보강)
+if (!best && transcript) best = similarity(ref, collapse(transcript));
 
-    // 서버 실패 태그 대비(0% 나오는 케이스) → live STT 폴백은 카드에서 수행
-    if(!acc && transcript) acc = similarity(ref, collapse(transcript));
-    return { accuracy: acc, transcript };
+return { accuracy: best, transcript };
+
   }
 
   // ---------- 속도 툴바 ----------
@@ -395,14 +409,14 @@
         let { accuracy, transcript } = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
 
         // 2차: live-stt 폴백(더 유사하면 교체)
-        const ref = collapse(refEval);
-        const live = collapse(liveText||'');
-        if (live) {
-          const fb = similarity(ref, live);
-          if (!transcript || accuracy < fb) {
-            accuracy = fb; transcript = liveText;
-          }
-        }
+     const ref = collapse(refEval);
+if (liveText) {
+  const fb = bestSimAgainstRef(ref, liveText);
+  if (!transcript || accuracy < fb) {
+    accuracy = fb; transcript = liveText;
+  }
+}
+
 
         const percent = Math.round((accuracy || 0)*100);
         scoreTag.textContent = `Score: ${percent}%`;
