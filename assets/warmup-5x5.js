@@ -1,28 +1,31 @@
 // assets/warmup-5x5.js
-// 5×5 묶음 워밍업: 그룹(5개) 단위로 듣기/녹음/실시간 인식/비교
-// - 기본 반복 ×2 (Répétitions par défaut)
-// - UI 이중언어 표기
-// - Pronun.mount 셀렉터 명시로 🎙️ 버튼 미동작 이슈 방지
+// 숫자 5×5 워밍업: 묶음(5개) 단위로 듣기/녹음/실시간 비교
+// - 기본 반복: ×2 (state.mode.reps)
+// - 속도: slow(0.7), normal(1.0), fast(1.5)  ※ 2.0× 미지원
+// - 배속 누르면 페이지 상단으로 스크롤 + 하이라이트(flash-on)
 
-(function () {
+(function(){
   'use strict';
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
   const SAFE_VOICES = ['alloy','shimmer','verse','nova','fable','echo'];
-  const speedMap = { slow:0.7, normal:1.0, fast:1.5, turbo:2.0 };
-  let currentSpeed = 'normal';
-  let repeatCount = 2; // ✅ 기본 2회
+  const speedMap = { slow:0.7, normal:1.0, fast:1.5 };
 
-  // 표시용(disp)과 TTS용(tts)을 분리: 화면은 칩으로 보기 좋게, 소리는 노래처럼 연속
+  // 상태
+  const state = {
+    mode: { speed: 1.0, continuous: false, reps: 2 }, // 기본 2회
+    name: 'Élève'
+  };
+
+  // 5개 묶음(표시용/합성용 분리)
   const BUNDLES = [
     { key:'natifs_1_5',  label:'Natifs 1–5',  disp:'하나 둘 셋 넷 다섯',     tts:'하나둘셋넷다섯', voice:'alloy'   },
     { key:'natifs_6_10', label:'Natifs 6–10', disp:'여섯 일곱 여덟 아홉 열', tts:'여섯일곱여덟아홉열', voice:'shimmer' },
-    // '일' 모호성 방지: 띄어 읽기 유지
-    { key:'hanja_1_5',   label:'Hanja 1–5',   disp:'일 이 삼 사 오',        tts:'일 이 삼 사 오', voice:'verse'   },
-    { key:'hanja_6_10',  label:'Hanja 6–10',  disp:'육 칠 팔 구 십',         tts:'육칠팔구십',     voice:'nova'    },
+    { key:'hanja_1_5',   label:'Hanja 1–5',   disp:'일 이 삼 사 오',        tts:'일 이 삼 사 오', voice:'verse'   }, // '일' 또렷
+    { key:'hanja_6_10',  label:'Hanja 6–10',  disp:'육 칠 팔 구 십',         tts:'육칠팔구십',     voice:'nova'    }
   ];
 
-  // ---------- Utils ----------
+  // ==== utils ===============================================================
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const esc = (s='')=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -35,30 +38,34 @@
   }
 
   async function ttsPlay(text, voice, rate){
-    const res = await fetch(`${FN_BASE}/generate-audio`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ text, voice, speed: rate||1.0 })
-    });
-    if(!res.ok) throw new Error('TTS '+res.status);
-    const { audioData, mimeType } = await res.json();
-    const blob = base64ToBlob(audioData, mimeType||'audio/wav');
-    const url = URL.createObjectURL(blob);
+    const payload = { text, voice, speed: rate||1.0 };
     try{
-      const a = new Audio();
-      a.preload='auto'; a.src=url;
-      await new Promise(r=>a.addEventListener('canplaythrough', r, {once:true}));
+      const res = await fetch(`${FN_BASE}/generate-audio`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('TTS '+res.status);
+      const j = await res.json();
+      const b64 = j.audioData || j.audioBase64 || j.audioContent;
+      const mime = j.mimeType || 'audio/wav';
+      const blob = base64ToBlob(b64, mime);
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(); a.preload='auto'; a.src=url;
+      await new Promise(r=>a.addEventListener('canplaythrough', r, { once:true }));
       await a.play();
-      await new Promise(r=>a.addEventListener('ended', r, {once:true}));
-    } finally {
-      setTimeout(()=>URL.revokeObjectURL(url), 400);
+      await new Promise(r=>a.addEventListener('ended', r, { once:true }));
+      URL.revokeObjectURL(url);
+    }catch(e){
+      alert('오디오 문제. 다시 시도해 주세요.');
+      try{ fetch(`${FN_BASE}/log-error`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({functionName:'generate-audio',error:String(e),pageUrl:location.href})}); }catch(_){}
     }
   }
 
-  function chipsHtml(text){ // 칩 UI로 줄바꿈 가독성
+  function chipsHtml(text){
     return text.split(/\s+/).map(t=>`<span class="chip">${esc(t)}</span>`).join('');
   }
 
-  // ---------- Render ----------
+  // ==== render ==============================================================
   function render(){
     const wrap = $('#stages-wrap'); if(!wrap) return;
     wrap.innerHTML = '';
@@ -68,31 +75,29 @@
       card.className = 'p-4 border rounded-xl bg-white';
 
       const seqDisp = b.disp.trim();
-      const seqTTS  = b.tts.trim();
-      const seqRef  = seqTTS.replace(/\s+/g,''); // 채점 비교 기준(공백 제거)
-      const ttsFull = Array.from({length:repeatCount}).map(()=>seqTTS).join(' | ');
+      const refText = b.tts.replace(/\s+/g,''); // 비교 기준
+      const ttsFull = Array.from({length:Math.max(1, state.mode.reps)}).map(()=>b.tts).join(' | ');
 
       card.innerHTML = `
         <div class="flex items-center justify-between mb-3">
           <div class="min-w-0">
             <div class="text-xl font-extrabold truncate">${esc(b.label)}</div>
             <div class="text-xs text-slate-500">
-              <b>Paquet de 5 → ×${repeatCount}</b> · <b>5개 묶음 → ${repeatCount}회 반복</b>
+              <b>Paquet de 5 → ×${state.mode.reps}</b> · <b>5개 묶음 → ${state.mode.reps}회 반복</b>
             </div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <label class="text-xs text-slate-600 whitespace-nowrap">
               Répétitions / 반복
               <select class="rep sel border rounded px-2 py-1 text-xs align-middle">
-                <option value="2" ${repeatCount===2?'selected':''}>×2</option>
-                <option value="3" ${repeatCount===3?'selected':''}>×3</option>
-                <option value="4" ${repeatCount===4?'selected':''}>×4</option>
+                <option value="2" ${state.mode.reps===2?'selected':''}>×2</option>
+                <option value="3" ${state.mode.reps===3?'selected':''}>×3</option>
+                <option value="4" ${state.mode.reps===4?'selected':''}>×4</option>
               </select>
             </label>
           </div>
         </div>
 
-        <!-- 칩 UI (가독성) -->
         <div class="p-3 rounded-lg bg-slate-50 border text-lg korean-font chips-wrap">
           ${chipsHtml(seqDisp)}
         </div>
@@ -100,7 +105,7 @@
         <div class="mt-3 flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-2">
             <button type="button" class="btn btn-primary play">🔊 Écouter tout / 전체듣기</button>
-            <span class="text-xs text-slate-500">(${esc(currentSpeed)} · ×${repeatCount})</span>
+            <span class="text-xs text-slate-500">(${state.mode.speed}× · ×${state.mode.reps})</span>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" class="btn btn-secondary btn-rec">🎙️ Enregistrer / 녹음</button>
@@ -119,29 +124,27 @@
 
       // 반복 선택
       $('.rep', card).addEventListener('change', (e)=>{
-        repeatCount = Math.max(2, Math.min(4, parseInt(e.target.value,10)||2));
+        state.mode.reps = Math.max(2, Math.min(4, parseInt(e.target.value,10)||2));
         render();
+        // 상단으로 스크롤 & 하이라이트
+        const wu = $('#warmup-screen');
+        if (wu){ window.scrollTo({ top: wu.offsetTop-8, behavior:'smooth' });
+          wu.classList.remove('flash-on'); void wu.offsetWidth; wu.classList.add('flash-on'); setTimeout(()=>wu.classList.remove('flash-on'), 900);
+        }
       }, { once:true });
 
-      // 듣기(그룹 전체)
+      // 듣기(묶음 전체 재생)
       $('.play', card).addEventListener('click', async (e)=>{
         const btn=e.currentTarget, keep=btn.textContent;
         btn.disabled=true; btn.textContent='…';
-        try{
-          await ttsPlay(ttsFull, b.voice || vAt(bi), speedMap[currentSpeed]||1.0);
-        }catch(err){
-          alert('오디오 오류. 다시 시도해 주세요.');
-          fetch(`${FN_BASE}/log-error`,{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({functionName:'ttsPlay',error:String(err),pageUrl:location.href})}).catch(()=>{});
-        }finally{
-          btn.disabled=false; btn.textContent=keep;
-        }
+        try{ await ttsPlay(ttsFull, b.voice || vAt(bi), state.mode.speed); }
+        finally{ btn.disabled=false; btn.textContent=keep; }
       });
 
-      // 🎙️ Pronun.mount — 셀렉터를 명시해서 버튼 미동작 방지
+      // Pronun.mount (🎙️ 버튼/파형/실시간 텍스트/차이표시 연결)
       if (window.Pronun && typeof window.Pronun.mount==='function'){
         window.Pronun.mount(card, {
-          getReferenceText: ()=> seqRef.repeat(repeatCount),
+          getReferenceText: ()=> refText.repeat(Math.max(1,state.mode.reps)),
           selectors: { rec: '.btn-rec', stop: '.btn-stop', canvas: '.vu', live: '.live', diff: '.diff' },
           onPartial: ({ transcript, diffHtml })=>{
             $('.live', card).textContent = transcript || '';
@@ -149,29 +152,45 @@
           },
           onResult: (_)=>{}
         });
+      } else {
+        // 라이브러리 없으면 안내
+        $('.btn-rec', card).addEventListener('click',()=>alert('녹음 모듈(pronun-client.js)을 불러오지 못했어요.'));
       }
 
-      // 칩 너비가 너무 길어지면 자동 줄바꿈 (CSS로 처리되지만 컨테이너 최대폭 보장)
       wrap.appendChild(card);
     });
 
-    // 진행점/완료
-    $$('.progress-dot').forEach(d=>d.classList.add('on'));
+    // 완료 섹션 보이기
     $('#finish-wrap')?.classList.remove('hidden');
-
-    $('#btn-send')?.addEventListener('click', ()=>{
-      alert('✅ 워밍업 완료! (발음 훈련: 요약만 표시)');
-    }, { once:true });
   }
 
-  // 공개 함수
-  window.WU_go = function(mode){
-    currentSpeed = speedMap[mode] ? mode : 'normal';
-    render();
-  };
+  // ==== 공개 API ============================================================
+  function WU_go(mode){
+    if(mode === 'slow')      state.mode = { speed:0.7, continuous:false, reps:2 };
+    else if(mode === 'fast') state.mode = { speed:1.5, continuous:true,  reps:2 };
+    else                     state.mode = { speed:1.0, continuous:false, reps:2 };
 
+    state.name = ($('#student-name')?.value || state.name || 'Élève');
+
+    // 화면 토글
+    $('#mode-picker')?.classList.add('hidden');
+    const wu = $('#warmup-screen');
+    if(wu) wu.classList.remove('hidden');
+
+    render();
+
+    // 상단으로 스크롤 + 하이라이트
+    if (wu){
+      window.scrollTo({ top: wu.offsetTop-8, behavior:'smooth' });
+      wu.classList.remove('flash-on'); void wu.offsetWidth; wu.classList.add('flash-on');
+      setTimeout(()=>wu.classList.remove('flash-on'), 900);
+    }
+  }
+  window.WU_go = WU_go;
+
+  // 쿼리로 바로 진입(?mode=)
   document.addEventListener('DOMContentLoaded', ()=>{
     const m = new URLSearchParams(location.search).get('mode');
-    if(m) { currentSpeed = speedMap[m]?m:'normal'; render(); }
+    if(m){ WU_go(m); }
   });
 })();
