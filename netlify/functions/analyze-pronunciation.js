@@ -3,64 +3,103 @@
 // 응답: { accuracy:number(0..1), transcript:string, confusionTags:string[] }
 
 const fetch = global.fetch || require('node-fetch');
-const FormData = require('form-data');               // ← 그대로 사용
+const FormData = require('form-data');
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers:hdr(), body:'' };
-  if (event.httpMethod !== 'POST')    return j(405,{ message:'Method Not Allowed' });
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: hdr(), body: '' };
+  if (event.httpMethod !== 'POST')    return j(405, { message: 'Method Not Allowed' });
 
   try {
+    if (!OPENAI_API_KEY) {
+      // 키가 없으면 STT 시도 없이 부드럽게 실패 처리
+      return j(200, { accuracy: 0, transcript: '', confusionTags: ['stt-fail:no-key'] });
+    }
+
     const body = JSON.parse(event.body || '{}');
     const ref = String(body.referenceText || '');
     const audio = body.audio || {};
-    const b64 = String(audio.base64 || '');
-    const mime = String(audio.mimeType || 'audio/webm');
-    const duration = Number(audio.duration || 0);
-    if (!b64) return j(400, { message:'audio base64 required' });
-    if (duration && duration < 0.6) {
-      return j(200, { accuracy:0, transcript:'', confusionTags:['trop-court'] });
+
+    // --- base64 정리(dataURL 형태면 접두부 제거) ---
+    let b64 = String(audio.base64 || '');
+    if (b64.startsWith('data:')) {
+      const idx = b64.indexOf(',');
+      if (idx > -1) b64 = b64.slice(idx + 1);
+    }
+    if (!b64) return j(400, { message: 'audio base64 required' });
+
+    // --- mimeType: 실제 녹음된 타입 그대로 전달 (codecs 포함 가능) ---
+    let mime = 'audio/webm';
+    if (audio.mimeType && typeof audio.mimeType === 'string') {
+      mime = audio.mimeType;
     }
 
-    // Whisper STT (ko)
+    // --- 너무 짧은 입력은 서버에서 즉시 컷 ---
+    const duration = Number(audio.duration || 0);
+    if (duration && duration < 0.6) {
+      return j(200, { accuracy: 0, transcript: '', confusionTags: ['trop-court'] });
+    }
+
+    // --- Whisper STT (ko) ---
     const buf = Buffer.from(b64, 'base64');
     const fd = new FormData();
-    fd.append('file', buf, { filename: audio.filename || 'rec.webm', contentType: mime });
+    fd.append('file', buf, {
+      filename: audio.filename || 'rec.webm',
+      contentType: mime,
+      knownLength: buf.length
+    });
     fd.append('model', 'whisper-1');
     fd.append('language', 'ko');
-    // 🚑 중요: 멀티파트 헤더(boundary) 포함
-    const headers = { Authorization:`Bearer ${OPENAI_API_KEY}`, ...fd.getHeaders() };
+    fd.append('temperature', '0');
+
+    const headers = { Authorization: `Bearer ${OPENAI_API_KEY}`, ...fd.getHeaders() };
 
     const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method:'POST',
+      method: 'POST',
       headers,
       body: fd
     });
 
     if (!r.ok) {
-      const t = await r.text().catch(()=> '');
-      return j(200, { accuracy:0, transcript:'', confusionTags:[`stt-fail:${r.status}`] });
+      // 학생 화면은 부드럽게: 정확도 0 + 태그로 코드 표시
+      try { await r.text(); } catch {}
+      return j(200, { accuracy: 0, transcript: '', confusionTags: [`stt-fail:${r.status}`] });
     }
+
     const tj = await r.json();
     const hyp = String(tj.text || '').trim();
 
-    const norm = s => String(s||'').replace(/\s+/g,'').replace(/[.,!?;:()"'’“”\-–—]/g,'');
+    // --- 유사도 계산(공백/구두점 제거 후 Levenshtein 유사도) ---
+    const norm = s => String(s || '')
+      .replace(/\s+/g, '')
+      .replace(/[.,!?;:()"'’“”\-–—]/g, '');
+
     const R = norm(ref), H = norm(hyp);
 
-    // 레벤슈타인 유사도
-    const sim = (a,b) => {
-      const n=a.length, m=b.length; if(!n&&!m) return 1; if(!n||!m) return 0;
-      const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
-      for(let i=0;i<=n;i++) dp[i][0]=i; for(let j=0;j<=m;j++) dp[0][j]=j;
-      for(let i=1;i<=n;i++){ for(let j=1;j<=m;j++){
-        const cost=a[i-1]===b[j-1]?0:1;
-        dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
-      }}
-      const d=dp[n][m]; return Math.max(0, 1 - d/Math.max(n,1));
+    const sim = (a, b) => {
+      const n = a.length, m = b.length;
+      if (!n && !m) return 1;
+      if (!n || !m) return 0;
+      const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+      for (let i = 0; i <= n; i++) dp[i][0] = i;
+      for (let j = 0; j <= m; j++) dp[0][j] = j;
+      for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      const d = dp[n][m];
+      return Math.max(0, 1 - d / Math.max(n, 1));
     };
 
-    let acc = sim(R,H);
+    let acc = sim(R, H);
 
+    // --- 자주 헷갈리는 태그(간단 규칙) ---
     const tags = [];
     if (/요/.test(ref) && /유/.test(hyp)) tags.push('요→유');
     if (/으/.test(ref) && /우/.test(hyp)) tags.push('으→우');
@@ -71,15 +110,20 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error(err);
-    return j(500, { message:'analyze-pronunciation failed', error:String(err) });
+    // 예외도 학생 화면엔 부드럽게
+    return j(200, { accuracy: 0, transcript: '', confusionTags: ['stt-fail:exception'] });
   }
 };
 
-function hdr(){ return {
-  'Access-Control-Allow-Origin':'*',
-  'Access-Control-Allow-Methods':'POST,OPTIONS',
-  'Access-Control-Allow-Headers':'Content-Type,Authorization,Accept',
-  'Content-Type':'application/json',
-  'Cache-Control':'no-store'
-};}
-function j(statusCode,obj){ return { statusCode, headers:hdr(), body:JSON.stringify(obj) }; }
+function hdr() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,Accept',
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store'
+  };
+}
+function j(statusCode, obj) {
+  return { statusCode, headers: hdr(), body: JSON.stringify(obj) };
+}
