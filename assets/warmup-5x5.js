@@ -1,21 +1,30 @@
 // assets/warmup-5x5.js
-// 5×5 숫자 워밍업: 묶음(5개) 단위 듣기/녹음/실시간 STT/채점 + 완료 버튼 1개
-// - 반복 기본 ×2(칩으로 ×3 선택)  ·  속도: slow(0.7) / normal(1.0) / fast(1.5)
-// - 각 배속 누르면 상단으로 스크롤 + 영역 하이라이트
-// - 실시간 STT는 live-stt.js 사용(폴백 점수 반영)
+// 5×5 숫자 워밍업 (듣기→따라 말하기→평가)
+// 요구 반영:
+// - 속도 바(0.7× / 1.0× / 1.5× / 1.7×)를 워밍업 화면 상단에 '항상' 표시(선택 후에도 변경 가능)
+// - 2.0× → 1.7×로 교체
+// - 완료 구역: [끝내기(자동 전송)] + [연습문제로 가기] 버튼 2개
+// - 텍스트: 프랑스어 우선, 'FR: / KO:' 라벨 및 남/여 목소리 안내 제거
+// - 라이브 STT(live-stt.js) 있으면 실시간 표시·폴백 점수 사용(없어도 동작)
 
 (function(){
   'use strict';
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
-  const speedMap = { slow:0.7, normal:1.0, fast:1.5 };
 
   const state = {
-    mode: { speed:1.0, continuous:false },
-    repeats: 2, // 기본 2회
+    speed: 1.0,      // 0.7 / 1.0 / 1.5 / 1.7
+    repeats: 2,      // ×2 기본, 카드에서 ×3 선택 가능
     progress: {}, listenCount: {},
     startISO: null, startMs: 0, name:'Élève'
   };
+
+  const SPEEDS = [
+    { val:0.7,  label:'0.7× Débutant' },
+    { val:1.0,  label:'1.0× Normal'   },
+    { val:1.5,  label:'1.5× Rapide'   },
+    { val:1.7,  label:'1.7× Turbo'    }, // 2.0× → 1.7×
+  ];
 
   const BUNDLES = [
     { key:'natifs_1_5',  label:'Natifs 1–5',  text:'하나 둘 셋 넷 다섯',     voice:'alloy'   },
@@ -29,6 +38,8 @@
   const esc = (s='')=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const collapse = s=>String(s||'').replace(/\s+/g,'');
   function splitTokens(s){ return String(s||'').split(/[,\s]+/).filter(Boolean); }
+  function chipsHtml(text){ return text.split(/\s+/).map(t=>`<span class="chip">${esc(t)}</span>`).join(''); }
+  function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split(',')[1] : String(s||''); }
   function similarity(a,b){
     const s=String(a||''), t=String(b||''); const n=s.length, m=t.length;
     if(!n&&!m) return 1; if(!n||!m) return 0;
@@ -39,7 +50,6 @@
     }}
     const d=dp[n][m]; return Math.max(0,1 - d/Math.max(n,1));
   }
-  function chipsHtml(text){ return text.split(/\s+/).map(t=>`<span class="chip">${esc(t)}</span>`).join(''); }
 
   // ---------- TTS ----------
   function base64ToBlob(base64, mime='audio/mpeg'){
@@ -115,12 +125,12 @@
       audio.addEventListener('ended',   ()=>{ setBtnPlaying(btn,false); if(currentSrc){ URL.revokeObjectURL(currentSrc); currentSrc=null; } });
       await audio.play();
     }catch(_){
-      alert('오디오 오류. 다시 시도해 주세요.');
+      alert('Problème audio. Réessaie.');
     }
   }
   function setBtnPlaying(btn,on){ if(btn) btn.innerHTML = on? '⏸️ Pause' : '▶️ Écouter'; }
 
-  // ---------- MediaRecorder(Chrome) ----------
+  // ---------- Recorder(Chrome 호환) ----------
   function pickMime(){
     const M = window.MediaRecorder;
     if (!M) return '';
@@ -139,8 +149,8 @@
       mediaRecorder = mime ? new MediaRecorder(stream, { mimeType:mime }) : new MediaRecorder(stream);
       chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
-      ctx = new (window.AudioContext||window.webkitAudioContext)();
-      const source = ctx.createMediaStreamSource(stream);
+      const AC = window.AudioContext||window.webkitAudioContext;
+      ctx = new AC(); const source = ctx.createMediaStreamSource(stream);
       analyser = ctx.createAnalyser(); analyser.fftSize = 512;
       source.connect(analyser); drawVU(canvas, analyser);
       mediaRecorder.start(50);
@@ -187,10 +197,8 @@
     return { start, stop, getResult };
   }
 
-  // ---------- 서버 채점 + live-stt 폴백 ----------
-  function toBareBase64(s){ return String(s||'').includes(',') ? String(s).split(',')[1] : String(s||''); }
+  // ---------- 서버 채점 ----------
   async function analyzePronunciation({ referenceText, record }){
-    // 1) 서버 분석
     let data = {};
     try{
       const payload = {
@@ -203,19 +211,45 @@
       data = await r.json().catch(()=> ({}));
     }catch(_){ data = {}; }
 
-    // 2) 서버 점수/전사
     let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
     let transcript = String(data.transcript||'');
-    const ref = String(referenceText||'').replace(/\s+/g,'');
+    const ref = collapse(referenceText||'');
 
-    // 서버가 텍스트만 주면 전사로 환산
-    if(!acc && transcript) acc = similarity(ref, transcript.replace(/\s+/g,''));
-
+    if(!acc && transcript) acc = similarity(ref, collapse(transcript));
     return { accuracy: acc, transcript };
+  }
+
+  // ---------- 속도 툴바(항상 보이게) ----------
+  function renderSpeedToolbar(){
+    const wu = $('#warmup-screen'); if(!wu) return;
+    let bar = $('#speed-toolbar', wu);
+    if(!bar){
+      bar = document.createElement('div');
+      bar.id = 'speed-toolbar';
+      bar.className = 'mb-4 flex flex-wrap gap-2 justify-center';
+      wu.prepend(bar);
+    }
+    bar.innerHTML = `
+      <div class="p-2 rounded-xl bg-white border flex flex-wrap items-center gap-2">
+        <div class="text-sm text-slate-600 mr-1">Vitesse / 속도</div>
+        ${SPEEDS.map(s=>`
+          <button class="btn ${state.speed===s.val?'btn-primary':'btn-outline'} btn-sm speed-btn" data-v="${s.val}">${s.label}</button>
+        `).join('')}
+        <div class="text-xs text-slate-500 ml-2">Étapes: <b>Écouter</b> → <b>Répéter</b> → Évaluer</div>
+      </div>
+    `;
+    bar.querySelectorAll('.speed-btn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const v = parseFloat(e.currentTarget.dataset.v);
+        if(!isNaN(v)){ state.speed = v; renderAll(); window.scrollTo({ top: wu.offsetTop-8, behavior:'smooth' }); }
+      });
+    });
   }
 
   // ---------- 렌더 ----------
   function renderAll(){
+    renderSpeedToolbar();
+
     const wrap = document.getElementById('stages-wrap'); if(!wrap) return;
     wrap.innerHTML=''; state.progress={}; state.listenCount={};
 
@@ -227,7 +261,7 @@
 
     document.getElementById('finish-wrap')?.classList.add('hidden');
 
-    // 새 카드들에 live-stt 연결 (스크립트가 없다면 동적 로드)
+    // live-stt 연결(있으면): 새 카드 DOM에 바인딩
     ensureLiveSTT().then(()=>{ window.LiveSTT?.init?.(); }).catch(()=>{});
   }
 
@@ -238,19 +272,19 @@
 
     const refDisplay = splitTokens(bundle.text).join(' ');
     const refEval    = collapse(bundle.text);
-    const ttsInput   = makeTTSPayload(bundle.text, state.mode.speed, state.repeats);
+    const ttsInput   = makeTTSPayload(bundle.text, state.speed, state.repeats);
 
     card.innerHTML = `
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <div class="text-sm text-slate-500">
-            Vitesse ${state.mode.speed}× · Répétitions:
+            Vitesse ${state.speed}× · Répétitions:
             <span class="rep-chip rep-2 ${state.repeats===2?'text-indigo-700 font-bold':''}">×2</span>
             <span class="mx-1">/</span>
             <span class="rep-chip rep-3 ${state.repeats===3?'text-indigo-700 font-bold':''}">×3</span>
           </div>
           <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${refDisplay}</span></div>
-          <div class="text-xs text-slate-500">1) Écouter  2) S’enregistrer  3) Évaluer</div>
+          <div class="text-xs text-slate-500">1) Écouter  2) Répéter  3) Évaluer</div>
         </div>
         <div class="flex items-center gap-2">
           <button class="btn btn-primary btn-play">▶️ Écouter</button>
@@ -272,7 +306,7 @@
         <div class="mt-2 text-sm"><span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span></div>
 
         <div class="mt-3 feedback-card hidden">
-          <div class="font-semibold mb-1">🧠 Explication de la note / 점수 설명</div>
+          <div class="font-semibold mb-1">🧠 Explication de la note</div>
           <div class="text-sm text-slate-700 feedback-body"></div>
         </div>
       </div>
@@ -294,8 +328,8 @@
     const btnPlay = card.querySelector('.btn-play');
     const playCountTag = card.querySelector('.play-count');
     btnPlay.addEventListener('click', async (e)=>{
-      const payload = makeTTSPayload(bundle.text, state.mode.speed, state.repeats);
-      await playTTS(payload, bundle.voice, state.mode.speed, e.currentTarget);
+      const payload = makeTTSPayload(bundle.text, state.speed, state.repeats);
+      await playTTS(payload, bundle.voice, state.speed, e.currentTarget);
       state.listenCount[bundle.key] = (state.listenCount[bundle.key]||0) + 1;
       playCountTag.textContent = String(state.listenCount[bundle.key]);
     });
@@ -315,10 +349,8 @@
     let lastRecord = null;
     let liveText = ''; // live-stt 최종 텍스트
 
-    // live-stt 장착 (init에서 자동 바인딩도 하지만, 안전하게 직접 mount)
+    // live-stt 장착 (있으면)
     ensureLiveSTT().then(()=>{ window.LiveSTT?.mount?.(card, { lang:'ko-KR', target: liveBox }); }).catch(()=>{});
-
-    // live-stt 최종 전사 수신
     card.addEventListener('livestt:final', (e)=>{
       if (e?.detail?.text) liveText = String(e.detail.text).trim();
     });
@@ -326,12 +358,11 @@
     btnStart.addEventListener('click', async ()=>{
       btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
       scoreTag.classList.add('hidden'); fbBox.classList.add('hidden'); fbBox.querySelector('.feedback-body').innerHTML='';
-      status.textContent = 'Enregistrement… parle comme le modèle ! / 원문처럼 읽어 보세요.';
+      status.textContent = 'Enregistrement… parle comme le modèle.';
       try{
         await rec.start(canvas);
-        // 실시간 STT 시작 신호
         card.dispatchEvent(new CustomEvent('recording:start'));
-      }catch(e){
+      }catch(_){
         alert('Micro non autorisé. Vérifie les permissions du navigateur.');
         btnStart.disabled=false; btnStop.disabled=true;
       }
@@ -341,7 +372,6 @@
       btnStop.disabled = true;
       try{
         const out = await rec.getResult();
-        // STT 종료 신호
         card.dispatchEvent(new CustomEvent('recording:stop'));
 
         lastRecord = out;
@@ -382,15 +412,17 @@
 
         state.progress[bundle.key] = {
           done:true, score:percent, accuracy,
-          audioBase64: (lastRecord.base64||'').split(',')[1]||'',
+          audioBase64: toBareBase64(lastRecord.base64),
           duration:lastRecord.duration, friendly:[]
         };
         card.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
+
+        // 피드백: 라벨 단순화(불필요한 FR/KO 표시는 삭제)
         fbBox.querySelector('.feedback-body').innerHTML =
           `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
            <div class="text-sm">
-             <div><b>Référence / 정답:</b> <span class="korean-font">${refEval}</span></div>
-             <div class="mt-1"><b>STT (Moi) / 내 발음:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
+             <div><b>Référence:</b> <span class="korean-font">${refDisplay}</span></div>
+             <div class="mt-1"><b>Ma prononciation:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
            </div>`;
         fbBox.classList.remove('hidden');
         checkFinish();
@@ -408,6 +440,7 @@
     document.querySelectorAll('#global-progress .progress-dot')
       .forEach((d,idx)=> d.classList.toggle('on', idx < doneCount));
   }
+
   function checkFinish(){
     const keys = BUNDLES.map(b=>b.key);
     const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
@@ -418,20 +451,24 @@
     if(!box) return;
     box.innerHTML = `
       <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
-        <div class="text-lg font-extrabold">🎉 Warming up terminé · faire des exercices</div>
-        <div class="text-slate-600 mt-1">결과를 선생님께 보내고, 바로 연습문제로 넘어가요</div>
+        <div class="text-lg font-extrabold">🎉 Warming up terminé</div>
+        <div class="text-slate-600 mt-1">Résultats → professeur (auto) ou passer aux exercices.</div>
       </div>
-      <div class="flex justify-center">
-        <button id="btn-send-next" class="btn btn-primary btn-lg">
-          <i class="fa-solid fa-paper-plane"></i> Passer aux exercices
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button id="btn-finish-send" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
         </button>
+        <a id="btn-go-ex" href="./numbers-exercises.html" class="btn btn-outline btn-lg">
+          <i class="fa-solid fa-list-check"></i> Passer aux exercices
+        </a>
       </div>`;
     box.classList.remove('hidden');
 
-    document.getElementById('btn-send-next')?.addEventListener('click', async (e)=>{
+    // 끝내기: 자동 전송
+    document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
       const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> ...';
-      try{ await sendResults(); }catch(_){}
-      location.href = './numbers-exercises.html';
+      try{ await sendResults(); alert('✅ Résultats envoyés.'); }catch(_){ alert('⚠️ Envoi échoué — réessaie.'); }
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Finir · Envoyer';
     }, { once:true });
   }
 
@@ -442,7 +479,7 @@
       return {
         number: `WU-${b.key}`,
         type: 'warmup_pronun',
-        fr: `${b.label} — vitesse ${state.mode.speed}× · répétitions ×${state.repeats}`,
+        fr: `${b.label} — vitesse ${state.speed}× · répétitions ×${state.repeats}`,
         ko: refText,
         userAnswer: '',
         isCorrect: true,
@@ -458,11 +495,11 @@
       startTime: state.startISO || new Date().toISOString(),
       endTime: new Date().toISOString(),
       totalTimeSeconds: Math.max(0, Math.round((Date.now() - (state.startMs||Date.now()))/1000)),
-      assignmentTitle: `Warm-up – Nombres (vitesse ${state.mode.speed}×, ×${state.repeats})`,
+      assignmentTitle: `Warm-up – Nombres (vitesse ${state.speed}×, ×${state.repeats})`,
       assignmentSummary: [
         '4 groupes: Natifs(1–5,6–10) + Hanja(1–5,6–10)',
-        'Chaque paquet est lu en répétitions (×2 par défaut, ×3 possible)',
-        'Écouter → S’enregistrer → Évaluer (score en %)'
+        'Paquet de 5 → répétitions (×2 par défaut, ×3 possible)',
+        'Étapes: Écouter → Répéter → Évaluer'
       ],
       questions
     };
@@ -487,9 +524,8 @@
 
   // ---------- 공개 API ----------
   function WU_go(mode){
-    if(mode === 'slow')      state.mode = { speed:0.7, continuous:false };
-    else if(mode === 'fast') state.mode = { speed:1.5, continuous:true  };
-    else                     state.mode = { speed:1.0, continuous:false };
+    // mode는 페이지 외부 버튼에서만 사용(초기 진입). 이후엔 상단 속도바로 언제든 변경 가능.
+    state.speed = (mode==='slow')?0.7 : (mode==='fast')?1.5 : 1.0;
 
     state.name = (document.getElementById('student-name')?.value || state.name || 'Élève');
     state.startISO = new Date().toISOString(); state.startMs = Date.now();
