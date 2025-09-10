@@ -1,92 +1,96 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Exercice de Dictée : Comme en Coréen</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/style.css"/>
 
-  <!-- 공용 모듈 -->
+  <!-- 공용 -->
   <script defer src="/assets/student-gate.js"></script>
   <script defer src="/assets/grading-criteria.js"></script>
   <script defer src="/assets/answer-judge.js"></script>
-
-  <!-- ✅ 발음/실시간 STT: 순서 중요 (utils → vowel-middleware → client) -->
-  <script defer src="/assets/pronun-utils.js"></script>
-  <script defer src="/assets/pronun-vowel-middleware.js"></script>
-  <script defer src="/assets/pronun-client.js"></script>
   <script defer src="/assets/live-stt.js"></script>
 
-  <!-- 이 페이지 전용 스크립트 -->
-  <script type="module" defer src="/assets/dictee-comme.js"></script>
+  <!-- 이 페이지 전용 -->
+  <script type="module" defer src="/assets/dictee-comme-warmup.js"></script>
 
   <style>
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
-    .korean-font{font-family:'Gowun Dodum',sans-serif}
-    .card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 4px 6px -1px rgb(0 0 0 /.1),0 2px 4px -2px rgb(0 0 0 /.1)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.2rem;border-radius:.75rem;font-weight:600;cursor:pointer;transition:all .2s;border:none}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .btn-primary{background:#3b82f6;color:#fff}.btn-primary:hover:not(:disabled){background:#2563eb}
-    .btn-secondary{background:#e5e7eb;color:#374151}.btn-secondary:hover:not(:disabled){background:#d1d5db}
-    .btn-hint{background:#fefce8;color:#a16207;padding:.35rem .8rem;font-size:.875rem;border:1px solid #fde047}.btn-hint:hover:not(:disabled){background:#fef08a}
-    .dictation-card{padding:1.25rem;border:1px solid #e5e7eb;border-radius:1rem;margin-bottom:1.25rem;background:#fff}
-    .feedback{padding:1rem;border-radius:.75rem;margin-top:1rem;font-size:.95rem}
-    .feedback.correct{background:#dcfce7;color:#166534;border:1px solid #86efac}
-    .feedback.incorrect{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
-    .small-muted{font-size:.875rem;color:#6b7280}
-    .pill{display:inline-block;border-radius:9999px;padding:.25rem .6rem;font-size:.8rem}
-    .pill-green{background:#e7f8ee;color:#0a7a3b;border:1px solid #9be4b8}
-    .pill-red{background:#fde8e8;color:#9b1c1c;border:1px solid #f7b4b4}
-    .spinner{width:18px;height:18px;border:3px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+    .kof{font-family:'Gowun Dodum',sans-serif}
+    .card{background:#fff;border-radius:1rem;padding:1.25rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.07),0 4px 6px -2px rgba(0,0,0,.05)}
+    .chip{padding:.25rem .6rem;border-radius:9999px;border:1px solid #c7d2fe;background:#eef2ff;font-weight:600;color:#4338ca;cursor:pointer}
+    .chip.active{background:#4338ca;color:#fff;border-color:#4338ca}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.75rem;padding:.55rem 1.1rem;font-weight:700}
+    .btn-primary{background:#2563eb;color:#fff}.btn-primary:disabled{opacity:.6}
+    .btn-ghost{background:#e5e7eb}.btn-ghost:disabled{opacity:.6}
+    .tag{display:inline-block;border-radius:9999px;padding:.2rem .55rem;font-size:.8rem}
+    .tag-green{background:#e7f8ee;color:#0a7a3b;border:1px solid #9be4b8}
+    .tag-red{background:#fde8e8;color:#9b1c1c;border:1px solid #f7b4b4}
     .vu{width:100%;height:48px;border:1px dashed #c7d2fe;border-radius:.5rem;background:#eef2ff}
-    @keyframes spin{to{transform:rotate(360deg)}}
     @media print {.no-print{display:none!important}}
   </style>
 </head>
 <body class="text-slate-800">
-  <div class="container mx-auto p-4 md:p-8 max-w-3xl">
-    <header class="text-center mb-8">
-      <h1 class="text-4xl md:text-5xl font-bold text-indigo-600 mb-2">Dictée : Comme en Coréen 🎧</h1>
-      <p class="text-lg text-slate-600">Écoutez → Écrivez en coréen → Traduisez en français → Enregistrez votre prononciation.</p>
-      <div class="mt-4 flex flex-wrap items-center justify-center gap-3 no-print">
-        <button type="button" class="btn btn-secondary" onclick="window.print()" aria-label="Imprimer la page">🖨️ Imprimer / 페이지 인쇄</button>
+  <main class="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
+    <header class="text-center space-y-2">
+      <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-600">Dictée : Comme en Coréen 🎧</h1>
+      <p class="text-slate-600">Écoutez → KO(한글) → FR(불어) → 🎙️ Prononciation (Stop 시 자동 평가)</p>
+      <div class="mt-3 flex items-center justify-center gap-2 no-print">
+        <button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer / 페이지 인쇄</button>
       </div>
-      <div class="mt-3 text-sm text-slate-500 text-center">
-        made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
-      </div>
+      <div class="text-sm text-slate-500">made by <b>성일, Pongdang</b> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a></div>
     </header>
 
-    <section class="card mb-8 no-print">
+    <section class="card no-print">
       <label class="block font-semibold mb-2">Nom de l'étudiant / 학생 이름</label>
-      <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500" placeholder="Ex. Camille, Noé, Chloé..." />
-      <p class="small-muted mt-2">
-        Nous enregistrons : votre nom, le nombre d’écoutes/indices/essais, et vos scores de prononciation. /
-        시작하면 이름, 듣기·힌트·시도 횟수, 발음 점수까지 기록돼요.
-      </p>
+      <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500" placeholder="Ex. Camille, Noé, Chloé…" />
+      <p class="text-sm text-slate-500 mt-2">시작하면 이름, 듣기·힌트·시도·발음 점수 등이 기록돼요.</p>
     </section>
 
-    <section id="explanations" class="mb-10 card">
-      <h2 class="text-2xl font-bold mb-3 text-slate-700">“Comme” — Je décris quoi ? / 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
-      <ul class="list-disc pl-6 space-y-1">
-        <li><span class="font-semibold">nom + comme</span> → <span class="korean-font">명사 + 처럼/같이</span></li>
-        <li><span class="font-semibold">être + comme</span> → <span class="korean-font">~와/과 같다</span></li>
-        <li><span class="font-semibold">verbe/adj + comme</span> → <span class="korean-font">동사 + 처럼/같이</span></li>
+    <!-- 워밍업 스타일 상단 컨트롤 -->
+    <section class="card no-print" id="top-controls">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-slate-600">Vitesse</span>
+          <button class="chip speed" data-v="0.7">0.7×</button>
+          <button class="chip speed active" data-v="1.0">1.0×</button>
+          <button class="chip speed" data-v="1.5">1.5×</button>
+          <button class="chip speed" data-v="1.7">1.7×</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-slate-600">Répétitions</span>
+          <button class="chip rep active" data-r="2">×2</button>
+          <button class="chip rep" data-r="3">×3</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 설명 -->
+    <section class="card">
+      <h2 class="text-2xl font-bold mb-2 text-slate-700">“Comme” — 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
+      <ul class="list-disc pl-6 text-slate-700 space-y-1">
+        <li><b>nom + comme</b> → <span class="kof">명사 + 처럼/같이</span></li>
+        <li><b>être + comme</b> → <span class="kof">~와/과 같다</span></li>
+        <li><b>verbe/adj + comme</b> → <span class="kof">동사 + 처럼/같이</span></li>
       </ul>
     </section>
 
-    <section id="dictation-exercises" class="quiz-container"></section>
+    <!-- 문제 렌더 -->
+    <section id="dictee-root" class="space-y-4"></section>
 
-    <section class="mt-8 flex flex-wrap items-center gap-3 no-print">
-      <button type="button" class="btn btn-secondary" id="restart-btn">↺ Réessayer / 다시하기</button>
-      <button type="button" class="btn btn-primary" id="finish-btn">✅ Terminer / 끝내기</button>
+    <!-- 하단 액션 -->
+    <section class="no-print flex flex-wrap items-center gap-3">
+      <button type="button" id="restart-btn" class="btn btn-ghost">↺ Réessayer / 다시하기</button>
+      <button type="button" id="finish-btn" class="btn btn-primary">✅ Terminer / 끝내기</button>
     </section>
 
-    <div class="mt-6 text-sm text-slate-500 text-center">
-      made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
-    </div>
-  </div>
+    <footer class="text-center text-sm text-slate-500">
+      made by <b>성일, Pongdang</b> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
+    </footer>
+  </main>
 </body>
 </html>
