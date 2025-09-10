@@ -73,3 +73,8 @@ body {
   25%{ box-shadow:0 0 0 3px rgba(99,102,241,.35) inset }
   100%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:transparent }
 }
+
+
+.vu-mini{ height:16px !important; }
+.rec-indicator{ display:none; font-size:12px; color:#dc2626; margin-left:.5rem }
+.is-recording .rec-indicator{ display:inline }
