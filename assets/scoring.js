@@ -62,3 +62,23 @@
 
   w.Scoring = { DEFAULT_PROFILE, compute, normalizeWeights };
 })(window);
+
+
+(function(w){
+  const S={'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
+  const N={'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+
+  function gradeKOWithDigits(ref,hyp,opts){
+    const orig = (w.Scoring && w.Scoring.gradeKO) ? w.Scoring.gradeKO : (w.AnswerJudge && w.AnswerJudge.gradeKO);
+    if(!orig) return { score:0, isCorrect:false };
+    const s=(hyp||'').replace(/\d/g,d=>S[d]||d);
+    const n=(hyp||'').replace(/\d/g,d=>N[d]||d);
+    const r0=orig(ref,hyp,opts)||{score:0,isCorrect:false};
+    const r1=orig(ref,s,opts)||{score:0,isCorrect:false};
+    const r2=orig(ref,n,opts)||{score:0,isCorrect:false};
+    return [r0,r1,r2].sort((a,b)=>b.score-a.score)[0];
+  }
+
+  w.Scoring = w.Scoring || {};
+  w.Scoring.gradeKOWithDigits = gradeKOWithDigits;
+})(window);
