@@ -1,4 +1,5 @@
-// Whisper 전송부 FormData 보정 + 단순 스코어러(유사도 폴백)
+// netlify/functions/analyze-pronunciation.js
+// Whisper 전송부 + 숫자 보정 유사도
 // 요청: { referenceText:string, audio:{ base64, filename, mimeType, duration } }
 // 응답: { transcript:string, accuracy:number(0..1), details?:{explain:string[]} }
 
@@ -19,7 +20,7 @@ exports.handler = async (event) => {
 
   try{
     const body = JSON.parse(event.body||'{}');
-    const ref  = String(body.referenceText||'').replace(/\s+/g,'');
+    const ref  = koCanon(String(body.referenceText||'')); // 공백 제거된 한글 기준
     const audio = body.audio||{};
     if (!audio?.base64) return json(400, { message:'audio.base64 required' });
 
@@ -27,21 +28,48 @@ exports.handler = async (event) => {
       base64: audio.base64, filename: audio.filename||'rec.webm', mimeType: audio.mimeType||'audio/webm'
     });
 
-    const transcript = String(tj?.text||'').trim();
-    const acc = scoreSimilarity(ref, transcript.replace(/\s+/g,''));
+    const transcriptRaw = String(tj?.text||'').trim();
+    const acc = scoreWithNumberFallback(ref, transcriptRaw);
 
     return json(200, {
-      transcript,
-      accuracy: acc, // 0..1
-      details: { explain: transcript ? [] : ['입력이 너무 짧거나 무성 구간이 많았어요. 조금 더 길게 또박또박 읽어보세요.'] }
+      transcript: transcriptRaw,
+      accuracy: acc,
+      details: { explain: transcriptRaw ? [] : ['입력이 너무 짧거나 무성 구간이 많았어요. 조금 더 길게 또박또박 읽어보세요.'] }
     });
 
   }catch(err){
-    // Whisper 오류도 200으로 돌려보내되, 클라이언트 폴백이 유사도 계산하도록
     return json(200, { transcript:'', accuracy:0, confusionTags:[`stt-fail:${String(err).slice(0,80)}`] });
   }
 };
 
+// ===== 숫자/한글 보정 =====
+const __KO_NUM_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
+const __KO_NUM_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+
+function koCanon(s){
+  return String(s||'')
+    .toLowerCase()
+    .replace(/[a-z]+/g,'')         // 로마자 제거
+    .replace(/[^\uAC00-\uD7A3\d]/g,'') // 한글/숫자만
+    .replace(/\s+/g,'');            // 공백 제거
+}
+function expandDigits(s){
+  if (!/\d/.test(s)) return [s];
+  const rep = (map)=> s.replace(/\d/g, d => map[d] || d);
+  return [s, rep(__KO_NUM_SINO), rep(__KO_NUM_NATIVE)];
+}
+function scoreWithNumberFallback(refKo, transcript){
+  const base = koCanon(transcript);
+  const cands = expandDigits(base);
+  let best = 0;
+  for(const c of cands){
+    const sim = scoreSimilarity(refKo, koCanon(c));
+    if(sim > best) best = sim;
+  }
+  return best; // 0..1
+}
+
+// ===== Whisper =====
 async function transcribeBase64({ base64, filename='rec.webm', mimeType='audio/webm' }){
   const clean = base64.includes(',') ? base64.split(',')[1] : base64;
   const buf = Buffer.from(clean, 'base64');
@@ -62,16 +90,16 @@ async function transcribeBase64({ base64, filename='rec.webm', mimeType='audio/w
   return JSON.parse(text);
 }
 
+// ===== 유사도 =====
 function scoreSimilarity(a,b){
-  // 레벤슈타인 기반 간단 유사도
-  const n=a.length, m=b.length;
-  if(!n && !m) return 1;
-  if(!n || !m) return 0;
+  const A = String(a||''), B = String(b||'');
+  const n=A.length, m=B.length;
+  if(!n && !m) return 1; if(!n || !m) return 0;
   const dp = Array.from({length:n+1},()=>Array(m+1).fill(0));
   for(let i=0;i<=n;i++) dp[i][0]=i; for(let j=0;j<=m;j++) dp[0][j]=j;
   for(let i=1;i<=n;i++){
     for(let j=1;j<=m;j++){
-      const c = a[i-1]===b[j-1] ? 0 : 1;
+      const c = A[i-1]===B[j-1] ? 0 : 1;
       dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+c);
     }
   }
