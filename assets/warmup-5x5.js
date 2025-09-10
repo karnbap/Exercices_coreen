@@ -1,18 +1,17 @@
 // /assets/warmup-5x5.js
 // 5×5 숫자 워밍업 (듣기→따라 말하기→평가)
-// - 속도바(0.7×/1.0×/1.5×/1.7×) 항상 표시
+// - 속도바(0.7×/1.0×/1.5×) 항상 표시
 // - 재생/생성 모두 state.speed 반영
 // - LiveSTT.init() 자동 연결 (카드별 mount 불필요)
 // - 실시간 자막 상자 .pronun-live는 숨김 제거
 // - 서버 STT 실패 시 Live STT로 폴백 유사도
-
 (function(){
   'use strict';
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
   const state = {
-    speed: 1.0,      // 0.7 / 1.0 / 1.5 / 1.7
+    speed: 1.0,      // 0.7 / 1.0 / 1.5
     repeats: 2,      // ×2 기본
     progress: {}, listenCount: {},
     startISO: null, startMs: 0, name:'Élève'
@@ -22,8 +21,12 @@
     { val:0.7,  label:'0.7× Débutant' },
     { val:1.0,  label:'1.0× Normal'   },
     { val:1.5,  label:'1.5× Rapide'   },
-    { val:1.7,  label:'1.7× Turbo'    },
   ];
+  const SPEED_ORDER = [0.7, 1.0, 1.5];
+  function getNextSpeed(curr){
+    const i = SPEED_ORDER.indexOf(curr);
+    return (i>=0 && i < SPEED_ORDER.length-1) ? SPEED_ORDER[i+1] : null;
+  }
 
   const BUNDLES = [
     { key:'natifs_1_5',  label:'Natifs 1–5',  text:'하나 둘 셋 넷 다섯',     voice:'alloy'   },
@@ -48,26 +51,25 @@
     }}
     const d=dp[n][m]; return Math.max(0,1 - d/Math.max(n,1));
   }
-// --- 숫자→한글 보정 유틸 (한자어/고유어 둘 다) ---
-const DIGIT_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
-const DIGIT_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
 
-function expandDigitsCandidates(s=''){
-  const str = String(s||'');
-  if(!/\d/.test(str)) return [str];
-  const rep = (map)=> str.replace(/\d/g, d => map[d] || d);
-  return [str, rep(DIGIT_SINO), rep(DIGIT_NATIVE)];
-}
-function bestSimAgainstRef(refCollapsed, hypRaw){
-  const cands = expandDigitsCandidates(hypRaw).map(c => collapse(c));
-  let best = 0;
-  for(const c of cands){
-    const sim = similarity(refCollapsed, c);
-    if(sim > best) best = sim;
+  // --- 숫자→한글 보정 유틸 (한자어/고유어 둘 다) ---
+  const DIGIT_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
+  const DIGIT_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+  function expandDigitsCandidates(s=''){
+    const str = String(s||'');
+    if(!/\d/.test(str)) return [str];
+    const rep = (map)=> str.replace(/\d/g, d => map[d] || d);
+    return [str, rep(DIGIT_SINO), rep(DIGIT_NATIVE)];
   }
-  return best;
-}
-
+  function bestSimAgainstRef(refCollapsed, hypRaw){
+    const cands = expandDigitsCandidates(hypRaw).map(c => collapse(c));
+    let best = 0;
+    for(const c of cands){
+      const sim = similarity(refCollapsed, c);
+      if(sim > best) best = sim;
+    }
+    return best;
+  }
 
   // ---------- TTS ----------
   function base64ToBlob(base64, mime='audio/mpeg'){
@@ -217,68 +219,29 @@ function bestSimAgainstRef(refCollapsed, hypRaw){
   }
 
   // ---------- 서버 채점 ----------
-// ---------- 서버 채점 ----------
-async function analyzePronunciation({ referenceText, record }){
-  // 1) 서버(STT) 호출
-  let data = {};
-  try{
-    const payload = {
-      referenceText,
-      audio: {
-        base64: (record.base64.includes(',') ? record.base64.split(',')[1] : record.base64),
-        filename: `rec_${Date.now()}.webm`,
-        mimeType: record.mime || 'audio/webm',
-        duration: record.duration
-      }
-    };
-    const r = await fetch((window.PONGDANG_FN_BASE||'/.netlify/functions') + '/analyze-pronunciation', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify(payload)
-    });
-    data = await r.json().catch(()=>({}));
-  }catch(_){
-    data = {};
+  async function analyzePronunciation({ referenceText, record }){
+    let data = {};
+    try{
+      const payload = {
+        referenceText,
+        audio: { base64: toBareBase64(record.base64), filename:`rec_${Date.now()}.webm`, mimeType: record.mime || 'audio/webm', duration: record.duration }
+      };
+      const r = await fetch(`${FN_BASE}/analyze-pronunciation`, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      data = await r.json().catch(()=> ({}));
+    }catch(_){ data = {}; }
+
+    let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
+    let transcript = String(data.transcript||'');
+    const ref = collapse(referenceText||'');
+
+    // 서버 전사에 숫자가 섞였으면 → 일이삼/하나둘셋 후보로 최고 유사도 사용
+    if (transcript) acc = Math.max(acc, bestSimAgainstRef(ref, transcript));
+    // 폴백
+    if(!acc && transcript) acc = similarity(ref, collapse(transcript));
+    return { accuracy: acc, transcript };
   }
-
-  // 2) 점수 계산(숫자→한글 보정 + 레벤슈타인 폴백)
-  let acc = (typeof data.accuracy==='number') ? (data.accuracy>1 ? data.accuracy/100 : data.accuracy) : 0;
-  let transcript = String(data.transcript||'');
-  const ref = (referenceText||'').replace(/\s+/g,'');
-
-  // 서버 전사에 숫자(1 2 3…)가 섞였으면: 일이삼/하나둘셋 후보로 바꿔 최고 유사도 사용
-  const DIGIT_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
-  const DIGIT_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
-  function collapse(s){ return String(s||'').replace(/\s+/g,''); }
-  function levSim(a,b){
-    const s=String(a), t=String(b); const n=s.length, m=t.length;
-    if(!n&&!m) return 1; if(!n||!m) return 0;
-    const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
-    for(let i=0;i<=n;i++) dp[i][0]=i; for(let j=0;j<=m;j++) dp[0][j]=j;
-    for(let i=1;i<=n;i++){ for(let j=1;j<=m;j++){
-      const c=s[i-1]===t[j-1]?0:1;
-      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+c);
-    }}
-    const d=dp[n][m]; return Math.max(0,1 - d/Math.max(n,1));
-  }
-  function expandDigitsCandidates(s=''){
-    if(!/\d/.test(s)) return [s];
-    const rep = (map)=> s.replace(/\d/g, d => map[d] || d);
-    return [s, rep(DIGIT_SINO), rep(DIGIT_NATIVE)];
-  }
-
-  let best = acc;
-  if (transcript){
-    const cands = expandDigitsCandidates(transcript).map(c=>collapse(c));
-    for(const c of cands){ best = Math.max(best, levSim(ref, c)); }
-    if (best > acc) acc = best;
-  }
-  // 서버가 빈 문자열을 줬어도 마지막 안전망
-  if (!acc && transcript) acc = levSim(ref, collapse(transcript));
-
-  return { accuracy: acc, transcript };
-}
-
 
   // ---------- 속도 툴바 ----------
   function renderSpeedToolbar(){
@@ -333,7 +296,6 @@ async function analyzePronunciation({ referenceText, record }){
 
     const refDisplay = splitTokens(bundle.text).join(' ');
     const refEval    = collapse(bundle.text);
-    const ttsInput   = makeTTSPayload(bundle.text, state.speed, state.repeats);
 
     card.innerHTML = `
       <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -410,7 +372,7 @@ async function analyzePronunciation({ referenceText, record }){
     let lastRecord = null;
     let liveText = ''; // live-stt 최종 텍스트
 
-    // live-stt 이벤트만 리슨(전역 init은 renderAll()에서 수행)
+    // live-stt 이벤트 리슨
     card.addEventListener('livestt:final', (e)=>{
       if (e?.detail?.text) liveText = String(e.detail.text).trim();
     });
@@ -455,15 +417,14 @@ async function analyzePronunciation({ referenceText, record }){
         // 1차: 서버 채점
         let { accuracy, transcript } = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
 
-        // 2차: live-stt 폴백(더 유사하면 교체)
-     const ref = collapse(refEval);
-if (liveText) {
-  const fb = bestSimAgainstRef(ref, liveText);
-  if (!transcript || accuracy < fb) {
-    accuracy = fb; transcript = liveText;
-  }
-}
-
+        // 2차: live-stt 폴백(숫자→한글 보정 포함)
+        const ref = collapse(refEval);
+        if (liveText) {
+          const fb = bestSimAgainstRef(ref, liveText);
+          if (!transcript || accuracy < fb) {
+            accuracy = fb; transcript = liveText;
+          }
+        }
 
         const percent = Math.round((accuracy || 0)*100);
         scoreTag.textContent = `Score: ${percent}%`;
@@ -509,26 +470,49 @@ if (liveText) {
 
     const box = document.getElementById('finish-wrap');
     if(!box) return;
+
+    const next = getNextSpeed(state.speed);
+    const nextLabel = next ? `${next.toFixed(1)}×` : '';
+
     box.innerHTML = `
       <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
         <div class="text-lg font-extrabold">🎉 Warming up terminé</div>
-        <div class="text-slate-600 mt-1">Résultats → professeur (auto) ou passer aux exercices.</div>
+        <div class="text-slate-600 mt-1">${ next
+          ? 'Passe à la vitesse suivante / 다음 속도로 넘어가요.'
+          : 'Passe aux exercices / 다음 연습문제로 이동해요.'}
+        </div>
       </div>
       <div class="flex flex-wrap gap-2 justify-center">
         <button id="btn-finish-send" class="btn btn-primary btn-lg">
           <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
         </button>
-        <a id="btn-go-ex" href="./numbers-exercises.html" class="btn btn-outline btn-lg">
-          <i class="fa-solid fa-list-check"></i> Passer aux exercices
-        </a>
+        ${
+          next
+            ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">${nextLabel} → Vitesse suivante / 다음 속도</button>`
+            : `<a id="btn-go-ex" href="./numbers-exercises.html" class="btn btn-outline btn-lg">
+                 <i class="fa-solid fa-list-check"></i> Passer aux exercices / 다음 연습문제
+               </a>`
+        }
       </div>`;
     box.classList.remove('hidden');
 
+    // 결과 전송
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
       const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> ...';
       try{ await sendResults(); alert('✅ Résultats envoyés.'); }catch(_){ alert('⚠️ Envoi échoué — réessaie.'); }
       btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Finir · Envoyer';
     }, { once:true });
+
+    // 다음 속도로 재시작
+    const ns = document.getElementById('btn-next-speed');
+    if (ns) {
+      ns.addEventListener('click', ()=>{
+        state.speed = next;
+        state.startISO = new Date().toISOString(); state.startMs = Date.now();
+        renderAll();
+        window.scrollTo({ top: document.getElementById('warmup-screen').offsetTop - 8, behavior:'smooth' });
+      }, { once:true });
+    }
   }
 
   async function sendResults(){
