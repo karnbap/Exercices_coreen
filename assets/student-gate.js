@@ -116,14 +116,25 @@
   }
 })();
 
-// Hint 토글 전역 이벤트 (모든 문제 카드 공통)
-document.addEventListener('click', (e)=>{
-  const btn = e.target.closest('.btn-hint');
-  if(!btn) return;
-  const targetSel = btn.getAttribute('data-target');
-  if(!targetSel) return;
-  const box = document.querySelector(targetSel);
-  if(!box) return;
-  box.classList.toggle('show');
-});
+// Hint 버튼 토글 (모든 페이지/문제 공통)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-hint1, .btn-hint2, .btn-hint');
+  if (!btn) return;
 
+  // 카드 범위 안에서만 탐색(중복 ID 걱정 없음)
+  const card = btn.closest('.card, [data-card], .dictation-card, .quiz-card') || document;
+
+  // data-target 사용 권장(예: data-target=".hint1-box")
+  const sel = btn.getAttribute('data-target');
+  let box = sel ? card.querySelector(sel) : null;
+
+  // data-target이 없으면, 바로 다음 형제 중 .hint-box 찾기(폴백)
+  if (!box) {
+    const next = btn.nextElementSibling;
+    if (next && next.classList?.contains('hint-box')) box = next;
+  }
+  if (!box) return;
+
+  box.classList.toggle('show');
+  btn.setAttribute('aria-pressed', box.classList.contains('show') ? 'true' : 'false');
+});
