@@ -86,20 +86,19 @@
         <div class="mt-3 grid gap-2 ml-10">
           <input class="ko kof p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
           <input class="fr p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
-         <div class="flex gap-2">
-           <button type="button" class="btn-hint btn-hint1" data-target=".hint1-box" aria-pressed="false">
-             🙏 Aidez-moi <span class="ml-1 text-sm text-slate-100">(초성)</span>
-           </button>
-           <button type="button" class="btn-hint btn-hint2" data-target=".hint2-box" aria-pressed="false">
-             🦺 Au secours <span class="ml-1 text-sm text-slate-100">(단어)</span>
-           </button>
-           <button class="btn btn-ghost check">Vérifier (정답 확인)</button>
-         </div>
-         
-         <!-- 힌트 박스: 처음엔 숨김, 버튼으로 토글 -->
-         <div class="hint-box hint1-box"></div>
-         <div class="hint-box hint2-box"></div>
+          <div class="flex gap-2">
+            <button type="button" class="btn-hint btn-hint1" data-target=".hint1-box" aria-pressed="false">
+              🙏 Aidez-moi <span class="ml-1 text-sm text-slate-100">(초성)</span>
+            </button>
+            <button type="button" class="btn-hint btn-hint2" data-target=".hint2-box" aria-pressed="false">
+              🦺 Au secours <span class="ml-1 text-sm text-slate-100">(단어)</span>
+            </button>
+            <button class="btn btn-ghost check">Vérifier (정답 확인)</button>
+          </div>
 
+          <!-- 힌트 박스: 처음엔 숨김, 버튼으로 토글 -->
+          <div class="hint-box hint1-box"></div>
+          <div class="hint-box hint2-box"></div>
 
           <div class="mt-1 flex items-center gap-2">
             <button class="btn btn-ghost rec">🎙️ Démarrer</button>
@@ -117,38 +116,26 @@
       const btnPlay=$('.play',el), listen=$('.listen',el);
       btnPlay.onclick=async()=>{ await ttsPlay(q.ko,q.voice); st[i].listen++; listen.textContent=String(st[i].listen); };
 
-      // 힌트
-      // 힌트 토글: 다시 누르면 숨김, 최초 열림 때만 카운트 +1
-      const btnH1 = el.querySelector('.btn-hint1');
-      const btnH2 = el.querySelector('.btn-hint2');
+      // ===== 힌트 (이벤트 위임: 카드 섹션에 한 번만 바인딩) =====
       const boxH1 = el.querySelector('.hint1-box');
       const boxH2 = el.querySelector('.hint2-box');
-      
-      // 내용 채우기(최초 한 번)
+      // 내용 채우기
       boxH1.innerHTML = `<b>🙏 초성:</b> <span class="kof">${q.hint1 || '—'}</span>`;
       boxH2.innerHTML = `<b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}`;
-      
-      function toggleHint(btn, box, key /* 'h1' | 'h2' */){
-        const showing = box.classList.contains('show');
-        if (showing) {
-          box.classList.remove('show');
-          btn.setAttribute('aria-pressed','false');
-        } else {
-          box.classList.add('show');
-          btn.setAttribute('aria-pressed','true');
-          // 최초 열림에만 카운트 +1
-          if (key==='h1' && !btn.dataset._opened){
-            st[i].h1++; btn.dataset._opened = '1';
-          }
-          if (key==='h2' && !btn.dataset._opened){
-            st[i].h2++; btn.dataset._opened = '1';
-          }
+      el.addEventListener('click', (ev) => {
+        const b1 = ev.target.closest('.btn-hint1');
+        const b2 = ev.target.closest('.btn-hint2');
+        if (!b1 && !b2) return;
+        const btn = b1 || b2;
+        const isH1 = !!b1;
+        const box = isH1 ? boxH1 : boxH2;
+        const opened = box.classList.toggle('show');
+        btn.setAttribute('aria-pressed', opened ? 'true' : 'false');
+        if (opened && !btn.dataset._opened) {
+          if (isH1) st[i].h1++; else st[i].h2++;
+          btn.dataset._opened = '1';
         }
-      }
-      
-      btnH1.addEventListener('click', ()=>toggleHint(btnH1, boxH1, 'h1'));
-      btnH2.addEventListener('click', ()=>toggleHint(btnH2, boxH2, 'h2'));
-
+      });
 
       // 채점
       const koInp=$('.ko',el), frInp=$('.fr',el), out=$('.out',el);
@@ -226,12 +213,12 @@
 
         // 🔊 저음량 민감도↑: Gain → Analyser (녹음 오디오에는 영향 없음)
         gainNode = ac.createGain();
-        gainNode.gain.value = 3.2; // 1.0 기본, 작으면 2~4로 조절
+        gainNode.gain.value = 3.2;
         src.connect(gainNode);
 
         an=ac.createAnalyser();
         an.fftSize = 2048;
-        an.minDecibels = -100;       // 민감도↑
+        an.minDecibels = -100;
         an.maxDecibels = -10;
         an.smoothingTimeConstant = 0.85;
         gainNode.connect(an);
@@ -278,7 +265,6 @@
         document.addEventListener('live-stt-partial', onPart);
         document.addEventListener('live-stt-final',   onFinal);
 
-        // 폴백 알림: 1.5초 동안 이벤트 없으면 안내만 표시
         setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…'; }, 1500);
       }
 
@@ -296,7 +282,7 @@
           $('.out',el).innerHTML+='<div class="text-xs text-slate-500 mt-1">KO 정답 확인 후 발음 평가가 정확해져요.</div>';
           return;
         }
-        await evaluate(blob, dur); // 자동 평가
+        await evaluate(blob, dur);
       }
       async function recStop(){ if(!mr) return; mr.stop(); }
 
@@ -346,7 +332,8 @@
 
   // ===== 컨트롤 =====
   $('#restart-btn')?.addEventListener('click',()=>{
-    $('#dictee-root').innerHTML=''; for(const s of st){ Object.assign(s,{listen:0,h1:0,h2:0,koOK:false,frOK:false,recBase64:null,recDur:0,acc:null,trans:''}); }
+    $('#dictee-root').innerHTML='';
+    for(const s of st){ Object.assign(s,{listen:0,h1:0,h2:0,koOK:false,frOK:false,recBase64:null,recDur:0,acc:null,trans:''}); }
     render();
   });
 
