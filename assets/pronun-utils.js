@@ -1,5 +1,6 @@
 // assets/pronun-utils.js
 (function (global) {
+  // ====== ① 한글 음절 분해/정렬 (기존 로직 유지) ======
   const SBase=0xAC00,LBase=0x1100,VBase=0x1161,TBase=0x11A7,LCount=19,VCount=21,TCount=28,NCount=VCount*TCount,SCount=LCount*NCount;
 
   function decomposeSyl(ch){
@@ -124,8 +125,111 @@
     }
   }
 
+  // ====== ② 숫자 → 한글 수사 강제 + 단위 앞 고유어 축약 (신규 추가) ======
+  const SINO = ['','일','이','삼','사','오','육','칠','팔','구'];
+  const NUM_UNITS = [
+    ['억',  100000000],
+    ['만',      10000],
+    ['천',        1000],
+    ['백',         100],
+    ['십',          10],
+    ['',             1]
+  ];
+  function _clampInt(n, min, max){
+    n = parseInt(n,10); if(!Number.isFinite(n)) n = 0;
+    return Math.max(min, Math.min(max, n));
+  }
+  // 0..99,999,999 → 한자어 수사
+  function numToSino(n){
+    n = _clampInt(n, 0, 99999999);
+    if(!n) return '영';
+    let out=''; let rest=n;
+    for(const [u,v] of NUM_UNITS){
+      const q = Math.floor(rest / v); rest %= v;
+      if(!q) continue;
+      if(v===10 && q===1) out+='십';
+      else out += SINO[q] + u;
+    }
+    return out;
+  }
+  function digitsToSinoInText(s){
+    return String(s||'').replace(/\d+/g, (m)=> numToSino(m));
+  }
+  // 임의의 '한글 단위' 앞에서 고유어 축약 허용 + 10대/20대 특수형
+  function applyGenericCounterVariants(s){
+    let x=String(s||'');
+    x = x
+      .replace(/십일(?=[가-힣])/g,'열한')
+      .replace(/십이(?=[가-힣])/g, '열두')
+      .replace(/십삼(?=[가-힣])/g, '열세')
+      .replace(/십사(?=[가-힣])/g, '열네')
+
+      .replace(/이십일(?=[가-힣])/g,'스물한')
+      .replace(/이십이(?=[가-힣])/g, '스물두')
+      .replace(/이십삼(?=[가-힣])/g, '스물세')
+      .replace(/이십사(?=[가-힣])/g, '스물네')
+      .replace(/이십(?=[가-힣])/g,    '스무')
+
+      .replace(/일(?=[가-힣])/g,'한')
+      .replace(/이(?=[가-힣])/g,'두')
+      .replace(/삼(?=[가-힣])/g,'세')
+      .replace(/사(?=[가-힣])/g,'네');
+
+    // 자주 틀리는 축약 보정
+    x = x.replace(/셋(?=살)/g,'세').replace(/넷(?=살)/g,'네');
+    return x;
+  }
+  // 화면/채점 모두에서 사용하는 “한글 수사 강제”
+  function forceHangulNumbers(s){
+    const base = digitsToSinoInText(String(s||'').replace(/[A-Za-z]+/g,''));
+    return applyGenericCounterVariants(base);
+  }
+
+  // 보조 정규화/유사도(원하는 페이지에서 활용 가능)
+  function koCanonSimple(s){
+    return String(s||'')
+      .trim()
+      .replace(/\s+/g,' ')
+      .replace(/[.,!?;:~、。！？；：]/g,'')
+      .toLowerCase();
+  }
+  function lev(a,b){
+    const s=String(a||''), t=String(b||'');
+    const m=s.length, n=t.length;
+    if(!m && !n) return 0;
+    const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+    for(let i=0;i<=m;i++) dp[i][0]=i;
+    for(let j=0;j<=n;j++) dp[0][j]=j;
+    for(let i=1;i<=m;i++){
+      for(let j=1;j<=n;j++){
+        const c = s[i-1]===t[j-1]?0:1;
+        dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+c);
+      }
+    }
+    return dp[m][n];
+  }
+  function similarity(a,b){
+    const A=koCanonSimple(a), B=koCanonSimple(b);
+    const L=Math.max(1, Math.max(A.length, B.length));
+    return Math.max(0, 1 - lev(A,B)/L);
+  }
+
+  // ====== ③ 글로벌 네임스페이스에 추가/병합 ======
+  // (1) 새 숫자 유틸은 NumHangul로 노출
+  global.NumHangul = Object.assign({}, global.NumHangul || {}, {
+    numToSino,
+    digitsToSinoInText,
+    applyGenericCounterVariants,
+    forceHangulNumbers,
+    koCanon: koCanonSimple,
+    similarity
+  });
+
+  // (2) 기존 PronunUtils 유지 + 숫자 강제 유틸도 함께 제공
   global.PronunUtils = Object.assign({}, global.PronunUtils || {}, {
     analyzePronunciationDiff,
-    scoreRecordingWithWhisper
+    scoreRecordingWithWhisper,
+    // 편의 제공: 다른 파일에서 쉽게 접근하도록
+    forceHangulNumbers: forceHangulNumbers
   });
 })(window);
