@@ -18,6 +18,24 @@
   <!-- 이 페이지 전용 -->
   <script type="module" defer src="/assets/dictee-comme-warmup.js"></script>
 
+  <!-- ✅ 공용 Hint 토글(전역 이벤트) — student-gate.js 맨 아래에 넣어도 됩니다 -->
+  <script>
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-hint1, .btn-hint2, .btn-hint');
+      if (!btn) return;
+      const card = btn.closest('.card, [data-card], .dictation-card, .quiz-card') || document;
+      const sel = btn.getAttribute('data-target');
+      let box = sel ? card.querySelector(sel) : null;
+      if (!box) {
+        const next = btn.nextElementSibling;
+        if (next && next.classList?.contains('hint-box')) box = next;
+      }
+      if (!box) return;
+      box.classList.toggle('show');
+      btn.setAttribute('aria-pressed', box.classList.contains('show') ? 'true' : 'false');
+    });
+  </script>
+
   <style>
     body{font-family:'Inter',sans-serif;background:#f3f4f6}
     .kof{font-family:'Gowun Dodum',sans-serif}
@@ -49,39 +67,74 @@
       <p class="text-sm text-slate-500 mt-2">시작하면 이름, 듣기·힌트·시도·발음 점수 등이 기록돼요.</p>
     </section>
 
-<section class="card bg-white rounded-xl shadow p-6 mb-6">
-  <h2 class="text-2xl font-bold mb-3 text-slate-800">“Comme” — 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
+    <section class="card bg-white rounded-xl shadow p-6 mb-6">
+      <h2 class="text-2xl font-bold mb-3 text-slate-800">“Comme” — 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
 
-  <p class="text-slate-700 leading-relaxed mb-4">
-    <b class="text-blue-700">FR.</b> 
-    <i>Comme</i> peut avoir plusieurs usages :
-  </p>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        <b class="text-blue-700">FR.</b>
+        <i>Comme</i> peut avoir plusieurs usages :
+      </p>
 
-  <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-    <ul class="list-disc pl-6 space-y-2 text-slate-700">
-      <li><b>qualifier un nom</b> → <b>comme + nom</b> <span class="text-slate-500">= comparaison d’un nom</span></li>
-      <li><b>s’employer après être</b> → <b>être comme …</b> <span class="text-slate-500">= identité / assimilation</span></li>
-      <li><b>modifier un verbe</b> → <b>verbe + comme …</b> <span class="text-slate-500">= manière (ex: courir comme le vent)</span></li>
-    </ul>
-  </div>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+        <ul class="list-disc pl-6 space-y-2 text-slate-700">
+          <li><b>qualifier un nom</b> → <b>comme + nom</b> <span class="text-slate-500">= comparaison d’un nom</span></li>
+          <li><b>s’employer après être</b> → <b>être comme …</b> <span class="text-slate-500">= identité / assimilation</span></li>
+          <li><b>modifier un verbe</b> → <b>verbe + comme …</b> <span class="text-slate-500">= manière (ex: courir comme le vent)</span></li>
+        </ul>
+      </div>
 
-  <div class="grid md:grid-cols-3 gap-4">
-    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-      <span class="block font-bold text-blue-900">nom + comme</span>
-      <span class="kof block mt-1">명사 + 처럼/같이</span>
-    </div>
-    <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
-      <span class="block font-bold text-green-900">être + comme</span>
-      <span class="kof block mt-1">~와/과 같다</span>
-    </div>
-    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-      <span class="block font-bold text-amber-900">verbe/adj + comme</span>
-      <span class="kof block mt-1">동사 + 처럼/같이</span>
-    </div>
-  </div>
-</section>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <span class="block font-bold text-blue-900">nom + comme</span>
+          <span class="kof block mt-1">명사 + 처럼/같이</span>
+        </div>
+        <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <span class="block font-bold text-green-900">être + comme</span>
+          <span class="kof block mt-1">~와/과 같다</span>
+        </div>
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <span class="block font-bold text-amber-900">verbe/adj + comme</span>
+          <span class="kof block mt-1">동사 + 처럼/같이</span>
+        </div>
+      </div>
+    </section>
 
+    <!-- =========================================================
+         ✅ 예시 문제 카드 (바로 작동 확인용 · 원하면 삭제 가능)
+         ========================================================= -->
+    <section class="card dictation-card">
+      <div class="text-lg font-semibold">Exemple — “Elle est comme un ange.”</div>
+      <div class="text-sm text-slate-600 mb-2">예문: 천사 <span class="kof">처럼</span> 예뻐요.</div>
 
+      <!-- 힌트 버튼 -->
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button type="button" class="btn-hint btn-hint1" data-target=".hint1-box">
+          🙏 Aidez-moi <span class="ml-1 text-sm text-slate-100">(초성)</span>
+        </button>
+        <button type="button" class="btn-hint btn-hint2" data-target=".hint2-box">
+          🦺 Au secours <span class="ml-1 text-sm text-slate-100">(단어)</span>
+        </button>
+      </div>
+
+      <!-- 힌트 박스 (처음엔 숨김 / 버튼으로 토글) -->
+      <div class="hint-box hint1-box">초성: ㅊ·ㅅ·ㅇ …</div>
+      <div class="hint-box hint2-box">Mots-clés: 천사, 예쁘다, 같다</div>
+
+      <!-- (여기에 녹음/평가 UI가 이어짐) -->
+      <div class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60">
+        <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer</div>
+        <div class="flex flex-wrap gap-2 mb-2">
+          <button class="btn btn-primary">▶️ Écouter</button>
+          <button class="btn">🎙️ Démarrer</button>
+          <button class="btn btn-ghost">⏹️ Arrêter</button>
+          <button class="btn btn-primary">⚡ Évaluer</button>
+        </div>
+        <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
+        <div class="text-sm text-slate-600 status-line mt-2">Démarrer → Arrêter → Évaluer.</div>
+      </div>
+    </section>
+
+    <!-- 실제 스크립트가 렌더링할 영역 -->
     <section id="dictee-root" class="space-y-4"></section>
 
     <section class="no-print flex flex-wrap items-center gap-3">
