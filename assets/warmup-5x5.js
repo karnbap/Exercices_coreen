@@ -287,7 +287,10 @@
 
     // LiveSTT: 전역 init만 호출(카드별 mount 불필요)
     ensureLiveSTT().then(()=>{ window.LiveSTT?.init?.(); }).catch(()=>{});
+    checkFinish();
+
   }
+  
 
   function makeBundleCard(bundle){
     const card = document.createElement('div');
@@ -466,7 +469,6 @@
     const keys = BUNDLES.map(b=>b.key);
     const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
     updateProgress(doneCount);
-    if(doneCount !== keys.length) return;
 
     const box = document.getElementById('finish-wrap');
     if(!box) return;
@@ -474,24 +476,34 @@
     const next = getNextSpeed(state.speed);
     const nextLabel = next ? `${next.toFixed(1)}×` : '';
 
+    // ✅ 진행률 안내 문구(완료 전에도 노출)
+    const subtitle = (doneCount === keys.length)
+      ? (next ? 'Passe à la vitesse suivante / 다음 속도로 넘어가요.' 
+              : 'Passe aux exercices / 다음 연습문제로 이동해요.')
+      : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
+
     box.innerHTML = `
       <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
-        <div class="text-lg font-extrabold">🎉 Warming up terminé</div>
-        <div class="text-slate-600 mt-1">${ next
-          ? 'Passe à la vitesse suivante / 다음 속도로 넘어가요.'
-          : 'Passe aux exercices / 다음 연습문제로 이동해요.'}
-        </div>
+        <div class="text-lg font-extrabold">🎉 Warming up</div>
+        <div class="text-slate-600 mt-1">${subtitle}</div>
       </div>
       <div class="flex flex-wrap gap-2 justify-center">
+        <!-- 끝내기(전송) 버튼은 항상 활성 -->
         <button id="btn-finish-send" class="btn btn-primary btn-lg">
           <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
         </button>
+
+        <!-- 다음 속도: 남아 있으면 활성, 없으면 비활성 표시 -->
         ${
           next
-            ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">${nextLabel} → Vitesse suivante / 다음 속도</button>`
-            : `<button id="btn-next-speed" class="btn btn-secondary btn-lg" disabled style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
+            ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">
+                 ${nextLabel} → Vitesse suivante / 다음 속도
+               </button>`
+            : `<button id="btn-next-speed" class="btn btn-secondary btn-lg" disabled
+                     style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
         }
-        <!-- 항상 노출(전송 전 비활성) -->
+
+        <!-- 다음 연습문제: 항상 보이되, 전송 전엔 비활성 -->
         <a id="btn-go-ex" href="/assignments/numbers-exercises.html"
            class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
           <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
@@ -499,12 +511,13 @@
       </div>`;
     box.classList.remove('hidden');
 
-    // 결과 전송
+    // 전송 버튼
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
       const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> ...';
       try{
         await sendResults();
         alert('✅ Résultats envoyés. / 결과 전송 완료');
+
         // 전송 성공 → 다음 연습문제 버튼 활성화
         const goEx = document.getElementById('btn-go-ex');
         if (goEx){
@@ -513,9 +526,10 @@
           goEx.removeAttribute('aria-disabled');
         }
       }catch(_){
-        alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도해 주세요.');
+        alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
       }finally{
-        btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Finir · Envoyer';
+        btn.disabled=false;
+        btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Finir · Envoyer';
       }
     }, { once:true });
 
@@ -530,6 +544,7 @@
       }, { once:true });
     }
   }
+
 
   async function sendResults(){
     const questions = BUNDLES.map(b=>{
