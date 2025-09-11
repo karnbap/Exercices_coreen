@@ -1,7 +1,7 @@
-// assets/pronun-client.js  (v4)
+// assets/pronun-client.js  (v4.1)
 // 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void })
 (function (global) {
-  if (global.Pronun && global.Pronun.__v >= 4) return;
+  if (global.Pronun && global.Pronun.__v >= 41) return;
 
   const CFG = {
     endpoint: (global.PONGDANG_FN_BASE || '/.netlify/functions') + '/analyze-pronunciation',
@@ -12,7 +12,7 @@
 
     // 판정/가비지 필터 파라미터
     passBase: 0.75,          // 일반 문장 통과 임계치(75%)
-    passShortRef: 0.85,      // 참조가 아주 짧을 때 임계치(85%)
+    passShortRef: 0.80,      // 아주 짧은 참조(숫자 1~2음절 등) 임계치(80%)
     shortRefLen: 4,          // 정규화 기준 길이 4 이하 → "아주 짧음"
     lowSimil: 0.35,          // 짧은 참조에서 유사도 바닥
     lenRatioGarbage: 2.5,    // 인식/참조 길이 비 과대
@@ -143,6 +143,36 @@
     return hasBadWord || lenRatioBad || simTooLow;
   }
 
+  // ★ 숫자·단위 오인식 보정: 참조를 기준으로 STT 결과를 '맞는 계열'로 스냅
+  function coerceTowardsRef(refRaw, hypRaw) {
+    let out = hypRaw;
+    const ref = refRaw.replace(/\s+/g,'');
+    const hyp = hypRaw.replace(/\s+/g,'');
+
+    // 규칙 테이블(둘 다 공백 무시 매칭)
+    const RULES = [
+      { ref:/일일/,     hyp:/(한일|하닐|한닐)/,    to:'일일' },
+      { ref:/사일/,     hyp:/(네일|내일)/,        to:'사일' },
+      { ref:/한시/,     hyp:/일시/,               to:'한시' },
+      { ref:/십유로/,   hyp:/열유로/,             to:'십유로' },
+      { ref:/삼십분/,   hyp:/서른분/,             to:'삼십분' },
+      { ref:/세살/,     hyp:/삼살/,               to:'세살' }
+    ];
+
+    for (const r of RULES) {
+      if (r.ref.test(ref) && r.hyp.test(hyp)) {
+        // 출력은 보기 좋게 띄어쓰기 복원
+        if (r.to === '일일') return '일일';
+        if (r.to === '사일') return '사일';
+        if (r.to === '한시') return '한 시';
+        if (r.to === '십유로') return '십 유로';
+        if (r.to === '삼십분') return '삼십 분';
+        if (r.to === '세살') return '세 살';
+      }
+    }
+    return out; // 보정 불가 → 원문 유지
+  }
+
   // ── 학생용 UI ─────────────────────────────
   function buildUI(mountEl) {
     const ui = {
@@ -199,7 +229,7 @@
         setTimeout(() => { if (rec && rec.state === 'recording') stopRec(); }, CFG.maxSec * 1000);
       } catch (e) {
         console.warn('[mic]', e);
-        ui.msg.textContent = '🔒 Autorise le micro dans le navigateur / 브라우저에서 마이크 사용을 허용해 주세요';
+        ui.msg.textContent = '🔒 Autorise le micro / 브라우저에서 마이크 사용을 허용해 주세요';
         setState(ui, 'idle', chunks.length);
       }
     }
@@ -209,10 +239,10 @@
       vu?.stop(); vu = null; stopTracks();
       lastDur = (Date.now() - startMs) / 1000;
       if (lastDur < CFG.minSec) {
-        ui.msg.textContent = `⏱️ Un peu plus long, s’il te plaît (≥ ${CFG.minSec}s) / 조금만 더 길게 녹음해 주세요`;
+        ui.msg.textContent = `⏱️ Un peu plus long (≥ ${CFG.minSec}s) / 조금 더 길게`;
         ui.eval.disabled = true; ui.eval.classList.add('disabled');
       } else {
-        ui.msg.textContent = '⏹️ Terminé. Appuie sur “Évaluer” / 완료! 이제 “평가”를 눌러 주세요';
+        ui.msg.textContent = '⏹️ Terminé. Appuie sur “Évaluer” / 완료! “평가”를 눌러 주세요';
       }
       setState(ui, 'stop', chunks.length);
     }
@@ -240,49 +270,59 @@
         needsRetry = !!res?.needsRetry;
       } catch (e) {
         console.warn('[eval server]', e);
-        ui.msg.textContent = '⚠️ Analyse indisponible. Réessaie. / 분석 서버 오류, 다시 시도해 주세요';
+        ui.msg.textContent = '⚠️ Analyse indisponible. Réessaie. / 분석 서버 오류, 다시 시도';
         try { onResult({ status:'error', reason:'server_error' }); } catch(_){}
         return;
       }
 
-      // 숫자→한글 강제 표시(있을 때만)
+      // 숫자→한글 강제(있을 때만)
       if (global.NumHangul?.forceHangulNumbers) {
         transcript = global.NumHangul.forceHangulNumbers(transcript);
       }
 
-      // 클라이언트 보정(가비지 필터 & 유사도 기반 점수)
+      // ★ 도메인 보정: 참조 기준으로 흔한 오인식을 교정
+      const origTranscript = transcript;
+      transcript = coerceTowardsRef(ref, transcript);
+
+      // 정규화 + 가비지 검사
       const refN = normalizeKo(ref);
       const hypN = normalizeKo(transcript);
-
-      // 서버가 needsRetry를 주지 않았다면 클라이언트에서 판별
       if (!needsRetry) needsRetry = looksGarbage(refN, hypN);
 
-      // 서버가 정확도를 안 주면 유사도 기반 계산
+      // 정확도(서버 미제공 시 로컬 유사도)
       if (accuracy === null || accuracy === undefined) {
         const sim = similarity(refN.ko, hypN.ko);
         accuracy = Math.round(sim * 100);
       }
 
-      // 최종 통과 판정(짧은 참조는 엄격)
+      // 최종 통과 판정
       const isShortRef = (refN.ko.length || refN.raw.length) <= CFG.shortRefLen;
       const passCut = Math.round((isShortRef ? CFG.passShortRef : CFG.passBase) * 100);
       let finalStatus = 'retry';
       if (!needsRetry && accuracy >= passCut) finalStatus = 'ok';
 
-      // 출력
-      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span> · 👂 Reconnu: <span class="korean-font">${transcript || '(vide / 비어 있음)'}</span>`;
+      // 출력(보정된 경우 원문도 표시)
+      const recogText = (transcript !== origTranscript)
+        ? `${transcript} <span class="text-slate-500 text-xs">(원문: ${origTranscript})</span>`
+        : transcript;
+
+      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span> · 👂 Reconnu: <span class="korean-font">${recogText || '(vide / 비어 있음)'}</span>`;
 
       if (finalStatus === 'ok') {
         ui.msg.innerHTML = '✅ C’est bon ! Tu peux passer à la suite / 좋아요! 다음으로 넘어가세요';
       } else if (needsRetry) {
-        ui.msg.innerHTML = '🤔 Bruit/sous-titres détectés. Réessaie clairement. / 잡음·자막으로 보입니다. 또박또박 다시 한 번!';
+        ui.msg.innerHTML = '🤔 Bruit/sous-titres détectés. Réessaie clairement. / 잡음·자막으로 보입니다. 또박또박 다시!';
       } else {
         ui.msg.innerHTML = `💡 Encore un peu: vise ≥ ${passCut}% / 조금만 더 또렷하게 (목표 ${passCut}% 이상)`;
       }
 
-      // 콜백(호출측에서 status==='ok'만 통과로 사용 가능)
       try { onResult({ status: finalStatus, accuracy, transcript, needsRetry, serverStatus }); } catch(_) {}
     }
+
+    // 버튼 바인딩
+    const ui = buildUI(mountEl);
+    let stream = null, rec = null, chunks = [], vu = null, startMs = 0;
+    let mime = pickMime(), lastDur = 0;
 
     ui.rec.addEventListener('click', startRec);
     ui.stop.addEventListener('click', stopRec);
@@ -295,5 +335,5 @@
     });
   }
 
-  global.Pronun = { __v: 4, mount };
+  global.Pronun = { __v: 41, mount };
 })(window);
