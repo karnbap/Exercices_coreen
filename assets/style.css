@@ -36,20 +36,9 @@ body {
     transition: background-color 0.3s, transform 0.2s;
     font-weight: bold;
 }
-
-.button:hover {
-    transform: translateY(-2px);
-}
-
-.button-primary {
-    background-color: var(--royal-blue);
-    color: white;
-}
-
-.button-secondary {
-    background-color: var(--gold-leaf);
-    color: white;
-}
+.button:hover { transform: translateY(-2px); }
+.button-primary { background-color: var(--royal-blue); color: white; }
+.button-secondary { background-color: var(--gold-leaf); color: white; }
 
 /* 👑 채점 결과 창 스타일 */
 #result-display {
@@ -66,6 +55,7 @@ body {
 .chips-wrap { display:flex; flex-wrap:wrap; gap:.4rem .5rem }
 .chip { display:inline-block; padding:.2rem .55rem; border-radius:.5rem; background:#fff; border:1px solid var(--border-color) }
 @media (min-width: 768px){ .chip { font-size:1.05rem } }
+
 .flash-on { animation: flashbg .9s ease-out; }
 /* 재시작 시 영역 하이라이트 */
 @keyframes flashbg {
@@ -74,14 +64,12 @@ body {
   100%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:transparent }
 }
 
-
 .vu-mini{ height:16px !important; }
 .rec-indicator{ display:none; font-size:12px; color:#dc2626; margin-left:.5rem }
 .is-recording .rec-indicator{ display:inline }
 
-
-/* 🎨 Hint 버튼 */
-.btn-hint1 {
+/* =============== HINT 버튼 (공통 디자인) =============== */
+.btn-hint {
   display:inline-flex;
   align-items:center;
   gap:.5rem;
@@ -89,43 +77,41 @@ body {
   border-radius:.85rem;
   font-weight:700;
   color:#fff;
-  background:linear-gradient(to right,#6366f1,#2563eb); /* 보라 → 파랑 */
-  box-shadow:0 4px 10px rgba(37,99,235,0.35);
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
   transition:transform .15s, background .25s;
+}
+.btn-hint:active { transform:scale(0.95); }
+
+/* 🎨 Hint 버튼 — 스타일 1 (보라→파랑) */
+.btn-hint1 {
+  background:linear-gradient(to right,#6366f1,#2563eb);
+  box-shadow:0 4px 10px rgba(37,99,235,0.35);
 }
 .btn-hint1:hover {
   background:linear-gradient(to right,#4f46e5,#1e3a8a);
   transform:translateY(-2px);
 }
-.btn-hint1:active {
-  transform:scale(0.95);
-}
 
+/* 🎨 Hint 버튼 — 스타일 2 (주황→빨강) */
 .btn-hint2 {
-  display:inline-flex;
-  align-items:center;
-  gap:.5rem;
-  padding:.65rem 1.2rem;
-  border-radius:.85rem;
-  font-weight:700;
-  color:#fff;
-  background:linear-gradient(to right,#f59e0b,#ef4444); /* 주황 → 빨강 */
+  background:linear-gradient(to right,#f59e0b,#ef4444);
   box-shadow:0 4px 10px rgba(239,68,68,0.35);
-  transition:transform .15s, background .25s;
 }
 .btn-hint2:hover {
   background:linear-gradient(to right,#d97706,#b91c1c);
   transform:translateY(-2px);
 }
-.btn-hint2:active {
-  transform:scale(0.95);
-}
 
-
-/* 힌트 영역 기본은 숨김 */
-.hint-box { display:none; margin-top:.5rem; padding:.6rem .8rem;
-  border-radius:.5rem; font-size:.9rem; line-height:1.4;
-  background:#fefce8; border:1px solid #fef08a; color:#854d0e;
+/* 힌트 영역: 기본 숨김, .show 때만 보이기 */
+.hint-box {
+  display:none;
+  margin-top:.5rem;
+  padding:.6rem .8rem;
+  border-radius:.5rem;
+  font-size:.9rem;
+  line-height:1.4;
+  background:#fefce8;
+  border:1px solid #fef08a;
+  color:#854d0e;
 }
 .hint-box.show { display:block; }
-
