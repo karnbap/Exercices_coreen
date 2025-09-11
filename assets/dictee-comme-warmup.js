@@ -97,8 +97,8 @@
           </div>
 
           <!-- 힌트 박스: 처음엔 숨김, 버튼으로 토글 -->
-          <div class="hint-box hint1-box"></div>
-          <div class="hint-box hint2-box"></div>
+          <div class="hint-box hint1-box" style="display:none"></div>
+          <div class="hint-box hint2-box" style="display:none"></div>
 
           <div class="mt-1 flex items-center gap-2">
             <button class="btn btn-ghost rec">🎙️ Démarrer</button>
@@ -116,34 +116,47 @@
       const btnPlay=$('.play',el), listen=$('.listen',el);
       btnPlay.onclick=async()=>{ await ttsPlay(q.ko,q.voice); st[i].listen++; listen.textContent=String(st[i].listen); };
 
-      // ===== 힌트 (이벤트 위임: 카드 섹션에 한 번만 바인딩) =====
+      // ===== 힌트 (카드 위임 + CSS 비의존 인라인 토글) =====
       const boxH1 = el.querySelector('.hint1-box');
       const boxH2 = el.querySelector('.hint2-box');
+
       // 내용 채우기
       boxH1.innerHTML = `<b>🙏 초성:</b> <span class="kof">${q.hint1 || '—'}</span>`;
       boxH2.innerHTML = `<b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}`;
+
+      // 위임: 카드 한 번만 바인딩
       el.addEventListener('click', (ev) => {
         const b1 = ev.target.closest('.btn-hint1');
         const b2 = ev.target.closest('.btn-hint2');
         if (!b1 && !b2) return;
+
         const btn = b1 || b2;
         const isH1 = !!b1;
         const box = isH1 ? boxH1 : boxH2;
-        const opened = box.classList.toggle('show');
-        btn.setAttribute('aria-pressed', opened ? 'true' : 'false');
-        if (opened && !btn.dataset._opened) {
+
+        // CSS 없어도 보이게 인라인 display 토글(우선)
+        const nowHidden = (box.style.display === '' ? getComputedStyle(box).display === 'none' : box.style.display === 'none');
+        const toShow = nowHidden;
+        box.style.display = toShow ? 'block' : 'none';
+
+        // 클래스 토글은 보조(스타일 연결돼 있으면 함께 동작)
+        box.classList.toggle('show', toShow);
+        btn.setAttribute('aria-pressed', toShow ? 'true' : 'false');
+
+        // 최초 열림 1회만 카운트
+        if (toShow && !btn.dataset._opened) {
           if (isH1) st[i].h1++; else st[i].h2++;
           btn.dataset._opened = '1';
         }
       });
 
-      // 채점
+      // ===== 채점 =====
       const koInp=$('.ko',el), frInp=$('.fr',el), out=$('.out',el);
       const pill=(ok,label)=> ok?`<span class="tag tag-green">${label} ✓</span>`:`<span class="tag tag-red">${label} ✗</span>`;
       function grade(){
         const ko=koInp.value||'', fr=frInp.value||'';
-        const gk=window.AnswerJudge.gradeKO(q.ko, ko, { allowSubstring:false });
-        const gf=window.AnswerJudge.gradeFR(q.fr, fr);
+        const gk=window.AnswerJudge?.gradeKO ? window.AnswerJudge.gradeKO(q.ko, ko, { allowSubstring:false }) : { isCorrect:false, note:'(AnswerJudge 없음)' };
+        const gf=window.AnswerJudge?.gradeFR ? window.AnswerJudge.gradeFR(q.fr, fr) : { isCorrect:false, note:'(AnswerJudge 없음)' };
         st[i].koOK=gk.isCorrect; st[i].frOK=gf.isCorrect;
         const style=styleHintKO(ko);
         const roman=/[A-Za-z]/.test(ko)?'라틴 문자(ga teun 등) 금지':'';
@@ -161,7 +174,6 @@
       let media=null, mr=null, chunks=[], started=0, lastBlob=null, lastDur=0;
       const vuCanvas=$('.vu',el), live=$('.live',el), btnRec=$('.rec',el), btnStop=$('.stop',el), btnEval=$('.eval',el);
 
-      // DPR 스케일링
       function ensureCanvasSize(cv){
         const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
         const w = cv.clientWidth, h = cv.clientHeight;
@@ -188,7 +200,6 @@
         ctx.clearRect(0,0,W,H);
         ctx.fillStyle='#eef2ff'; ctx.fillRect(0,0,W,H);
 
-        // 막대
         const bars=24, barW=Math.max(2,Math.floor((W-(bars-1)*2)/bars)), step=Math.floor(freq.length/bars);
         for(let b=0;b<bars;b++){
           const slice=freq.slice(b*step,(b+1)*step);
@@ -197,7 +208,6 @@
           ctx.fillStyle='#6366f1'; ctx.fillRect(x,y,barW,h);
           ctx.fillStyle='#a5b4fc'; ctx.fillRect(x,y,barW,2);
         }
-        // 중앙 선(타임도메인)
         ctx.beginPath();
         const mid=H/2;
         for(let x=0;x<W;x++){
@@ -210,19 +220,15 @@
       async function startVu(stream){
         ac=new (window.AudioContext||window.webkitAudioContext)();
         src=ac.createMediaStreamSource(stream);
-
-        // 🔊 저음량 민감도↑: Gain → Analyser (녹음 오디오에는 영향 없음)
         gainNode = ac.createGain();
         gainNode.gain.value = 3.2;
         src.connect(gainNode);
-
         an=ac.createAnalyser();
         an.fftSize = 2048;
         an.minDecibels = -100;
         an.maxDecibels = -10;
         an.smoothingTimeConstant = 0.85;
         gainNode.connect(an);
-
         drawHybrid();
       }
       function stopVu(){
@@ -252,12 +258,10 @@
         btnRec.disabled=true; btnStop.disabled=false; btnEval.disabled=true;
         live.textContent='En direct / 실시간… (préparation)';
 
-        // Live STT 연결(있으면)
         if(window.LiveSTT){
           const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
           if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
         }
-        // 이벤트(엘리먼트/도큐먼트 모두 수신)
         const onPart = (e)=>{ if(e?.detail?.text!=null) live.textContent = e.detail.text; };
         const onFinal= (e)=>{ if(e?.detail?.text!=null) live.textContent = 'En direct / 실시간 (final): ' + e.detail.text; };
         el.addEventListener('live-stt-partial', onPart);
