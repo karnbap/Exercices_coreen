@@ -282,15 +282,18 @@
           html += `<button class="choice-btn ${isSel?'selected':''}" onclick="selectChoiceAnswer('${safeAttr(opt)}')">${opt}</button>`;
         });
 
-        // Pronunciation block (must-finish)
-        html += `
-          <div class="pronun-card">
-            <div class="pronun-title">🎤 Enregistrer & tester / 녹음해서 발음 시험해보기</div>
-            <div class="text-xs text-slate-600 mb-1">
-              Prononcez: <span class="font-semibold">${q.answer}</span> (KO)
-            </div>
-            <div id="pronun-mount"></div>
-          </div>`;
+        /* ✅ 정답을 선택했을 때만 녹음 카드 표시 */
+        const isCorrectSelected = (q.userAnswer === q.answer);
+        if (isCorrectSelected) {
+          html += `
+            <div class="pronun-card">
+              <div class="pronun-title">🎤 Enregistrer & tester / 녹음해서 발음 시험해보기</div>
+              <div class="text-xs text-slate-600 mb-1">
+                Prononcez: <span class="font-semibold">${q.answer}</span> (KO)
+              </div>
+              <div id="pronun-mount"></div>
+            </div>`;
+        }
       }
 
       else if(q.type==='fr_prompt_ko'){
@@ -340,7 +343,7 @@
 
       area.innerHTML = html;
 
-      // Mount pronunciation tester
+      // Mount pronunciation tester (choice일 때는 정답 선택 후 렌더된 경우에만 존재)
       const mount = document.getElementById('pronun-mount');
       if(mount && window.Pronun){
         try{
@@ -372,8 +375,14 @@
     function stopAudio(){ if(!currentAudio) return; try{ currentAudio.pause(); currentAudio.currentTime = 0; }catch(_){ } if(currentPlayBtn){ btnToPlaying(currentPlayBtn,false); } }
 
     function selectChoiceAnswer(val){
-      questions[currentQuestionIndex].userAnswer = val;
-      renderQuestion();                 // ← 다시 그려서 즉시 색상 반영
+      const q = questions[currentQuestionIndex];
+      q.userAnswer = val;
+
+      // 정답 선택 전에는 발음 평가 못 하므로 초기화
+      if (val !== q.answer) {
+        q.pronunChecked = false;
+      }
+      renderQuestion(); // 즉시 다시 그려서 녹음 카드 토글 반영
     }
     function updateTranslateAnswer(val){
       questions[currentQuestionIndex].userAnswer = val;
@@ -393,6 +402,7 @@
 
       if(q.type==='choice'){
         if(!q.userAnswer) return false;
+        // choice에서는 정답이어야 발음 카드가 생기고 pronunChecked가 가능하므로 추가 조건은 불필요
       }else if(q.type==='fr_prompt_ko'){
         if(!q.userAnswer || !q.userAnswer.trim()) return false;
       }else if(q.type==='dictation'){
@@ -465,7 +475,7 @@
         if(!q.isCorrect){
           const block=document.createElement('div');
           block.className='p-3 bg-white rounded border';
-          const userAns=(q.type==='dictation'? (`${q.userAnswer.ko||''} | ${q.userAnswer.replyKo||''}`) : (q.userAnswer||''));
+          const userAns=(q.type==='dictation'? (`${q.userAnswer.ko||''} | ${q.userAnswer.replyKo||''}`) : (q.userAnswer||'')));
           block.innerHTML=`
             <div class='text-sm text-gray-500 mb-1'>Q${q.number} (${q.type})</div>
             <div class='font-semibold mb-1'>${(q.fr||q.context||'')}</div>
