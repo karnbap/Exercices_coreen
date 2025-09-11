@@ -1,110 +1,118 @@
-// netlify/functions/analyze-pronunciation.js
-// Whisper 전송부 + 숫자 보정 유사도
-// 요청: { referenceText:string, audio:{ base64, filename, mimeType, duration } }
-// 응답: { transcript:string, accuracy:number(0..1), details?:{explain:string[]} }
+// Netlify Function: analyze-pronunciation
+// - Whisper STT 호출 시 반드시 model 지정(whisper-1)
+// - 요청: { referenceText, audio:{ base64, mimeType, filename, duration } }
+// - 응답: { ok:true, accuracy(0..1), transcript, confusionTags:[] }
+// - 에러시: { ok:false, messageFr, messageKo }  (한-불 설명 포함)
 
-const fetch = global.fetch || require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const FormData = require('form-data');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization,Accept',
-  'Content-Type': 'application/json',
-  'Cache-Control': 'no-store'
-};
-
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
-  if (event.httpMethod !== 'POST')   return json(405, { message: 'Method Not Allowed' });
+  try {
+    if (event.httpMethod !== 'POST') {
+      return json(405, { ok:false, messageFr: "Méthode non autorisée.", messageKo: "허용되지 않은 메서드입니다." });
+    }
 
-  try{
-    const body = JSON.parse(event.body||'{}');
-    const ref  = koCanon(String(body.referenceText||'')); // 공백 제거된 한글 기준
-    const audio = body.audio||{};
-    if (!audio?.base64) return json(400, { message:'audio.base64 required' });
+    const body = JSON.parse(event.body || '{}');
+    const { referenceText = '', audio = {} } = body || {};
+    const ref = String(referenceText || '').replace(/\s+/g, '');
+    const { base64, mimeType='audio/webm', filename='audio.webm' } = audio || {};
 
-    const tj = await transcribeBase64({
-      base64: audio.base64, filename: audio.filename||'rec.webm', mimeType: audio.mimeType||'audio/webm'
+    if (!base64) {
+      return json(400, {
+        ok:false,
+        messageFr:"Aucun audio reçu. Réenregistrez et réessayez.",
+        messageKo:"오디오가 수신되지 않았습니다. 다시 녹음해 주세요.",
+        warnFr:"Astuces: vérifiez le micro et les permissions navigateur.",
+        warnKo:"도움말: 마이크/브라우저 권한을 확인하세요."
+      });
+    }
+
+    // base64 -> Buffer
+    const bin = Buffer.from(base64, 'base64');
+
+    // === OpenAI Whisper STT ===
+    const OPENAI_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_API_TOKEN;
+    if (!OPENAI_KEY) {
+      return json(500, { ok:false, messageFr:"Clé OpenAI absente côté serveur.", messageKo:"서버에 OpenAI 키가 설정되지 않았습니다." });
+    }
+
+    // multipart/form-data
+    const form = new FormData();
+    form.append('model', 'whisper-1');              // ✅ 반드시 model 지정
+    form.append('response_format', 'json');
+    form.append('language', 'ko');                  // 한국어 우선
+    form.append('file', bin, { filename, contentType: mimeType });
+
+    let transcript = '';
+    try {
+      const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${OPENAI_KEY}` },
+        body: form
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        // Whisper 400 같은 에러를 한-불로 포맷
+        const errText = (j && j.error && j.error.message) ? j.error.message : `HTTP ${r.status}`;
+        return json(r.status, {
+          ok:false,
+          messageFr:`Échec du STT (Whisper): ${errText}`,
+          messageKo:`음성 인식(STT) 실패: ${errText}`,
+        });
+      }
+      transcript = String(j.text || '').trim();
+    } catch (e) {
+      return json(502, { ok:false, messageFr:"Service STT indisponible.", messageKo:"음성 인식 서비스에 연결할 수 없습니다." });
+    }
+
+    // === 간단 채점: 레퍼런스와의 문자 유사도(자모 단순화 전처리 가능) ===
+    const hyp = transcript.replace(/\s+/g, '');
+    const acc = similarity(ref, hyp); // 0..1
+
+    const tags = deriveTips(ref, hyp); // 간단한 자주 헷갈리는 패턴 안내
+    return json(200, { ok:true, accuracy: acc, transcript, confusionTags: tags });
+
+  } catch (e) {
+    return json(500, {
+      ok:false,
+      messageFr:"Erreur serveur pendant l'analyse.",
+      messageKo:"분석 중 서버 오류가 발생했습니다.",
     });
-
-    const transcriptRaw = String(tj?.text||'').trim();
-    const acc = scoreWithNumberFallback(ref, transcriptRaw);
-
-    return json(200, {
-      transcript: transcriptRaw,
-      accuracy: acc,
-      details: { explain: transcriptRaw ? [] : ['입력이 너무 짧거나 무성 구간이 많았어요. 조금 더 길게 또박또박 읽어보세요.'] }
-    });
-
-  }catch(err){
-    return json(200, { transcript:'', accuracy:0, confusionTags:[`stt-fail:${String(err).slice(0,80)}`] });
   }
 };
 
-// ===== 숫자/한글 보정 =====
-const __KO_NUM_SINO   = {'0':'영','1':'일','2':'이','3':'삼','4':'사','5':'오','6':'육','7':'칠','8':'팔','9':'구'};
-const __KO_NUM_NATIVE = {'0':'영','1':'하나','2':'둘','3':'셋','4':'넷','5':'다섯','6':'여섯','7':'일곱','8':'여덟','9':'아홉'};
+// ===== helpers =====
+function json(code, obj){ return { statusCode: code, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) }; }
 
-function koCanon(s){
-  return String(s||'')
-    .toLowerCase()
-    .replace(/[a-z]+/g,'')         // 로마자 제거
-    .replace(/[^\uAC00-\uD7A3\d]/g,'') // 한글/숫자만
-    .replace(/\s+/g,'');            // 공백 제거
+// 매우 단순한 유사도(레벤슈타인 기반 정규화)
+function similarity(a, b){
+  if (!a && !b) return 1;
+  if (!a || !b) return 0;
+  const dist = levenshtein(a, b);
+  const maxLen = Math.max(a.length, b.length);
+  return maxLen ? Math.max(0, 1 - dist / maxLen) : 0;
 }
-function expandDigits(s){
-  if (!/\d/.test(s)) return [s];
-  const rep = (map)=> s.replace(/\d/g, d => map[d] || d);
-  return [s, rep(__KO_NUM_SINO), rep(__KO_NUM_NATIVE)];
-}
-function scoreWithNumberFallback(refKo, transcript){
-  const base = koCanon(transcript);
-  const cands = expandDigits(base);
-  let best = 0;
-  for(const c of cands){
-    const sim = scoreSimilarity(refKo, koCanon(c));
-    if(sim > best) best = sim;
-  }
-  return best; // 0..1
-}
-
-// ===== Whisper =====
-async function transcribeBase64({ base64, filename='rec.webm', mimeType='audio/webm' }){
-  const clean = base64.includes(',') ? base64.split(',')[1] : base64;
-  const buf = Buffer.from(clean, 'base64');
-
-  const fd = new FormData();
-  fd.append('file', buf, { filename, contentType: mimeType });
-  fd.append('model', 'whisper-1');
-  fd.append('language', 'ko');
-  fd.append('response_format', 'json');
-
-  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: fd
-  });
-  const text = await r.text();
-  if (!r.ok) throw new Error(`whisper ${r.status}: ${text}`);
-  return JSON.parse(text);
-}
-
-// ===== 유사도 =====
-function scoreSimilarity(a,b){
-  const A = String(a||''), B = String(b||'');
-  const n=A.length, m=B.length;
-  if(!n && !m) return 1; if(!n || !m) return 0;
-  const dp = Array.from({length:n+1},()=>Array(m+1).fill(0));
-  for(let i=0;i<=n;i++) dp[i][0]=i; for(let j=0;j<=m;j++) dp[0][j]=j;
-  for(let i=1;i<=n;i++){
-    for(let j=1;j<=m;j++){
-      const c = A[i-1]===B[j-1] ? 0 : 1;
-      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+c);
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const c = a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+c);
     }
   }
-  const d = dp[n][m];
-  return Math.max(0, 1 - d/Math.max(n,1));
+  return dp[m][n];
 }
 
-function json(statusCode, obj){ return { statusCode, headers: CORS, body: JSON.stringify(obj) }; }
+// 간단 팁: 특정 자음/모음 대치, 받침 누락 등 (아주 러프)
+function deriveTips(ref, hyp){
+  const tips=[];
+  if (!hyp) tips.push('STT 없음 / pas de STT');
+  if (ref && hyp && Math.abs(ref.length - hyp.length) >= 3) tips.push('길이가 많이 달라요 / longueur très différente');
+  if (/[ㄹ]/.test(ref) && !/[ㄹ]/.test(hyp)) tips.push('ㄹ 발음 주의 / attention au “ㄹ”');
+  if (/[ㅅ]/.test(ref) && !/[ㅅ]/.test(hyp)) tips.push('ㅅ 발음 주의 / attention au “ㅅ”');
+  return tips;
+}
