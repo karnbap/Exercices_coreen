@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <!-- (선택) 공용 스타일 -->
+  <!-- Optional global style -->
   <link rel="stylesheet" href="../assets/style.css"/>
 
   <style>
@@ -48,15 +48,23 @@
     </div>
     <div class="progress-bar mb-6"><div id="progress-bar-inner" class="progress-bar-inner"></div></div>
 
-    <!-- Méthode 5×5 참고 바 (speed=1.2) -->
+    <!-- Méthode 5×5 (Q6부터 표시) -->
     <div id="sticky-55" class="sticky-55 hidden">
       <div class="p-3 rounded-lg bg-white/90 backdrop-blur border border-slate-200 shadow-sm flex flex-wrap gap-2 items-center justify-between">
         <span class="text-sm font-semibold text-slate-700">Méthode 5×5 (Quand vous voulez / 필요할 때 언제든 듣기)</span>
         <div class="flex flex-wrap gap-2">
-          <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:1.2 })"><i class="fas fa-play"></i> 1–5 natifs</button>
-          <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:1.2 })"><i class="fas fa-play"></i> 6–10 natifs</button>
-          <button class="btn btn-sound" onclick="playAudio('일, 이, 삼, 사, 오','alloy',{ speed:1.2 })"><i class="fas fa-play"></i> 1–5 Hanja</button>
-          <button class="btn btn-sound" onclick="playAudio('육, 칠, 팔, 구, 십','alloy',{ speed:1.2 })"><i class="fas fa-play"></i> 6–10 Hanja</button>
+          <button class="btn btn-sound" onclick="playAudio('하나, 둘, 셋, 넷, 다섯','alloy',{ speed:1.2, _btn:this })">
+            <i class="fas fa-play"></i> 1–5 natifs
+          </button>
+          <button class="btn btn-sound" onclick="playAudio('여섯, 일곱, 여덟, 아홉, 열','shimmer',{ speed:1.2, _btn:this })">
+            <i class="fas fa-play"></i> 6–10 natifs
+          </button>
+          <button class="btn btn-sound" onclick="playAudio('일, 이, 삼, 사, 오','alloy',{ speed:1.2, _btn:this })">
+            <i class="fas fa-play"></i> 1–5 Hanja
+          </button>
+          <button class="btn btn-sound" onclick="playAudio('육, 칠, 팔, 구, 십','alloy',{ speed:1.2, _btn:this })">
+            <i class="fas fa-play"></i> 6–10 Hanja
+          </button>
         </div>
       </div>
     </div>
@@ -93,6 +101,7 @@
     window.PONGDANG_SEND_AUDIO = (typeof window.PONGDANG_SEND_AUDIO === 'boolean') ? window.PONGDANG_SEND_AUDIO : false;
   </script>
 
+  <!-- 튼튼해진 발음평가 위젯 -->
   <script src="../assets/pronun-client.js"></script>
 
   <script>
@@ -235,7 +244,7 @@
         type:'choice', typeLabel: TYPE_TITLES['choice'],
         context:q.context, answer:q.answer, options:[...q.options],
         userAnswer:null, isCorrect:null, listenCount:0,
-        pronunRequired:true, pronunChecked:false  // ✅ 객관식도 발음평가 필수
+        pronunRequired:true, pronunChecked:false
       }));
 
       const frPromptKo = frPromptKoData.map((q,i)=>({
@@ -244,7 +253,9 @@
         fr:q.fr, audioText:q.audio, frGuide:q.frGuide, ko:q.ko, acceptedKo:q.acceptedKo||[],
         voice:q.voice||'alloy',
         userAnswer:"", isCorrect:null, listenCount:0,
-        pronunRequired:true, pronunChecked:false
+        pronunRequired:true, pronunChecked:false,
+        textChecked:false,
+        textCorrect:null
       }));
 
       const dictation = dictationData.map((q,i)=>({
@@ -279,7 +290,7 @@
           html += `<button class="choice-btn ${isSel?'selected':''}" onclick="selectChoiceAnswer('${safeAttr(opt)}')">${opt}</button>`;
         });
 
-        // ✅ 정답을 선택했을 때만 녹음 카드 표시 (발음평가 필수는 유지)
+        // 정답을 선택했을 때만 녹음 카드 표시 (발음평가 필수)
         const isCorrectSelected = (q.userAnswer === q.answer);
         if (isCorrectSelected) {
           html += `
@@ -298,18 +309,39 @@
         html += `<p class="question-text">🇰🇷 Écoutez (KO) → Répondez en coréen / 오디오 듣고 한국어로 답하세요.</p>`;
         html += `
           <div class="flex gap-2 mb-3">
-            <button id="playpause-btn" class="btn btn-sound flex-1" onclick="playAudio('${safeAttr(q.audioText)}','${q.voice||'alloy'}',{ _btn:this })"><i class="fas fa-play"></i> Écouter (듣기)</button>
+            <button id="playpause-btn" class="btn btn-sound flex-1"
+                    onclick="playAudio('${safeAttr(q.audioText)}','${q.voice||'alloy'}',{ _btn:this })">
+              <i class="fas fa-play"></i> Écouter (듣기)
+            </button>
             <button class="btn btn-secondary" onclick="stopAudio()"><i class="fas fa-square"></i> Stop</button>
           </div>
           <div class="p-3 bg-white rounded border mb-3 text-sm text-slate-600"><span class="font-medium">Guide (FR)</span> : ${q.frGuide}</div>
+
           <label class="block mb-1 font-semibold">Réponse en coréen (한국어):</label>
-          <input class="input-field input-ko" value="${q.userAnswer||''}" oninput="updateTranslateAnswer(this.value)" placeholder="예: ${q.ko}">
-          <div class="pronun-card">
-            <div class="pronun-title">🎤 Enregistrer & tester / 녹음해서 발음 시험해보기</div>
-            <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${q.ko}</span></div>
-            <div id="pronun-mount"></div>
+          <div class="flex gap-2">
+            <input class="input-field input-ko flex-1"
+                   value="${q.userAnswer||''}"
+                   oninput="updateTranslateAnswer(this.value)"
+                   placeholder="예: ${q.ko}">
+            <button class="btn btn-primary" onclick="checkTextAnswer()">정답 확인</button>
           </div>
         `;
+
+        // 정답 확인 후 피드백 + 발음 카드 노출
+        if (q.textChecked) {
+          const ok = q.textCorrect === true;
+          html += `
+            <div class="mt-3 ${ok ? 'text-emerald-700' : 'text-rose-700'} font-semibold">
+              ${ok ? '✅ 맞았습니다!' : '❌ 틀렸습니다.'}
+              ${ok ? '' : `<span class="ml-2 text-slate-700">정답: <b>${q.ko}</b></span>`}
+            </div>
+            <div class="pronun-card mt-3">
+              <div class="pronun-title">🎤 Enregistrer & tester / 녹음해서 발음 시험해보기</div>
+              <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${q.ko}</span></div>
+              <div id="pronun-mount"></div>
+            </div>
+          `;
+        }
       }
 
       else if(q.type==='dictation'){
@@ -317,7 +349,10 @@
         html += `<p class="question-text">Écouter → <b>1)</b> Dictée(받아쓰기) → <b>2)</b> Réponse en coréen(한국어 대답) → <b>3)</b> Enregistrer & évaluer(녹음·발음 평가)</p>`;
         html += `
           <div class="flex gap-2 mb-3">
-            <button id="playpause-btn" class="btn btn-sound flex-1" onclick="playAudio('${safeAttr(q.ko)}','${q.voice||'alloy'}',{ _btn:this })"><i class="fas fa-play"></i> Écouter (듣기)</button>
+            <button id="playpause-btn" class="btn btn-sound flex-1"
+                    onclick="playAudio('${safeAttr(q.ko)}','${q.voice||'alloy'}',{ _btn:this })">
+              <i class="fas fa-play"></i> Écouter (듣기)
+            </button>
             <button class="btn btn-secondary" onclick="stopAudio()"><i class="fas fa-square"></i> Stop</button>
           </div>
           <div class="space-y-3">
@@ -340,24 +375,24 @@
 
       area.innerHTML = html;
 
-      // Mount pronunciation tester (choice는 정답 선택 시에만 mount가 존재)
+      // 발음평가 컴포넌트 mount (존재할 때만)
       const mount = document.getElementById('pronun-mount');
       if(mount && window.Pronun){
         try{
           if(q.type==='choice'){
             Pronun.mount(mount, {
               getReferenceText: () => q.answer,
-              onResult: () => { q.pronunChecked = true; updateNavigation(); }
+              onResult: (res) => { q.pronunChecked = (res && res.status==='ok'); updateNavigation(); }
             });
           }else if(q.type==='fr_prompt_ko'){
             Pronun.mount(mount, {
               getReferenceText: () => q.ko,
-              onResult: () => { q.pronunChecked = true; updateNavigation(); }
+              onResult: (res) => { q.pronunChecked = (res && res.status==='ok'); updateNavigation(); }
             });
           }else if(q.type==='dictation'){
             Pronun.mount(mount, {
               getReferenceText: () => (document.querySelector('.input-reply-ko')?.value || ''),
-              onResult: () => { q.pronunChecked = true; updateNavigation(); }
+              onResult: (res) => { q.pronunChecked = (res && res.status==='ok'); updateNavigation(); }
             });
           }
         }catch(e){
@@ -374,33 +409,55 @@
     function selectChoiceAnswer(val){
       const q = questions[currentQuestionIndex];
       q.userAnswer = val;
-      // 정답 아닌 상태로 바꾸면 발음평가 완료도 초기화
-      if (val !== q.answer) q.pronunChecked = false;
-      renderQuestion(); // 다시 렌더 → 정답이면 녹음 카드 생김
+      if (val !== q.answer) q.pronunChecked = false; // 정답 해제 시 평가 초기화
+      renderQuestion(); // 정답이면 즉시 녹음 카드가 생김
     }
+
     function updateTranslateAnswer(val){
-      questions[currentQuestionIndex].userAnswer = val;
+      const q = questions[currentQuestionIndex];
+      q.userAnswer = val;
+      if (q.type === 'fr_prompt_ko') {
+        q.textChecked = false;
+        q.textCorrect = null;
+        q.pronunChecked = false;
+      }
       updateNavigation();
     }
+
     function updateDictationAnswer(part,val){
       questions[currentQuestionIndex].userAnswer[part]=val;
       updateNavigation();
+    }
+
+    function checkTextAnswer(){
+      const q = questions[currentQuestionIndex];
+      if (q.type !== 'fr_prompt_ko') return;
+      const val = (q.userAnswer||'').trim();
+      if (!val) return;
+
+      const strip = s => String(s||'').replace(/\s/g,'');
+      const cands = [q.ko, ...(q.acceptedKo||[])];
+      q.textCorrect = cands.some(ans => strip(val) === strip(ans));
+      q.textChecked = true;
+      q.pronunChecked = false; // 텍스트 바꾸면 다시 평가
+
+      renderQuestion();
     }
 
     function isNextAllowed(){
       const q = questions[currentQuestionIndex];
       if(!q) return false;
 
-      // 발음평가가 '필수'인 유형이면 완료 여부 체크
+      // 발음평가가 필수인 모든 유형에서 체크
       if(q.pronunRequired && !q.pronunChecked) return false;
 
       if(q.type==='choice'){
-        // 객관식: 선택은 했는지 + (필수라서 위에서 pronunChecked 확인)
         return Boolean(q.userAnswer);
       }else if(q.type==='fr_prompt_ko'){
-        return Boolean(q.userAnswer && q.userAnswer.trim());
+        if(!q.textChecked) return false;            // 텍스트 정답 확인 선행
+        if(!q.userAnswer || !q.userAnswer.trim()) return false;
       }else if(q.type==='dictation'){
-        return Boolean(q.userAnswer.ko && q.userAnswer.replyKo);
+        if(!q.userAnswer.ko || !q.userAnswer.replyKo) return false;
       }
       return true;
     }
