@@ -1,14 +1,26 @@
-// assets/pronun-client.js
+// assets/pronun-client.js  (v4)
 // 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void })
 (function (global) {
-  if (global.Pronun && global.Pronun.__v >= 3) return;
+  if (global.Pronun && global.Pronun.__v >= 4) return;
 
   const CFG = {
     endpoint: (global.PONGDANG_FN_BASE || '/.netlify/functions') + '/analyze-pronunciation',
     minSec: 0.8,
     maxSec: 12,
     canvasW: 240,
-    canvasH: 40
+    canvasH: 40,
+
+    // 판정/가비지 필터 파라미터
+    passBase: 0.75,          // 일반 문장 통과 임계치(75%)
+    passShortRef: 0.85,      // 참조가 아주 짧을 때 임계치(85%)
+    shortRefLen: 4,          // 정규화 기준 길이 4 이하 → "아주 짧음"
+    lowSimil: 0.35,          // 짧은 참조에서 유사도 바닥
+    lenRatioGarbage: 2.5,    // 인식/참조 길이 비 과대
+    garbageWords: [
+      "배달의민족","영상편집","자막","광고","구독","좋아요","알림설정","스폰서",
+      "후원","협찬","문의","링크","다운로드","설명란","채널","스트리밍","썸네일",
+      "유튜브","클릭","이벤트","특가","광고주","제휴","비디오","구매","할인"
+    ]
   };
 
   // 퍼센트 표시(null/NaN 안전)
@@ -19,7 +31,7 @@
     return `${Math.round((v > 1 ? v : v * 100))}%`;
   }
 
-  // ── 내부 유틸(학생 화면에 노출 X) ─────────────────────────────
+  // ── 내부 유틸 ─────────────────────────────
   function h(tag, attrs = {}, ...kids) {
     const el = document.createElement(tag);
     for (const k in attrs) {
@@ -91,7 +103,47 @@
     return { stop() { alive = false; try { cancelAnimationFrame(raf); } catch(_){} try { ac.close(); } catch(_){} } };
   }
 
-  // ── 학생용 UI(불어/한글) ────────────────────────────────────
+  // 정규화 & 유사도
+  function normalizeKo(s){
+    if(!s) return { raw:"", ko:"" };
+    let t = String(s).toLowerCase()
+      .replace(/[\u200B-\u200D\uFEFF]/g,'')
+      .replace(/[.,!?;:()[\]{}"“”'‘’`~^%$#+=<>…]/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+    const onlyKo = t.replace(/[^ㄱ-ㅎ가-힣0-9\s]/g,'').replace(/\s+/g,'').trim();
+    return { raw: t, ko: onlyKo };
+  }
+  function similarity(a, b){
+    if(a===b) return 1;
+    const m=a.length,n=b.length;
+    if(!m||!n) return 0;
+    const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+    for(let i=0;i<=m;i++) dp[i][0]=i;
+    for(let j=0;j<=n;j++) dp[0][j]=j;
+    for(let i=1;i<=m;i++){
+      for(let j=1;j<=n;j++){
+        const cost = a[i-1]===b[j-1]?0:1;
+        dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+      }
+    }
+    const dist = dp[m][n];
+    return 1 - (dist / Math.max(m,n));
+  }
+  function looksGarbage(refN, hypN){
+    const refLen = refN.ko.length || refN.raw.length;
+    const hypLen = hypN.ko.length || hypN.raw.length;
+    const sim = similarity(refN.ko, hypN.ko);
+
+    const hasBadWord = CFG.garbageWords.some(k => hypN.raw.includes(k));
+    const isShortRef = (refLen <= CFG.shortRefLen);
+    const lenRatioBad = isShortRef && hypLen > 0 && (hypLen / Math.max(1,refLen)) >= CFG.lenRatioGarbage;
+    const simTooLow  = isShortRef && sim < CFG.lowSimil;
+
+    return hasBadWord || lenRatioBad || simTooLow;
+  }
+
+  // ── 학생용 UI ─────────────────────────────
   function buildUI(mountEl) {
     const ui = {
       root: h('div', { class: 'flex items-center gap-2 flex-wrap' }),
@@ -125,12 +177,12 @@
   }
 
   function mount(mountEl, opts) {
-    const getRef  = typeof opts?.getReferenceText === 'function' ? opts.getReferenceText : () => '';
-    const onResult = typeof opts?.onResult === 'function' ? opts.onResult : () => {};
+    const getRef   = typeof opts?.getReferenceText === 'function' ? opts.getReferenceText : () => '';
+    const onResult = typeof opts?.onResult        === 'function' ? opts.onResult        : () => {};
 
     const ui = buildUI(mountEl);
     let stream = null, rec = null, chunks = [], vu = null, startMs = 0;
-    let mime = pickMime();
+    let mime = pickMime(), lastDur = 0;
 
     async function startRec() {
       try {
@@ -155,55 +207,81 @@
     function stopRec() {
       if (rec && rec.state === 'recording') { try { rec.stop(); } catch(_){} }
       vu?.stop(); vu = null; stopTracks();
-      const dur = (Date.now() - startMs) / 1000;
-      if (dur < CFG.minSec) {
+      lastDur = (Date.now() - startMs) / 1000;
+      if (lastDur < CFG.minSec) {
         ui.msg.textContent = `⏱️ Un peu plus long, s’il te plaît (≥ ${CFG.minSec}s) / 조금만 더 길게 녹음해 주세요`;
-        ui.eval.disabled = true; ui.eval.classList.add('disabled'); // 너무 짧으면 평가 버튼 잠금
+        ui.eval.disabled = true; ui.eval.classList.add('disabled');
       } else {
         ui.msg.textContent = '⏹️ Terminé. Appuie sur “Évaluer” / 완료! 이제 “평가”를 눌러 주세요';
       }
       setState(ui, 'stop', chunks.length);
     }
+
     async function evalRec() {
       if (!chunks.length) { ui.msg.textContent = '🔁 Enregistre d’abord / 먼저 녹음해 주세요'; return; }
-      const blob = new Blob(chunks, { type: mime.split(';')[0] || 'audio/webm' });
-      const base64 = await blobToBase64(blob);
       const ref = String(getRef() || '').trim();
       if (!ref) { ui.msg.textContent = '📝 La phrase n’est pas prête / 문장이 아직 준비되지 않았어요'; return; }
 
+      const blob = new Blob(chunks, { type: mime.split(';')[0] || 'audio/webm' });
+      const base64 = await blobToBase64(blob);
+
       ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
       ui.out.textContent = '';
+      let transcript = '', accuracy = null, serverStatus = null, needsRetry = false;
+
       try {
         const res = await postJSON(CFG.endpoint, {
           referenceText: ref,
-          audio: { base64, mimeType: blob.type || 'audio/webm', filename: 'rec.webm' }
+          audio: { base64, mimeType: blob.type || 'audio/webm', filename: 'rec.webm', duration: lastDur }
         });
-
-        // transcript: 숫자 → 한글 강제(서버 보정이 있어도 표시 안전망)
-        let tr = String(res?.transcript || '');
-        if (window.NumHangul?.forceHangulNumbers) {
-          tr = window.NumHangul.forceHangulNumbers(tr);
-        }
-
-        // 짧은 발음 장문 오인식: 0점 대신 재시도 안내
-        if (res?.needsRetry) {
-          ui.out.innerHTML = `👂 Reconnu: <span class="korean-font">${tr || '(vide / 비어 있음)'}</span>`;
-          ui.msg.textContent = '⚠️ Phrase courte mal reconnue. Réessaie clairement. / 짧은 문장이 길게 인식됐어요. 또박또박 다시 한 번!';
-          ui.eval.disabled = true;  ui.eval.classList.add('disabled');
-          ui.rec.disabled  = false; ui.rec.classList.remove('disabled');
-          return;
-        }
-
-        // 일반 케이스: 정확도(null 안전)
-        const acc = (res?.accuracy === null || res?.accuracy === undefined) ? null : res.accuracy;
-        ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(acc)}</span> · 👂 Reconnu: <span class="korean-font">${tr || '(vide / 비어 있음)'}</span>`;
-        ui.msg.textContent = '✅ C’est bon ! Tu peux passer à la suite / 좋아요! 다음으로 넘어가세요';
-
-        try { onResult({ ...res, transcript: tr, accuracy: acc }); } catch(_) {}
+        serverStatus = res?.status || null;
+        accuracy = (res?.accuracy === null || res?.accuracy === undefined) ? null : res.accuracy;
+        transcript = String(res?.transcript || '');
+        needsRetry = !!res?.needsRetry;
       } catch (e) {
-        console.error('[eval]', e);
-        ui.msg.textContent = '⚠️ Réessaie s’il te plaît / 다시 한 번 시도해 주세요';
+        console.warn('[eval server]', e);
+        ui.msg.textContent = '⚠️ Analyse indisponible. Réessaie. / 분석 서버 오류, 다시 시도해 주세요';
+        try { onResult({ status:'error', reason:'server_error' }); } catch(_){}
+        return;
       }
+
+      // 숫자→한글 강제 표시(있을 때만)
+      if (global.NumHangul?.forceHangulNumbers) {
+        transcript = global.NumHangul.forceHangulNumbers(transcript);
+      }
+
+      // 클라이언트 보정(가비지 필터 & 유사도 기반 점수)
+      const refN = normalizeKo(ref);
+      const hypN = normalizeKo(transcript);
+
+      // 서버가 needsRetry를 주지 않았다면 클라이언트에서 판별
+      if (!needsRetry) needsRetry = looksGarbage(refN, hypN);
+
+      // 서버가 정확도를 안 주면 유사도 기반 계산
+      if (accuracy === null || accuracy === undefined) {
+        const sim = similarity(refN.ko, hypN.ko);
+        accuracy = Math.round(sim * 100);
+      }
+
+      // 최종 통과 판정(짧은 참조는 엄격)
+      const isShortRef = (refN.ko.length || refN.raw.length) <= CFG.shortRefLen;
+      const passCut = Math.round((isShortRef ? CFG.passShortRef : CFG.passBase) * 100);
+      let finalStatus = 'retry';
+      if (!needsRetry && accuracy >= passCut) finalStatus = 'ok';
+
+      // 출력
+      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span> · 👂 Reconnu: <span class="korean-font">${transcript || '(vide / 비어 있음)'}</span>`;
+
+      if (finalStatus === 'ok') {
+        ui.msg.innerHTML = '✅ C’est bon ! Tu peux passer à la suite / 좋아요! 다음으로 넘어가세요';
+      } else if (needsRetry) {
+        ui.msg.innerHTML = '🤔 Bruit/sous-titres détectés. Réessaie clairement. / 잡음·자막으로 보입니다. 또박또박 다시 한 번!';
+      } else {
+        ui.msg.innerHTML = `💡 Encore un peu: vise ≥ ${passCut}% / 조금만 더 또렷하게 (목표 ${passCut}% 이상)`;
+      }
+
+      // 콜백(호출측에서 status==='ok'만 통과로 사용 가능)
+      try { onResult({ status: finalStatus, accuracy, transcript, needsRetry, serverStatus }); } catch(_) {}
     }
 
     ui.rec.addEventListener('click', startRec);
@@ -212,9 +290,10 @@
 
     window.addEventListener('beforeunload', () => {
       try { if (rec && rec.state === 'recording') rec.stop(); } catch(_) {}
-      vu?.stop(); stopTracks();
+      try { vu?.stop(); } catch(_) {}
+      try { stream?.getTracks()?.forEach(t=>t.stop()); } catch(_) {}
     });
   }
 
-  global.Pronun = { __v: 3, mount };
+  global.Pronun = { __v: 4, mount };
 })(window);
