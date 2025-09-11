@@ -115,3 +115,15 @@
     };
   }
 })();
+
+// Hint 토글 전역 이벤트 (모든 문제 카드 공통)
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.btn-hint');
+  if(!btn) return;
+  const targetSel = btn.getAttribute('data-target');
+  if(!targetSel) return;
+  const box = document.querySelector(targetSel);
+  if(!box) return;
+  box.classList.toggle('show');
+});
+
