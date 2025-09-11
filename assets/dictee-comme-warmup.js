@@ -1,8 +1,8 @@
-/* Dictee “Comme” — Warmup UX & Auto-Eval (속도/반복 제거 버전)
+/* Dictee “Comme” — Warmup UX (단기해결: 속도/반복 X, 정지→자동평가, 평가 버튼, 실시간 자막, 막대 VU)
    - TTS: /.netlify/functions/generate-audio
-   - 결과: /.netlify/functions/send-results
+   - STT/평가: /.netlify/functions/analyze-pronunciation (서버가 model 포함하도록 3번 파일 교체)
    - KO/FR 채점: AnswerJudge
-   - 라이브 STT: live-stt.js (부분/최종 자막 이벤트 연동)
+   - Live STT: live-stt.js (partial/final 이벤트 수신)
 */
 (function(){
   const $  = (s, r=document)=>r.querySelector(s);
@@ -213,9 +213,20 @@
           const base64 = await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onerror=rej; fr.onload=()=>res(String(fr.result||'').split(',')[1]||''); fr.readAsDataURL(blob); });
           const ref = q.ko.replace(/\s+/g,'');
           const r=await fetch('/.netlify/functions/analyze-pronunciation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({referenceText:ref,audio:{base64,mimeType:'audio/webm',filename:'rec.webm',duration:Math.round(dur*100)/100}})});
-          if(!r.ok) throw new Error('HTTP '+r.status);
-          const j=await r.json(); const acc=Math.max(0,Math.min(1,Number(j.accuracy||0))); const pct=Math.round(acc*100);
+          const j=await r.json().catch(()=>({}));
+          if(!r.ok || j.ok===false){
+            const frMsg = j.messageFr || "Échec de l'analyse. Réessayez.";
+            const koMsg = j.messageKo || "평가에 실패했어요. 다시 시도해 주세요.";
+            out.innerHTML = `<div class="p-3 rounded border bg-rose-50"><b>${frMsg}</b><br>${koMsg}</div>`;
+            return;
+          }
+
+          const acc=Math.max(0,Math.min(1,Number(j.accuracy||0))); const pct=Math.round(acc*100);
           st[i].acc=acc; st[i].trans=String(j.transcript||'').trim(); st[i].recBase64=base64; st[i].recDur=dur;
+
+          const tips = Array.isArray(j.confusionTags)&&j.confusionTags.length
+            ? `• 발음 유의 / À noter: ${j.confusionTags.join(', ')}`
+            : (j.warnFr || j.warnKo ? `• ${j.warnFr||''} ${j.warnKo||''}` : '');
 
           out.innerHTML = `
             <div class="p-3 rounded border bg-white">
@@ -223,11 +234,11 @@
               <div class="text-lg font-semibold">Score: ${pct}%</div>
               <div class="mt-1 text-sm"><b>Référence:</b> ${ref}</div>
               <div class="mt-1 text-sm"><b>Ma prononciation:</b> ${st[i].trans||'(vide)'}</div>
-              ${Array.isArray(j.confusionTags)&&j.confusionTags.length?`<div class="mt-2 text-xs text-slate-600">• 발음 유의: ${j.confusionTags.join(', ')}</div>`:''}
+              ${tips?`<div class="mt-2 text-xs text-slate-600">${tips}</div>`:''}
             </div>`;
         }catch(e){
           console.error(e);
-          out.innerHTML='<div class="text-rose-600">평가 오류. 다시 시도해 주세요.</div>';
+          out.innerHTML='<div class="text-rose-600">평가 오류. 다시 시도해 주세요. / Erreur d’analyse. Réessayez.</div>';
           fetch('/.netlify/functions/log-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({functionName:'dictee-comme-warmup',error:String(e),pageUrl:location.href})}).catch(()=>{});
         }
       }
