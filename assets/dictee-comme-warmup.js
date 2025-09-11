@@ -86,12 +86,20 @@
         <div class="mt-3 grid gap-2 ml-10">
           <input class="ko kof p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
           <input class="fr p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
-          <div class="flex gap-2">
-            <button class="hint1 tag">🙏 Aidez-moi (초성)</button>
-            <button class="hint2 tag">🦺 Au secours (단어)</button>
-            <button class="btn btn-ghost check">Vérifier (정답 확인)</button>
-          </div>
-          <div class="hints text-sm text-amber-700"></div>
+         <div class="flex gap-2">
+           <button type="button" class="btn-hint btn-hint1" data-target=".hint1-box" aria-pressed="false">
+             🙏 Aidez-moi <span class="ml-1 text-sm text-slate-100">(초성)</span>
+           </button>
+           <button type="button" class="btn-hint btn-hint2" data-target=".hint2-box" aria-pressed="false">
+             🦺 Au secours <span class="ml-1 text-sm text-slate-100">(단어)</span>
+           </button>
+           <button class="btn btn-ghost check">Vérifier (정답 확인)</button>
+         </div>
+         
+         <!-- 힌트 박스: 처음엔 숨김, 버튼으로 토글 -->
+         <div class="hint-box hint1-box"></div>
+         <div class="hint-box hint2-box"></div>
+
 
           <div class="mt-1 flex items-center gap-2">
             <button class="btn btn-ghost rec">🎙️ Démarrer</button>
@@ -110,8 +118,37 @@
       btnPlay.onclick=async()=>{ await ttsPlay(q.ko,q.voice); st[i].listen++; listen.textContent=String(st[i].listen); };
 
       // 힌트
-      $('.hint1',el).onclick=(e)=>{e.target.disabled=true; st[i].h1++; $('.hints',el).innerHTML=`<div>🙏 초성: ${q.hint1}</div>`;};
-      $('.hint2',el).onclick=(e)=>{e.target.disabled=true; st[i].h2++; $('.hints',el).innerHTML+=`<div class="mt-1">🦺 단어: ${q.hint2}</div>`;};
+      // 힌트 토글: 다시 누르면 숨김, 최초 열림 때만 카운트 +1
+      const btnH1 = el.querySelector('.btn-hint1');
+      const btnH2 = el.querySelector('.btn-hint2');
+      const boxH1 = el.querySelector('.hint1-box');
+      const boxH2 = el.querySelector('.hint2-box');
+      
+      // 내용 채우기(최초 한 번)
+      boxH1.innerHTML = `<b>🙏 초성:</b> <span class="kof">${q.hint1 || '—'}</span>`;
+      boxH2.innerHTML = `<b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}`;
+      
+      function toggleHint(btn, box, key /* 'h1' | 'h2' */){
+        const showing = box.classList.contains('show');
+        if (showing) {
+          box.classList.remove('show');
+          btn.setAttribute('aria-pressed','false');
+        } else {
+          box.classList.add('show');
+          btn.setAttribute('aria-pressed','true');
+          // 최초 열림에만 카운트 +1
+          if (key==='h1' && !btn.dataset._opened){
+            st[i].h1++; btn.dataset._opened = '1';
+          }
+          if (key==='h2' && !btn.dataset._opened){
+            st[i].h2++; btn.dataset._opened = '1';
+          }
+        }
+      }
+      
+      btnH1.addEventListener('click', ()=>toggleHint(btnH1, boxH1, 'h1'));
+      btnH2.addEventListener('click', ()=>toggleHint(btnH2, boxH2, 'h2'));
+
 
       // 채점
       const koInp=$('.ko',el), frInp=$('.fr',el), out=$('.out',el);
