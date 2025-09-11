@@ -120,3 +120,12 @@ body {
 .btn-hint2:active {
   transform:scale(0.95);
 }
+
+
+/* 힌트 영역 기본은 숨김 */
+.hint-box { display:none; margin-top:.5rem; padding:.6rem .8rem;
+  border-radius:.5rem; font-size:.9rem; line-height:1.4;
+  background:#fefce8; border:1px solid #fef08a; color:#854d0e;
+}
+.hint-box.show { display:block; }
+
