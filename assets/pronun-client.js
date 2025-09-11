@@ -11,6 +11,14 @@
     canvasH: 40
   };
 
+  // 퍼센트 표시(null/NaN 안전)
+  function pctSafe(x){
+    if (x === null || x === undefined) return '--';
+    const v = Number(x);
+    if (!isFinite(v)) return '--';
+    return `${Math.round((v > 1 ? v : v * 100))}%`;
+  }
+
   // ── 내부 유틸(학생 화면에 노출 X) ─────────────────────────────
   function h(tag, attrs = {}, ...kids) {
     const el = document.createElement(tag);
@@ -82,7 +90,6 @@
     draw();
     return { stop() { alive = false; try { cancelAnimationFrame(raf); } catch(_){} try { ac.close(); } catch(_){} } };
   }
-  function pct(x){ return `${Math.round((Number(x)||0)*100)}%`; }
 
   // ── 학생용 UI(불어/한글) ────────────────────────────────────
   function buildUI(mountEl) {
@@ -151,6 +158,7 @@
       const dur = (Date.now() - startMs) / 1000;
       if (dur < CFG.minSec) {
         ui.msg.textContent = `⏱️ Un peu plus long, s’il te plaît (≥ ${CFG.minSec}s) / 조금만 더 길게 녹음해 주세요`;
+        ui.eval.disabled = true; ui.eval.classList.add('disabled'); // 너무 짧으면 평가 버튼 잠금
       } else {
         ui.msg.textContent = '⏹️ Terminé. Appuie sur “Évaluer” / 완료! 이제 “평가”를 눌러 주세요';
       }
@@ -166,12 +174,32 @@
       ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
       ui.out.textContent = '';
       try {
-        const res = await postJSON(CFG.endpoint, { referenceText: ref, audio: { base64, mimeType: blob.type || 'audio/webm', filename: 'rec.webm' } });
-        const acc = res?.accuracy ?? 0;
-        const tr  = res?.transcript || '';
-        ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pct(acc)}</span> · 👂 Reconnu: <span class="text-slate-700">${tr || '(vide / 비어 있음)'}</span>`;
+        const res = await postJSON(CFG.endpoint, {
+          referenceText: ref,
+          audio: { base64, mimeType: blob.type || 'audio/webm', filename: 'rec.webm' }
+        });
+
+        // transcript: 숫자 → 한글 강제(서버 보정이 있어도 표시 안전망)
+        let tr = String(res?.transcript || '');
+        if (window.NumHangul?.forceHangulNumbers) {
+          tr = window.NumHangul.forceHangulNumbers(tr);
+        }
+
+        // 짧은 발음 장문 오인식: 0점 대신 재시도 안내
+        if (res?.needsRetry) {
+          ui.out.innerHTML = `👂 Reconnu: <span class="korean-font">${tr || '(vide / 비어 있음)'}</span>`;
+          ui.msg.textContent = '⚠️ Phrase courte mal reconnue. Réessaie clairement. / 짧은 문장이 길게 인식됐어요. 또박또박 다시 한 번!';
+          ui.eval.disabled = true;  ui.eval.classList.add('disabled');
+          ui.rec.disabled  = false; ui.rec.classList.remove('disabled');
+          return;
+        }
+
+        // 일반 케이스: 정확도(null 안전)
+        const acc = (res?.accuracy === null || res?.accuracy === undefined) ? null : res.accuracy;
+        ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(acc)}</span> · 👂 Reconnu: <span class="korean-font">${tr || '(vide / 비어 있음)'}</span>`;
         ui.msg.textContent = '✅ C’est bon ! Tu peux passer à la suite / 좋아요! 다음으로 넘어가세요';
-        try { onResult(res); } catch(_) {}
+
+        try { onResult({ ...res, transcript: tr, accuracy: acc }); } catch(_) {}
       } catch (e) {
         console.error('[eval]', e);
         ui.msg.textContent = '⚠️ Réessaie s’il te plaît / 다시 한 번 시도해 주세요';
