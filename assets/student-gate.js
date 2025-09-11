@@ -1,29 +1,65 @@
 // assets/student-gate.js
-// 공통: 이름 게이트 + 시작시각 기록 + 전역 fetch 로깅(send-results 실패 전문 자동 보고)
+// 공통: 이름 게이트 + 시작시각 기록 + 전역 fetch 로깅(send-results 실패 자동 보고)
 //       + 전역 오류 핸들러(window error/unhandledrejection → log-error)
+//       + 힌트 버튼 전역 토글(카드 단위 탐색)
+// 개선: 이름 미입력 차단 범위 확대(pointerdown/keydown/submit/touchstart), UX 개선(스크롤/플래시),
+//       선택적 data-requires-name 자동 비활성화 지원
 
 (function(){
-  // ===== 시작 시간 (전역) =====
+  // ===== 전역 시작 시간 =====
   if (!window._startTime) window._startTime = new Date().toISOString();
   if (!window._startMs)   window._startMs   = Date.now();
 
   // ===== StudentGate (이름 저장/요구) =====
   const KEY = 'korean.studentName';
-  function getName(){ try { return localStorage.getItem(KEY) || ''; } catch { return ''; } }
+
+  function getName(){
+    try { return localStorage.getItem(KEY) || ''; } catch { return ''; }
+  }
   function setName(v){
     try { localStorage.setItem(KEY, String(v||'')); } catch {}
     document.dispatchEvent(new CustomEvent('student-ready', { detail: { name: getName() }}));
+    toggleFinish();
+    applyRequiresNameState(document);
   }
+
+  function flash(el){
+    if (!el) return;
+    el.classList.remove('flash-on');
+    // reflow
+    void el.offsetWidth;
+    el.classList.add('flash-on');
+  }
+
+  function focusName(){
+    const input = document.getElementById('student-name');
+    if (input){
+      input.focus({ preventScroll:true });
+      const box = input.closest('.card') || input;
+      box.scrollIntoView({ behavior:'smooth', block:'center' });
+      flash(box);
+    }
+  }
+
   function init(){
     const input = document.getElementById('student-name');
     if (input){
       const cur = getName();
       if (cur && !input.value) input.value = cur;
+
       input.addEventListener('change', (e)=>{
         const v = String(e.target.value||'').trim();
         if (v) setName(v);
         toggleFinish();
       });
+
+      input.addEventListener('keyup', (e)=>{
+        if (e.key === 'Enter'){
+          const v = String(e.target.value||'').trim();
+          if (v) setName(v);
+        }
+      });
+
       // 랜덤 프랑스 이름 placeholder
       if (!input.placeholder || /Ex\./i.test(input.placeholder)) {
         const names = ['Camille','Noé','Chloé','Lucas','Léa','Louis','Emma','Hugo','Manon','Arthur','Jules','Zoé','Léna','Nina','Paul','Sofia'];
@@ -31,30 +67,72 @@
         input.placeholder = `Ex. ${pick()}, ${pick()}, ${pick()}...`;
       }
     }
+
     toggleFinish();
+    applyRequiresNameState(document);
   }
+
   function toggleFinish(){
     const input = document.getElementById('student-name');
     const finishBtn = document.getElementById('finish-btn');
-    if (finishBtn) finishBtn.disabled = !((input && input.value.trim()) || getName());
+    const has = ((input && input.value.trim()) || getName());
+    if (finishBtn) finishBtn.disabled = !has;
   }
+
+  // data-requires-name 속성 가진 요소는 이름 없을 때 자동 비활성화
+  function applyRequiresNameState(root=document){
+    const hasName = !!getName();
+    const nodes = root.querySelectorAll('[data-requires-name]');
+    nodes.forEach(el=>{
+      const tag = (el.tagName||'').toLowerCase();
+      if (['button','input','select','textarea'].includes(tag)){
+        el.disabled = !hasName;
+      }
+      el.setAttribute('aria-disabled', hasName ? 'false' : 'true');
+    });
+  }
+
   function requireBeforeInteraction(root=document){
+    const allow = (target)=>{
+      // 이름 입력칸/라벨/컨테이너는 통과
+      if (!target) return true;
+      if (target.id === 'student-name') return true;
+      if (target.closest && target.closest('#student-name')) return true;
+      // 프린트/메일 링크 등 허용하려면 아래 추가 가능
+      return false;
+    };
+
     const guard = (e)=>{
-      // 이름칸 자체는 통과
+      if (getName()) return;
       const t = e.target;
-      if (t && (t.id === 'student-name' || (t.closest && t.closest('#student-name')))) return;
+      if (allow(t)) return;
+      // 키보드로 버튼/링크 활성화도 막기 (Enter/Space)
+      if (e.type === 'keydown'){
+        const k = e.key;
+        if (!['Enter',' '].includes(k)) return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+      focusName();
+    };
+
+    // 캡처 단계에서 광범위하게 가로채기
+    root.addEventListener('click',       guard, true);
+    root.addEventListener('pointerdown', guard, true);
+    root.addEventListener('touchstart',  guard, true);
+    root.addEventListener('keydown',     guard, true);
+    root.addEventListener('submit', (e)=>{
       if (!getName()){
         e.preventDefault(); e.stopPropagation();
         alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
-        document.getElementById('student-name')?.focus();
+        focusName();
       }
-    };
-    root.addEventListener('click', guard, true);
-    root.addEventListener('input', guard, true);
+    }, true);
   }
 
-  // 공개
-  window.StudentGate = { init, requireBeforeInteraction, getName, setName };
+  // 공개 API
+  window.StudentGate = { init, requireBeforeInteraction, getName, setName, applyRequiresNameState };
 
   // ===== 전역 오류 리포트 (log-error) =====
   const LOG = '/.netlify/functions/log-error';
@@ -116,25 +194,30 @@
   }
 })();
 
-// Hint 버튼 토글 (모든 페이지/문제 공통)
+// ===== Hint 버튼 토글 (모든 페이지/문제 공통) =====
+// - 각 카드(.card / [data-card] / .dictation-card / .quiz-card) 내부에서 data-target 우선 → 폴백: 다음 형제 .hint-box
+// - aria-pressed 업데이트, .show 클래스 토글 (style.css의 .hint-box.show {display:block;}와 연동)
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-hint1, .btn-hint2, .btn-hint');
   if (!btn) return;
 
-  // 카드 범위 안에서만 탐색(중복 ID 걱정 없음)
+  // 카드 범위
   const card = btn.closest('.card, [data-card], .dictation-card, .quiz-card') || document;
 
-  // data-target 사용 권장(예: data-target=".hint1-box")
+  // 우선 data-target
   const sel = btn.getAttribute('data-target');
   let box = sel ? card.querySelector(sel) : null;
 
-  // data-target이 없으면, 바로 다음 형제 중 .hint-box 찾기(폴백)
+  // 폴백: 버튼의 바로 다음 형제 중 .hint-box
   if (!box) {
     const next = btn.nextElementSibling;
     if (next && next.classList?.contains('hint-box')) box = next;
   }
   if (!box) return;
 
-  box.classList.toggle('show');
-  btn.setAttribute('aria-pressed', box.classList.contains('show') ? 'true' : 'false');
+  const willShow = !box.classList.contains('show');
+  box.classList.toggle('show', willShow);
+  // 인라인 보조(외부 CSS 우선순위 문제 대비)
+  box.style.display = willShow ? 'block' : 'none';
+  btn.setAttribute('aria-pressed', willShow ? 'true' : 'false');
 });
