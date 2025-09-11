@@ -1,8 +1,9 @@
-/* Dictee “Comme” — Warmup UX (단기해결: 속도/반복 X, 정지→자동평가, 평가 버튼, 실시간 자막, 막대 VU)
-   - TTS: /.netlify/functions/generate-audio
-   - STT/평가: /.netlify/functions/analyze-pronunciation (서버가 model 포함하도록 3번 파일 교체)
-   - KO/FR 채점: AnswerJudge
-   - Live STT: live-stt.js (partial/final 이벤트 수신)
+/* Dictee “Comme” — 개선:
+   - 속도/반복 X
+   - 정지→자동평가 + 평가 버튼 재평가
+   - 실시간 자막(엘리먼트/도큐먼트 이벤트 모두 수신) + 폴백 문구
+   - 저음량 민감도 향상(GainNode, minDecibels, smoothing)
+   - VU: DPR 스케일링 + 막대/타임도메인 하이브리드
 */
 (function(){
   const $  = (s, r=document)=>r.querySelector(s);
@@ -99,7 +100,7 @@
             <span class="text-sm text-slate-500">정지하면 자동 평가</span>
           </div>
           <canvas class="vu"></canvas>
-          <div class="live text-xs p-2 rounded border bg-white"></div>
+          <div class="live text-xs p-2 rounded border bg-white">En direct / 실시간…</div>
           <div class="out text-sm"></div>
         </div>`;
       root.appendChild(el);
@@ -132,60 +133,116 @@
       koInp.addEventListener('keydown',e=>{ if(e.key==='Enter') grade(); });
       frInp.addEventListener('keydown',e=>{ if(e.key==='Enter') grade(); });
 
-      // ===== 녹음/정지/평가 (+VU 막대, 실시간 자막) =====
+      // ===== 녹음/정지/평가 (+민감도 향상 VU, 실시간 자막) =====
       let media=null, mr=null, chunks=[], started=0, lastBlob=null, lastDur=0;
       const vuCanvas=$('.vu',el), live=$('.live',el), btnRec=$('.rec',el), btnStop=$('.stop',el), btnEval=$('.eval',el);
-      const ctx=vuCanvas.getContext('2d'); let an,src,ac,raf=0;
 
-      function drawBars(){
-        raf=requestAnimationFrame(drawBars);
+      // DPR 스케일링
+      function ensureCanvasSize(cv){
+        const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+        const w = cv.clientWidth, h = cv.clientHeight;
+        if (!w || !h) return;
+        cv.width  = w * dpr;
+        cv.height = h * dpr;
+        const ctx = cv.getContext('2d');
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+      }
+      ensureCanvasSize(vuCanvas);
+      window.addEventListener('resize', ()=>ensureCanvasSize(vuCanvas), { passive:true });
+
+      const ctx=vuCanvas.getContext('2d'); let an,src,ac,raf=0,gainNode;
+
+      function drawHybrid(){
+        raf=requestAnimationFrame(drawHybrid);
         if(!an) return;
-        const buf=new Uint8Array(an.frequencyBinCount);
-        an.getByteFrequencyData(buf);
-        const W=vuCanvas.width,H=vuCanvas.height,bars=24,barW=Math.max(2,Math.floor((W-(bars-1)*2)/bars)),step=Math.floor(buf.length/bars);
+        const freq=new Uint8Array(an.frequencyBinCount);
+        const time=new Uint8Array(an.fftSize);
+        an.getByteFrequencyData(freq);
+        an.getByteTimeDomainData(time);
+
+        const W=vuCanvas.clientWidth, H=vuCanvas.clientHeight;
         ctx.clearRect(0,0,W,H);
         ctx.fillStyle='#eef2ff'; ctx.fillRect(0,0,W,H);
+
+        // 막대
+        const bars=24, barW=Math.max(2,Math.floor((W-(bars-1)*2)/bars)), step=Math.floor(freq.length/bars);
         for(let b=0;b<bars;b++){
-          const slice=buf.slice(b*step,(b+1)*step);
+          const slice=freq.slice(b*step,(b+1)*step);
           const avg=slice.reduce((a,c)=>a+c,0)/Math.max(1,slice.length);
-          const h=Math.max(4,(avg/255)*(H-6)), x=b*(barW+2), y=H-h;
+          const h=Math.max(3,(avg/255)*(H-8)), x=b*(barW+2), y=H-h-2;
           ctx.fillStyle='#6366f1'; ctx.fillRect(x,y,barW,h);
-          ctx.fillStyle='#a5b4fc'; ctx.fillRect(x,y,barW,3);
+          ctx.fillStyle='#a5b4fc'; ctx.fillRect(x,y,barW,2);
         }
+        // 중앙 선(타임도메인)
+        ctx.beginPath();
+        const mid=H/2;
+        for(let x=0;x<W;x++){
+          const v=time[Math.floor(x/W*time.length)]/128-1, y=mid+v*(mid-6);
+          x?ctx.lineTo(x,y):ctx.moveTo(x,y);
+        }
+        ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1; ctx.stroke();
       }
+
       async function startVu(stream){
         ac=new (window.AudioContext||window.webkitAudioContext)();
         src=ac.createMediaStreamSource(stream);
-        an=ac.createAnalyser(); an.fftSize=2048;
-        if(!vuCanvas.width) vuCanvas.width=vuCanvas.clientWidth||640;
-        if(!vuCanvas.height) vuCanvas.height=vuCanvas.clientHeight||48;
-        drawBars();
+
+        // 🔊 저음량 민감도↑: Gain → Analyser (녹음 오디오에는 영향 없음)
+        gainNode = ac.createGain();
+        gainNode.gain.value = 3.2; // 1.0 기본, 작으면 2~4로 조절
+        src.connect(gainNode);
+
+        an=ac.createAnalyser();
+        an.fftSize = 2048;
+        an.minDecibels = -100;       // 민감도↑
+        an.maxDecibels = -10;
+        an.smoothingTimeConstant = 0.85;
+        gainNode.connect(an);
+
+        drawHybrid();
       }
       function stopVu(){
         cancelAnimationFrame(raf);
+        try{gainNode&&gainNode.disconnect();}catch(_){}
         try{src&&src.disconnect();}catch(_){}
         try{an&&an.disconnect();}catch(_){}
         try{ac&&ac.close();}catch(_){}
-        an=src=ac=null; ctx.clearRect(0,0,vuCanvas.width,vuCanvas.height);
+        an=src=ac=gainNode=null;
+        ctx.clearRect(0,0,vuCanvas.clientWidth,vuCanvas.clientHeight);
       }
 
       async function recStart(){
         if(mr) return;
-        try{ media=await navigator.mediaDevices.getUserMedia({audio:true}); }catch{ out.innerHTML='<div class="text-rose-600">🎙️ 마이크 권한 필요</div>'; return; }
+        try{
+          media=await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+          });
+        }catch{
+          $('.out',el).innerHTML='<div class="text-rose-600">🎙️ 마이크 권한 필요 / Autorisez le micro.</div>';
+          return;
+        }
         chunks=[]; mr=new MediaRecorder(media,{mimeType:'audio/webm'});
         mr.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
         mr.onstop=onStop; started=Date.now();
         await startVu(media); mr.start();
         btnRec.disabled=true; btnStop.disabled=false; btnEval.disabled=true;
-        live.textContent='En direct / 실시간…';
+        live.textContent='En direct / 실시간… (préparation)';
 
-        // Live STT 연결 + 이벤트 (부분/최종)
+        // Live STT 연결(있으면)
         if(window.LiveSTT){
           const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
           if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
         }
-        el.addEventListener('live-stt-partial', (e)=>{ live.textContent = e.detail?.text || ''; });
-        el.addEventListener('live-stt-final',   (e)=>{ live.textContent = 'En direct / 실시간 (final): ' + (e.detail?.text || ''); });
+        // 이벤트(엘리먼트/도큐먼트 모두 수신)
+        const onPart = (e)=>{ if(e?.detail?.text!=null) live.textContent = e.detail.text; };
+        const onFinal= (e)=>{ if(e?.detail?.text!=null) live.textContent = 'En direct / 실시간 (final): ' + e.detail.text; };
+        el.addEventListener('live-stt-partial', onPart);
+        el.addEventListener('live-stt-final',   onFinal);
+        document.addEventListener('live-stt-partial', onPart);
+        document.addEventListener('live-stt-final',   onFinal);
+
+        // 폴백 알림: 1.5초 동안 이벤트 없으면 안내만 표시
+        setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…'; }, 1500);
       }
 
       async function onStop(){
@@ -196,10 +253,10 @@
         try{ media.getTracks().forEach(t=>t.stop()); }catch(_){}
         mr=null; media=null;
 
-        lastBlob=blob; lastDur=dur; // 저장
+        lastBlob=blob; lastDur=dur;
 
         if(!st[i].koOK){
-          out.innerHTML+='<div class="text-xs text-slate-500 mt-1">KO 정답 확인 후 발음 평가가 정확해져요.</div>';
+          $('.out',el).innerHTML+='<div class="text-xs text-slate-500 mt-1">KO 정답 확인 후 발음 평가가 정확해져요.</div>';
           return;
         }
         await evaluate(blob, dur); // 자동 평가
@@ -208,6 +265,7 @@
 
       // 평가(백엔드)
       async function evaluate(blob, dur){
+        const out=$('.out',el);
         try{
           out.innerHTML='<div class="text-sm text-slate-500">⏳ 평가 중…</div>';
           const base64 = await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onerror=rej; fr.onload=()=>res(String(fr.result||'').split(',')[1]||''); fr.readAsDataURL(blob); });
@@ -245,7 +303,7 @@
 
       btnRec.onclick=recStart;
       btnStop.onclick=recStop;
-      btnEval.onclick=async()=>{ if(!lastBlob){ out.innerHTML+='<div class="text-xs text-slate-500 mt-1">녹음 후 평가할 수 있어요.</div>'; return; } await evaluate(lastBlob,lastDur); };
+      btnEval.onclick=async()=>{ if(!lastBlob){ $('.out',el).innerHTML+='<div class="text-xs text-slate-500 mt-1">녹음 후 평가할 수 있어요.</div>'; return; } await evaluate(lastBlob,lastDur); };
     });
   }
 
