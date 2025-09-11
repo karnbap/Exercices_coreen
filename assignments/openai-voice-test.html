@@ -40,4 +40,34 @@
       <div class="mt-3 flex items-center justify-center gap-2 no-print">
         <button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer / 페이지 인쇄</button>
       </div>
-      <div class="text-sm text-slate-500">made by <b>성일, Pongdang</b> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a></
+      <div class="text-sm text-slate-500">made by <b>성일, Pongdang</b> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a></div>
+    </header>
+
+    <section class="card no-print">
+      <label class="block font-semibold mb-2">Nom de l'étudiant / 학생 이름</label>
+      <input id="student-name" type="text" class="w-full p-3 border-2 rounded-lg focus:border-indigo-500" placeholder="Ex. Camille, Noé, Chloé…" />
+      <p class="text-sm text-slate-500 mt-2">시작하면 이름, 듣기·힌트·시도·발음 점수 등이 기록돼요.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="text-2xl font-bold mb-2 text-slate-700">“Comme” — 무엇을 ‘처럼/같이/같다’로 말하나요?</h2>
+      <ul class="list-disc pl-6 text-slate-700 space-y-1">
+        <li><b>nom + comme</b> → <span class="kof">명사 + 처럼/같이</span></li>
+        <li><b>être + comme</b> → <span class="kof">~와/과 같다</span></li>
+        <li><b>verbe/adj + comme</b> → <span class="kof">동사 + 처럼/같이</span></li>
+      </ul>
+    </section>
+
+    <section id="dictee-root" class="space-y-4"></section>
+
+    <section class="no-print flex flex-wrap items-center gap-3">
+      <button type="button" id="restart-btn" class="btn btn-ghost">↺ Réessayer / 다시하기</button>
+      <button type="button" id="finish-btn" class="btn btn-primary">✅ Terminer / 끝내기</button>
+    </section>
+
+    <footer class="text-center text-sm text-slate-500">
+      made by <b>성일, Pongdang</b> · <a class="underline" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
+    </footer>
+  </main>
+</body>
+</html>
