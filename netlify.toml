@@ -7,8 +7,3 @@ external_node_modules = ["form-data"]
 NODE_VERSION = "18"
 # 선택: 설치 속도/안정성
 NPM_FLAGS = "--no-audit --no-fund"
-
-[build]
-command = ""     # 빌드 없음
-publish = "/"
-
