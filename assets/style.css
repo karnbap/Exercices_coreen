@@ -1,0 +1,122 @@
+/* assets/style.css */
+
+/* 🎨 색상 변수 정의: 여기서 색을 바꾸면 모든 페이지에 적용돼요! */
+:root {
+    --royal-blue: #0047AB; /* 로얄블루 */
+    --gold-leaf: #DAA520;   /* 황금색 */
+    --text-color: #333;
+    --bg-color: #ffffff;
+    --border-color: #e2e8f0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 👑 버튼 스타일 */
+.button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-weight: bold;
+}
+
+.button:hover {
+    transform: translateY(-2px);
+}
+
+.button-primary {
+    background-color: var(--royal-blue);
+    color: white;
+}
+
+.button-secondary {
+    background-color: var(--gold-leaf);
+    color: white;
+}
+
+/* 👑 채점 결과 창 스타일 */
+#result-display {
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: white;
+}
+
+/* 칩 UI: 줄바꿈 가독성 */
+.chips-wrap { display:flex; flex-wrap:wrap; gap:.4rem .5rem }
+.chip { display:inline-block; padding:.2rem .55rem; border-radius:.5rem; background:#fff; border:1px solid var(--border-color) }
+@media (min-width: 768px){ .chip { font-size:1.05rem } }
+.flash-on { animation: flashbg .9s ease-out; }
+/* 재시작 시 영역 하이라이트 */
+@keyframes flashbg {
+  0%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:#fffbe6 }
+  25%{ box-shadow:0 0 0 3px rgba(99,102,241,.35) inset }
+  100%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:transparent }
+}
+
+
+.vu-mini{ height:16px !important; }
+.rec-indicator{ display:none; font-size:12px; color:#dc2626; margin-left:.5rem }
+.is-recording .rec-indicator{ display:inline }
+
+
+/* 🎨 Hint 버튼 */
+.btn-hint1 {
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.65rem 1.2rem;
+  border-radius:.85rem;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(to right,#6366f1,#2563eb); /* 보라 → 파랑 */
+  box-shadow:0 4px 10px rgba(37,99,235,0.35);
+  transition:transform .15s, background .25s;
+}
+.btn-hint1:hover {
+  background:linear-gradient(to right,#4f46e5,#1e3a8a);
+  transform:translateY(-2px);
+}
+.btn-hint1:active {
+  transform:scale(0.95);
+}
+
+.btn-hint2 {
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.65rem 1.2rem;
+  border-radius:.85rem;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(to right,#f59e0b,#ef4444); /* 주황 → 빨강 */
+  box-shadow:0 4px 10px rgba(239,68,68,0.35);
+  transition:transform .15s, background .25s;
+}
+.btn-hint2:hover {
+  background:linear-gradient(to right,#d97706,#b91c1c);
+  transform:translateY(-2px);
+}
+.btn-hint2:active {
+  transform:scale(0.95);
+}

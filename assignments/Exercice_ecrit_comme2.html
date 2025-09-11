@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comment dire « Comme » en coréen | 같아요 · 처럼 · 같이 · 같은 (Écrit)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Inter',sans-serif;background:#f0f4f8;color:#0f172a}
+    .korean-font{font-family:'Gowun Dodum',sans-serif}
+    .card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1),0 2px 4px -2px rgb(0 0 0 / 0.1)}
+    .btn{display:inline-block;padding:.5rem 1rem;border-radius:.75rem;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;border:2px solid transparent}
+    .btn-secondary{background:#f3f4f6;color:#374151;border-color:#e5e7eb}
+    .btn-secondary:hover:not(:disabled){background:#e5e7eb}
+    .btn-primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
+    .btn-primary:hover:not(:disabled){background:#1d4ed8}
+    .btn.selected{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
+    .btn:disabled{opacity:.7;cursor:not-allowed}
+    .exercise-item{padding:1.5rem;border:1px solid #e5e7eb;border-radius:1rem;margin-bottom:1.5rem;background:#fff;transition:background-color .3s}
+    .feedback{padding:1rem;border-radius:.75rem;margin-top:1rem}
+    .feedback.correct{background:#dcfce7;color:#166534}
+    .feedback.incorrect{background:#fee2e2;color:#991b1b}
+    .feedback.soft{background:#fef9c3;color:#854d0e}
+    .made-by-top,.made-by-bottom{ text-align:center; padding:.5rem; color:#475569; font-size:.875rem }
+    .made-by-top{ border-bottom:1px solid #e5e7eb }
+    .made-by-bottom{ border-top:1px solid #e5e7eb; margin-top:2rem }
+    .print-btn{ position:sticky; top:.75rem; float:right; margin-top:-.5rem }
+    .hint-note{background:#fff7ed;border:1px solid #fed7aa; white-space: pre-wrap; padding-left: 0.75rem; border-left: 4px solid #fb923c;}
+  </style>
+</head>
+
+<body class="text-slate-800">
+  <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+    <!-- 상단 크레딧 + 인쇄 -->
+    <div class="made-by-top">
+      made by 성일, Pongdang ·
+      <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+      · <button onclick="window.print()" class="btn btn-secondary print-btn">🖨️ Imprimer</button>
+    </div>
+
+    <!-- Header -->
+    <header class="text-center mb-6">
+      <h1 class="text-4xl md:text-5xl font-bold text-blue-600 mb-2">Comme en Coréen (Écrit) 🇰🇷</h1>
+      <p class="text-lg text-slate-600">Exercice d'écriture: 같아요 · 처럼 · 같이 · 같은</p>
+    </header>
+
+    <!-- Student bar -->
+    <div id="student-bar" class="flex items-center gap-3 mb-6 p-3 rounded-lg bg-white border border-slate-200">
+      <label class="text-sm text-slate-600">👤 Nom (이름)</label>
+      <input id="student-name" type="text" class="p-2 border rounded-md flex-1" placeholder="ex) Julie / Cédric / Naomi" />
+      <span class="text-xs text-slate-500">모든 기록(힌트/점수)에 이름이 포함돼요.</span>
+    </div>
+
+    <!-- Exercises Section -->
+    <section id="exercises">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-slate-700">Exercices (20)</h2>
+        <button id="reset-btn" class="btn btn-secondary">Recommencer</button>
+      </div>
+      <div id="exercise-list"></div>
+    </section>
+
+    <!-- Page actions -->
+    <div id="page-actions" class="mt-8 flex flex-col md:flex-row gap-3 md:items-center justify-between">
+      <div class="flex gap-2">
+        <a href="../index.html" class="btn btn-secondary">⟵ Accueil</a>
+        <a href="../assignments/Exercice_ecrit_comme.html" class="btn btn-secondary">⟵ Exercice précédent</a>
+      </div>
+      <div class="flex gap-2">
+        <button id="finish-btn" class="btn btn-primary">✅ Terminer / 끝내기</button>
+        <button id="retry-btn" class="btn btn-secondary">🔁 Recommencer</button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="summary" class="hidden mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200"></div>
+
+    <!-- 하단 크레딧 -->
+    <div class="made-by-bottom">
+      made by 성일, Pongdang · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+    </div>
+  </div>
+
+  <script>
+  /* ===== 정규화 & 관대한 채점 유틸 ===== */
+  function normalizeKo(s=''){
+    return s
+      .replace(/\s+/g,'')                                // 모든 공백 제거
+      .replace(/[.,!?;:'"“”‘’()[\]·\-–—~…]/g,'');        // 문장부호 제거
+  }
+  function stripYo(s=''){ return s.replace(/요$/,''); }
+
+  // 레벤슈타인
+  function levenshtein(a,b){
+    const m=a.length,n=b.length;
+    if(m===0) return n; if(n===0) return m;
+    const dp=new Array(n+1);
+    for(let j=0;j<=n;j++) dp[j]=j;
+    for(let i=1;i<=m;i++){
+      let prev=dp[0]; dp[0]=i;
+      for(let j=1;j<=n;j++){
+        const tmp=dp[j];
+        dp[j]=Math.min(
+          dp[j]+1,               // 삭제
+          dp[j-1]+1,             // 삽입
+          prev + (a[i-1]===b[j-1]?0:1) // 치환
+        );
+        prev=tmp;
+      }
+    }
+    return dp[n];
+  }
+
+  // ‘부분 포함’, 공백/마침표 무시, ‘요’ 유무/경미 오타 허용
+  function classifyFill(userRaw, fillAnswer){
+    const targetsRaw = fillAnswer.split('/').map(v=>v.trim());
+    const userN = normalizeKo(userRaw);
+    const targetsN = targetsRaw.map(normalizeKo);
+    const targetsNoYo = targetsRaw.map(v=>normalizeKo(stripYo(v)));
+
+    if (targetsN.includes(userN)) {
+      return { correct:true, perfect:true, reason:null, ref: targetsRaw[targetsN.indexOf(userN)] };
+    }
+    if (targetsNoYo.includes(normalizeKo(stripYo(userRaw)))) {
+      const idx = targetsNoYo.indexOf(normalizeKo(stripYo(userRaw)));
+      return { correct:true, perfect:false, reason:"Différence uniquement de -요.", ref: targetsRaw[idx] };
+    }
+    for (let k=0; k<targetsN.length; k++){
+      if (userN.includes(targetsN[k])) {
+        return { correct:true, perfect:false, reason:"La forme correcte est incluse partiellement.", ref: targetsRaw[k] };
+      }
+    }
+    const dists = targetsN.map(t => levenshtein(userN, t));
+    const minDist = Math.min(...dists);
+    if (minDist <= 1) {
+      const idx = dists.indexOf(minDist);
+      return { correct:true, perfect:false, reason:"Petite faute (espace/orthographe) mineure.", ref: targetsRaw[idx] };
+    }
+    return { correct:false, perfect:false, reason:null, ref: targetsRaw[0] };
+  }
+
+  /* ===== 말투(높임) 판정 유틸 ===== */
+  function getPronounClass(text=''){
+    if (/저는|전/.test(text)) return 'polite';   // 요/습니다 계열
+    if (/나는|난/.test(text)) return 'casual';   // 아/어(해체)
+    return 'neutral';
+  }
+  function getEndingStyle(text=''){
+    const tail = (text || '').trim().replace(/[\s\n]+/g,' ');
+    if (/(습니다|ㅂ니다|습니까\??)[.!?]?$/.test(tail)) return 'deferential';
+    if (/요[.!?]?$/.test(tail)) return 'haeyo';
+    if (/(아|어)[.!?]?$/.test(tail)) return 'haeche';
+    if (/다[.!?]?$/.test(tail)) return 'plain';
+    return 'unknown';
+  }
+  function suggestRefByPoliteness(ex, pronounClass, currentRef){
+    if (ex.typeAnswer !== 'etre') return currentRef;
+    if (pronounClass === 'casual') return currentRef.replace(/같아요$/, '같아');
+    if (pronounClass === 'polite') return currentRef.replace(/같아$/, '같아요');
+    return currentRef;
+  }
+  function checkPolitenessConsistency(fullSentence, ex, userFillRaw){
+    const p = getPronounClass(fullSentence);
+    const e = getEndingStyle(fullSentence);
+    const fillHasYo = /요$/.test((userFillRaw||'').trim());
+    const fillHaeche = /(아|어)$/.test((userFillRaw||'').trim());
+
+    if (p==='casual' && (e==='haeyo' || e==='deferential' || fillHasYo)) {
+      return { ok:false, reasonFr:"Incohérence de politesse : avec « 나는/난 », n'utilisez pas -요/-(스)ㅂ니다 (utilisez -아/어).", target:'casual' };
+    }
+    if (p==='polite' && (e==='haeche' || fillHaeche)) {
+      return { ok:false, reasonFr:"Incohérence de politesse : avec « 저는/전 », n'utilisez pas la forme informelle -아/어 (utilisez -요/-(스)ㅂ니다).", target:'polite' };
+    }
+    return { ok:true };
+  }
+
+  /* ===== HINT (FR SIMPLE, LISIBLE) ===== */
+  function usageHint(ex){
+    if (ex.typeAnswer === 'verbe'){
+      return [
+        "• Action (verbe)",
+        "  Utilise « comme » pour comparer une action.",
+        "  Ex.: courir comme le vent ; chanter comme une sirène."
+      ].join("\n");
+    }
+    if (ex.typeAnswer === 'nom'){
+      return [
+        "• Nom (objet)",
+        "  « Comme » sert à qualifier un nom.",
+        "  Ex.: un enfant comme une poupée ; un cadeau comme un trésor."
+      ].join("\n");
+    }
+    return [
+      "• Être (« A est comme B »)",
+      "  Garde simplement la structure « A est comme B ».",
+      "  Astuce : garde le même niveau de politesse dans toute la phrase."
+    ].join("\n");
+  }
+
+  function firstAnswer(ex){ return ex.fillAnswer.split('/')[0].trim(); }
+
+  // 한국어 띄어쓰기 규칙 반영하여 문장 조립
+  function buildSentence(ex, userAns){
+    const ans = (userAns && userAns.trim()) ? userAns.trim() : firstAnswer(ex);
+    const mid = ex.koreanParts[0].trimEnd();
+    const tail = ex.koreanParts[1].trimStart();
+    // type=verbe: 조사 '처럼/같이'는 앞말에 붙임 → 공백 없이 결합
+    if (ex.typeAnswer === 'verbe'){
+      return `${mid}${ans}${tail}`.replace(/\s+/g,' ').trim();
+    }
+    // 그 외: 일반적인 띄어쓰기 적용 (명사 '같은', 서술 '같아요')
+    return `${mid} ${ans}${tail}`.replace(/\s+/g,' ').trim();
+  }
+
+  /* ===== 세션 상태 ===== */
+  const session = {
+    startTime: new Date().toISOString(),
+    sentOnce: false,
+    questions: []
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const exercises = [
+      { french:"Ce bébé est comme un ange.", vocab:[{fr:"bébé",ko:"아기"},{fr:"ange",ko:"천사"}], typeAnswer:"etre",  koreanParts:["이 아기는 천사","."],           fillAnswer:"같아요" },
+      { french:"Le temps est comme de l'or.", vocab:[{fr:"temps",ko:"시간"},{fr:"or",ko:"금"}],     typeAnswer:"etre",  koreanParts:["시간은 금","."],               fillAnswer:"같아요" },
+      { french:"C'est une amie comme ma famille.", vocab:[{fr:"amie",ko:"친구"},{fr:"famille",ko:"가족"}], typeAnswer:"nom", koreanParts:["가족"," 친구예요."],       fillAnswer:"같은" },
+      { french:"J'ai un ami comme un frère.", vocab:[{fr:"ami",ko:"친구"},{fr:"frère",ko:"형제"}],  typeAnswer:"nom",   koreanParts:["형제"," 친구가 있어요."],     fillAnswer:"같은" },
+      { french:"Il court comme le vent.", vocab:[{fr:"courir",ko:"달리다"},{fr:"vent",ko:"바람"}], typeAnswer:"verbe", koreanParts:["바람"," 달려요."],              fillAnswer:"처럼/같이" },
+      { french:"Elle chante comme une sirène.", vocab:[{fr:"chanter",ko:"노래하다"},{fr:"sirène",ko:"인어"}], typeAnswer:"verbe", koreanParts:["인어"," 노래해요."], fillAnswer:"처럼/같이" },
+      { french:"Ceci est comme un rêve.", vocab:[{fr:"ceci",ko:"이것"},{fr:"rêve",ko:"꿈"}],       typeAnswer:"etre",  koreanParts:["이건 꿈","."],                 fillAnswer:"같아요" },
+      { french:"C'est une femme comme un renard.", vocab:[{fr:"femme",ko:"여자"},{fr:"renard",ko:"여우"}], typeAnswer:"nom", koreanParts:["여우"," 여자예요."],   fillAnswer:"같은" },
+      { french:"Il danse comme un professionnel.", vocab:[{fr:"danser",ko:"춤추다"},{fr:"professionnel",ko:"전문가"}], typeAnswer:"verbe", koreanParts:["전문가"," 춤을 춰요."], fillAnswer:"처럼/같이" },
+      { french:"Aujourd'hui est comme hier.", vocab:[{fr:"aujourd'hui",ko:"오늘"},{fr:"hier",ko:"어제"}], typeAnswer:"etre", koreanParts:["오늘은 어제","."],      fillAnswer:"같아요" },
+      { french:"C'est un cadeau comme un trésor.", vocab:[{fr:"cadeau",ko:"선물"},{fr:"trésor",ko:"보물"}], typeAnswer:"nom", koreanParts:["보물"," 선물이에요."], fillAnswer:"같은" },
+      { french:"Elle parle comme un poète.", vocab:[{fr:"parler",ko:"말하다"},{fr:"poète",ko:"시인"}], typeAnswer:"verbe", koreanParts:["시인"," 말해요."],     fillAnswer:"처럼/같이" },
+      { french:"Un coeur large comme la mer.", vocab:[{fr:"coeur",ko:"마음"},{fr:"mer",ko:"바다"}], typeAnswer:"nom",   koreanParts:["바다"," 넓은 마음."],          fillAnswer:"같은" },
+      { french:"Il dort comme un ours.", vocab:[{fr:"dormir",ko:"자다"},{fr:"ours",ko:"곰"}],      typeAnswer:"verbe", koreanParts:["곰"," 자요."],                fillAnswer:"처럼/같이" },
+      { french:"Un enfant comme une poupée.", vocab:[{fr:"enfant",ko:"아이"},{fr:"poupée",ko:"인형"}], typeAnswer:"nom", koreanParts:["인형"," 아이."],         fillAnswer:"같은" },
+      { french:"Il marche comme un robot.", vocab:[{fr:"marcher",ko:"걷다"},{fr:"robot",ko:"로봇"}], typeAnswer:"verbe", koreanParts:["로봇"," 걸어요."],      fillAnswer:"처럼/같이" },
+      { french:"Une voix douce comme le sucre.", vocab:[{fr:"voix",ko:"목소리"},{fr:"sucre",ko:"설탕"}], typeAnswer:"nom", koreanParts:["설탕"," 목소리."],     fillAnswer:"같은" },
+      { french:"Il est lent comme une tortue.", vocab:[{fr:"lent",ko:"느리다"},{fr:"tortue",ko:"거북이"}], typeAnswer:"verbe", koreanParts:["거북이"," 느려요."], fillAnswer:"처럼/같이" },
+      { french:"Cette personne est comme un acteur.", vocab:[{fr:"personne",ko:"사람"},{fr:"acteur",ko:"배우"}], typeAnswer:"etre", koreanParts:["이 사람은 배우","."], fillAnswer:"같아요" },
+      { french:"Il dépense de l'argent comme de l'eau.", vocab:[{fr:"dépenser",ko:"돈을 쓰다"},{fr:"eau",ko:"물"}], typeAnswer:"verbe", koreanParts:["물"," 돈을 써요."], fillAnswer:"처럼/같이" }
+    ];
+
+    const exerciseListContainer = document.getElementById('exercise-list');
+    const resetBtn = document.getElementById('reset-btn');
+
+    function renderExercises(){
+      exerciseListContainer.innerHTML = '';
+      exercises.forEach((ex, index) => {
+        const exerciseEl = document.createElement('div');
+        exerciseEl.className = 'exercise-item';
+        exerciseEl.id = `ex-${index}`;
+
+        const vocabList = ex.vocab.map(v => `<li class="text-sm"><span class="font-semibold">${v.fr}</span>: <span class="korean-font">${v.ko}</span></li>`).join('');
+
+        exerciseEl.innerHTML = `
+          <div class="flex items-start">
+            <span class="text-xl font-bold text-blue-500 mr-4">${index+1}.</span>
+            <div class="w-full">
+              <p class="font-semibold text-lg text-slate-800 mb-2">"${ex.french}"</p>
+              <ul class="list-disc list-inside bg-slate-50 p-2 rounded-md mb-4">${vocabList}</ul>
+
+              <!-- Step 1 -->
+              <div class="mb-4">
+                <p class="font-semibold text-slate-700 mb-2">1. Quel est le type de la phrase ?</p>
+                <div class="flex flex-wrap gap-2 type-options">
+                  <button data-type="verbe" class="btn btn-secondary">Action (Verbe) 🏃‍♂️</button>
+                  <button data-type="nom" class="btn btn-secondary">Objet (Nom) ✍️</button>
+                  <button data-type="etre" class="btn btn-secondary">Identification (Être comme) 🙋‍♀️</button>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div>
+                <p class="font-semibold text-slate-700 mb-2">2. Complétez la phrase en coréen.</p>
+                <div class="flex items-center gap-2">
+                  <p class="korean-font text-xl">${ex.koreanParts[0]}</p>
+                  <input type="text" class="korean-font text-xl p-2 border-2 border-slate-300 rounded-lg w-48 focus:border-blue-500 focus:ring-blue-500 transition ans-input" placeholder="Réponse">
+                  <p class="korean-font text-xl">${ex.koreanParts[1]}</p>
+                </div>
+
+                <!-- 힌트: 사용 맥락 설명 (FR seul) -->
+                <div class="flex gap-3 mt-3">
+                  <button class="text-sm text-rose-600 hover:underline hint2-btn">Astuce — Quand utiliser ? (Aidez-moi 🙏)</button>
+                </div>
+                <p class="text-sm text-rose-700 mt-2 hint2-text hidden hint-note p-2 rounded-lg"></p>
+              </div>
+
+              <div class="mt-4 border-t pt-4">
+                <button class="btn btn-primary w-full check-btn">Vérifier</button>
+              </div>
+              <div class="feedback mt-4 hidden"></div>
+            </div>
+          </div>
+        `;
+        exerciseListContainer.appendChild(exerciseEl);
+      });
+
+      // 세션 질문 배열 구성/리셋
+      session.questions = exercises.map((ex, i) => ({
+        number: i+1,
+        fr: ex.french,
+        ko: buildSentence(ex, firstAnswer(ex)),
+        userAnswer: "",
+        isCorrect: false,
+        hint2Count: 0
+      }));
+
+      addEventListeners();
+    }
+
+    function addEventListeners(){
+      // 타입 선택 토글
+      document.querySelectorAll('.type-options button').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const parent=e.currentTarget.parentElement;
+          parent.querySelectorAll('button').forEach(b=>b.classList.remove('selected'));
+          e.currentTarget.classList.add('selected');
+        });
+      });
+
+      // 힌트: 사용 맥락 (FR seul)
+      document.querySelectorAll('.hint2-btn').forEach((button,index)=>{
+        button.addEventListener('click',()=>{
+          const hintText = document.querySelector(`#ex-${index} .hint2-text`);
+          hintText.textContent = usageHint(exercises[index]);
+          hintText.classList.remove('hidden'); button.disabled=true;
+          session.questions[index].hint2Count = (session.questions[index].hint2Count||0)+1;
+        });
+      });
+
+      // Enter로 채점
+      document.querySelectorAll('.ans-input').forEach((inp,index)=>{
+        inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') handleCheck(index); });
+      });
+
+      // 채점 버튼
+      document.querySelectorAll('.check-btn').forEach((button,index)=>{
+        button.addEventListener('click',()=>handleCheck(index));
+      });
+
+      // 리셋
+      resetBtn.addEventListener('click', renderExercises);
+    }
+
+    function handleCheck(index){
+      const exerciseEl = document.getElementById(`ex-${index}`);
+      const ex = exercises[index];
+      const feedbackEl = exerciseEl.querySelector('.feedback');
+
+      // Step 1: 타입
+      const selectedTypeBtn = exerciseEl.querySelector('.type-options .selected');
+      const typeAnswer = selectedTypeBtn ? selectedTypeBtn.dataset.type : null;
+      const isTypeCorrect = typeAnswer === ex.typeAnswer;
+
+      // Step 2: 채우기
+      const inputEl = exerciseEl.querySelector('.ans-input');
+      const userFill = (inputEl.value||'').trim();
+      const judged = classifyFill(userFill, ex.fillAnswer);
+
+      // 문장 구성(학생 입력 기반, 없으면 기준 정답) — 규칙 기반 띄어쓰기 적용
+      const userFullSentence = buildSentence(ex, userFill || judged.ref);
+
+      // 말투(높임) 일치 검사
+      const politeness = checkPolitenessConsistency(userFullSentence, ex, userFill || judged.ref);
+
+      // 기본 정오 판정
+      const baseCorrect = isTypeCorrect && judged.correct;
+
+      let html = '';
+      let className = 'incorrect';
+
+      if (baseCorrect && !politeness.ok){
+        className = 'incorrect';
+        html += `
+          <p class="font-bold">⚠️ Styles de politesse incohérents</p>
+          <p class="text-sm mt-1">${politeness.reasonFr}</p>
+          <p class="text-xs mt-1 text-slate-600">✅ Les espaces, la ponctuation et l’« inclusion partielle » sont acceptés, mais la politesse (나는/저는 ↔ terminaison) doit correspondre.</p>
+        `;
+      } else if (isTypeCorrect && judged.correct){
+        className = judged.perfect ? 'correct' : 'soft';
+        html += judged.perfect
+          ? `<p class="font-bold">🥳 Parfait !</p>`
+          : `
+             <p class="font-bold">✅ Le sens est correct (accepté)</p>
+             <p class="text-sm mt-1">Vérifie la forme exacte ci-dessous.</p>
+             ${ judged.reason ? `<p class="text-xs mt-1 text-slate-700">(${judged.reason})</p>` : '' }
+            `;
+      } else {
+        className = 'incorrect';
+        html = `<p class="font-bold">🤔 Presque ! Regardons ensemble :</p><ul class="list-disc list-inside mt-2">`;
+        html += isTypeCorrect
+          ? `<li><strong>Partie 1 (Type) :</strong> Bien joué, c'est correct !</li>`
+          : `<li><strong>Partie 1 (Type) :</strong> La bonne réponse était « <strong>${ex.typeAnswer}</strong> ».</li>`;
+        html += judged.correct
+          ? `<li><strong>Partie 2 (Phrase) :</strong> Sens OK. Vérifie la bonne forme ci-dessous.</li>`
+          : `<li><strong>Partie 2 (Phrase) :</strong> Il fallait écrire « <strong>${ex.fillAnswer.replace('/', ' / ')}</strong> ».</li>`;
+        html += `</ul>`;
+      }
+
+      // 표시용 기준 정답(말투 교정 필요시 추천형으로 조정) — verbe 타입은 공백 없이
+      let refAnswer = judged.ref || ex.fillAnswer.split('/')[0];
+      const joiner = (ex.typeAnswer === 'verbe') ? '' : ' ';
+      const fullSentenceHtml = `<strong>Phrase complète :</strong> <span class='korean-font'>${ex.koreanParts[0]}${joiner}<span class='font-bold text-blue-700'>${refAnswer}</span>${ex.koreanParts[1]}</span>`;
+
+      html += `<p class="mt-2 border-t border-slate-300 pt-2">${fullSentenceHtml}</p>`;
+
+      feedbackEl.className = `feedback ${className}`;
+      feedbackEl.innerHTML = html;
+      feedbackEl.classList.remove('hidden');
+
+      // 세션 저장
+      const isCorrect = (isTypeCorrect && judged.correct && politeness.ok);
+      session.questions[index].userAnswer = userFill || judged.ref || '';
+      session.questions[index].isCorrect = isCorrect;
+      session.questions[index].ko = userFullSentence;
+    }
+
+    async function sendResults(){
+      if (session.sentOnce) return { ok:true, skipped:true };
+      const studentName = (document.getElementById('student-name')?.value || '').trim() || 'Élève';
+
+      const endTime = new Date().toISOString();
+      const payload = {
+        studentName,
+        startTime: session.startTime,
+        endTime,
+        totalTimeSeconds: Math.max(1, Math.round((new Date(endTime) - new Date(session.startTime))/1000)),
+        questions: session.questions.map(q=>({
+          number: q.number,
+          fr: q.fr,
+          ko: q.ko,
+          userAnswer: q.userAnswer,
+          isCorrect: q.isCorrect,
+          hint2Count: q.hint2Count
+        }))
+      };
+
+      try{
+        const r = await fetch('/.netlify/functions/send-results',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        if (!r.ok) throw new Error(`send-results ${r.status}`);
+        session.sentOnce = true;
+        return { ok:true };
+      }catch(e){
+        console.error(e);
+        try{
+          await fetch('/.netlify/functions/log-error',{
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              studentName, functionName:'send-results',
+              pageUrl: location.href, context:{ total: session.questions.length }, error:{ message:String(e) }
+            })
+          });
+        }catch(_){}
+        return { ok:false, error:e };
+      }
+    }
+
+    function showSummary(){
+      const correct = session.questions.filter(q=>q.isCorrect).length;
+      const total = session.questions.length;
+      const score = Math.round((correct/total)*100);
+      const rows = session.questions.map(q=>{
+        return `<tr>
+          <td class="border px-2 py-1 text-center">${q.number}</td>
+          <td class="border px-2 py-1">${q.fr}</td>
+          <td class="border px-2 py-1 korean-font">${q.ko}</td>
+          <td class="border px-2 py-1">${q.userAnswer || '<i>(vide)</i>'}</td>
+          <td class="border px-2 py-1 text-center">${q.isCorrect ? '✔️' : '❌'}</td>
+          <td class="border px-2 py-1 text-center">${q.hint2Count||0}</td>
+        </tr>`;
+      }).join('');
+
+      const summaryEl = document.getElementById('summary');
+      summaryEl.innerHTML = `
+        <div class="mb-3">
+          <h3 class="text-xl font-bold">🧾 Résumé / 요약</h3>
+          <p class="text-slate-700">Score: <b>${score}</b> / 100 &nbsp; 
+            (<span class="text-emerald-700">${correct}</span> / ${total} correct)</p>
+          <p class="text-xs text-slate-500">Espaces/ponctuation/inclusion partielle tolérés. La politesse doit correspondre quand le registre change.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm border border-slate-200">
+            <thead class="bg-slate-100">
+              <tr>
+                <th class="border px-2 py-1">#</th><th class="border px-2 py-1">FR</th>
+                <th class="border px-2 py-1">KO</th><th class="border px-2 py-1">Réponse</th>
+                <th class="border px-2 py-1">OK?</th><th class="border px-2 py-1">Hints</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <p class="mt-2 text-sm text-slate-600">Résultat envoyé.</p>
+      `;
+      summaryEl.classList.remove('hidden');
+    }
+
+    const finishBtn = document.getElementById('finish-btn');
+    const retryBtn  = document.getElementById('retry-btn');
+
+    finishBtn.addEventListener('click', async ()=>{
+      finishBtn.disabled = true;
+      showSummary();
+      const { ok } = await sendResults();
+      if (!ok) alert("Échec d’envoi. Réessayez plus tard ou contactez le professeur.");
+      finishBtn.textContent = '✅ Envoyé';
+    });
+
+    retryBtn.addEventListener('click', ()=>{
+      session.startTime = new Date().toISOString();
+      session.sentOnce = false;
+      document.getElementById('summary').classList.add('hidden');
+      renderExercises();
+    });
+
+    // 초기 렌더
+    renderExercises();
+  });
+  </script>
+</body>
+</html>

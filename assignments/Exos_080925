@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exercices d'écoute + Prononciation (Play Emphasis)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body{font-family:'Pretendard',sans-serif;background:#f8fafc}
+    .made-by{padding:.5rem;text-align:center;color:#64748b}
+    .card{background:#fff;border-radius:1rem;box-shadow:0 10px 28px rgba(2,6,23,.08);padding:1.25rem}
+    .btn{transition:.2s ease}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .pill{display:inline-block;padding:.25rem .6rem;border-radius:9999px;font-size:.75rem}
+    .good{background:#e9f7ef;border-left:5px solid #28a745}
+    .bad{background:#fce8e6;border-left:5px solid #dc3545}
+    .gap{min-width:6ch;display:inline-block;border-bottom:2px dashed #94a3b8;text-align:center}
+  </style>
+</head>
+<body class="text-slate-800">
+
+  <div class="made-by">Made by 성일 · Pongdang</div>
+
+  <div class="max-w-4xl mx-auto p-5">
+    <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold text-indigo-600">Exercices d'écoute + Prononciation 🇰🇷🇫🇷</h1>
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="btn py-2 px-4 bg-gray-200 rounded-lg hover:bg-gray-300"><i class="fa-solid fa-print mr-2"></i>Imprimer</button>
+      </div>
+    </header>
+
+    <!-- Étudiant -->
+    <section id="gate" class="card mb-6 text-center">
+      <label class="block text-lg font-semibold mb-3">Quel est votre nom ? (이름이 뭐예요?)</label>
+      <input id="studentName" type="text" class="w-full max-w-sm mx-auto p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400" placeholder="Ex: Zinedine Zidane"/>
+      <button id="startBtn" class="btn mt-4 py-2 px-6 bg-indigo-500 text-white font-bold rounded-lg hover:bg-indigo-600">Commencer ! (시작!)</button>
+      <p class="mt-3 text-sm text-slate-500">20 questions × prononciation obligatoire ⇒ ~40 items.</p>
+    </section>
+
+    <!-- Quiz -->
+    <main id="app" class="hidden">
+      <div class="card" id="qRoot"></div>
+      <div class="sticky bottom-2 left-0 right-0 mt-4 flex items-center justify-between bg-white/80 backdrop-blur rounded-xl border border-slate-200 p-2">
+        <button id="prevBtn" class="btn py-3 px-5 bg-gray-200 rounded-lg hover:bg-gray-300" disabled><i class="fa-solid fa-arrow-left mr-2"></i>이전</button>
+        <span id="progress" class="text-sm text-slate-600"></span>
+        <div class="flex gap-2">
+          <button id="nextBtn" class="btn py-3 px-5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">다음<i class="fa-solid fa-arrow-right ml-2"></i></button>
+          <button id="finishBtn" class="btn hidden py-3 px-5 bg-green-600 text-white rounded-lg hover:bg-green-700"><i class="fa-solid fa-flag-checkered mr-2"></i>끝내기</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Résultats -->
+    <section id="result" class="hidden card mt-6 text-center">
+      <h2 class="text-2xl font-bold mb-2">Résultats (결과)</h2>
+      <div id="scoreLine" class="text-lg font-semibold mb-4"></div>
+      <div id="breakdown" class="text-sm text-slate-600 mb-6"></div>
+      <div id="summary" class="text-left space-y-3"></div>
+      <div class="mt-6 flex justify-center gap-3">
+        <button onclick="location.reload()" class="btn py-2 px-4 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">다시하기</button>
+        <a href="../index.html" class="btn py-2 px-4 bg-gray-500 text-white rounded-lg hover:bg-gray-600">홈으로</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="made-by">Made by 성일 · Pongdang</div>
+
+  <script>
+  // ========= CONFIG =========
+  const AUDIO_FN = '/.netlify/functions/generate-audio';
+  const VOICE = 'woman';
+
+  // ========= DATA =========
+  const listenWordBank = [
+    {ko:'고기', distract:['거기','코기','고길'], tip:'ㅗ vs ㅓ 구별'},
+    {ko:'거기', distract:['고기','거길','거기요'], tip:'ㅗ vs ㅓ 구별'},
+    {ko:'성', distract:['손','섬','성씨'], tip:'성 = nom de famille'},
+    {ko:'부엌', distract:['주방','부억','부엌이'], tip:'부엌(가정)/주방(레스토랑) 구분'},
+    {ko:'수다를 떨다', distract:['대화하다','수다를 털다','말하다'], tip:'수다(를) 떨다 = bavarder'}
+  ];
+  const oneBlankBank = [
+    {sent:'이 식당은 항상 사람이 많아요? — 아니요, ____ 달라요.', ans:'날마다', opts:['사람마다','때때로','날마다']},
+    {sent:'저는 술을 ____ 안 마셔요.', ans:'절대', opts:['더 이상','절대','아마도']},
+    {sent:'한국 드라마를 ____ 있어요?', ans:'본 적', opts:['볼 텐데','본 적','볼 걸']},
+    {sent:'어제 친구랑 카페에서 3시간이나 ____.', ans:'수다를 떨었어요', opts:['이용했어요','수다를 떨었어요','사용했어요']},
+    {sent:'가장 중요한 건 포기하지 않____.', ans:'는 거예요', opts:['을 텐데요','는 거예요','을 거예요']}
+  ];
+  const twoBlankBank = [
+    {sent:'저는 매일 운동해요. 뚱뚱해지지 않__ ____.', blanks:[{ans:'으려고', opts:['으려고','도록','게']},{ans:'요', opts:['요','다','습니다']} ]},
+    {sent:'영화가 너무 지루했어요. 다른 영화를 __ __ 그랬어요.', blanks:[{ans:'볼', opts:['볼','봤','보는']},{ans:'걸', opts:['걸','것','게']} ]},
+    {sent:'한국 음식은 좋아하는 __ 했어요.', blanks:[{ans:'척', opts:['척','적','측']},{ans:'했어요', opts:['했어요','했을게요','하겠어요']} ]},
+    {sent:'이 앱은 어떻게 ____? 안내는 어디서 ____?', blanks:[{ans:'사용해요', opts:['사용해요','이용해요','써요']},{ans:'이용해요', opts:['이용해요','사용해요','씁니다']} ]},
+    {sent:'그때 그때 달라요. 사람____ 다르고 날____ 달라요.', blanks:[{ans:'마다', opts:['마다','부터','까지']},{ans:'마다', opts:['마다','부터','대로']} ]}
+  ];
+  const dictationBank = [
+    {ko:'저는 거기서 고기를 먹었어요.', fr:'J\'ai mangé de la viande là-bas.'},
+    {ko:'사람마다 생각이 달라요.', fr:'Chaque personne pense différemment.'},
+    {ko:'한국에 가 본 적 없다고 했어요.', fr:'J\'ai dit que je n\'étais jamais allé(e) en Corée.'},
+    {ko:'어제 너무 피곤했어요. 일찍 잘 걸 그랬어요.', fr:'J\'étais trop fatigué(e). J\'aurais dû me coucher tôt.'},
+    {ko:'뚱뚱해지지 않으려고 매일 운동해요.', fr:'Je fais du sport chaque jour pour ne pas grossir.'}
+  ];
+
+  // ========= STATE =========
+  let QUESTIONS = []; // 20 items
+  let idx = 0;
+  let student = { name:'', start: null, end: null, items: [] };
+
+  // ========= HELPERS =========
+  const shuffle = arr => arr.sort(()=>Math.random()-0.5);
+  const norm = s => (s||'').toString().toLowerCase().replace(/[\s.,!?~\-]/g,'');
+  function similarity(a,b){
+    a = norm(a); b = norm(b);
+    const m = [], al=a.length, bl=b.length;
+    for(let i=0;i<=al;i++){m[i]=[i];}
+    for(let j=0;j<=bl;j++){m[0][j]=j;}
+    for(let i=1;i<=al;i++){
+      for(let j=1;j<=bl;j++){
+        const cost = a[i-1]===b[j-1]?0:1;
+        m[i][j] = Math.min(m[i-1][j]+1, m[i][j-1]+1, m[i-1][j-1]+cost);
+      }
+    }
+    const dist = m[al][bl];
+    const maxLen = Math.max(al, bl)||1;
+    return 1 - dist/maxLen;
+  }
+
+  async function tts(text){
+    try{
+      const r = await fetch(AUDIO_FN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:VOICE})});
+      const {audioUrl} = await r.json();
+      const a = new Audio(audioUrl); a.play();
+    }catch(e){ console.error(e); alert('오디오 재생 오류'); }
+  }
+
+  // 녹음
+  let mediaRec = null, recChunks=[];
+  async function toggleRec(btn, store){
+    if(mediaRec && mediaRec.state==='recording'){
+      mediaRec.stop();
+      btn.innerHTML='<i class="fa-solid fa-microphone mr-2"></i>녹음 시작';
+      btn.classList.remove('bg-gray-500'); btn.classList.add('bg-red-500');
+    }else{
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        recChunks=[]; mediaRec = new MediaRecorder(stream);
+        mediaRec.ondataavailable = e=>recChunks.push(e.data);
+        mediaRec.onstop = ()=>{
+          const blob = new Blob(recChunks,{type:'audio/webm'});
+          if(blob.size>2048){ store.recorded=true; }
+          const url = URL.createObjectURL(blob);
+          const p = btn.parentElement.querySelector('audio');
+          if(p){ p.src=url; p.classList.remove('hidden'); }
+        }
+        mediaRec.start();
+        btn.innerHTML='<i class="fa-solid fa-stop mr-2"></i>녹음 정지';
+        btn.classList.remove('bg-red-500'); btn.classList.add('bg-gray-500','text-white');
+      }catch(err){ console.error(err); alert('마이크 접근 실패'); }
+    }
+  }
+
+  // ========= BUILD =========
+  function build(){
+    shuffle(listenWordBank).slice(0,5).forEach(w=>{
+      const opts = shuffle([w.ko, ...w.distract]).slice(0,4);
+      QUESTIONS.push({type:'listen_word', stem:'듣고 같은 단어를 고르세요.', audio:w.ko, opts, ans:w.ko, tip:w.tip, user:null, correct:false, recorded:false});
+    });
+    shuffle(oneBlankBank).slice(0,5).forEach(s=>{
+      const opts = shuffle([...new Set(s.opts)]).slice(0,3);
+      QUESTIONS.push({type:'one_blank', stem:'듣고 문장을 보고 빈칸에 들어갈 말을 고르세요.', audio:s.sent.replace('____', s.ans), shown:s.sent, opts, ans:s.ans, user:null, correct:false, recorded:false});
+    });
+    shuffle(twoBlankBank).slice(0,5).forEach(s=>{
+      const b1 = {opts:shuffle([...new Set(s.blanks[0].opts)]).slice(0,3), ans:s.blanks[0].ans};
+      const b2 = {opts:shuffle([...new Set(s.blanks[1].opts)]).slice(0,3), ans:s.blanks[1].ans};
+      QUESTIONS.push({type:'two_blanks', stem:'듣고 문장을 보고 두 빈칸에 들어갈 말을 각각 고르세요.', audio:s.sent.replace('__', b1.ans).replace('__', b2.ans), shown:s.sent, b1, b2, user:{b1:null,b2:null}, correct:false, recorded:false});
+    });
+    shuffle(dictationBank).slice(0,5).forEach(d=>{
+      QUESTIONS.push({type:'dictation', stem:'듣고 한국어로 받아쓰고, 불어 뜻을 쓰세요.', audio:d.ko, koAnswer:d.ko, frAnswer:d.fr, user:{ko:'', fr:''}, correct:false, recorded:false});
+    });
+    student.items = QUESTIONS.map((q,i)=>({idx:i+1,type:q.type, user:null, correct:false, recorded:false, meta:{}}));
+  }
+
+  // ========= RENDER =========
+  const gate = document.getElementById('gate');
+  const app = document.getElementById('app');
+  const qRoot = document.getElementById('qRoot');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const finishBtn = document.getElementById('finishBtn');
+  const progress = document.getElementById('progress');
+  const result = document.getElementById('result');
+  const scoreLine = document.getElementById('scoreLine');
+  const breakdown = document.getElementById('breakdown');
+  const summary = document.getElementById('summary');
+
+  function render(){
+    const q = QUESTIONS[idx];
+    progress.textContent = `Question ${idx+1} / ${QUESTIONS.length}`;
+
+    let html = `
+      <div class="flex items-center justify-between mb-2">
+        <div class="pill bg-indigo-100 text-indigo-700">${q.type.replace('_',' ')}</div>
+        <!-- BIG PLAY CTA (very visible) -->
+        <button id="playBtn" class="btn w-full md:w-auto md:min-w-[260px] ml-3 px-6 py-4 text-xl font-extrabold rounded-xl bg-yellow-400 text-yellow-900 shadow-lg hover:brightness-95 focus:ring-4 focus:ring-yellow-300">
+          <i class="fa-solid fa-volume-high mr-2"></i>듣기 (재생)
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">단축키: <kbd class='px-2 py-1 bg-slate-100 rounded'>Space</kbd> / <kbd class='px-2 py-1 bg-slate-100 rounded'>L</kbd> = 듣기</p>
+      <h2 class="text-lg font-semibold mb-3">${q.stem}</h2>`;
+
+    if(q.type==='listen_word'){
+      html += `<div class="mb-4 text-sm text-slate-500">힌트: ${q.tip || ''}</div>`;
+      html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${q.opts.map(o=>`<button class="btn opt w-full p-3 border-2 rounded-lg hover:bg-indigo-50">${o}</button>`).join('')}</div>`;
+    }
+    if(q.type==='one_blank'){
+      html += `<div class="p-3 bg-slate-50 rounded mb-3 text-xl text-center">${q.shown}</div>`;
+      html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-3">${q.opts.map(o=>`<button class="btn opt w-full p-3 border-2 rounded-lg hover:bg-indigo-50">${o}</button>`).join('')}</div>`;
+    }
+    if(q.type==='two_blanks'){
+      const [b1,b2]=[q.b1,q.b2];
+      html += `<div class="p-3 bg-slate-50 rounded mb-3 text-xl text-center">${q.shown.replace('__',`<span class='gap' id='g1'>__</span>`).replace('__',`<span class='gap' id='g2'>__</span>`)}</div>`;
+      html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div><div class="mb-1 text-sm">빈칸 1</div>${b1.opts.map(o=>`<button class='btn opt b1 w-full p-2 border rounded mb-2 hover:bg-indigo-50'>${o}</button>`).join('')}</div>
+                 <div><div class="mb-1 text-sm">빈칸 2</div>${b2.opts.map(o=>`<button class='btn opt b2 w-full p-2 border rounded mb-2 hover:bg-indigo-50'>${o}</button>`).join('')}</div>
+               </div>`;
+    }
+    if(q.type==='dictation'){
+      html += `<div class="space-y-3">
+                 <div class="text-sm text-slate-600">1) 듣고 한국어로 받아쓰기</div>
+                 <input id="koInput" class="w-full p-3 border-2 rounded" placeholder="받아쓰기..."/>
+                 <div class="text-sm text-slate-600">2) 불어로 번역</div>
+                 <input id="frInput" class="w-full p-3 border-2 rounded" placeholder="Traduction en français..."/>
+               </div>`;
+    }
+
+    // Pronunciation subtask
+    html += `<div class="mt-5 p-3 border rounded">
+               <div class="mb-2 font-semibold">🎤 자기 발음 테스트</div>
+               <div class="flex items-center gap-3">
+                 <button id="recBtn" class="btn py-2 px-4 bg-red-500 text-white rounded"><i class="fa-solid fa-microphone mr-2"></i>녹음 시작</button>
+                 <audio id="playback" controls class="hidden"></audio>
+                 <span class="pill bg-slate-100 text-slate-700" id="recState">미완료</span>
+               </div>
+             </div>`;
+
+    qRoot.innerHTML = html;
+
+    // listeners
+    document.getElementById('playBtn').onclick = ()=> tts(q.audio);
+    document.addEventListener('keydown', onHotkeyPlay);
+    function onHotkeyPlay(e){ if(e.code==='Space' || e.key.toLowerCase()==='l'){ e.preventDefault(); tts(q.audio); } }
+
+    document.getElementById('recBtn').onclick = (e)=> toggleRec(e.currentTarget, q).then(()=>{
+      const recState = document.getElementById('recState');
+      recState.textContent = q.recorded?'완료 ✔️':'미완료';
+      recState.className = 'pill ' + (q.recorded ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700');
+    });
+
+    if(q.type==='listen_word' || q.type==='one_blank'){
+      qRoot.querySelectorAll('.opt').forEach(b=>{
+        b.onclick = ()=>{ q.user = b.textContent.trim(); q.correct = (q.user===q.ans); flashChoices(b, q.ans); autoNext(); };
+      });
+    }
+    if(q.type==='two_blanks'){
+      let pick = {b1:null,b2:null};
+      qRoot.querySelectorAll('.opt.b1').forEach(b=> b.onclick=()=>{ pick.b1 = b.textContent.trim(); document.getElementById('g1').textContent = pick.b1; maybeCheck(); });
+      qRoot.querySelectorAll('.opt.b2').forEach(b=> b.onclick=()=>{ pick.b2 = b.textContent.trim(); document.getElementById('g2').textContent = pick.b2; maybeCheck(); });
+      function maybeCheck(){ if(pick.b1 && pick.b2){ q.user={...pick}; q.correct = (pick.b1===q.b1.ans && pick.b2===q.b2.ans); blinkResult(q.correct); setTimeout(autoNext, 900); } }
+    }
+    if(q.type==='dictation'){
+      const ki = document.getElementById('koInput');
+      const fi = document.getElementById('frInput');
+      [ki,fi].forEach(el=> el.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ saveCurrent(); autoNext(); }}));
+    }
+
+    prevBtn.disabled = idx===0;
+    nextBtn.classList.toggle('hidden', idx===QUESTIONS.length-1);
+    finishBtn.classList.toggle('hidden', idx!==QUESTIONS.length-1);
+  }
+
+  function flashChoices(clicked, answer){
+    qRoot.querySelectorAll('.opt').forEach(btn=>{
+      btn.disabled = true;
+      if(btn.textContent.trim()===answer){ btn.classList.add('bg-green-100','border','border-green-400'); }
+      if(btn===clicked && btn.textContent.trim()!==answer){ btn.classList.add('bg-red-100','border','border-red-400'); }
+    });
+  }
+  function blinkResult(ok){
+    const c = document.createElement('div');
+    c.className = 'mt-3 '+(ok?'good':'bad');
+    c.innerHTML = `<div class='p-2 text-sm'>${ok?'정답! Bravo 🎉':'다음에… 🙏'}</div>`;
+    qRoot.appendChild(c);
+  }
+
+  function saveCurrent(){
+    const q = QUESTIONS[idx];
+    const item = student.items[idx];
+    if(q.type==='listen_word' || q.type==='one_blank'){
+      item.user = q.user; item.correct = !!q.correct; item.recorded = q.recorded;
+    }
+    if(q.type==='two_blanks'){
+      item.user = q.user; item.correct = !!q.correct; item.recorded = q.recorded;
+    }
+    if(q.type==='dictation'){
+      const ki = document.getElementById('koInput');
+      const fi = document.getElementById('frInput');
+      const ko = (ki?.value||''); const fr = (fi?.value||'');
+      const ok = norm(ko)===norm(q.koAnswer) || similarity(ko,q.koAnswer)>=0.85;
+      q.user={ko,fr}; q.correct=ok;
+      item.user=q.user; item.correct=ok; item.recorded=q.recorded; item.meta={target:q.koAnswer,trans:q.frAnswer,sim:similarity(ko,q.koAnswer).toFixed(2)};
+    }
+  }
+
+  function autoNext(){
+    saveCurrent();
+    setTimeout(()=>{ if(idx<QUESTIONS.length-1){ idx++; render(); } else { finish(); } }, 900);
+  }
+
+  function finish(){
+    saveCurrent(); student.end = new Date().toISOString();
+    app.classList.add('hidden'); result.classList.remove('hidden');
+    const mainCorrect = student.items.filter(x=>x.correct).length;
+    const pronDone = student.items.filter(x=>x.recorded).length;
+    const total = mainCorrect + pronDone;
+    scoreLine.textContent = `Score principal: ${mainCorrect}/20 · Prononciation enregistrée: ${pronDone}/20 · Total sous‑items: ${total}/40`;
+    breakdown.innerHTML = `<div>정답(내용): <b>${mainCorrect}</b> / 20</div><div>발음 녹음 완료: <b>${pronDone}</b> / 20</div>`;
+
+    summary.innerHTML = student.items.map((it,i)=>{
+      const q = QUESTIONS[i];
+      let row = `<div class='${it.correct?'good':'bad'} p-3 rounded'>`+
+                `<div class='font-semibold mb-1'>Q${i+1} · ${q.type.replace('_',' ')}</div>`;
+      if(q.type==='dictation'){
+        row += `<div>받아쓰기: <span class='${it.correct?'':'line-through'}'>${q.user?.ko||''}</span></div>`+
+               `${it.correct?'' : `<div>정답: <span class='font-semibold'>${q.koAnswer}</span> (유사도 ${it.meta?.sim})</div>`}`+
+               `<div>FR: ${q.user?.fr||''}</div>`;
+      }else if(q.type==='two_blanks'){
+        row += `<div>선택: ${q.user? (q.user.b1||'')+' / '+(q.user.b2||'') : ''}</div>`+
+               `${it.correct?'' : `<div>정답: ${q.b1.ans} / ${q.b2.ans}</div>`}`;
+      }else{
+        row += `<div>선택: <span class='${it.correct?'':'line-through'}'>${q.user||''}</span> ${it.correct?'' : `→ <span class='font-semibold'>${q.ans}</span>`}</div>`;
+      }
+      row += `<div class='mt-1 text-xs'>발음 녹음: ${it.recorded?'완료 ✔️':'미완료'}</div>`;
+      return row + `</div>`;
+    }).join('');
+  }
+
+  // ========= WIRES =========
+  document.getElementById('startBtn').onclick = ()=>{
+    const name = document.getElementById('studentName').value.trim();
+    if(!name){ alert('이름을 입력하세요.'); return; }
+    student.name = name; student.start = new Date().toISOString();
+    gate.classList.add('hidden'); app.classList.remove('hidden');
+    build(); render();
+  };
+  prevBtn.onclick = ()=>{ if(idx>0){ saveCurrent(); idx--; render(); } };
+  nextBtn.onclick = ()=>{ if(idx<QUESTIONS.length-1){ saveCurrent(); idx++; render(); } };
+  finishBtn.onclick = finish;
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards Interactives de Coréen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .korean {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .card-container {
+            perspective: 1000px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #4338ca;
+        }
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+        .korean-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .korean-input:focus {
+            outline: 2px solid #4f46e5;
+            border-color: transparent;
+        }
+        .answer-feedback {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .correct {
+            background-color: #dcfce7;
+            border: 1px solid #4ade80;
+            color: #166534;
+        }
+        .incorrect {
+            background-color: #fee2e2;
+            border: 1px solid #f87171;
+            color: #991b1b;
+        }
+        .chosung-hint {
+            font-size: 1.5rem;
+            letter-spacing: 0.2em;
+            text-align: center;
+            padding: 1rem;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-3xl">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 korean">한국어 음성 플래시카드</h1>
+            <p class="text-lg text-slate-600 mt-2">Flashcards Interactives de Coréen (30 cartes)</p>
+        </header>
+
+        <div id="flashcard-container">
+            <!-- Flashcards will be generated here by JavaScript -->
+        </div>
+
+    </div>
+
+    <script>
+        const flashcardData = [
+            // Set 1: Durée
+            { id: 1, type: 'default', frenchPrompt: "Traduire : Qu'as tu fait pendant une semaine ?", koreanAnswer: "일주일 동안 뭐했어요?", frenchNote: "`동안` est utilisé pour indiquer la durée pendant laquelle une action a eu lieu." },
+            { id: 2, type: 'default', frenchPrompt: "Traduire : On a fait ce concert pendant 4h.", koreanAnswer: "네 시간 동안 콘서트를 했어요.", frenchNote: "`시간` est pour une durée. On utilise les nombres natifs coréens avec `시간`." },
+            { id: 3, type: 'default', frenchPrompt: "Traduire: J'ai étudié pendant deux heures.", koreanAnswer: "두 시간 동안 공부했어요.", frenchNote: "두 (2) est un nombre natif coréen, utilisé pour compter les heures." },
+            { id: 4, type: 'default', frenchPrompt: "Comment demander 'Pendant combien d'heures ?'", koreanAnswer: "몇 시간 동안?", frenchNote: "`몇` signifie 'combien' et est utilisé pour poser des questions sur une quantité." },
+            
+            // Set 2: Travail
+            { id: 5, type: 'default', frenchPrompt: "Comment dit-on 'quitter le bureau / finir sa journée de travail' ?", koreanAnswer: "퇴근하다", frenchNote: "Signifie 'sortir du lieu de travail car le travail est terminé'. `퇴` (se retirer) + `근` (travail)." },
+            { id: 6, type: 'default', frenchPrompt: "Comment dit-on 'aller au travail' ?", koreanAnswer: "출근하다", frenchNote: "L'antonyme de 퇴근하다. `출` (sortir pour) + `근` (travail)." },
+            { id: 7, type: 'default', frenchPrompt: "Comment dit-on 'démissionner' ?", koreanAnswer: "퇴사하다", frenchNote: "Signifie 'quitter l'entreprise'. `퇴` (se retirer) + `사` (entreprise)." },
+            { id: 8, type: 'default', frenchPrompt: "Traduire : Je suis sorti(e) du bureau.", koreanAnswer: "회사에서 나왔어요.", frenchNote: "`에서` marque le lieu de départ/provenance. `나오다` signifie 'sortir'." },
+
+            // Set 3: Finir (Actif vs Passif)
+            { id: 9, type: 'default', frenchPrompt: "Traduire (état/passif) : Le travail est terminé.", koreanAnswer: "일이 끝났어요.", frenchNote: "La particule `이/가` marque le sujet. L'action se produit sur le travail (il est terminé)." },
+            { id: 10, type: 'default', frenchPrompt: "Traduire (action/actif) : J'ai terminé le travail.", koreanAnswer: "일을 끝냈어요.", frenchNote: "La particule `을/를` marque l'objet. 'Je' (sujet implicite) ai fait l'action de terminer." },
+
+            // Set 4: Négation et Incapacité
+            { id: 11, type: 'default', frenchPrompt: "Traduire : On n’a pas encore préparé.", koreanAnswer: "아직 준비 안 했어요.", frenchNote: "La structure `아직 안 + Verbe` exprime une action qui n'a pas encore été faite." },
+            { id: 12, type: 'default', frenchPrompt: "Traduire (incapacité) : Je n'ai pas encore pu faire de sport.", koreanAnswer: "아직 운동 못 했어요.", frenchNote: "`아직 못 + Verbe` exprime l'incapacité de faire quelque chose (manque de temps, de capacité, etc.)." },
+
+            // Set 5: Nuances (Supposition, Incertitude, Curiosité)
+            { id: 13, type: 'default', frenchPrompt: "Traduire (supposition sur le moment) : Ça doit être une grande soirée !", koreanAnswer: "아주 대단한 파티겠네요.", frenchNote: "`겠네요` est utilisé pour réagir à quelque chose, en faisant une supposition sur le moment." },
+            { id: 14, type: 'default', frenchPrompt: "Traduire (incertitude/demande d'avis) : Je me demande si c'est une grande soirée ?", koreanAnswer: "아주 대단한 파티일까요?", frenchNote: `\`~(으)ㄹ까요?\` est utilisé pour demander un avis ou exprimer un doute.` },
+            { id: 15, type: 'default', frenchPrompt: "Traduire (curiosité) : Je voudrais savoir si c'est une bonne fête ?", koreanAnswer: "좋은 파티인가요?", frenchNote: "`~(ㄴ/은)가요?` est une manière polie et douce de poser une question, exprimant la curiosité." },
+
+            // Set 6: Contexte et Vocabulaire
+            { id: 16, type: 'default', frenchPrompt: "Traduire : C'est le week-end, qu'est-ce que tu vas faire ?", koreanAnswer: "이제 주말인데 뭐 할 거예요?", frenchNote: "`는데` sert à donner une information de base, un contexte, avant de poser la question principale." },
+            { id: 17, type: 'default', frenchPrompt: "Traduire : C'est mercredi, qu'est-ce qu'on fait ?", koreanAnswer: "수요일인데 뭐 할 거예요?", frenchNote: "Un autre exemple de `는데` pour donner le contexte (le jour de la semaine)." },
+            { id: 18, type: 'default', frenchPrompt: "Comment dit-on 'la sortie' ?", koreanAnswer: "출구", frenchNote: "`출` (sortir) + `구` (bouche/ouverture). C'est l'endroit par où l'on sort." },
+            { id: 19, type: 'default', frenchPrompt: "Comment dit-on 'l'entrée' ?", koreanAnswer: "입구", frenchNote: "`입` (entrer) + `구` (bouche/ouverture). C'est l'endroit par où l'on entre." },
+            { id: 20, type: 'default', frenchPrompt: "Traduire: À quelle heure finis-tu le travail aujourd'hui ?", koreanAnswer: "오늘 몇 시에 퇴근해요?", frenchNote: "`몇 시에` signifie 'à quelle heure'. C'est une question sur un moment précis." },
+
+            // Set 7: Chosung Quiz (New)
+            { id: 21, type: 'chosung', frenchPrompt: "Complétez la phrase (supposition) : Ce film doit être vraiment amusant !", koreanHint: "ㅇ ㅇㅎㄴ ㅈㅁ ㅈㅁㅇㄱㄴㅇ.", koreanAnswer: "이 영화는 정말 재미있겠네요.", frenchNote: "Utilisation de `겠네요` pour exprimer une supposition basée sur une évidence." },
+            { id: 22, type: 'chosung', frenchPrompt: "Complétez la phrase (suggestion/question) : Qu'est-ce qu'on mange ce soir ?", koreanHint: "ㅇㄴ ㅈㄴㅇ ㅁ ㅁㅇㄲㅇ?", koreanAnswer: "오늘 저녁에 뭐 먹을까요?", frenchNote: "Utilisation de `을까요?` pour faire une suggestion ou poser une question." },
+            { id: 23, type: 'chosung', frenchPrompt: "Complétez la phrase (incapacité) : Je n'ai pas encore pu finir mes devoirs.", koreanHint: "ㅈㄴ ㅇㅈ ㅅㅈㄹ ㅁ ㄲㄴㅇㅇ.", koreanAnswer: "저는 아직 숙제를 못 끝냈어요.", frenchNote: "`아직 못` indique une incapacité à réaliser une action." },
+            { id: 24, type: 'chosung', frenchPrompt: "Complétez la phrase (demande d'avis) : À quelle heure serait-il bien de se voir demain ?", koreanHint: "ㄴㅇ ㅁ ㅅㅇ ㅁㄴㄴ ㄱ ㅈㅇㄲㅇ?", koreanAnswer: "내일 몇 시에 만나는 게 좋을까요?", frenchNote: "`~는 게 좋을까요?` est une façon courante de demander un avis." },
+            { id: 25, type: 'chosung', frenchPrompt: "Complétez la phrase (contexte) : Il pleut, est-ce que tu as un parapluie ?", koreanHint: "ㅂㄱ ㅇㄴㄷ ㅇㅅ ㅇㅇㅇ?", koreanAnswer: "비가 오는데 우산 있어요?", frenchNote: "`는데` connecte une situation (il pleut) à une question ou une action." },
+            { id: 26, type: 'chosung', frenchPrompt: "Complétez la phrase (question polie) : Savez-vous où se trouve une banque par ici ?", koreanHint: "ㅇ ㄱㅊㅇ ㅇㅎㅇ ㅇㄷㅇ ㅇㄴㅈ ㅇㅅㅇ?", koreanAnswer: "이 근처에 은행이 어디에 있는지 아세요?", frenchNote: "`~는지 알다/모르다` est utilisé pour intégrer une question dans une autre phrase." },
+            { id: 27, type: 'chosung', frenchPrompt: "Complétez la phrase : J'aime regarder des dramas coréens.", koreanHint: "ㅎㄱ ㄷㄹㅁㄹ ㅂㄴ ㄱㅇ ㅈㅇㅎㅇ.", koreanAnswer: "한국 드라마를 보는 것을 좋아해요.", frenchNote: "`~는 것` transforme un verbe en nom, permettant de dire 'le fait de regarder'." },
+            { id: 28, type: 'chosung', frenchPrompt: "Complétez la phrase : Que faites-vous d'habitude le week-end ?", koreanHint: "ㅈㅁㅇ ㅂㅌ ㅁ ㅎㅅㅇ?", koreanAnswer: "주말에 보통 뭐 하세요?", frenchNote: "`보통` signifie 'habituellement' ou 'en général'." },
+            { id: 29, type: 'chosung', frenchPrompt: "Complétez la phrase (curiosité) : Je me demande où va ce bus ?", koreanHint: "ㅇ ㅂㅅㄴ ㅇㄷㄹ ㄱㄴ ㅂㅅㅇㄱㅇ?", koreanAnswer: "이 버스는 어디로 가는 버스인가요?", frenchNote: "`~인가요?` est une forme de question polie et douce, exprimant la curiosité." },
+            { id: 30, type: 'chosung', frenchPrompt: "Complétez la phrase (intention/raison) : Je suis fatigué(e), je vais me coucher tôt.", koreanHint: "ㅍㄱㅎㅅ ㅇㅉ ㅈㅇㄱㅇㅇ.", koreanAnswer: "피곤해서 일찍 자야겠어요.", frenchNote: "`~해서` indique la raison, et `~야겠어요` exprime une intention ou une nécessité ressentie par le locuteur." }
+        ];
+
+        function renderFlashcards() {
+            const container = document.getElementById('flashcard-container');
+            let html = '';
+            // Shuffle cards for variety
+            const shuffledData = [...flashcardData].sort(() => Math.random() - 0.5);
+            
+            shuffledData.forEach((card, index) => {
+                const cardNumber = index + 1;
+                if (card.type === 'chosung') {
+                    html += `
+                        <div class="card" id="card-${card.id}">
+                            <div class="card-front">
+                                <p class="text-slate-700 text-lg"><strong class="text-indigo-600">${cardNumber}. 초성 퀴즈:</strong> ${card.frenchPrompt}</p>
+                                <div class="chosung-hint korean">${card.koreanHint}</div>
+                                <div class="mb-4">
+                                    <button onclick="speak(this, '${card.koreanAnswer}')" class="btn btn-secondary w-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>
+                                        <span class="ml-2">Écouter la phrase complète</span>
+                                    </button>
+                                </div>
+                                <input type="text" id="input-${card.id}" class="korean korean-input" placeholder="Écrivez en coréen ici...">
+                                <button onclick="checkAnswer(${card.id})" class="btn btn-primary w-full">Vérifier</button>
+                            </div>
+                            <div class="card-back hidden">
+                                <p class="text-slate-500 text-sm font-medium">Question ${cardNumber}</p>
+                                <div id="feedback-${card.id}" class="answer-feedback"></div>
+                                <h3 class="text-xl font-bold korean text-slate-800">${card.koreanAnswer}</h3>
+                                <p class="text-slate-600 mt-2 mb-4">${card.frenchNote}</p>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <button onclick="speak(this, '${card.koreanAnswer}')" class="btn btn-primary flex-1">Écouter de nouveau</button>
+                                    <button onclick="flipBack(${card.id})" class="btn btn-secondary flex-1">Réessayer</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else { // Default card type
+                    html += `
+                        <div class="card" id="card-${card.id}">
+                            <div class="card-front">
+                                <p class="text-slate-700 text-lg"><strong class="text-indigo-600">${cardNumber}.</strong> ${card.frenchPrompt}</p>
+                                <input type="text" id="input-${card.id}" class="korean korean-input" placeholder="Écrivez en coréen ici...">
+                                <button onclick="checkAnswer(${card.id})" class="btn btn-primary w-full">Vérifier</button>
+                            </div>
+                            <div class="card-back hidden">
+                                <p class="text-slate-500 text-sm font-medium">Question ${cardNumber}</p>
+                                <div id="feedback-${card.id}" class="answer-feedback"></div>
+                                <h3 class="text-xl font-bold korean text-slate-800">${card.koreanAnswer}</h3>
+                                <p class="text-slate-600 mt-2 mb-4">${card.frenchNote}</p>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <button onclick="speak(this, '${card.koreanAnswer}')" class="btn btn-primary flex-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>
+                                        <span class="ml-2">Écouter</span>
+                                    </button>
+                                    <button onclick="flipBack(${card.id})" class="btn btn-secondary flex-1">Réessayer</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function checkAnswer(id) {
+            const card = flashcardData.find(c => c.id === id);
+            const userInput = document.getElementById(`input-${id}`).value.trim();
+            const normalize = (str) => str.replace(/[\s.?!]/g, '');
+            
+            const feedbackEl = document.getElementById(`feedback-${id}`);
+            if (normalize(userInput) === normalize(card.koreanAnswer)) {
+                feedbackEl.innerHTML = '<strong>Bravo !</strong> C\'est la bonne réponse.';
+                feedbackEl.className = 'answer-feedback correct';
+            } else {
+                feedbackEl.innerHTML = `<strong>Presque !</strong> Voici la réponse correcte. Votre réponse : <span class="korean">${userInput || "rien"}</span>`;
+                feedbackEl.className = 'answer-feedback incorrect';
+            }
+
+            document.querySelector(`#card-${id} .card-front`).classList.add('hidden');
+            document.querySelector(`#card-${id} .card-back`).classList.remove('hidden');
+        }
+        
+        function flipBack(id) {
+            document.querySelector(`#card-${id} .card-front`).classList.remove('hidden');
+            document.querySelector(`#card-${id} .card-back`).classList.add('hidden');
+            document.getElementById(`input-${id}`).value = ''; // Clear input for retry
+        }
+
+        // --- Gemini TTS API Logic (same as before) ---
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const header = new ArrayBuffer(44);
+            const view = new DataView(header);
+            
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            const channels = 1, bitsPerSample = 16;
+            const byteRate = sampleRate * channels * (bitsPerSample / 8);
+            const blockAlign = channels * (bitsPerSample / 8);
+            const dataSize = pcmData.byteLength;
+            const fileSize = 36 + dataSize;
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, fileSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, channels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            return new Blob([header, pcmData], { type: 'audio/wav' });
+        }
+
+        async function speak(button, text) {
+            const originalContent = button.innerHTML;
+            const loadingSpinner = `<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="ml-2">Patientez...</span>`;
+            
+            button.innerHTML = loadingSpinner;
+            button.disabled = true;
+
+            try {
+                const apiKey = ""; // Provided by the environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: text }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API error ${response.status}`);
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType?.startsWith("audio/")) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                    
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                    
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                    };
+                    audio.onerror = () => {
+                         URL.revokeObjectURL(audioUrl);
+                         button.innerHTML = originalContent;
+                         button.disabled = false;
+                    }
+                } else {
+                    throw new Error("Invalid audio data received.");
+                }
+
+            } catch (error) {
+                console.error("Error generating speech:", error);
+                alert("Désolé, une erreur est survenue lors de la génération de l'audio.");
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+        }
+
+        // Initial render
+        document.addEventListener('DOMContentLoaded', renderFlashcards);
+    </script>
+
+</body>
+</html>

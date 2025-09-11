@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coréen — Nombres | Explications + Warming up (5×5)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    :root{
+      --ink:#0f172a; --muted:#64748b; --brand:#2563eb; --brand-700:#1d4ed8;
+      --surface:#f4f6f8; --card:#ffffff; --border:#e5e7eb;
+      --slow-bg:#ecfdf5; --slow-bd:#a7f3d0; --slow-t:#065f46;
+      --normal-bg:#eef2ff; --normal-bd:#c7d2fe; --normal-t:#3730a3;
+      --fast-bg:#fff7ed; --fast-bd:#fed7aa; --fast-t:#9a3412;
+    }
+    body{font-family:'Poppins','Noto Sans KR',sans-serif;background:var(--surface);color:var(--ink)}
+    .container{max-width:1024px;margin:0 auto;padding:0 1rem}
+    .topbar{position:sticky;top:0;z-index:40;background:#ffffffd9;backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--border)}
+    .quiz-container{max-width:960px;margin:1.5rem auto;padding:1.5rem;background:var(--card);border-radius:1rem;border:1px solid var(--border);box-shadow:0 8px 20px rgba(15,23,42,.06)}
+
+    .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.1rem;border-radius:.8rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:.2s}
+    .btn:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 4px rgba(37,99,235,.25)}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-700)}
+    .btn-secondary{background:#f8fafc;border-color:var(--border);color:#111827}
+    .btn-secondary:hover{background:#eef2ff;border-color:#c7d2fe}
+    .btn-outline{background:#fff;border-color:var(--border);color:#111827}
+    .btn-outline:hover{border-color:#cbd5e1;background:#f8fafc}
+    .btn-lg{padding:1rem 1.25rem;border-radius:1rem;font-size:1.05rem}
+
+    .kicker{color:var(--muted);letter-spacing:.02em}
+    .readable{line-height:1.85}.readable p{margin:.85rem 0}
+    .info-card{background:#fff;border:1px solid var(--border);border-radius:1rem;padding:1.15rem 1.25rem;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+    .info-card h3,.info-card h4{font-weight:800;font-size:1.1rem;color:var(--ink);margin-bottom:.35rem}
+    .callout{background:#fff7ed;border:1px solid #fde68a;color:#9a3412;padding:.9rem 1rem;border-radius:.85rem}
+    .soft-divider{height:1px;margin:1.25rem 0;background:linear-gradient(to right, transparent, var(--border), transparent)}
+
+    .segmented{display:grid;grid-template-columns:1fr;gap:.75rem}
+    @media(min-width:768px){.segmented{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .seg-btn{border-radius:1rem;padding:1rem 1.25rem;border:1px solid var(--border);background:#fff;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.35rem;font-weight:800;transition:.2s}
+    .seg-btn .sub{font-size:.85rem;color:var(--muted);font-weight:600}
+    .seg-btn i{font-size:1.1rem}
+    .seg-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(2,6,23,.08);animation:wobble-s .6s ease-in-out}
+    @keyframes wobble-s{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+    .seg-btn.slow{border-color:var(--slow-bd);background:var(--slow-bg);color:var(--slow-t)}
+    .seg-btn.normal{border-color:var(--normal-bd);background:var(--normal-bg);color:var(--normal-t)}
+    .seg-btn.fast{border-color:var(--fast-bd);background:var(--fast-bg);color:var(--fast-t)}
+
+    .listen-tip{display:inline-flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:800;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:.6rem;padding:.35rem .65rem}
+    .btn-sound-big{position:relative}
+    .btn-sound-big::after{content:"";position:absolute;inset:-6px;border-radius:1rem;border:2px solid rgba(37,99,235,.55);animation:ping 1.6s cubic-bezier(0,0,.2,1) infinite}
+    @keyframes ping{0%{transform:scale(.96);opacity:.9}80%{transform:scale(1.12);opacity:0}100%{opacity:0}}
+
+    .brand-tag{position:fixed;right:16px;bottom:12px;font-size:12px;color:#9ca3af}
+    .hidden{display:none}
+
+    .row-tight{max-width:760px}
+    .btn-outline.active,.btn-secondary.active{outline:2px solid rgba(37,99,235,.25);box-shadow:0 0 0 3px rgba(37,99,235,.12) inset}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container py-2 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 text-sm text-slate-600">
+        <i class="fa-solid fa-water"></i>
+        <span>Pongdang · made by 성일</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="btn btn-outline"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz-container">
+    <label class="block text-sm font-semibold text-slate-700 mb-2">Nom de l’élève / 이름</label>
+    <input id="student-name" class="w-full border-2 border-slate-300 rounded-lg p-3 focus:outline-none focus:border-blue-400" placeholder="Ex. Camille / Lucas / Zoé" />
+  </div>
+
+  <!-- 설명 화면 (역사/개념) -->
+  <div id="explanation-screen" class="quiz-container">
+    <div class="mx-auto max-w-3xl readable">
+      <header class="text-center">
+        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">Exercice : Les Nombres Coréens 🔢</h1>
+        <p class="kicker mt-2">순수 한국어 / Natifs vs 한자어 / Hanja-coréens</p>
+      </header>
+
+      <section class="info-card space-y-3 mt-6">
+        <h3>✨ Petite explication / 간단 설명</h3>
+        <p>👉 Beaucoup de Français pensent que « 한자 (caractères han) = chinois ».</p>
+        <p class="callout">🚫 Mais non ! / ❌ 아닙니다!</p>
+        <ul class="list-disc list-inside">
+          <li><b>한자 (Hanja)</b> = système d’écriture <span class="text-slate-500">(글자 체계, logographique)</span></li>
+          <li><b>Chinois</b> = langue <span class="text-slate-500">(언어)</span></li>
+        </ul>
+
+        <div class="soft-divider"></div>
+        <div class="p-4 bg-sky-50 border border-sky-200 rounded-lg text-slate-700">
+          <p class="font-semibold">⚡ Astuce (analogie)</p>
+          <p>En Europe, on écrit avec l’alphabet latin, mais chaque pays a sa langue :</p>
+          <ul class="list-disc list-inside mt-2">
+            <li>→ <b>Italien</b> = langue / <b>alphabet</b> = latin</li>
+            <li>→ <b>Coréen</b> = langue / <b>alphabet</b> = hangeul</li>
+            <li>→ <b>Caractères han (Hanja)</b> = écriture, pas une langue</li>
+          </ul>
+        </div>
+
+        <div class="soft-divider"></div>
+        <h4 class="font-bold">📖 Pourquoi deux séries de nombres ?</h4>
+        <p>Pendant des siècles, les textes savants et officiels en Corée étaient écrits avec les caractères han.</p>
+        <p>Au XVe siècle, le roi Sejong a créé l’hangeul (1443/1446) : un alphabet simple et facile pour tout le monde.</p>
+        <div class="mt-2">
+          <p class="font-semibold">👉 Résultat : le coréen moderne a gardé :</p>
+          <ul class="list-disc list-inside">
+            <li>le vocabulaire basé sur les caractères han (ex. nombres),</li>
+            <li>en plus du vocabulaire en pur coréen.</li>
+          </ul>
+          <p class="mt-1">C’est pour ça qu’il existe deux séries de nombres.</p>
+        </div>
+
+        <div class="soft-divider"></div>
+        <h4 class="font-bold">📌 Faits utiles</h4>
+        <ul class="list-disc list-inside">
+          <li>Les caractères han : des dizaines de milliers existent, mais <b>3 000–4 000</b> suffisent pour lire couramment. <span class="text-slate-500">(⚠️ Ce sont des caractères, pas 4 000 mots différents)</span></li>
+          <li>L’hangeul : au départ <b>28 lettres</b>, aujourd’hui <b>24 lettres</b> en usage. ✏️ Conçu pour être rapide et facile à apprendre.</li>
+        </ul>
+      </section>
+
+      <div class="soft-divider"></div>
+
+      <section class="info-card">
+        <h3>2️⃣ Deux systèmes / 두 가지 숫자</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-bold text-lg text-blue-900">🔹 Natifs (순수 한국어)</h4>
+            <ul class="list-disc list-inside text-slate-700 space-y-1 mt-2">
+              <li>👉 Quand on compte librement dans la vie de tous les jours</li>
+              <li><b>하나, 둘, 셋…</b></li>
+              <li>Compter l’âge (나이) → <b>스무 살</b> (20 ans)</li>
+              <li>Compter les personnes/objets (<b>명, 개, 잔, 권…</b>)</li>
+              <li>Compter la durée en heures (시간) → <b>세 시간</b> (3&nbsp;heures)</li>
+            </ul>
+          </div>
+          <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 class="font-bold text-lg text-green-900">🔹 Hanja-coréens (한자어)</h4>
+            <ul class="list-disc list-inside text-slate-700 space-y-1 mt-2">
+              <li>👉 Quand c’est fixé, écrit, imprimé, standardisé</li>
+              <li><b>일, 이, 삼…</b></li>
+              <li>Dates : <b>2025년 9월 8일</b></li>
+              <li>Argent : <b>3,000원</b></li>
+              <li>Numéros (téléphone, chambre, bus)</li>
+              <li>Minutes/secondes : <b>15분, 30초</b></li>
+              <li>Maths, écrans, billets, panneaux, montres</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="soft-divider"></div>
+
+      <section class="info-card">
+        <h3>⚡ Exception/ 예외</h3>
+        <ul class="list-disc list-inside space-y-2">
+          <li>Heures (시) → <b>natifs</b> : <b>세 시</b> <span class="text-slate-500">— même si c’est écrit sur les horloges</span></li>
+          <li>Minutes/secondes (분·초) → <b>hanja</b> : <b>15분 30초</b></li>
+        </ul>
+        <p class="text-xs text-slate-500 mt-2">(Autrefois on disait « 1각 ≈ 15 min », puis on est passé au système moderne 1 h = 60 min → d’où ce mélange)</p>
+
+        <div class="soft-divider"></div>
+        <h4 class="font-bold">🔁 섞어 쓰는 경향 / Tendance au mélange</h4>
+        <ul class="list-disc list-inside space-y-1">
+          <li><b>한 주</b> = <b>일주일</b> (1 semaine)</li>
+          <li><b>한 달</b> = <b>1개월</b> (1 mois, contexte officiel)</li>
+        </ul>
+
+        <div class="soft-divider"></div>
+        <h4 class="font-bold">🗣️ Parfois on choisit le plus facile</h4>
+        <ul class="list-disc list-inside space-y-1">
+          <li><b>마흔 살</b> → <b>사십 살</b></li>
+          <li><b>쉰 살</b> → <b>오십 살</b></li>
+        </ul>
+      </section>
+
+      <div class="mt-8 flex items-center justify-center gap-3">
+        <button id="explanation-next-btn" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-bolt"></i> C'est compris, on s'échauffe ! (워밍업)
+        </button>
+        <button onclick="window.print()" class="btn btn-secondary btn-lg"><i class="fa-solid fa-print"></i> Imprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (2) 속도 선택 + 5×5 방법 설명 -->
+  <div id="mode-picker" class="quiz-container hidden">
+    <h3 class="text-2xl font-extrabold text-center mb-1">Choisis ta vitesse / 연습 속도 고르기</h3>
+
+    <div class="info-card mx-auto row-tight mb-5">
+      <h4 class="font-bold text-lg mb-1">Méthode 5×5 🗣️</h4>
+      <p class="text-sm text-slate-600 mb-2"><b>Explication / 설명</b></p>
+      <p class="mb-2">📌 <b>FR</b> — Apprendre les nombres coréens en <b>groupes de 5</b>, comme une petite chanson. C’est plus efficace que de mémoriser séparément (1=un, 2=deux…). Les enfants coréens eux-mêmes répètent ces paquets comme une chanson 🎵.</p>
+      <p class="mb-3">📌 <b>KO</b> — 한국어 숫자는 <b>5개씩 묶어서</b> <b>노래처럼</b> 반복하면 훨씬 잘 외워져요 🎶</p>
+
+      <div class="grid md:grid-cols-2 gap-3 text-sm">
+        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Natifs 1–5</div><div>하나 · 둘 · 셋 · 넷 · 다섯</div></div>
+        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Natifs 6–10</div><div>여섯 · 일곱 · 여덟 · 아홉 · 열</div></div>
+        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Hanja 1–5</div><div>일 · 이 · 삼 · 사 · 오</div></div>
+        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Hanja 6–10</div><div>육 · 칠 · 팔 · 구 · 십</div></div>
+      </div>
+
+      <p class="mt-3 text-slate-700">🔁 <b>Répétitions</b> : <b>2× par défaut</b> (recommandé 3×) / <b>기본 2회</b>(권장 3회)</p>
+      <p class="text-slate-600 text-sm">→ Étapes: <b>Écouter / 듣기</b> → <b>S’enregistrer / 녹음</b> → <b>Évaluer / 평가</b></p>
+    </div>
+
+    <p class="text-center text-sm text-slate-600 mb-4">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
+    <div class="segmented">
+      <button class="seg-btn slow"   onclick="WU_go('slow')">
+        <div class="text-lg"><i class="fa-solid fa-turtle"></i> 초보 / Débutant</div><div class="sub">0.7×</div>
+      </button>
+      <button class="seg-btn normal" onclick="WU_go('normal')">
+        <div class="text-lg"><i class="fa-regular fa-face-smile"></i> 보통 / Normal</div><div class="sub">1.0×</div>
+      </button>
+      <button class="seg-btn fast"   onclick="WU_go('fast')">
+        <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div><div class="sub">1.5×</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- (3) 워밍업 화면 -->
+  <div id="warmup-screen" class="quiz-container hidden">
+    <h2 class="text-3xl font-extrabold mb-2 text-center">Méthode 5×5 🗣️</h2>
+
+    <div class="mb-4 text-center">
+      <span class="listen-tip"><i class="fa-solid fa-bullhorn"></i> 먼저 <b>Écouter / 듣기</b> → 그다음 <b>따라 말하기</b> (남/여 목소리 섞임)</span>
+    </div>
+
+    <!-- 반복 설정: 기본 2회 / 3회 토글 -->
+    <div class="flex items-center justify-center gap-2 mb-2">
+      <button id="btn-repeat-2" class="btn btn-secondary">2×</button>
+      <button id="btn-repeat-3" class="btn btn-outline">3×</button>
+    </div>
+    <p class="text-slate-600 text-sm mt-1 text-center">Par défaut: <b>×2</b> répétitions / 기본: <b>2회</b> 반복</p>
+
+    <!-- 실시간 인식/비교 레전드 -->
+    <div class="flex justify-between items-center text-xs text-slate-500 mb-2 mx-auto row-tight">
+      <span>FR: Référence · KO: 원문</span>
+      <span>FR: Ma prononciation · KO: 내 발음</span>
+    </div>
+
+    <div id="stages-wrap" class="space-y-8"></div>
+
+    <div id="finish-wrap" class="hidden mt-8 text-center">
+      <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto">
+        <div class="text-lg font-extrabold">👏 Warming up terminé !</div>
+        <div class="text-slate-600 mt-1">Envoie le résultat au professeur.</div>
+      </div>
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer</button>
+        <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
+        <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
+        <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="brand-tag">made by 성일 · Pongdang · Lapeace29@gmail.com</div>
+
+  <!-- 환경설정 -->
+  <script>
+    window.PONGDANG_TTS = window.PONGDANG_TTS || { provider: 'openai' };
+    window.PONGDANG_FN_BASE = window.PONGDANG_FN_BASE || '/.netlify/functions';
+    window.WARMUP_REPEAT = 2; // 기본 반복 2회
+  </script>
+
+  <!-- 공통 스크립트 -->
+  <script defer src="../assets/student-gate.js"></script>
+  <script defer src="../assets/pronun-utils.js"></script>
+  <script defer src="../assets/pronun-vowel-middleware.js"></script>
+  <script defer src="../assets/grading-criteria.js"></script>
+  <script defer src="../assets/pronun-client.js"></script>
+  <script defer src="../assets/warmup-5x5.js"></script>
+
+  <!-- 화면 전환 & 이름 게이트 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const exp = document.getElementById('explanation-screen');
+      const pick = document.getElementById('mode-picker');
+      const wu   = document.getElementById('warmup-screen');
+
+      const goBtn = document.getElementById('explanation-next-btn');
+      goBtn?.setAttribute('type','button');
+      goBtn?.addEventListener('click', ()=>{
+        const nameEl = document.getElementById('student-name');
+        const name = (nameEl?.value || '').trim();
+        if(!name){ alert("이름을 먼저 입력해 주세요 / Entre d'abord ton nom."); nameEl?.focus(); return; }
+        try{ localStorage.setItem('korean.studentName', name); }catch{}
+        exp.classList.add('hidden'); pick.classList.remove('hidden'); wu.classList.add('hidden');
+        window.scrollTo({ top: pick.offsetTop - 8, behavior:'smooth' });
+      });
+
+      const m = new URLSearchParams(location.search).get('mode');
+      if(m){ exp.classList.add('hidden'); pick.classList.add('hidden'); wu.classList.remove('hidden'); }
+      else { exp.classList.remove('hidden'); pick.classList.add('hidden'); wu.classList.add('hidden'); }
+
+      pick.addEventListener('click',(e)=>{
+        const btn = e.target.closest('.seg-btn');
+        if(btn){ pick.classList.add('hidden'); wu.classList.remove('hidden');
+          window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
+        }
+      });
+    });
+  </script>
+
+  <!-- StudentGate: 클릭/입력 전 차단 (맨 하단) -->
+  <script>
+    window.addEventListener('DOMContentLoaded', ()=>{
+      if(!window.__sg_init_done){
+        (window.StudentGate||={init(){},requireBeforeInteraction(){}}).init();
+        StudentGate.requireBeforeInteraction(document);
+        window.__sg_init_done = true;
+      }
+    });
+  </script>
+</body>
+</html>

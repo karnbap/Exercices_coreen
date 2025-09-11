@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exercice Coréen: Focus sur la Forme Honorifique</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    .quiz-step { animation: fadeIn 0.5s ease-in-out; }
+    @keyframes fadeIn { from {opacity:0;transform:translateY(20px);} to {opacity:1;transform:translateY(0);} }
+    .table-wrap { overflow-x:auto; }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+  <!-- En-tête -->
+  <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+    <div class="text-sm text-gray-500">
+      <p class="font-semibold">Fait par 성일, Pongdang</p>
+    </div>
+    <h1 class="text-xl md:text-2xl font-bold text-center text-blue-800">Les 3 Types d'Honorifiques</h1>
+    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center">
+      <i class="fas fa-print mr-2"></i> <span class="hidden md:inline">Imprimer</span>
+    </button>
+  </header>
+
+  <main class="container mx-auto p-4 md:p-8">
+
+    <!-- Section Nom de l'étudiant -->
+    <section id="student-name-section" class="text-center mb-12">
+      <h2 class="text-2xl font-bold mb-4">Qui est le champion du jour ? 🏆</h2>
+      <input type="text" id="studentName" placeholder="Entrez votre nom ici, futur maître du coréen !" class="text-center p-3 border-2 border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-1/2">
+    </section>
+
+    <!-- Conteneur des exercices -->
+    <div id="quiz-container" class="space-y-16">
+
+      <!-- Étape 1 -->
+      <div class="quiz-step" data-step="1">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">1. Les 3 Types d'Honorifiques ! 🤔</h2>
+        <div class="bg-white p-6 rounded-lg shadow-md space-y-6 text-base md:text-lg">
+          <!-- 주체 높임법 -->
+          <div class="border-2 border-blue-200 p-4 rounded-lg">
+            <h4 class="font-bold text-blue-600">🟢 주체 높임법 (Honorification du sujet)</h4>
+            <p class="mt-2 text-gray-700">Le <strong>sujet</strong> de la phrase est une personne respectée (professeur, aîné, etc.).</p>
+            <p class="mt-3">On montre le respect en modifiant le verbe (suffixe <code class="bg-red-100 p-1 rounded font-bold">-(으)시-</code>) et en utilisant une particule de sujet honorifique (<code class="bg-blue-100 p-1 rounded font-bold">께서</code>).</p>
+            <p class="mt-2">✅ <code class="bg-gray-100 p-1 rounded">선생님<span class="text-blue-500 font-bold">께서</span> 오<span class="text-red-500 font-bold">세</span>요.</code></p>
+          </div>
+          <!-- 객체 높임법 -->
+          <div class="border-2 border-green-200 p-4 rounded-lg">
+            <h4 class="font-bold text-green-600">🟡 객체 높임법 (Honorification du complément)</h4>
+            <p class="mt-2 text-gray-700">Le <strong>complément</strong> (COD ou COI) est une personne importante (professeur, parent, etc.).</p>
+            <p class="mt-3">On utilise des verbes honorifiques spécifiques (<code class="bg-purple-100 p-1 rounded font-bold">뵙다, 드리다, 여쭙다</code>...).</p>
+            <p class="mt-2">✅ <code class="bg-gray-100 p-1 rounded">선생님께 선물을 <span class="text-purple-500 font-bold">드려요</span>.</code></p>
+          </div>
+          <!-- 상대 높임법 -->
+          <div class="border-2 border-orange-200 p-4 rounded-lg">
+            <h4 class="font-bold text-orange-600">🔵 상대 높임법 (Honorification de l’interlocuteur)</h4>
+            <p class="mt-2 text-gray-700">Politesse envers la personne <strong>à qui l’on parle</strong>.</p>
+            <p class="text-sm text-gray-600 italic mt-1">👉 Comme « 3 registres de langue » en français : « Je te remercie » (familier) → « Je vous remercie » (standard) → « Je vous suis reconnaissant » (soutenu).</p>
+            <p class="mt-3 text-gray-700">⚠️ Différence : en coréen, le <strong>formel</strong> (합쇼체) dépend de la <u>situation</u> (pro, officiel, inconnus). Et <code class="bg-gray-100 p-1 rounded">감사합니다</code>, <code class="bg-gray-100 p-1 rounded">죄송합니다</code> s’emploient très souvent pour renforcer la politesse.</p>
+            <ul class="mt-2 space-y-1 list-disc list-inside">
+              <li><code class="bg-gray-100 p-1 rounded">가</code> (familier / 반말)</li>
+              <li><code class="bg-gray-100 p-1 rounded">가<span class="text-orange-500 font-bold">요</span></code> (poli / 해요체)</li>
+              <li><code class="bg-gray-100 p-1 rounded">갑<span class="text-orange-500 font-bold">니다</span></code> (très formel / 합쇼체)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 2: Mots et Expressions Clés -->
+      <div class="quiz-step" data-step="2" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">2. Mots et Expressions Clés 📋</h2>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <p class="text-gray-700 mb-4">Voici quelques mots et particules honorifiques essentiels à mémoriser !</p>
+          <div class="table-wrap">
+            <table class="min-w-full text-left text-sm">
+              <thead>
+                <tr class="bg-blue-50 text-blue-800">
+                  <th class="px-3 py-2 font-semibold">Type</th>
+                  <th class="px-3 py-2 font-semibold">Forme Standard</th>
+                  <th class="px-3 py-2 font-semibold">Forme Honorifique</th>
+                  <th class="px-3 py-2 font-semibold">Utilisation</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr><td class="px-3 py-2">주체 (Sujet)</td><td class="px-3 py-2">Suffixe de verbe</td><td class="px-3 py-2">-(으)시-</td><td class="px-3 py-2">Ex: 읽다 → 읽으시다</td></tr>
+                <tr><td class="px-3 py-2">주체 (Sujet)</td><td class="px-3 py-2">이/가</td><td class="px-3 py-2">께서</td><td class="px-3 py-2">Pour le sujet respecté</td></tr>
+                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">에게/한테</td><td class="px-3 py-2">께</td><td class="px-3 py-2">Pour le destinataire respecté</td></tr>
+                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">보다 (voir)</td><td class="px-3 py-2">뵙다 / 뵈다</td><td class="px-3 py-2">Quand on voit une personne respectée</td></tr>
+                <tr><td class="px-3 py-2">객체 (Complément)</td><td class="px-3 py-2">주다 (donner)</td><td class="px-3 py-2">드리다</td><td class="px-3 py-2">Quand on donne à une personne respectée</td></tr>
+                <tr><td class="px-3 py-2">Verbe</td><td class="px-3 py-2">먹다 (manger)</td><td class="px-3 py-2">드시다 / 잡수시다</td><td class="px-3 py-2">Quand une personne respectée mange</td></tr>
+                <tr><td class="px-3 py-2">Verbe</td><td class="px-3 py-2">자다 (dormir)</td><td class="px-3 py-2">주무시다</td><td class="px-3 py-2">Quand une personne respectée dort</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 3: QCM -->
+      <div class="quiz-step" data-step="3" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">3. Choisis la bonne réponse ! 🤔 (5 questions)</h2>
+        <div id="mcq-questions" class="space-y-6"></div>
+      </div>
+
+      <!-- Étape 4: Mots à compléter -->
+      <div class="quiz-step" data-step="4" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">4. Complète avec le bon mot ! ✍️ (5 questions)</h2>
+        <div id="fill-in-the-blank-questions" class="space-y-6"></div>
+      </div>
+
+      <!-- Étape 5: Écriture -->
+      <div class="quiz-step" data-step="5" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">5. À toi d'écrire ! ✒️ (5 phrases)</h2>
+        <p class="text-gray-600 mb-6">Écris la phrase en coréen en utilisant la forme honorifique.</p>
+        <div id="writing-questions" class="space-y-8"></div>
+      </div>
+
+      <!-- Étape 6: Écoute et écris -->
+      <div class="quiz-step" data-step="6" style="display:none;">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">6. Écoute et écris ! 🎧 (5 phrases)</h2>
+        <p class="text-gray-600 mb-6">Écoute, écris, enregistre ta voix, puis réessaie la dictée d’après ta propre voix. (La 2e dictée n’est pas notée, mais est envoyée au prof avec l'audio.)</p>
+        <div id="listening-questions" class="space-y-12"></div>
+      </div>
+    </div>
+
+    <!-- Boutons de navigation -->
+    <div id="nav-bar" class="mt-12 flex justify-between items-center">
+      <button id="prev-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition duration-300 disabled:opacity-50" disabled>
+        <i class="fas fa-arrow-left mr-2"></i> Précédent
+      </button>
+      <div id="step-indicator" class="text-gray-600 font-semibold">Étape 1 / 6</div>
+      <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+        Suivant <i class="fas fa-arrow-right ml-2"></i>
+      </button>
+      <button id="finish-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300" style="display:none;">
+        Terminer & Voir les résultats <i class="fas fa-check-circle ml-2"></i>
+      </button>
+    </div>
+
+    <!-- ✅ Résultats: 컨테이너 밖으로 이동 (항상 표시 가능) -->
+    <div id="results-section" class="text-center mt-10" style="display:none;"></div>
+
+    <footer class="text-center mt-12 text-sm text-gray-500">
+      <p>Fait avec ❤️ par 성일, Pondant, Laon</p>
+    </footer>
+  </main>
+
+  <script>
+    // --- Global State & Config ---
+    let currentStep = 1;
+    const totalSteps = 6;
+
+    const sessionMeta = { startTime: new Date().toISOString() };
+    const stats = {};
+    const recordings = {};
+
+    let recorder; let isRecording = false; let recordStartAt = 0;
+    let hasSubmitted = false;  // finish guard
+    let emailSent = false;     // email guard
+
+    // ===== DATA (avec Indice 1/2 partout) =====
+    const quizData = {
+      mcq: [
+        { question: "Pour remplacer la particule sujet `이/가` quand on parle de son grand-père, on utilise...", options:["은/는","께서","을/를","께"], answer:"께서", explanation:"`께서` est la particule honorifique qui remplace `이/가` pour un sujet respecté.", hint1:"Particule sujet… version honorifique.", hint2:"Sujet respecté ⇒ `께서`." },
+        { question: "Dans la phrase `어머니께서 책을 읽으세요`, qu'est-ce qui montre le respect dans le verbe ?", options:["-어요","-으세요","-세요","-으-"], answer:"-으세요", explanation:"On ajoute `-(으)시-` à `읽-` + `-어요` ⇒ `읽으세요`.", hint1:"Terminaison polie + 시.", hint2:"-(으)시- + 해요체 ⇒ -(으)세요." },
+        { question: "Quel est le verbe honorifique pour `주다` (donner) ?", options:["드리다","받다","보다","계시다"], answer:"드리다", explanation:"Donner à une personne respectée ⇒ `드리다`.", hint1:"Donner → hon.", hint2:"`주다`→`드리다`." },
+        { question: "Quelle est la phrase correcte pour dire 'Je vois le professeur' de manière respectueuse ?", options:["선생님을 봐요.","선생님께서 봐요.","선생님을 뵈어요.","선생님을 보세요."], answer:"선생님을 뵈어요.", explanation:"`보다` → `뵈다` quand le COD est honorifique.", hint1:"`보다`의 객체 높임.", hint2:"Voir → `뵈다`." },
+        { question: "La particule `께` est la forme honorifique de...", options:["에서","하고","만","에게/한테"], answer:"에게/한테", explanation:"COI honorifique ⇒ `께`.", hint1:"COI (à/chez) hon.", hint2:"`에게/한테` → `께`." }
+      ],
+      fillIn: [
+        { sentence:"할머니___ 지금 주무세요.", answer:"께서", translation:"Grand-mère dort maintenant.", vocab:{"할머니":"grand-mère","지금":"maintenant","주무시다":"dormir (hon.)"}, hint1:"Sujet honorifique → particule.", hint2:"`이/가`→`께서`" },
+        { sentence:"사장님___ 선물을 드렸어요.", answer:"께", translation:"J'ai donné un cadeau au patron.", vocab:{"사장님":"patron","선물":"cadeau","드리다":"donner (hon.)"}, hint1:"COI honorifique.", hint2:"`에게/한테`→`께`" },
+        { sentence:"아버지께서 신문을 읽___.", answer:"으세요", translation:"Père lit le journal.", vocab:{"아버지":"père","신문":"journal","읽다":"lire"}, hint1:"Honorification verbale+해요체.", hint2:"어간+(으)시+어요" },
+        { sentence:"저는 교수님을 처음 ___.", answer:"뵙겠습니다", translation:"Je rencontre le professeur pour la première fois. (formel)", vocab:{"저":"je","교수님":"professeur","처음":"pour la première fois","뵙다":"voir (hon.)"}, hint1:"합쇼체 종결.", hint2:"뵙 + 겠 + 습니다" },
+        { sentence:"어머니, 진지 ___.", answer:"드세요", translation:"Maman, mange ton repas s'il te plaît.", vocab:{"어머니":"maman","진지":"repas (hon.)","드시다":"manger (hon.)"}, hint1:"먹다의 높임.", hint2:"드시다+(으)세요" }
+      ],
+      writing: [
+        { situation:"Dites que votre mère (어머니) se repose (쉬다).", answer:"어머니께서 쉬세요.", hint1:"Sujet honorifique + -(으)시-.", hint2:"어머니께서 + 쉬세요" },
+        { situation:"Dites que vous donnez un livre (책) au professeur (선생님).", answer:"선생님께 책을 드려요.", hint1:"COI hon. + 드리다.", hint2:"선생님께 + 드려요" },
+        { situation:"Dites que le président (대통령) parle (말씀하다).", answer:"대통령께서 말씀하세요.", hint1:"말하다→말씀하시다.", hint2:"대통령께서 + 말씀하세요" },
+        { situation:"Dites que vous voyez (뵈다) votre grand-père (할아버지).", answer:"할아버지를 뵈어요.", hint1:"보다→뵈다.", hint2:"할아버지(목적어) + 뵈어요" },
+        { situation:"Demandez si le client (손님) a mangé (식사하다).", answer:"손님, 식사하셨어요?", hint1:"하다→하시다.", hint2:"-았/었어요?" }
+      ],
+      listening: [
+        { number:1, ko:"선생님께서 한국어를 가르치세요.", fr:"Le professeur enseigne le coréen.", hint1:"ㅅㅅㄴㄲㅅ ㅎㄱㅇㄹ ㄱㄹㅊㅅㅇ.", hint2:"가르치다 (enseigner)" },
+        { number:2, ko:"할머니께 전화를 드렸어요.", fr:"J'ai téléphoné à ma grand-mère.", hint1:"ㅎㅁㄴㄲ ㅈㅎㄹ ㄷㄹㅇㅇ.", hint2:"전화를 드리다 (hon.)" },
+        { number:3, ko:"사장님을 복도에서 뵈었어요.", fr:"J'ai vu le patron dans le couloir.", hint1:"ㅅㅈㄴㅇ ㅂㄷㅇㅅ ㅂㅇㅇㅇ.", hint2:"복도, 뵈다" },
+        { number:4, ko:"아버님, 진지 드세요.", fr:"Père, mangez votre repas s'il vous plaît.", hint1:"ㅇㅂㄴ, ㅈㅈ ㄷㅅㅇ.", hint2:"아버님, 진지" },
+        { number:5, ko:"의사 선생님께서 지금 안 계세요.", fr:"Le docteur n'est pas là pour le moment.", hint1:"ㅇㅅ ㅅㅅㄴㄲㅅ ㅈㄱ ㅇ ㄱㅅㅇ.", hint2:"계시다, 안" }
+      ]
+    };
+
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', () => {
+      populateMCQ(); populateFillIn(); populateWriting(); populateListening();
+      setupNavigation();
+      document.getElementById('studentName').placeholder = getRandomPlaceholder();
+    });
+
+    function getRandomPlaceholder() {
+      const p = ["Le futur boss du TOPIK !","Qui va briller aujourd'hui ?","Ton nom pour la postérité coréenne...","Prêt(e) à tout déchirer ?","Inscris ton nom dans la légende !"];
+      return p[Math.floor(Math.random()*p.length)];
+    }
+
+    function ensureStat(id){ if(!stats[id]) stats[id]={listens:0,hint1:0,hint2:0}; }
+    function bumpHint(id,w){ ensureStat(id); if(w===1)stats[id].hint1++; else stats[id].hint2++; }
+    function toggleHint(id){ document.getElementById(id).classList.toggle('hidden'); }
+
+    // --- QCM ---
+    function populateMCQ(){
+      const c=document.getElementById('mcq-questions');
+      quizData.mcq.forEach((q,i)=>{
+        const id=`mcq-${i}`;
+        const d=document.createElement('div');
+        d.className='bg-white p-6 rounded-lg shadow-md';
+        d.innerHTML=`
+          <p class="font-semibold mb-4">${i+1}. ${q.question}</p>
+          <div class="space-y-2">
+            ${q.options.map(opt=>`
+              <div>
+                <input type="radio" id="${id}-${opt.replace(/\s/g,'-')}" name="${id}" value="${opt}" class="mr-2 cursor-pointer">
+                <label for="${id}-${opt.replace(/\s/g,'-')}" class="cursor-pointer">${opt}</label>
+              </div>`).join('')}
+          </div>
+          <div class="mt-3 space-x-2">
+            <button onclick="toggleHint('${id}-h1');bumpHint('${id}',1)" class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+            <button onclick="toggleHint('${id}-h2');bumpHint('${id}',2)" class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+          </div>
+          <p id="${id}-h1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+          <p id="${id}-h2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+          <div id="${id}-result" class="mt-4 text-sm"></div>`;
+        c.appendChild(d);
+      });
+    }
+
+    // --- Fill-in ---
+    function populateFillIn(){
+      const c=document.getElementById('fill-in-the-blank-questions');
+      quizData.fillIn.forEach((q,i)=>{
+        const id=`fill-${i}`;
+        const d=document.createElement('div');
+        d.className='bg-white p-6 rounded-lg shadow-md';
+        const parts=q.sentence.split('___');
+        let vocab='<ul class="list-disc list-inside text-sm text-gray-600 mt-2">';
+        Object.entries(q.vocab).forEach(([ko,fr])=>{vocab+=`<li><strong>${ko}</strong> : ${fr}</li>`}); vocab+='</ul>';
+        d.innerHTML=`
+          <div class="mb-4">
+            <label for="${id}-in" class="font-semibold text-lg">
+              ${i+1}. ${parts[0]}
+              <input type="text" id="${id}-in" class="border-b-2 border-gray-300 focus:border-blue-500 outline-none w-24 text-center mx-1">
+              ${parts[1]}
+            </label>
+            <p class="text-gray-500 italic mt-1">"${q.translation}"</p>
+          </div>
+          <div><h5 class="font-bold text-sm">Mots utiles :</h5>${vocab}</div>
+          <div class="mt-3 space-x-2">
+            <button onclick="toggleHint('${id}-h1');bumpHint('${id}',1)" class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+            <button onclick="toggleHint('${id}-h2');bumpHint('${id}',2)" class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+          </div>
+          <p id="${id}-h1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+          <p id="${id}-h2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+          <div id="${id}-result" class="mt-4 text-sm"></div>`;
+        c.appendChild(d);
+      });
+    }
+
+    // --- Writing ---
+    function populateWriting(){
+      const c=document.getElementById('writing-questions');
+      quizData.writing.forEach((q,i)=>{
+        const id=`write-${i}`;
+        const d=document.createElement('div');
+        d.className='bg-white p-6 rounded-lg shadow-md';
+        d.innerHTML=`
+          <p class="font-semibold mb-2">${i+1}. ${q.situation}</p>
+          <textarea id="${id}-in" rows="2" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Écrivez votre réponse en coréen..."></textarea>
+          <div class="mt-3 space-x-2">
+            <button onclick="toggleHint('${id}-h1');bumpHint('${id}',1)" class="text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1</button>
+            <button onclick="toggleHint('${id}-h2');bumpHint('${id}',2)" class="text-xs bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2</button>
+          </div>
+          <p id="${id}-h1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+          <p id="${id}-h2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+          <div id="${id}-result" class="mt-4 text-sm"></div>`;
+        c.appendChild(d);
+      });
+    }
+
+    // --- Listening (🎧 play 버튼을 입력창 옆으로) ---
+    function populateListening(){
+      const c=document.getElementById('listening-questions');
+      quizData.listening.forEach((q,i)=>{
+        const id=`listen-${i}`;
+        const d=document.createElement('div');
+        d.className='bg-white p-6 rounded-lg shadow-lg';
+        d.id=id;
+        d.innerHTML=`
+          <div class="mb-4">
+            <h3 class="text-lg font-bold text-blue-800">Phrase ${i+1}</h3>
+          </div>
+
+          <div class="space-y-6">
+
+            <!-- 1. Dictée + Play collés -->
+            <div>
+              <label class="block font-semibold text-gray-700 mb-1">1. Écoutez et écrivez (받아쓰기)</label>
+              <div class="flex items-center gap-2">
+                <input type="text" id="${id}-dictation" class="flex-1 p-2 border border-gray-300 rounded-md" placeholder="Écrivez ce que vous entendez...">
+                <button onclick="playAudio('${q.ko}', this, '${id}')" aria-label="Écouter la phrase"
+                        class="w-10 h-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full transition duration-300">
+                  <i class="fas fa-play text-sm"></i>
+                </button>
+              </div>
+              <div class="mt-2 space-x-2">
+                <button onclick="toggleHint('${id}-h1');bumpHint('${id}',1)" class="text-sm bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-1 px-3 rounded-full">Indice 1 (consonnes)</button>
+                <button onclick="toggleHint('${id}-h2');bumpHint('${id}',2)" class="text-sm bg-orange-400 hover:bg-orange-500 text-orange-900 py-1 px-3 rounded-full">Indice 2 (mots clés)</button>
+              </div>
+              <p id="${id}-h1" class="hidden mt-2 text-sm text-yellow-700 p-2 bg-yellow-50 rounded-md">${q.hint1}</p>
+              <p id="${id}-h2" class="hidden mt-2 text-sm text-orange-700 p-2 bg-orange-50 rounded-md">${q.hint2}</p>
+            </div>
+
+            <!-- 2. Traduction -->
+            <div>
+              <label class="block font-semibold mb-2 text-gray-700">2. Traduisez en français</label>
+              <input type="text" id="${id}-translation" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Que signifie la phrase ?">
+            </div>
+
+            <!-- 3. Enregistrement -->
+            <div>
+              <label class="block font-semibold mb-2 text-gray-700">3. Enregistrez votre prononciation</label>
+              <div class="flex items-center gap-4">
+                <button id="${id}-record-btn" onclick="toggleRecording('${id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300">
+                  <i class="fas fa-microphone"></i>
+                </button>
+                <div id="${id}-record-status" class="text-gray-600">Cliquez pour enregistrer</div>
+              </div>
+              <audio id="${id}-audio-playback" controls class="w-full mt-4 hidden"></audio>
+            </div>
+
+            <!-- 4. Re-dictée -->
+            <div>
+              <label class="block font-semibold mb-2 text-gray-700">4. Re-dictée d’après ma voix (non notée)</label>
+              <input type="text" id="${id}-selfdict" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Réécrivez la phrase après avoir écouté votre enregistrement.">
+              <p class="text-xs text-gray-500 mt-1">Astuce: Écoute ton enregistrement ci-dessus, puis réécris la phrase ici.</p>
+            </div>
+          </div>
+
+          <div id="${id}-result" class="mt-4 text-sm"></div>`;
+        c.appendChild(d);
+      });
+    }
+
+    // --- Navigation ---
+    function setupNavigation(){
+      const nextBtn=document.getElementById('next-btn');
+      const prevBtn=document.getElementById('prev-btn');
+      const finishBtn=document.getElementById('finish-btn');
+
+      nextBtn.addEventListener('click',()=>{ if(currentStep<totalSteps) changeStep(currentStep+1); });
+      prevBtn.addEventListener('click',()=>{ if(currentStep>1) changeStep(currentStep-1); });
+
+      // 끝내기: 한 번만 동작 + 즉시 비활성화
+      finishBtn.addEventListener('click', ()=>{
+        if(hasSubmitted) return;
+        hasSubmitted = true;
+        finishBtn.disabled = true;
+        finishBtn.classList.add('opacity-60','pointer-events-none');
+        collectAndGradeAnswers();
+      }, { once:true });
+    }
+
+    function changeStep(step){
+      document.querySelector(`.quiz-step[data-step="${currentStep}"]`).style.display='none';
+      document.querySelector(`.quiz-step[data-step="${step}"]`).style.display='block';
+      currentStep=step; updateNavigation(); window.scrollTo(0,0);
+    }
+    function updateNavigation(){
+      const prevBtn=document.getElementById('prev-btn');
+      const nextBtn=document.getElementById('next-btn');
+      const finishBtn=document.getElementById('finish-btn');
+      const stepIndicator=document.getElementById('step-indicator');
+      prevBtn.disabled=(currentStep===1);
+      nextBtn.style.display=currentStep===totalSteps?'none':'inline-block';
+      finishBtn.style.display=currentStep===totalSteps?'inline-block':'none';
+      stepIndicator.textContent=`Étape ${currentStep} / ${totalSteps}`;
+    }
+
+    // --- Audio (TTS) ---
+    const ttsBusy=new Set();
+    async function playAudio(text,btn,qid=null){
+      if(ttsBusy.has(btn)) return; ttsBusy.add(btn);
+      const icon=btn.querySelector('i');
+      icon.classList.remove('fa-play'); icon.classList.add('fa-spinner','fa-spin'); btn.disabled=true;
+      if(qid){ ensureStat(qid); stats[qid].listens++; }
+      try{
+        const res=await fetch('/.netlify/functions/generate-audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+        if(res.ok){ const data=await res.json();
+          if(data.audioData){ const audio=new Audio(`data:${data.mimeType};base64,${data.audioData}`);
+            audio.onended=()=>resetAudioBtn(icon,btn);
+            audio.onerror=()=>fallbackSpeechSynthesis(text,icon,btn);
+            audio.play(); ttsBusy.delete(btn); return; } }
+        fallbackSpeechSynthesis(text,icon,btn);
+      }catch(e){ console.error(e); fallbackSpeechSynthesis(text,icon,btn); }
+      finally{ ttsBusy.delete(btn); }
+    }
+    function resetAudioBtn(icon,btn){ icon.classList.remove('fa-spinner','fa-spin'); icon.classList.add('fa-play'); btn.disabled=false; }
+    function fallbackSpeechSynthesis(text,icon,btn){
+      try{ if('speechSynthesis'in window){ const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.onend=()=>resetAudioBtn(icon,btn); speechSynthesis.speak(u); }
+      else throw new Error('no synth'); }
+      catch{ icon.classList.remove('fa-spinner','fa-spin'); icon.classList.add('fa-exclamation-circle'); btn.disabled=false; alert("La synthèse vocale n'est pas disponible sur votre navigateur."); }
+    }
+
+    // --- Recording ---
+    function toggleRecording(id){ if(isRecording) stopRecording(id); else startRecording(id); }
+    async function startRecording(id){
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        recorder=new MediaRecorder(stream,{mimeType:'audio/webm'}); const chunks=[]; recordStartAt=performance.now();
+        recorder.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+        recorder.onstop=()=>{
+          const duration=Math.max(1,Math.round((performance.now()-recordStartAt)/1000));
+          const blob=new Blob(chunks,{type:'audio/webm'}); const url=URL.createObjectURL(blob);
+          const audio=document.getElementById(`${id}-audio-playback`); audio.src=url; audio.classList.remove('hidden');
+          const reader=new FileReader(); reader.onloadend=()=>{
+            const [header,base64]=String(reader.result).split(','); const mime=(header.match(/data:(.*?);base64/)||[])[1]||'audio/webm';
+            recordings[id]={base64,mimeType:mime,duration,filename:`${id}.webm`}; URL.revokeObjectURL(url);
+          }; reader.readAsDataURL(blob);
+          recorder.stream.getTracks().forEach(t=>t.stop());
+        };
+        recorder.start(); isRecording=true; updateRecordingUI(id,true);
+      }catch(e){ console.error(e); alert("Impossible d'accéder au microphone. Vérifiez les autorisations."); }
+    }
+    function stopRecording(id){ if(recorder&&recorder.state!=="inactive"){ recorder.stop(); isRecording=false; updateRecordingUI(id,false); } }
+    function updateRecordingUI(id,on){
+      const btn=document.getElementById(`${id}-record-btn`); const st=document.getElementById(`${id}-record-status`); const ic=btn.querySelector('i');
+      if(on){ btn.classList.replace('bg-red-500','bg-gray-700'); btn.classList.add('animate-pulse'); ic.classList.replace('fa-microphone','fa-stop'); st.textContent='Enregistrement en cours...'; }
+      else { btn.classList.replace('bg-gray-700','bg-red-500'); btn.classList.remove('animate-pulse'); ic.classList.replace('fa-stop','fa-microphone'); st.textContent='Enregistrement terminé.'; }
+    }
+
+    // --- Mail (single send guard) ---
+    async function sendResultsToServer(payload){
+      if(emailSent) return; emailSent=true;
+      try{
+        const r=await fetch('/.netlify/functions/send-results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        console.log('Résultats envoyés:', await r.json());
+      }catch(e){ console.error("Erreur d'envoi des résultats:",e); }
+    }
+
+    // --- Résumé list builder ---
+    function buildSummaryHTML(items){
+      const g={QCM:[],FILL:[],WR:[],LS:[]};
+      items.forEach(x=>{ const t=String(x.number).split(' ')[0]; if(g[t]) g[t].push(x); });
+      const render=(title,arr)=>!arr.length?'':`
+        <div class="mt-6">
+          <h3 class="text-lg font-bold text-blue-700 mb-2">${title}</h3>
+          <ul class="space-y-2">
+            ${arr.map(x=>`<li class="border rounded-md p-3">
+              <div class="font-semibold">${x.isCorrect?'✅':'❌'} ${x.number}</div>
+              <div class="text-sm text-gray-700 mt-1">${x.fr||''}</div>
+              ${x.ko?`<div class="text-xs text-gray-500 mt-1"><b>Référence:</b> ${x.ko}</div>`:''}
+              ${x.userAnswer?`<div class="text-xs text-gray-500"><b>Votre réponse:</b> ${x.userAnswer}</div>`:''}
+              ${x.selfDictation?`<div class="text-xs text-indigo-600 mt-1"><b>Re-dictée:</b> ${x.selfDictation}</div>`:''}
+            </li>`).join('')}
+          </ul>
+        </div>`;
+      return render('QCM',g.QCM)+render('Complète le mot',g.FILL)+render('Écriture',g.WR)+render('Écoute & Dictée',g.LS);
+    }
+
+    // --- Grading & Results ---
+    function collectAndGradeAnswers(){
+      let score=0,total=0; const out=[];
+
+      // QCM
+      quizData.mcq.forEach((q,i)=>{
+        const id=`mcq-${i}`;
+        const ans=document.querySelector(`input[name="${id}"]:checked`)?.value||'';
+        const ok=ans===q.answer; if(ok)score++; total++;
+        document.getElementById(`${id}-result`).innerHTML= ok?`<p class="text-green-600 font-bold">Correct ! 👍 ${q.explanation}</p>`:`<p class="text-red-600 font-bold">Oups... La bonne réponse était : "${q.answer}"</p><p class="text-gray-600">😅 → ${q.explanation}</p>`;
+        const s=stats[id]||{listens:0,hint1:0,hint2:0};
+        out.push({number:`QCM ${i+1}`,fr:q.question,ko:'',userAnswer:ans,isCorrect:ok,listenCount:s.listens,hint1Count:s.hint1,hint2Count:s.hint2});
+      });
+
+      // Fill-in
+      quizData.fillIn.forEach((q,i)=>{
+        const id=`fill-${i}`; const ans=document.getElementById(`${id}-in`).value.trim();
+        const ok=ans===q.answer; if(ok)score++; total++;
+        document.getElementById(`${id}-result`).innerHTML= ok?`<p class="text-green-600 font-bold">Parfait !</p>`:`<p class="text-red-600 font-bold">Oups, petit couac 😅 → La réponse correcte est : "${q.answer}"</p>`;
+        const koFull=q.sentence.replace('___',q.answer); const s=stats[id]||{listens:0,hint1:0,hint2:0};
+        out.push({number:`FILL ${i+1}`,fr:q.translation,ko:koFull,userAnswer:ans,isCorrect:ok,listenCount:s.listens,hint1Count:s.hint1,hint2Count:s.hint2});
+      });
+
+      // Writing
+      quizData.writing.forEach((q,i)=>{
+        const id=`write-${i}`; const ans=document.getElementById(`${id}-in`).value.trim();
+        const ok=ans.length>0; if(ok)score++; total++;
+        document.getElementById(`${id}-result`).innerHTML=`<p class="text-blue-600">Réponse suggérée : "${q.answer}".</p>`;
+        const s=stats[id]||{listens:0,hint1:0,hint2:0};
+        out.push({number:`WR ${i+1}`,fr:q.situation,ko:q.answer,userAnswer:ans,isCorrect:ok,listenCount:s.listens,hint1Count:s.hint1,hint2Count:s.hint2});
+      });
+
+      // Listening
+      quizData.listening.forEach((q,i)=>{
+        const id=`listen-${i}`;
+        const ans=document.getElementById(`${id}-dictation`).value.trim().replace(/[.?]/g,'');
+        const ok=ans===q.ko.replace(/[.?]/g,''); if(ok)score++; total++;
+        const res=document.getElementById(`${id}-result`);
+        res.innerHTML=(ok?`<p class="text-green-600 font-bold">Dictée parfaite ! 👍</p>`:`<p class="text-red-600 font-bold">Dictée - Oups... 😅 → "${q.ko}"</p>`) + `<p class="text-blue-600 mt-1">Traduction : "${q.fr}"</p>`;
+        const s=stats[id]||{listens:0,hint1:0,hint2:0}; const rec=recordings[id]; const self=document.getElementById(`${id}-selfdict`).value.trim();
+        const item={number:`LS ${i+1}`,fr:q.fr,ko:q.ko,userAnswer:ans,isCorrect:ok,listenCount:s.listens,hint1Count:s.hint1,hint2Count:s.hint2,selfDictation:self};
+        if(rec) item.recording=rec; out.push(item);
+      });
+
+      displayResults(score,total,out);
+    }
+
+    function displayResults(score,total,items){
+      // 단계만 숨기고, 네비게이션 숨기기
+      document.querySelectorAll('.quiz-step').forEach(el=>el.style.display='none');
+      document.getElementById('nav-bar').style.display='none';
+
+      const pct= total? Math.round((score/total)*100):0;
+      let msg, icon;
+      if(pct===100){ msg="Parfait absolu ! 👑🎉 Génie confirmé !"; icon='fa-crown text-yellow-500'; }
+      else if(pct>=80){ msg="Très bien joué ! 👍 Presque un maître !"; icon='fa-thumbs-up text-green-500'; }
+      else if(pct>=60){ msg="Pas mal du tout ! 😎 Encore un petit effort !"; icon='fa-glasses text-blue-500'; }
+      else { msg="Allez, un petit café et on repart ! ☕💪"; icon='fa-coffee text-red-500'; }
+
+      const results=document.getElementById('results-section');
+      results.innerHTML=`
+        <div class="bg-white p-8 rounded-xl shadow-2xl">
+          <div class="text-center">
+            <i class="fas ${icon} text-6xl mb-4"></i>
+            <h2 class="text-3xl font-bold text-blue-800 mb-2">${msg}</h2>
+            <p class="text-4xl font-bold text-gray-800">Votre score : ${score} / ${total} (${pct}%)</p>
+          </div>
+          <div class="mt-8">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Résumé des réponses</h3>
+            <p class="text-sm text-gray-600 mb-4">✅ = correct, ❌ = incorrect — La re-dictée n'est pas notée mais envoyée au professeur avec l'audio.</p>
+            ${buildSummaryHTML(items)}
+          </div>
+          <div class="mt-10 text-center">
+            <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105">
+              <i class="fas fa-redo-alt mr-2"></i> Recommencer
+            </button>
+          </div>
+        </div>`;
+      results.style.display='block';
+      results.scrollIntoView({behavior:'smooth'});
+
+      // 메일 전송 (1회)
+      const endTime=new Date().toISOString();
+      const totalTimeSeconds=Math.max(1,Math.round((new Date(endTime)-new Date(sessionMeta.startTime))/1000));
+      sendResultsToServer({
+        studentName: document.getElementById('studentName').value.trim() || 'Élève',
+        startTime: sessionMeta.startTime,
+        endTime,
+        totalTimeSeconds,
+        questions: items
+      });
+    }
+  </script>
+</body>
+</html>

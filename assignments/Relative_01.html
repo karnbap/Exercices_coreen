@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice Coréen : Structure de Phrase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        body {
+            font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .royal-blue { background-color: #0033a0; }
+        .gold-text { color: #ffbf00; }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary { background-color: #0033a0; border: 2px solid #002269; }
+        .btn-primary:hover { background-color: #002269; }
+        .btn-secondary { background-color: #6c757d; border: 2px solid #5a6268; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-gold { background-color: #ffbf00; color: #0033a0; border: 2px solid #e6ac00; }
+        .btn-gold:hover { background-color: #e6ac00; }
+        .btn-green { background-color: #16a34a; border: 2px solid #15803d; }
+        .btn-green:hover { background-color: #15803d; }
+        input[type="text"] {
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus { outline: none; border-color: #0033a0; }
+        .correct { border-color: #22c55e !important; background-color: #f0fff4; }
+        .incorrect { border-color: #ef4444 !important; background-color: #fff1f2; }
+        #result-message {
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .vocab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8 p-6 royal-blue rounded-xl shadow-lg">
+            <h1 class="text-3xl md:text-4xl font-bold gold-text">Exercice de Coréen 🇰🇷</h1>
+            <p class="text-white mt-2">Décomposer les phrases</p>
+        </header>
+
+        <div class="card p-6 mb-8">
+            <label for="student-name" class="block text-lg font-bold text-gray-700 mb-2">Entrez votre nom :</label>
+            <input type="text" id="student-name" placeholder="Ex: Cédric" class="text-lg">
+        </div>
+
+        <!-- Explication + Exemple -->
+        <div class="card p-6 mb-12 bg-blue-50 border border-blue-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Comment ça marche ?</h2>
+            <p class="text-gray-700 mb-6">Une phrase complexe est souvent composée de <strong>deux parties</strong> : une <strong>partie principale</strong> (l'idée de base) et une <strong>partie qui décrit</strong> un nom. Votre mission est de les retrouver !</p>
+            
+            <h3 class="text-xl font-bold text-blue-800 mb-4">⭐ Exemple</h3>
+            <p class="text-lg mb-2">Le livre que j’ai acheté est intéressant. / <span class="font-bold text-blue-700">내가 산 책은 재미있어요.</span></p>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="font-semibold">1️⃣ Partie principale :</label>
+                    <p class="p-2 bg-gray-100 rounded-md mt-1">Le livre est intéressant. / 책은 재미있어요.</p>
+                </div>
+                <div>
+                    <label class="font-semibold">2️⃣ Partie qui décrit :</label>
+                    <p class="p-2 bg-gray-100 rounded-md mt-1">que j’ai acheté / 내가 산</p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- PARTIE 1 -->
+        <div id="part1-container" class="mb-12">
+            <div class="card p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Partie 1 : Analyse en français</h2>
+                <p class="text-gray-600">Lisez la phrase en français et séparez-la en deux parties. Écrivez vos réponses en <strong>français</strong>.</p>
+            </div>
+            <div id="questions-part1" class="space-y-6">
+                <!-- Questions de la partie 1 insérées ici -->
+            </div>
+        </div>
+
+        <!-- PARTIE 2 -->
+        <div id="part2-container">
+            <div class="card p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Partie 2 : Analyse en coréen</h2>
+                <p class="text-gray-600">Lisez la phrase en coréen, aidez-vous de la traduction et du vocabulaire. Séparez la phrase en deux parties et écrivez vos réponses en <strong>coréen</strong>.</p>
+            </div>
+            <div id="questions-part2" class="space-y-6">
+                <!-- Questions de la partie 2 insérées ici -->
+            </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-4 mt-8">
+            <button id="retry-button" class="btn btn-green"><i class="fas fa-redo mr-2"></i>Recommencer</button>
+            <button id="finish-button" class="btn btn-gold"><i class="fas fa-paper-plane mr-2"></i>Terminer & Envoyer</button>
+        </div>
+
+        <div id="result-container" class="mt-8"></div>
+        
+        <div class="flex justify-between items-center mt-8 border-t pt-6">
+            <button onclick="window.history.back();" class="btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i>Précédent</button>
+            <button onclick="window.print();" class="btn btn-secondary"><i class="fas fa-print mr-2"></i>Imprimer</button>
+        </div>
+    </div>
+
+    <script>
+        const allQuestions = [
+            // Part 1 Questions (type: 'fr') - 10 questions
+            { type: 'fr', id: 'fr1', sentence: "Le livre que j’ai acheté est intéressant.", part1: "Le livre est intéressant.", part2: "que j’ai acheté" },
+            { type: 'fr', id: 'fr2', sentence: "J’ai rencontré une femme qui parle français.", part1: "J’ai rencontré une femme.", part2: "qui parle français" },
+            { type: 'fr', id: 'fr3', sentence: "C’est la ville où je suis né.", part1: "C’est la ville.", part2: "où je suis né" },
+            { type: 'fr', id: 'fr4', sentence: "Le film que tu as conseillé était super.", part1: "Le film était super.", part2: "que tu as conseillé" },
+            { type: 'fr', id: 'fr5', sentence: "La personne dont je t’ai parlé est mon professeur.", part1: "La personne est mon professeur.", part2: "dont je t’ai parlé" },
+            { type: 'fr', id: 'fr6', sentence: "Voici le parc où nous jouons.", part1: "Voici le parc.", part2: "où nous jouons" },
+            { type: 'fr', id: 'fr7', sentence: "J'aime la chanson que tu chantes.", part1: "J'aime la chanson.", part2: "que tu chantes" },
+            { type: 'fr', id: 'fr8', sentence: "Le chat qui dort sur le canapé est gris.", part1: "Le chat est gris.", part2: "qui dort sur le canapé" },
+            { type: 'fr', id: 'fr9', sentence: "C'est un ami dont je suis très fier.", part1: "C'est un ami.", part2: "dont je suis très fier" },
+            { type: 'fr', id: 'fr10', sentence: "Montre-moi la photo que tu as prise.", part1: "Montre-moi la photo.", part2: "que tu as prise" },
+
+            // Part 2 Questions (type: 'ko') - 20 questions
+            { type: 'ko', id: 'ko1', ko: "어제 먹은 음식은 맛있었어요.", fr: "La nourriture que j'ai mangée hier était délicieuse.", vocab: [{ko:"어제",fr:"hier"},{ko:"먹은",fr:"que j'ai mangé"},{ko:"음식",fr:"nourriture"},{ko:"맛있었어요",fr:"était délicieux"}], part1: "음식은 맛있었어요.", part2: "어제 먹은" },
+            { type: 'ko', id: 'ko2', ko: "친구가 준 선물은 예뻐요.", fr: "Le cadeau que mon ami m'a donné est joli.", vocab: [{ko:"친구",fr:"ami"},{ko:"준",fr:"que...a donné"},{ko:"선물",fr:"cadeau"},{ko:"예뻐요",fr:"est joli"}], part1: "선물은 예뻐요.", part2: "친구가 준" },
+            { type: 'ko', id: 'ko3', ko: "우리가 갈 곳은 서울이에요.", fr: "L'endroit où nous irons est Séoul.", vocab: [{ko:"우리",fr:"nous"},{ko:"갈",fr:"où...irons"},{ko:"곳",fr:"endroit"},{ko:"서울",fr:"Séoul"}], part1: "곳은 서울이에요.", part2: "우리가 갈" },
+            { type: 'ko', id: 'ko4', ko: "지금 읽는 책은 어려워요.", fr: "Le livre que je lis maintenant est difficile.", vocab: [{ko:"지금",fr:"maintenant"},{ko:"읽는",fr:"que...lis"},{ko:"책",fr:"livre"},{ko:"어려워요",fr:"est difficile"}], part1: "책은 어려워요.", part2: "지금 읽는" },
+            { type: 'ko', id: 'ko5', ko: "저기 오는 사람이 제 동생이에요.", fr: "La personne qui vient là-bas est mon petit frère.", vocab: [{ko:"저기",fr:"là-bas"},{ko:"오는",fr:"qui vient"},{ko:"사람",fr:"personne"},{ko:"동생",fr:"petit frère/sœur"}], part1: "저 사람은 제 동생이에요.", part2: "저기 오는" },
+            { type: 'ko', id: 'ko6', ko: "제가 좋아하는 가수는 BTS예요.", fr: "Le chanteur que j'aime est BTS.", vocab: [{ko:"제가",fr:"je"},{ko:"좋아하는",fr:"que j'aime"},{ko:"가수",fr:"chanteur"},{ko:"-는",fr:"particule sujet"}], part1: "가수는 BTS예요.", part2: "제가 좋아하는" },
+            { type: 'ko', id: 'ko7', ko: "학생들이 공부하는 교실은 조용해요.", fr: "La salle de classe où les étudiants étudient est calme.", vocab: [{ko:"학생들",fr:"étudiants"},{ko:"공부하는",fr:"où...étudient"},{ko:"교실",fr:"salle de classe"},{ko:"조용해요",fr:"est calme"}], part1: "교실은 조용해요.", part2: "학생들이 공부하는" },
+            { type: 'ko', id: 'ko8', ko: "고양이가 자는 소파는 편안해요.", fr: "Le canapé sur lequel le chat dort est confortable.", vocab: [{ko:"고양이",fr:"chat"},{ko:"자는",fr:"sur lequel...dort"},{ko:"소파",fr:"canapé"},{ko:"편안해요",fr:"est confortable"}], part1: "소파는 편안해요.", part2: "고양이가 자는" },
+            { type: 'ko', id: 'ko9', ko: "우리가 어제 본 영화는 슬펐어요.", fr: "Le film que nous avons vu hier était triste.", vocab: [{ko:"우리",fr:"nous"},{ko:"어제",fr:"hier"},{ko:"본",fr:"que...avons vu"},{ko:"영화",fr:"film"}], part1: "영화는 슬펐어요.", part2: "우리가 어제 본" },
+            { type: 'ko', id: 'ko10', ko: "엄마가 만든 케이크는 달콤해요.", fr: "Le gâteau que maman a fait est sucré.", vocab: [{ko:"엄마",fr:"maman"},{ko:"만든",fr:"que...a fait"},{ko:"케이크",fr:"gâteau"},{ko:"달콤해요",fr:"est sucré"}], part1: "케이크는 달콤해요.", part2: "엄마가 만든" },
+            { type: 'ko', id: 'ko11', ko: "아빠가 사주신 자전거는 빨라요.", fr: "Le vélo que papa m'a acheté est rapide.", vocab: [{ko:"아빠",fr:"papa"},{ko:"사주신",fr:"que...a acheté"},{ko:"자전거",fr:"vélo"},{ko:"빨라요",fr:"est rapide"}], part1: "자전거는 빨라요.", part2: "아빠가 사주신" },
+            { type: 'ko', id: 'ko12', ko: "제가 매일 듣는 노래가 있어요.", fr: "Il y a une chanson que j'écoute tous les jours.", vocab: [{ko:"매일",fr:"tous les jours"},{ko:"듣는",fr:"que...écoute"},{ko:"노래",fr:"chanson"},{ko:"있어요",fr:"il y a"}], part1: "노래가 있어요.", part2: "제가 매일 듣는" },
+            { type: 'ko', id: 'ko13', ko: "우리가 살 집은 커요.", fr: "La maison dans laquelle nous vivrons est grande.", vocab: [{ko:"우리",fr:"nous"},{ko:"살",fr:"dans laquelle...vivrons"},{ko:"집",fr:"maison"},{ko:"커요",fr:"est grande"}], part1: "집은 커요.", part2: "우리가 살" },
+            { type: 'ko', id: 'ko14', ko: "제가 입을 옷은 파란색이에요.", fr: "Les vêtements que je vais porter sont bleus.", vocab: [{ko:"제가",fr:"je"},{ko:"입을",fr:"que...vais porter"},{ko:"옷",fr:"vêtements"},{ko:"파란색",fr:"couleur bleue"}], part1: "옷은 파란색이에요.", part2: "제가 입을" },
+            { type: 'ko', id: 'ko15', ko: "형이 그린 그림은 멋있어요.", fr: "Le dessin que mon grand frère a fait est cool.", vocab: [{ko:"형",fr:"grand frère"},{ko:"그린",fr:"que...a fait"},{ko:"그림",fr:"dessin"},{ko:"멋있어요",fr:"est cool"}], part1: "그림은 멋있어요.", part2: "형이 그린" },
+            { type: 'ko', id: 'ko16', ko: "동생이 보는 만화는 재미있어요.", fr: "Le dessin animé que mon petit frère regarde est amusant.", vocab: [{ko:"동생",fr:"petit frère/sœur"},{ko:"보는",fr:"que...regarde"},{ko:"만화",fr:"dessin animé"},{ko:"재미있어요",fr:"est amusant"}], part1: "만화는 재미있어요.", part2: "동생이 보는" },
+            { type: 'ko', id: 'ko17', ko: "우리가 만날 시간은 3시예요.", fr: "L'heure à laquelle nous nous rencontrerons est 3 heures.", vocab: [{ko:"만날",fr:"à laquelle...rencontrerons"},{ko:"시간",fr:"heure"},{ko:"3시",fr:"3 heures"}], part1: "시간은 3시예요.", part2: "우리가 만날" },
+            { type: 'ko', id: 'ko18', ko: "제가 자주 가는 카페가 있어요.", fr: "Il y a un café où je vais souvent.", vocab: [{ko:"자주",fr:"souvent"},{ko:"가는",fr:"où...vais"},{ko:"카페",fr:"café"},{ko:"있어요",fr:"il y a"}], part1: "카페가 있어요.", part2: "제가 자주 가는" },
+            { type: 'ko', id: 'ko19', ko: "제가 잃어버린 열쇠를 찾았어요.", fr: "J'ai trouvé la clé que j'avais perdue.", vocab: [{ko:"잃어버린",fr:"que j'avais perdue"},{ko:"열쇠",fr:"clé"},{ko:"찾았어요",fr:"j'ai trouvé"}], part1: "열쇠를 찾았어요.", part2: "제가 잃어버린" },
+            { type: 'ko', id: 'ko20', ko: "친구가 빌려준 책을 다 읽었어요.", fr: "J'ai fini de lire le livre que mon ami m'a prêté.", vocab: [{ko:"빌려준",fr:"que...a prêté"},{ko:"책",fr:"livre"},{ko:"다 읽었어요",fr:"j'ai fini de lire"}], part1: "책을 다 읽었어요.", part2: "친구가 빌려준" }
+        ];
+
+        let currentQuestions = [];
+        const studentData = { name: '', startTime: null, endTime: null, score: 0, total: 30, incorrectAnswers: [], actions: [] };
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function generateQuestions() {
+            studentData.startTime = new Date();
+            studentData.actions = [{ time: new Date(), action: 'start_exercise' }];
+            
+            let frQuestions = allQuestions.filter(q => q.type === 'fr');
+            let koQuestions = allQuestions.filter(q => q.type === 'ko');
+            shuffleArray(frQuestions);
+            shuffleArray(koQuestions);
+            
+            currentQuestions = [...frQuestions, ...koQuestions];
+
+            const container1 = document.getElementById('questions-part1');
+            const container2 = document.getElementById('questions-part2');
+            let html1 = '';
+            let html2 = '';
+            let questionCounter = 0;
+
+            currentQuestions.forEach((q) => {
+                questionCounter++;
+                if (q.type === 'fr') {
+                    html1 += `
+                    <div class="card p-6" id="${q.id}">
+                        <p class="text-lg mb-4"><b>Question ${questionCounter}:</b> ${q.sentence}</p>
+                        <div class="space-y-3">
+                            <div><label class="font-semibold">1️⃣ Première partie :</label><input type="text" data-part="1" class="mt-1"></div>
+                            <div><label class="font-semibold">2️⃣ Deuxième partie :</label><input type="text" data-part="2" class="mt-1"></div>
+                        </div>
+                    </div>`;
+                } else {
+                    const vocabHtml = q.vocab.map(v => `<div class="p-2 bg-gray-100 rounded-md text-center"><span class="font-bold">${v.ko}</span><br><span class="text-sm text-gray-600">${v.fr}</span></div>`).join('');
+                    html2 += `
+                    <div class="card p-6" id="${q.id}">
+                        <p class="text-lg mb-4"><b>Question ${questionCounter}:</b> <span class="font-bold text-blue-700">${q.ko}</span></p>
+                        <p class="text-sm text-gray-500 italic mb-4">${q.fr}</p>
+                        <div class="mb-4">
+                            <h4 class="font-semibold mb-2">Vocabulaire :</h4>
+                            <div class="vocab-grid">${vocabHtml}</div>
+                        </div>
+                        <div class="space-y-3">
+                            <div><label class="font-semibold">1️⃣ Première partie (en coréen) :</label><input type="text" data-part="1" class="mt-1"></div>
+                            <div><label class="font-semibold">2️⃣ Deuxième partie (en coréen) :</label><input type="text" data-part="2" class="mt-1"></div>
+                        </div>
+                    </div>`;
+                }
+            });
+            container1.innerHTML = html1;
+            container2.innerHTML = html2;
+            document.getElementById('result-container').innerHTML = '';
+        }
+
+        function normalizeAnswer(str) {
+            return str.replace(/\s+/g, '').replace(/[.?!~,]/g, '').toLowerCase();
+        }
+        
+        function normalizeKoreanAnswer(str) {
+             return str.replace(/\s+/g, '').replace(/[.?!~,]/g, '').replace(/그사람/g, '사람').replace(/저사람/g, '사람');
+        }
+
+        function checkAnswers() {
+            let correctCount = 0;
+            studentData.incorrectAnswers = [];
+            
+            currentQuestions.forEach(q => {
+                const questionDiv = document.getElementById(q.id);
+                if (!questionDiv) return;
+
+                const userPart1Input = questionDiv.querySelector('input[data-part="1"]');
+                const userPart2Input = questionDiv.querySelector('input[data-part="2"]');
+                const userPart1 = userPart1Input.value.trim();
+                const userPart2 = userPart2Input.value.trim();
+
+                let isPart1Correct, isPart2Correct;
+                
+                if (q.type === 'fr') {
+                    isPart1Correct = normalizeAnswer(userPart1) === normalizeAnswer(q.part1);
+                    isPart2Correct = normalizeAnswer(userPart2) === normalizeAnswer(q.part2);
+                } else { // type 'ko'
+                    isPart1Correct = normalizeKoreanAnswer(userPart1) === normalizeKoreanAnswer(q.part1);
+                    isPart2Correct = normalizeKoreanAnswer(userPart2) === normalizeKoreanAnswer(q.part2);
+                }
+
+                userPart1Input.classList.remove('correct', 'incorrect');
+                userPart2Input.classList.remove('correct', 'incorrect');
+                userPart1Input.classList.add(isPart1Correct ? 'correct' : 'incorrect');
+                userPart2Input.classList.add(isPart2Correct ? 'correct' : 'incorrect');
+
+                if (isPart1Correct && isPart2Correct) {
+                    correctCount++;
+                }
+            });
+
+            studentData.score = correctCount;
+            displayResult(correctCount, currentQuestions.length);
+        }
+
+        function displayResult(score, total) {
+            const resultContainer = document.getElementById('result-container');
+            const percentage = total > 0 ? (score / total) * 100 : 0;
+            let message = '', bgColor = '', textColor = '', resultHTML = '';
+
+            if (percentage === 100) { message = "완벽해요!! 🎉👑👍 (Parfait !!)"; bgColor = 'bg-green-100'; textColor = 'text-green-800'; }
+            else if (percentage >= 80) { message = "잘했어요!! 🎉👍 (Bien joué !!)"; bgColor = 'bg-blue-100'; textColor = 'text-blue-800'; }
+            else if (percentage >= 60) { message = "꽤 잘했어요. 👍 (Assez bien.)"; bgColor = 'bg-yellow-100'; textColor = 'text-yellow-800'; }
+            else { message = "땡!! 틀렸어요!! 😭 (Incorrect !!)"; bgColor = 'bg-red-100'; textColor = 'text-red-800'; }
+
+            resultHTML = `<div id="result-message" class="${bgColor} ${textColor}">${message}</div>`;
+            
+            const incorrectInputs = document.querySelectorAll('input.incorrect');
+            if (incorrectInputs.length > 0) {
+                resultHTML += `<div class="mt-4 p-4 card"><h3 class="font-bold text-lg mb-2">Corrections :</h3><ul class="list-disc list-inside space-y-2">`;
+                
+                currentQuestions.forEach(q => {
+                    const questionDiv = document.getElementById(q.id);
+                    const userPart1Input = questionDiv.querySelector('input[data-part="1"]');
+                    if (userPart1Input.classList.contains('incorrect')) {
+                        const userPart1 = userPart1Input.value.trim();
+                        const userPart2 = questionDiv.querySelector('input[data-part="2"]').value.trim();
+                        const correctAnswer = `1: ${q.part1}, 2: ${q.part2}`;
+                        const questionText = q.type === 'fr' ? q.sentence : q.ko;
+                        
+                        resultHTML += `<li>
+                            <strong class="text-gray-700">${questionText}</strong><br>
+                            <span class="text-red-600">Votre réponse : 1: ${userPart1}, 2: ${userPart2}</span><br>
+                            <span class="text-green-600">Réponse correcte : ${correctAnswer}</span>
+                        </li>`;
+                    }
+                });
+
+                resultHTML += `</ul></div>`;
+            }
+
+            resultContainer.innerHTML = resultHTML;
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        document.addEventListener('DOMContentLoaded', generateQuestions);
+
+        document.getElementById('student-name').addEventListener('change', (e) => {
+            studentData.name = e.target.value;
+        });
+
+        document.getElementById('retry-button').addEventListener('click', () => {
+            generateQuestions();
+            document.body.scrollTop = 0; // For Safari
+            document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+        });
+
+        document.getElementById('finish-button').addEventListener('click', () => {
+            if (!studentData.name) {
+                alert("Veuillez entrer votre nom avant de terminer.");
+                return;
+            }
+            checkAnswers(); 
+            studentData.endTime = new Date();
+            sendResults();
+        });
+
+        async function sendResults() {
+            const timeTaken = studentData.endTime && studentData.startTime ? (studentData.endTime - studentData.startTime) / 1000 : 0;
+            
+            const questionsDetail = currentQuestions.map((q, index) => {
+                const questionDiv = document.getElementById(q.id);
+                const userPart1 = questionDiv.querySelector('input[data-part="1"]').value.trim();
+                const userPart2 = questionDiv.querySelector('input[data-part="2"]').value.trim();
+                const userAnswer = `1: ${userPart1}, 2: ${userPart2}`;
+
+                let isCorrect;
+                if (q.type === 'fr') {
+                    const isPart1Correct = normalizeAnswer(userPart1) === normalizeAnswer(q.part1);
+                    const isPart2Correct = normalizeAnswer(userPart2) === normalizeAnswer(q.part2);
+                    isCorrect = isPart1Correct && isPart2Correct;
+                } else {
+                    const isPart1Correct = normalizeKoreanAnswer(userPart1) === normalizeKoreanAnswer(q.part1);
+                    const isPart2Correct = normalizeKoreanAnswer(userPart2) === normalizeKoreanAnswer(q.part2);
+                    isCorrect = isPart1Correct && isPart2Correct;
+                }
+
+                return {
+                    number: index + 1,
+                    fr: q.type === 'fr' ? q.sentence : q.fr,
+                    ko: q.type === 'ko' ? q.ko : '',
+                    userAnswer: userAnswer,
+                    isCorrect: isCorrect,
+                    listenCount: 0,
+                    hint1Count: 0,
+                    hint2Count: 0,
+                    recording: null
+                };
+            });
+
+            const payload = {
+                studentName: studentData.name,
+                startTime: studentData.startTime.toISOString(),
+                endTime: studentData.endTime.toISOString(),
+                totalTimeSeconds: Math.round(timeTaken),
+                questions: questionsDetail,
+            };
+            
+            console.log("Sending results:", JSON.stringify(payload, null, 2));
+
+            try {
+                const response = await fetch('/.netlify/functions/send-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    alert("Résultats envoyés avec succès ! Merci !");
+                    document.getElementById('finish-button').disabled = true;
+                    document.getElementById('finish-button').innerText = "Envoyé !";
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Erreur du serveur: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Failed to send results:', error);
+                alert("Une erreur est survenue lors de l'envoi des résultats. Les détails de l'erreur ont été enregistrés dans la console.");
+            }
+        }
+    </script>
+</body>
+</html>

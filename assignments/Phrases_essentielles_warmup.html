@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>준비 운동 (Échauffement) - 08/08/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .quiz-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn { transition: all 0.2s ease; }
+        .btn:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .word-box {
+            cursor: pointer;
+            border: 2px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 8px;
+            user-select: none;
+        }
+        .word-box.selected { border-color: #3b82f6; background-color: #dbeafe; font-weight: bold; }
+        .word-box.correct { border-color: #22c55e; background-color: #dcfce7; }
+        .word-box.incorrect { border-color: #ef4444; background-color: #fee2e2; animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .drop-zone { border: 2px dashed #9ca3af; min-height: 50px; }
+        .draggable { cursor: grab; }
+        .feedback { font-size: 1.5rem; font-weight: bold; }
+        .feedback.correct { color: #22c55e; }
+        .feedback.incorrect { color: #ef4444; }
+
+        /* 인쇄용 스타일 */
+        @media print {
+            body { background-color: white; }
+            #student-gate, .btn, #action-buttons, .feedback, #matching-feedback, #final-message, footer { display: none !important; }
+            .quiz-card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+            header h1 { font-size: 18pt; }
+            header p, h2, p { font-size: 14pt; }
+            input[type="text"] { border-bottom: 1px solid #000 !important; border-top: none; border-left: none; border-right: none; }
+            .drop-zone { border: 1px solid #000; }
+            .word-bank { display: block; }
+            .word-bank .word-box { display: inline-block; margin: 5px; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- 학생 정보 입력 섹션 -->
+        <div id="student-gate" class="bg-white p-8 rounded-xl shadow-lg text-center">
+            <h1 class="text-2xl font-bold text-indigo-600 mb-4">준비 운동에 오신 것을 환영합니다! / Bienvenue à l'échauffement !</h1>
+            <p class="text-slate-600 mb-6">시작하기 전에 이름이나 학번을 입력해주세요. / Veuillez entrer votre nom ou votre numéro d'étudiant.</p>
+            <input type="text" id="student-id-input" class="w-full max-w-sm mx-auto p-3 border-2 border-slate-300 rounded-lg text-center" placeholder="예: Cédou">
+            <button onclick="startTest()" class="mt-6 w-full max-w-sm mx-auto btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-lg">
+                시작! / Commencer !
+            </button>
+        </div>
+
+        <!-- 테스트 콘텐츠 (초기에는 숨김) -->
+        <div id="test-content" class="hidden">
+            <header class="text-center mb-10">
+                <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600">준비 운동: 단어와 문장 튼튼하게 다지기 💪</h1>
+                <p class="text-slate-500 mt-2">Échauffement : Maîtriser les mots et les phrases (08/08/2025)</p>
+            </header>
+
+            <div id="action-buttons" class="flex justify-center gap-4 mb-8">
+                <button onclick="window.print()" class="btn bg-purple-500 text-white flex items-center gap-2 py-2 px-4 rounded-lg">
+                   <i class="fas fa-print"></i> 인쇄하기 / Imprimer
+               </button>
+               <button onclick="finishTest()" class="btn bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 py-2 px-4 rounded-lg">
+                   <i class="fas fa-paper-plane"></i> 끝내고 결과 보내기 / Terminer et envoyer
+               </button>
+           </div>
+
+            <main class="space-y-12">
+                <!-- Quiz 1: 단어 짝 맞추기 -->
+                <section class="quiz-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700">Quiz 1: 단어 짝 맞추기 (Associer les mots)</h2>
+                    <p class="text-slate-500 mb-6">프랑스어 단어와 뜻이 맞는 한국어 단어를 클릭해서 연결해 보세요! / Cliquez pour associer les mots français et coréens !</p>
+                    <div id="matching-quiz" class="grid grid-cols-2 gap-4">
+                        <div id="french-words" class="space-y-3"></div>
+                        <div id="korean-words" class="space-y-3"></div>
+                    </div>
+                    <div id="matching-feedback" class="mt-4 text-center font-bold"></div>
+                    <button onclick="checkMatchingQuiz()" class="btn w-full mt-4 bg-indigo-500 text-white font-bold py-3 rounded-lg hover:bg-indigo-600">정답 확인 / Vérifier</button>
+                </section>
+
+                <!-- Quiz 2: 빈칸 채우기 -->
+                <section class="quiz-card p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700">Quiz 2: 빈칸 채우기 (Remplir les blancs)</h2>
+                    <p class="text-slate-500 mb-6">프랑스어 문장을 보고, 한국어 문장의 빈칸에 알맞은 단어를 써보세요. / Regardez la phrase française et remplissez le blanc en coréen.</p>
+                    <div id="fill-in-quiz" class="space-y-6"></div>
+                </section>
+                
+                <!-- Quiz 3: 문장 배열하기 -->
+                <section class="quiz-card p-6">
+                     <h2 class="text-2xl font-bold mb-4 text-slate-700">Quiz 3: 문장 배열하기 (Mettre en ordre)</h2>
+                    <p class="text-slate-500 mb-6">프랑스어 문장을 보고, 흩어져 있는 한국어 단어들을 올바른 순서로 배열해 보세요. / Mettez les mots coréens dans le bon ordre.</p>
+                    <div id="unscramble-quiz" class="space-y-8"></div>
+                </section>
+            </main>
+
+            <div id="final-message" class="hidden mt-8 bg-green-100 border-l-4 border-green-500 text-green-700 p-6 rounded-lg text-center">
+                <h2 class="font-bold text-2xl">수고하셨습니다! / Excellent travail ! 🥳</h2>
+                <p class="mt-2">결과가 선생님께 발송되도록 이메일 앱이 열릴 거예요. '보내기'를 눌러주세요! / Votre application de messagerie va s'ouvrir. Veuillez cliquer sur 'Envoyer' !</p>
+            </div>
+            
+            <footer class="text-center mt-12">
+                <p class="text-slate-600 font-semibold">준비 운동 끝! 이제 듣기 연습으로 넘어가 볼까요? / Échauffement terminé ! Prêt pour l'écoute ?</p>
+                 <a href="dictation_practice_080825.html" class="inline-block mt-4 btn bg-green-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-600">
+                    듣기 연습하러 가기 / Aller à l'exercice d'écoute <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // --- 학생 데이터 추적 ---
+        let studentData = {
+            studentId: null,
+            startTime: null,
+            endTime: null,
+            quiz1_matching: { wrongAttempts: 0, correct: 0, total: 0 },
+            quiz2_fillIn: [],
+            quiz3_unscramble: []
+        };
+        let testStarted = false;
+        const teacherEmail = "votre.email@professeur.fr"; // 여기에 선생님 이메일 주소를 입력하세요.
+
+        const vocabulary = [
+            { fr: "entendre", ko: "들리다" }, { fr: "voir", ko: "보이다" }, { fr: "oui", ko: "네" },
+            { fr: "non", ko: "아니요" }, { fr: "comprendre", ko: "이해하다" }, { fr: "se souvenir", ko: "기억나다" },
+            { fr: "semaine", ko: "주" }, { fr: "prochaine", ko: "다음" }
+        ];
+        const sentences = [
+            { id: 1, fr: "Tu m’entends bien ?", ko: "잘 들려요?", blank: "들려요" },
+            { id: 2, fr: "Je n'ai pas compris.", ko: "이해 못했어요.", blank: "못했어요" },
+            { id: 3, fr: "On se voit la semaine prochaine !", ko: "다음 주에 봐요.", blank: "다음" },
+            { id: 4, fr: "Comment on dit ça en coréen ?", ko: "한국어로 어떻게 말해요?", blank: "어떻게" }
+        ];
+        const unscrambleSentences = [
+            { id: 1, fr: "Tu me vois bien ?", ko: ["잘", "보여요?"] },
+            { id: 2, fr: "Passez une bonne semaine.", ko: ["좋은", "한", "주", "보내세요."] },
+            { id: 3, fr: "Je ne me souviens pas.", ko: ["기억", "안나요."] }
+        ];
+
+        function startTest() {
+            const studentId = document.getElementById('student-id-input').value;
+            if (!studentId.trim()) {
+                alert("이름이나 학번을 입력해주세요! / Veuillez entrer votre nom !");
+                return;
+            }
+            studentData.studentId = studentId.trim();
+            studentData.quiz1_matching.total = vocabulary.length;
+            sentences.forEach(s => studentData.quiz2_fillIn.push({ id: s.id, wrongAttempts: 0 }));
+            unscrambleSentences.forEach(s => studentData.quiz3_unscramble.push({ id: s.id, wrongAttempts: 0 }));
+            
+            document.getElementById('student-gate').classList.add('hidden');
+            document.getElementById('test-content').classList.remove('hidden');
+        }
+
+        function checkAndStartTimer() {
+            if (studentData.studentId && !testStarted) {
+                studentData.startTime = new Date();
+                testStarted = true;
+            }
+        }
+
+        function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+        // --- Quiz 1: Matching ---
+        const frenchWordsContainer = document.getElementById('french-words');
+        const koreanWordsContainer = document.getElementById('korean-words');
+        let selectedFrench = null, selectedKorean = null;
+
+        function initMatchingQuiz() {
+            shuffle([...vocabulary]).forEach(v => {
+                const div = Object.assign(document.createElement('div'), {
+                    textContent: v.fr, dataset: { word: v.fr }, className: 'word-box text-center',
+                    onclick: () => selectWord(div, 'fr')
+                });
+                frenchWordsContainer.appendChild(div);
+            });
+            shuffle([...vocabulary]).forEach(v => {
+                const div = Object.assign(document.createElement('div'), {
+                    textContent: v.ko, dataset: { word: v.fr }, className: 'word-box text-center',
+                    onclick: () => selectWord(div, 'ko')
+                });
+                koreanWordsContainer.appendChild(div);
+            });
+        }
+
+        function selectWord(element, lang) {
+            checkAndStartTimer();
+            if (lang === 'fr') {
+                if(selectedFrench) selectedFrench.classList.remove('selected');
+                selectedFrench = element;
+                selectedFrench.classList.add('selected');
+            } else {
+                if(selectedKorean) selectedKorean.classList.remove('selected');
+                selectedKorean = element;
+                selectedKorean.classList.add('selected');
+            }
+
+            if (selectedFrench && selectedKorean) {
+                if (selectedFrench.dataset.word === selectedKorean.dataset.word) {
+                    selectedFrench.classList.add('correct');
+                    selectedKorean.classList.add('correct');
+                    selectedFrench.onclick = null;
+                    selectedKorean.onclick = null;
+                } else {
+                    studentData.quiz1_matching.wrongAttempts++;
+                    selectedFrench.classList.add('incorrect');
+                    selectedKorean.classList.add('incorrect');
+                    setTimeout(() => {
+                        selectedFrench.classList.remove('incorrect');
+                        selectedKorean.classList.remove('incorrect');
+                    }, 500);
+                }
+                selectedFrench.classList.remove('selected');
+                selectedKorean.classList.remove('selected');
+                selectedFrench = null;
+                selectedKorean = null;
+            }
+        }
+
+        function checkMatchingQuiz() {
+            checkAndStartTimer();
+            const feedbackEl = document.getElementById('matching-feedback');
+            const correctCount = document.querySelectorAll('#french-words .correct').length;
+            studentData.quiz1_matching.correct = correctCount;
+            const totalCount = vocabulary.length;
+            if (correctCount === totalCount) {
+                feedbackEl.textContent = `🥳 완벽해요! (Parfait!) ${correctCount}/${totalCount}`;
+                feedbackEl.className = 'mt-4 text-center font-bold text-green-500';
+            } else {
+                feedbackEl.textContent = `🤔 ${correctCount}/${totalCount}개 맞았어요. 조금 더 힘내요! (Encore un effort!)`;
+                feedbackEl.className = 'mt-4 text-center font-bold text-amber-500';
+            }
+        }
+
+        // --- Quiz 2: Fill in the blank ---
+        function initFillInQuiz() {
+            sentences.forEach(s => {
+                const div = document.createElement('div');
+                const koreanSentence = s.ko.replace(s.blank, `<input type="text" id="blank-${s.id}" oninput="checkAndStartTimer()" class="inline-block w-24 sm:w-32 p-1 border-b-2 border-slate-400 focus:border-indigo-500 focus:outline-none text-center bg-slate-100 rounded-t-md" placeholder="${s.blank.split('').map(()=>'＿').join('')}">`);
+                div.innerHTML = `<p class="text-slate-600 mb-2">🇫🇷 ${s.fr}</p><div class="flex items-center gap-4"><p class="text-lg">🇰🇷 ${koreanSentence}</p><button onclick="checkFillIn(${s.id}, '${s.blank}')" class="btn bg-indigo-500 text-white px-4 py-1 rounded-md text-sm">확인</button><span id="feedback-fill-${s.id}" class="feedback"></span></div>`;
+                document.getElementById('fill-in-quiz').appendChild(div);
+            });
+        }
+
+        function checkFillIn(id, answer) {
+            checkAndStartTimer();
+            const input = document.getElementById(`blank-${id}`);
+            const feedback = document.getElementById(`feedback-fill-${id}`);
+            if (input.value.trim().replace(/[.?!,]/g, '') === answer.replace(/[.?!,]/g, '')) {
+                feedback.textContent = '👍';
+                feedback.className = 'feedback correct';
+                input.classList.add('border-green-500');
+            } else {
+                feedback.textContent = '👎';
+                feedback.className = 'feedback incorrect';
+                input.classList.add('border-red-500');
+                const stat = studentData.quiz2_fillIn.find(item => item.id === id);
+                if(stat) stat.wrongAttempts++;
+            }
+        }
+        
+        // --- Quiz 3: Unscramble ---
+        function initUnscrambleQuiz() {
+            unscrambleSentences.forEach(s => {
+                const div = document.createElement('div');
+                div.innerHTML = `<p class="text-slate-600 mb-2">🇫🇷 ${s.fr}</p><div id="drop-zone-${s.id}" class="drop-zone p-3 rounded-lg bg-slate-100 flex flex-wrap gap-2"></div><div id="word-bank-${s.id}" class="p-3 flex flex-wrap gap-2 mt-2"></div><div class="text-right mt-2"><button onclick="checkUnscramble(${s.id}, '${s.ko.join(' ')}')" class="btn bg-indigo-500 text-white px-4 py-1 rounded-md text-sm">확인</button><span id="feedback-unscramble-${s.id}" class="feedback ml-2"></span></div>`;
+                document.getElementById('unscramble-quiz').appendChild(div);
+                const wordBank = document.getElementById(`word-bank-${s.id}`);
+                const dropZone = document.getElementById(`drop-zone-${s.id}`);
+                shuffle([...s.ko]).forEach(word => {
+                    const wordEl = document.createElement('span');
+                    wordEl.textContent = word;
+                    wordEl.className = 'word-box draggable bg-white';
+                    wordEl.draggable = true;
+                    wordEl.ondragstart = (e) => { checkAndStartTimer(); e.dataTransfer.setData('text/plain', e.target.textContent); };
+                    wordBank.appendChild(wordEl);
+                });
+                dropZone.ondragover = (e) => e.preventDefault();
+                dropZone.ondrop = (e) => {
+                    e.preventDefault();
+                    const data = e.dataTransfer.getData('text');
+                    const originalEl = Array.from(document.querySelectorAll(`#word-bank-${s.id} .word-box, #drop-zone-${s.id} .word-box`)).find(child => child.textContent === data);
+                    if (originalEl) dropZone.appendChild(originalEl);
+                };
+            });
+        }
+
+        function checkUnscramble(id, correctAnswer) {
+            checkAndStartTimer();
+            const userAnswer = Array.from(document.getElementById(`drop-zone-${id}`).children).map(child => child.textContent).join(' ');
+            const feedback = document.getElementById(`feedback-unscramble-${id}`);
+            if (userAnswer === correctAnswer) {
+                feedback.textContent = '👍';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = '👎';
+                feedback.className = 'feedback incorrect';
+                const stat = studentData.quiz3_unscramble.find(item => item.id === id);
+                if(stat) stat.wrongAttempts++;
+            }
+        }
+
+        // --- 테스트 종료 및 결과 전송 ---
+        function finishTest() {
+            if (!testStarted) {
+                alert("테스트를 시작한 후에 결과를 보낼 수 있습니다. / Vous ne pouvez envoyer qu'après avoir commencé.");
+                return;
+            }
+            studentData.endTime = new Date();
+            const duration = Math.round((studentData.endTime - studentData.startTime) / 60000);
+            checkMatchingQuiz(); // Final check for matching quiz score
+
+            const subject = `Résultats de l'échauffement pour ${studentData.studentId}`;
+            let body = `<h1>준비 운동 결과 / Résultats de l'échauffement</h1>
+                <p><strong>학생 / Étudiant(e):</strong> ${studentData.studentId}</p>
+                <p><strong>날짜 / Date:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+                <p><strong>총 소요 시간 / Temps total:</strong> ${duration} minute(s)</p>
+                <hr>
+                <h2>Quiz 1: 단어 짝 맞추기 / Associer les mots</h2>
+                <p>점수 (Score): ${studentData.quiz1_matching.correct} / ${studentData.quiz1_matching.total}</p>
+                <p>틀린 횟수 (Erreurs): ${studentData.quiz1_matching.wrongAttempts}</p>
+                <hr>
+                <h2>Quiz 2 & 3: 오답 횟수 / Nb. d'erreurs</h2>
+                <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+                    <thead><tr style="background-color: #f2f2f2;"><th>문제 / Question</th><th>오답 횟수 / Erreurs</th></tr></thead>
+                    <tbody>`;
+            
+            studentData.quiz2_fillIn.forEach(stat => {
+                if (stat.wrongAttempts > 0) {
+                    const qText = sentences.find(q => q.id === stat.id).fr;
+                    body += `<tr><td>(빈칸) ${qText}</td><td style="text-align: center;">${stat.wrongAttempts}</td></tr>`;
+                }
+            });
+            studentData.quiz3_unscramble.forEach(stat => {
+                if (stat.wrongAttempts > 0) {
+                    const qText = unscrambleSentences.find(q => q.id === stat.id).fr;
+                    body += `<tr><td>(배열) ${qText}</td><td style="text-align: center;">${stat.wrongAttempts}</td></tr>`;
+                }
+            });
+            if (studentData.quiz2_fillIn.every(s => s.wrongAttempts === 0) && studentData.quiz3_unscramble.every(s => s.wrongAttempts === 0)) {
+                body += `<tr><td colspan="2" style="text-align: center;">Quiz 2와 3에서 틀린 문제가 없습니다! (Aucune erreur aux quiz 2 & 3 !)</td></tr>`;
+            }
+
+            body += `</tbody></table>`;
+            const mailtoLink = `mailto:${teacherEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            document.getElementById('final-message').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.add('hidden');
+            window.location.href = mailtoLink;
+        }
+
+        window.onload = () => {
+            initMatchingQuiz();
+            initFillInQuiz();
+            initUnscrambleQuiz();
+        };
+    </script>
+</body>
+</html>
