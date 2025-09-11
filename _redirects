@@ -1,1 +1,3 @@
+
 /assets/* https://cdn.jsdelivr.net/gh/karnbap/pongdang-assets@main/assets/:splat 200
+/assignments/* https://cdn.jsdelivr.net/gh/karnbap/pongdang-assets@main/assignments/:splat 200
