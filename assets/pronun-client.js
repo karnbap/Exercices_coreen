@@ -267,6 +267,8 @@
       ui.out.textContent = '';
       let transcript = '', accuracy = null, needsRetry = false;
 
+     // ... 생략 (앞부분 동일)
+
       try {
         const res = await postJSON(CFG.endpoint, {
           referenceText: refOrig,
@@ -282,16 +284,17 @@
         return;
       }
 
-      // 숫자→한글 강제: 전역 유틸 있으면 우선, 없으면 로컬 폴백
+      // 숫자→한글 강제
       if (global.NumHangul?.forceHangulNumbers) {
         transcript = global.NumHangul.forceHangulNumbers(transcript);
       } else {
         transcript = localForceHangulNumbers(transcript);
       }
 
-      // ★ 도메인 보정: 참조 기준으로 흔한 오인식을 교정(일/이 스냅 포함)
-      const origTranscript = transcript;
+      // 참조도 숫자→한글
       const refForCoerce = (global.NumHangul?.forceHangulNumbers ? global.NumHangul.forceHangulNumbers(refOrig) : localForceHangulNumbers(refOrig));
+
+      // 도메인 보정(일/이 스냅 등)
       transcript = coerceTowardsRef(refForCoerce, transcript);
 
       // 정규화 + 가비지 검사
@@ -299,7 +302,12 @@
       const hypN = normalizeKo(transcript);
       if (!needsRetry) needsRetry = looksGarbage(refN, hypN);
 
-      // 정확도(서버 미제공 시 로컬 유사도)
+      // ★ 정확도 단위 통일: 0~1 → 0~100
+      if (accuracy !== null && accuracy !== undefined) {
+        const a = Number(accuracy);
+        accuracy = isFinite(a) ? (a <= 1 ? Math.round(a * 100) : Math.round(a)) : null;
+      }
+      // 서버가 정확도 안 주면 로컬 유사도(%)로 계산
       if (accuracy === null || accuracy === undefined) {
         const sim = similarity(refN.ko, hypN.ko);
         accuracy = Math.round(sim * 100);
@@ -308,14 +316,10 @@
       // 최종 판정
       const isShortRef = (refN.ko.length || refN.raw.length) <= CFG.shortRefLen;
       const passCut = Math.round((isShortRef ? CFG.passShortRef : CFG.passBase) * 100);
-      let finalStatus = (!needsRetry && accuracy >= passCut) ? 'ok' : 'retry';
+      const finalStatus = (!needsRetry && accuracy >= passCut) ? 'ok' : 'retry';
 
-      // 출력(보정되었으면 원문도 병기)
-      const recogText = (transcript !== origTranscript)
-        ? `${transcript} <span class="text-slate-500 text-xs">(원문: ${origTranscript})</span>`
-        : transcript;
-
-      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span> · 👂 Reconnu: <span class="korean-font">${recogText || '(vide / 비어 있음)'}</span>`;
+      // ★ 디버그 원문 표기 제거
+      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span> · 👂 Reconnu: <span class="korean-font">${transcript || '(vide / 비어 있음)'}</span>`;
 
       if (finalStatus === 'ok') {
         ui.msg.innerHTML = '✅ C’est bon ! Tu peux passer à la suite / 좋아요! 다음으로 넘어가세요';
@@ -326,7 +330,8 @@
       }
 
       try { onResult({ status: finalStatus, accuracy, transcript, needsRetry }); } catch(_) {}
-    }
+// ... 생략 (뒷부분 동일)
+
 
     // 버튼 바인딩
     ui.rec.addEventListener('click', startRec);
