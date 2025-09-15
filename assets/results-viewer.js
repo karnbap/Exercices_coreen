@@ -1,83 +1,226 @@
-<script>
-/* 공용 결과 뷰어: sessionStorage('pondant_results') → 렌더 + 전송 */
-window.ResultsViewer = {
-  mount(rootId='app'){
-    const el = document.getElementById(rootId);
-    const KEY='pondant_results';
-    const data = JSON.parse(sessionStorage.getItem(KEY)||'null');
-    if(!data){
-      el.innerHTML = `<div class="bg-white rounded-xl p-6 shadow">
-        <p class="text-lg">결과가 없습니다. / Aucun résultat.</p>
-        <div class="mt-4 flex gap-2">
-          <a href="/index.html" class="px-4 py-2 rounded bg-blue-700 text-white">메인으로 / Accueil</a>
-          <button onclick="history.back()" class="px-4 py-2 rounded border">이전으로 / Retour</button>
-        </div></div>`;
+// assets/results-viewer.js
+// 결과 화면 통합 뷰어: 로드(session/local/window) → 렌더(점수/시간/오답) → 1회 전송
+(function (global) {
+  'use strict';
+
+  // ========= 유틸 =========
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+  function escapeHTML(s) {
+    return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  function fmtHMS(total) {
+    total = Math.max(0, Number(total) || 0);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = Math.floor(total % 60);
+    return (h ? `${h} h ` : '') + (m ? `${m} min ` : '') + `${s} s`;
+  }
+
+  // 간단 체크섬(중복 렌더/전송 방지에 사용)
+  function tinyHash(o) {
+    try {
+      const j = JSON.stringify(o);
+      let h = 0;
+      for (let i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0;
+      return String(h >>> 0);
+    } catch { return ''; }
+  }
+
+  // ========= 데이터 로드 =========
+  function loadPayload() {
+    // 우선순위: window → sessionStorage → localStorage
+    if (global.PONGDANG_RESULTS && typeof global.PONGDANG_RESULTS === 'object') {
+      return global.PONGDANG_RESULTS;
+    }
+    try {
+      const s = sessionStorage.getItem('pondant_results');
+      if (s) return JSON.parse(s);
+    } catch {}
+    try {
+      const l = localStorage.getItem('pongdang:lastResults');
+      if (l) return JSON.parse(l);
+    } catch {}
+    return null;
+  }
+
+  // ========= 서버 전송(1회) =========
+  async function postResultsOnce(payload) {
+    if (!payload || payload._sent) return payload;
+    // results-compat.js 가 있으면 그걸 사용
+    if (global.sendResults && typeof global.sendResults === 'function') {
+      try {
+        await global.sendResults(payload);
+        payload._sent = true;
+        persistBack(payload);
+        return payload;
+      } catch {}
+    }
+    // 직접 POST (동일 스키마)
+    try {
+      const slim = toSlimPayload(payload);
+      await fetch('/.netlify/functions/send-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'cors',
+        body: JSON.stringify(slim)
+      });
+      payload._sent = true;
+      persistBack(payload);
+    } catch {}
+    return payload;
+  }
+
+  function toSlimPayload(p) {
+    const q = Array.isArray(p?.questions) ? p.questions.map(one => {
+      const c = {...one};
+      if (c?.recording) delete c.recording;
+      if (c?.audio) delete c.audio;
+      if (c?.audioBase64) delete c.audioBase64;
+      return c;
+    }) : [];
+    return {
+      studentName: p?.studentName || 'Étudiant·e',
+      startTime: p?.startTime || p?.startISO || '',
+      endTime: p?.endTime || '',
+      totalTimeSeconds: Number(p?.totalTimeSeconds || p?.totalSeconds || 0),
+      questions: q
+    };
+  }
+
+  function persistBack(p) {
+    try {
+      if (sessionStorage.getItem('pondant_results')) {
+        sessionStorage.setItem('pondant_results', JSON.stringify(p));
+      } else if (localStorage.getItem('pongdang:lastResults')) {
+        localStorage.setItem('pongdang:lastResults', JSON.stringify(p));
+      } else {
+        // 기본은 sessionStorage에 저장
+        sessionStorage.setItem('pondant_results', JSON.stringify(p));
+      }
+    } catch {}
+  }
+
+  // ========= 렌더 =========
+  function render(payload, opts = {}) {
+    const root = $(opts.rootSelector || '#app') || document.body;
+
+    // 상단 헤더 + 총점/시간 + 오답노트 박스 구성
+    const name = escapeHTML(payload?.studentName || '-');
+    const graded = (payload?.questions || []).filter(q => typeof q?.isCorrect === 'boolean');
+    const correct = graded.filter(q => q.isCorrect).length;
+    const totalG = graded.length || (payload?.questions?.length || 0);
+    const pct = totalG ? Math.round((100 * correct) / totalG) : 0;
+    const tsec = Number(payload?.totalTimeSeconds || payload?.totalSeconds || 0);
+
+    root.innerHTML = `
+      <header class="mb-4 max-w-3xl mx-auto">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-500">made by 성일,Pongdang · Lapeace29@gmail.com</div>
+          <button id="btnPrint" class="px-3 py-2 rounded bg-blue-700 text-white">인쇄 / Imprimer</button>
+        </div>
+        <h1 class="mt-3 text-2xl font-bold">결과 / <span class="text-amber-600">Résultats</span></h1>
+      </header>
+
+      <section class="bg-white rounded-xl p-5 shadow max-w-3xl mx-auto">
+        <p>이름 / Nom : <b>${name}</b></p>
+        <p id="finalScore" class="mt-1">Score final : <b class="text-blue-700">${pct}%</b></p>
+        <p id="totalTime" class="mt-1">Temps total : <b>${fmtHMS(tsec)}</b></p>
+      </section>
+
+      <section class="max-w-3xl mx-auto mt-4">
+        <h2 class="font-semibold mb-2">오답 노트 / Fautes</h2>
+        <ul id="wrongNote" class="space-y-3"></ul>
+      </section>
+
+      <footer class="mt-6 text-center text-sm text-slate-500 max-w-3xl mx-auto">
+        made by 성일,Pongdang · Lapeace29@gmail.com
+        <div class="mt-3 flex gap-2 justify-center">
+          <button id="btnBack" class="px-4 py-2 rounded border">이전 연습문제로 / Exercice précédent</button>
+          <a href="/index.html" class="px-4 py-2 rounded bg-amber-500 text-white">메인으로 / Accueil</a>
+        </div>
+      </footer>
+    `;
+
+    // 오답만 노트 채우기
+    const wrong = (payload?.questions || []).filter(q => q?.isCorrect === false);
+    const box = $('#wrongNote');
+    if (box) {
+      if (!wrong.length) {
+        box.innerHTML = `<div class="text-emerald-600">Aucune erreur 🎉</div>`;
+      } else {
+        const items = wrong.map(q => {
+          const num = escapeHTML(q?.number ?? '');
+          const ko = escapeHTML(q?.ko ?? '');
+          const fr = escapeHTML(q?.fr ?? '');
+          const ua = q?.userAnswer;
+          const uaKO = typeof ua === 'object' ? escapeHTML(ua?.ko ?? '') : escapeHTML(ua ?? '');
+          const uaFR = typeof ua === 'object' ? escapeHTML(ua?.fr ?? '') : '';
+          const reg = q?.notes?.register ? `<div class="text-amber-700 text-xs mt-1">말투/Registre: ${escapeHTML(q.notes.register)}</div>` : '';
+          return `
+            <li class="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200">
+              <div class="font-semibold text-rose-700">Q${num}</div>
+              <div class="text-sm text-slate-800">KO: ${ko}</div>
+              <div class="text-xs text-slate-500">FR: ${fr}</div>
+              <div class="text-sm text-rose-600 mt-1">내 답(한): ${uaKO || '-'}</div>
+              ${uaFR ? `<div class="text-xs text-rose-500">Ma réponse (FR): ${uaFR}</div>` : ''}
+              ${reg}
+            </li>
+          `;
+        }).join('');
+        box.innerHTML = items;
+      }
+    }
+
+    // 버튼
+    $('#btnPrint')?.addEventListener('click', () => window.print());
+    $('#btnBack')?.addEventListener('click', () => history.back());
+  }
+
+  // ========= 마운트(자동 전송 포함) =========
+  async function mount(rootSelector = '#app', options = {}) {
+    let payload = loadPayload();
+    if (!payload) {
+      const root = $(rootSelector) || document.body;
+      root.innerHTML = `
+        <div class="bg-white rounded-xl p-6 shadow max-w-3xl mx-auto">
+          <p class="text-lg">결과가 없습니다. / Aucun résultat.</p>
+          <div class="mt-4 flex gap-2">
+            <a href="/index.html" class="px-4 py-2 rounded bg-blue-700 text-white">메인으로 / Accueil</a>
+            <button onclick="history.back()" class="px-4 py-2 rounded border">이전으로 / Retour</button>
+          </div>
+        </div>`;
       return;
     }
 
-    // 서버로 1회 전송(이미 보냈다면 생략)
-    if(!data._sent){
-      fetch('/.netlify/functions/send-results',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          studentName:data.studentName||'Étudiant·e',
-          startTime:data.startTime,endTime:data.endTime,
-          totalTimeSeconds:data.totalTimeSeconds||0,
-          questions:data.questions||[]
-        })
-      }).catch(()=>{}).finally(()=>{
-        data._sent=true; sessionStorage.setItem(KEY, JSON.stringify(data));
-      });
-    }
+    // 중복 렌더/전송 방지(옵션): 체크섬이 같으면 스킵
+    const key = 'pongdang:results:hash';
+    const curHash = tinyHash(toSlimPayload(payload));
+    try {
+      const prev = sessionStorage.getItem(key);
+      if (options.skipIfSame && prev && prev === curHash) {
+        // 같은 결과면 렌더만 보장(혹시 비워져 있을 수 있으니)
+        render(payload, { rootSelector });
+        return;
+      }
+      sessionStorage.setItem(key, curHash);
+    } catch {}
 
-    const n = Math.max(1,(data.questions||[]).length);
-    const avg = x=>Math.round((x/n)||0);
-    const ko = avg(data.totals?.ko||0), fr = avg(data.totals?.fr||0), pr = avg(data.totals?.pron||0);
-    const total = Math.round((ko+fr+pr)/3);
+    // 1회 자동 전송
+    payload = await postResultsOnce(payload);
 
-    el.innerHTML = `
-<header class="mb-4 max-w-3xl mx-auto">
-  <div class="flex items-center justify-between">
-    <div class="text-sm text-slate-500">made by 성일,Pongdang · Lapeace29@gmail.com</div>
-    <button onclick="window.print()" class="px-3 py-2 rounded bg-blue-700 text-white">인쇄 / Imprimer</button>
-  </div>
-  <h1 class="mt-3 text-2xl font-bold">결과 / <span class="text-amber-600">Résultats</span></h1>
-</header>
-<section class="bg-white rounded-xl p-5 shadow max-w-3xl mx-auto">
-  <p>이름 / Nom : <b>${data.studentName||'-'}</b></p>
-  <p class="mt-1">총점 / Total : <b class="text-blue-700">${total}/100</b></p>
-  <p class="mt-1 text-sm">KO 받아쓰기 ${ko}/100 · FR 번역 ${fr}/100 · 발음 ${pr}/100</p>
-</section>
-<section class="mt-4 space-y-3 max-w-3xl mx-auto">
-  ${(data.questions||[]).map(q=>`
-  <article class="bg-white rounded-xl p-4 shadow">
-    <div class="flex justify-between items-center">
-      <b>#${q.number||'-'}</b>
-      <span class="${q.isCorrect?'text-green-600':'text-rose-600'} font-semibold">
-        ${q.isCorrect?'정답 / Correct':'오답 / Faux'}
-      </span>
-    </div>
-    <div class="mt-2">
-      <p><b>정답(한)</b> ${q.ko||'-'}</p>
-      <p><b>내 답(한)</b> ${(q.userAnswer&&q.userAnswer.ko)||'-'}</p>
-      <p class="text-sm text-slate-500">메모(한): ${(q.notes&&q.notes.ko)||'-'}</p>
-    </div>
-    <div class="mt-2">
-      <p><b>Traduction (FR)</b> ${q.fr||'-'}</p>
-      <p><b>Ma réponse (FR)</b> ${(q.userAnswer&&q.userAnswer.fr)||'-'}</p>
-      <p class="text-sm text-slate-500">Note (FR): ${(q.notes&&q.notes.fr)||'-'}</p>
-      ${q.notes&&q.notes.register?`<p class="text-amber-700 text-sm mt-1">말투/Registre: ${q.notes.register}</p>`:''}
-    </div>
-    <p class="mt-2 text-sm">점수: KO ${(q.scores&&q.scores.ko)||0}/100 · FR ${(q.scores&&q.scores.fr)||0}/100 · 발음 ${(q.scores&&q.scores.pron)||0}/100</p>
-  </article>`).join('')}
-</section>
-<footer class="mt-6 text-center text-sm text-slate-500 max-w-3xl mx-auto">
-  made by 성일,Pongdang · Lapeace29@gmail.com
-  <div class="mt-3 flex gap-2 justify-center">
-    <button onclick="history.back()" class="px-4 py-2 rounded border">이전 연습문제로 / Exercice précédent</button>
-    <a href="/index.html" class="px-4 py-2 rounded bg-amber-500 text-white">메인으로 / Accueil</a>
-  </div>
-</footer>`;
+    // 렌더
+    render(payload, { rootSelector });
   }
-};
-</script>
+
+  // ========= auto-run =========
+  document.addEventListener('DOMContentLoaded', () => {
+    // 자동 마운트: #app 이 있으면 mount
+    if (document.getElementById('app')) mount('#app', { skipIfSame: true });
+  });
+
+  // ========= export =========
+  global.ResultsViewer = { mount, render, fmtHMS };
+})(window);
