@@ -4,6 +4,20 @@
 
 const nodemailer = require("nodemailer");
 
+// ---- 새로 추가: 안전 필터 (큰 필드 제거) ----
+function sanitizePayload(payload) {
+  try {
+    if (payload && Array.isArray(payload.questions)) {
+      payload.questions.forEach(q => {
+        // 클라이언트 실수로 녹음(base64) 등 큰 데이터가 와도 즉시 제거
+        if (q && q.recording) delete q.recording;
+        if (q && q.audio) delete q.audio;
+        if (q && q.audioBase64) delete q.audioBase64;
+      });
+    }
+  } catch (_) {}
+  return payload;
+}
 // ============ 유틸 ============
 
 function avg(arr){
@@ -214,42 +228,56 @@ function buildText(payload){
 // ============ 핸들러 ============
 
 exports.handler = async (event) => {
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: cors, body: '' };
+  }
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers: cors, body: 'Only POST' };
+  }
+
+  let payload = {};
   try {
-    const payload = JSON.parse(event.body || "{}");
+    payload = sanitizePayload(JSON.parse(event.body || "{}"));
+  } catch (e) {
+    return { statusCode: 400, headers: cors, body: JSON.stringify({ ok:false, error:'Bad JSON' }) };
+  }
 
-    const name  = (payload?.studentName || "N/A").trim();
-    const title = (payload?.assignmentTitle || "Exercice").trim();
-    const overall = pickOverall(payload);
-    const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString("fr-FR", { hour12:false });
-    const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
+  const name  = (payload?.studentName || "N/A").trim();
+  const title = (payload?.assignmentTitle || "Exercice").trim();
+  const overall = pickOverall(payload);
+  const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString("fr-FR", { hour12:false });
+  const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, RESULTS_RECEIVER, SMTP_FROM } = process.env;
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.warn('[send-results] MISSING_ENV', { SMTP_HOST:!!SMTP_HOST, SMTP_USER:!!SMTP_USER, SMTP_PASS:!!SMTP_PASS, RESULTS_RECEIVER:!!RESULTS_RECEIVER });
+    return { statusCode: 200, headers: cors, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
+  }
 
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT || 587),
+    secure: String(SMTP_PORT || '587') === '465',
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+
+  try {
     await transporter.sendMail({
-      from: `"Pongdang Korean" <${process.env.SMTP_USER}>`,
-      to: process.env.RESULTS_RECEIVER || "Lapeace29@gmail.com",
+      from: `"Pongdang Korean" <${SMTP_FROM || SMTP_USER}>`,
+      to: RESULTS_RECEIVER || "Lapeace29@gmail.com",
       subject,
       text: buildText(payload),
       html: buildHtml(payload),
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true }),
-    };
+    return { statusCode: 200, headers: cors, body: JSON.stringify({ ok:true }) };
   } catch (e) {
-    console.error(e);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ ok: false, error: String(e) }),
-    };
+    console.error('[send-results] error', e);
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
