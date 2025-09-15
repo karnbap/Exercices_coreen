@@ -1,7 +1,7 @@
-// assets/pronun-client.js  (v4.1)
+// assets/pronun-client.js  (v4.2)
 // 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void })
 (function (global) {
-  if (global.Pronun && global.Pronun.__v >= 41) return;
+  if (global.Pronun && global.Pronun.__v >= 42) return;
 
   const CFG = {
     endpoint: (global.PONGDANG_FN_BASE || '/.netlify/functions') + '/analyze-pronunciation',
@@ -23,15 +23,13 @@
     ]
   };
 
-  // 퍼센트 표시(null/NaN 안전)
+  // ── 유틸 ─────────────────────────────
   function pctSafe(x){
     if (x === null || x === undefined) return '--';
     const v = Number(x);
     if (!isFinite(v)) return '--';
     return `${Math.round((v > 1 ? v : v * 100))}%`;
   }
-
-  // ── 내부 유틸 ─────────────────────────────
   function h(tag, attrs = {}, ...kids) {
     const el = document.createElement(tag);
     for (const k in attrs) {
@@ -134,13 +132,22 @@
     const refLen = refN.ko.length || refN.raw.length;
     const hypLen = hypN.ko.length || hypN.raw.length;
     const sim = similarity(refN.ko, hypN.ko);
-
     const hasBadWord = CFG.garbageWords.some(k => hypN.raw.includes(k));
     const isShortRef = (refLen <= CFG.shortRefLen);
     const lenRatioBad = isShortRef && hypLen > 0 && (hypLen / Math.max(1,refLen)) >= CFG.lenRatioGarbage;
     const simTooLow  = isShortRef && sim < CFG.lowSimil;
-
     return hasBadWord || lenRatioBad || simTooLow;
+  }
+
+  // 숫자→한글 강제(로컬 폴백: 서버/전역 유틸이 없을 때 최소 보장)
+  function localForceHangulNumbers(s){
+    let x = String(s||'');
+    // 1→일, 2→이 (최소 요구만 보장)
+    x = x.replace(/\b1\b/g,'일').replace(/\b2\b/g,'이');
+    // 날짜/분절 내 숫자도 보정
+    x = x.replace(/(^|[^0-9])1([^0-9]|$)/g, '$1일$2');
+    x = x.replace(/(^|[^0-9])2([^0-9]|$)/g, '$1이$2');
+    return x;
   }
 
   // ★ 숫자·단위 오인식 보정: 참조를 기준으로 STT 결과를 '맞는 계열'로 스냅
@@ -150,30 +157,31 @@
     const hyp = hypRaw.replace(/\s+/g,'');
 
     // 규칙 테이블(둘 다 공백 무시 매칭)
+    // 요구사항: "일=일(로마자/숫자 1 금지), 이=이(로마자/숫자 2 금지)"
     const RULES = [
-      { ref:/일일/,     hyp:/(한일|하닐|한닐)/,    to:'일일' },
-      { ref:/사일/,     hyp:/(네일|내일)/,        to:'사일' },
-      { ref:/한시/,     hyp:/일시/,               to:'한시' },
-      { ref:/십유로/,   hyp:/열유로/,             to:'십유로' },
-      { ref:/삼십분/,   hyp:/서른분/,             to:'삼십분' },
-      { ref:/세살/,     hyp:/삼살/,               to:'세살' }
+      // 단일 숫자/단어
+      { when: /^일$/,  hyp: /^(하나|한|1|Ⅰ)$/ , to:'일' },
+      { when: /^이$/,  hyp: /^(둘|두|2|Ⅱ)$/   , to:'이' },
+
+      // 날짜(일일/이일) 흔한 오인식 → 한자어로 스냅
+      { when: /^(일일)$/, hyp: /(한일|하닐|한닐|1일|Ⅰ일)/, to:'일일' },
+      { when: /^(이일)$/, hyp: /(두일|둘일|2일|Ⅱ일)/,       to:'이일' },
+
+      // 기존 보정 유지
+      { when: /사일/,     hyp: /(네일|내일)/,           to:'사일' },
+      { when: /한시/,     hyp: /일시/,                  to:'한시' },
+      { when: /십유로/,   hyp: /열유로/,                to:'십유로' },
+      { when: /삼십분/,   hyp: /서른분/,                to:'삼십분' },
+      { when: /세살/,     hyp: /삼살/,                  to:'세살' }
     ];
 
     for (const r of RULES) {
-      if (r.ref.test(ref) && r.hyp.test(hyp)) {
-        // 출력은 보기 좋게 띄어쓰기 복원
-        if (r.to === '일일') return '일일';
-        if (r.to === '사일') return '사일';
-        if (r.to === '한시') return '한 시';
-        if (r.to === '십유로') return '십 유로';
-        if (r.to === '삼십분') return '삼십 분';
-        if (r.to === '세살') return '세 살';
-      }
+      if (r.when.test(ref) && r.hyp.test(hyp)) return r.to;
     }
     return out; // 보정 불가 → 원문 유지
   }
 
-  // ── 학생용 UI ─────────────────────────────
+  // ── UI ─────────────────────────────
   function buildUI(mountEl) {
     const ui = {
       root: h('div', { class: 'flex items-center gap-2 flex-wrap' }),
@@ -249,22 +257,21 @@
 
     async function evalRec() {
       if (!chunks.length) { ui.msg.textContent = '🔁 Enregistre d’abord / 먼저 녹음해 주세요'; return; }
-      const ref = String(getRef() || '').trim();
-      if (!ref) { ui.msg.textContent = '📝 La phrase n’est pas prête / 문장이 아직 준비되지 않았어요'; return; }
+      const refOrig = String(getRef() || '').trim();
+      if (!refOrig) { ui.msg.textContent = '📝 La phrase n’est pas prête / 문장이 아직 준비되지 않았어요'; return; }
 
       const blob = new Blob(chunks, { type: mime.split(';')[0] || 'audio/webm' });
       const base64 = await blobToBase64(blob);
 
       ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
       ui.out.textContent = '';
-      let transcript = '', accuracy = null, serverStatus = null, needsRetry = false;
+      let transcript = '', accuracy = null, needsRetry = false;
 
       try {
         const res = await postJSON(CFG.endpoint, {
-          referenceText: ref,
+          referenceText: refOrig,
           audio: { base64, mimeType: blob.type || 'audio/webm', filename: 'rec.webm', duration: lastDur }
         });
-        serverStatus = res?.status || null;
         accuracy = (res?.accuracy === null || res?.accuracy === undefined) ? null : res.accuracy;
         transcript = String(res?.transcript || '');
         needsRetry = !!res?.needsRetry;
@@ -275,17 +282,20 @@
         return;
       }
 
-      // 숫자→한글 강제(있을 때만)
+      // 숫자→한글 강제: 전역 유틸 있으면 우선, 없으면 로컬 폴백
       if (global.NumHangul?.forceHangulNumbers) {
         transcript = global.NumHangul.forceHangulNumbers(transcript);
+      } else {
+        transcript = localForceHangulNumbers(transcript);
       }
 
-      // ★ 도메인 보정: 참조 기준으로 흔한 오인식을 교정
+      // ★ 도메인 보정: 참조 기준으로 흔한 오인식을 교정(일/이 스냅 포함)
       const origTranscript = transcript;
-      transcript = coerceTowardsRef(ref, transcript);
+      const refForCoerce = (global.NumHangul?.forceHangulNumbers ? global.NumHangul.forceHangulNumbers(refOrig) : localForceHangulNumbers(refOrig));
+      transcript = coerceTowardsRef(refForCoerce, transcript);
 
       // 정규화 + 가비지 검사
-      const refN = normalizeKo(ref);
+      const refN = normalizeKo(refForCoerce);
       const hypN = normalizeKo(transcript);
       if (!needsRetry) needsRetry = looksGarbage(refN, hypN);
 
@@ -295,13 +305,12 @@
         accuracy = Math.round(sim * 100);
       }
 
-      // 최종 통과 판정
+      // 최종 판정
       const isShortRef = (refN.ko.length || refN.raw.length) <= CFG.shortRefLen;
       const passCut = Math.round((isShortRef ? CFG.passShortRef : CFG.passBase) * 100);
-      let finalStatus = 'retry';
-      if (!needsRetry && accuracy >= passCut) finalStatus = 'ok';
+      let finalStatus = (!needsRetry && accuracy >= passCut) ? 'ok' : 'retry';
 
-      // 출력(보정된 경우 원문도 표시)
+      // 출력(보정되었으면 원문도 병기)
       const recogText = (transcript !== origTranscript)
         ? `${transcript} <span class="text-slate-500 text-xs">(원문: ${origTranscript})</span>`
         : transcript;
@@ -316,14 +325,10 @@
         ui.msg.innerHTML = `💡 Encore un peu: vise ≥ ${passCut}% / 조금만 더 또렷하게 (목표 ${passCut}% 이상)`;
       }
 
-      try { onResult({ status: finalStatus, accuracy, transcript, needsRetry, serverStatus }); } catch(_) {}
+      try { onResult({ status: finalStatus, accuracy, transcript, needsRetry }); } catch(_) {}
     }
 
     // 버튼 바인딩
-    const ui = buildUI(mountEl);
-    let stream = null, rec = null, chunks = [], vu = null, startMs = 0;
-    let mime = pickMime(), lastDur = 0;
-
     ui.rec.addEventListener('click', startRec);
     ui.stop.addEventListener('click', stopRec);
     ui.eval.addEventListener('click', evalRec);
@@ -335,5 +340,5 @@
     });
   }
 
-  global.Pronun = { __v: 41, mount };
+  global.Pronun = { __v: 42, mount };
 })(window);
