@@ -1,7 +1,8 @@
-// assets/pronun-client.js  (v4.2)
+// assets/pronun-client.js  (v4.3)
 // 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void })
 (function (global) {
-  if (global.Pronun && global.Pronun.__v >= 42) return;
+  // 캐시/중복 로드 방지
+  if (global.Pronun && global.Pronun.__v >= 43) return;
 
   const CFG = {
     endpoint: (global.PONGDANG_FN_BASE || '/.netlify/functions') + '/analyze-pronunciation',
@@ -10,12 +11,13 @@
     canvasW: 240,
     canvasH: 40,
 
-    // 판정/가비지 필터 파라미터
-    passBase: 0.75,          // 일반 문장 통과 임계치(75%)
-    passShortRef: 0.80,      // 아주 짧은 참조(숫자 1~2음절 등) 임계치(80%)
-    shortRefLen: 4,          // 정규화 기준 길이 4 이하 → "아주 짧음"
-    lowSimil: 0.35,          // 짧은 참조에서 유사도 바닥
-    lenRatioGarbage: 2.5,    // 인식/참조 길이 비 과대
+    // 판정/가비지 필터
+    passBase: 0.75,       // 일반 문장 임계치(75%)
+    passShortRef: 0.80,   // 아주 짧은 참조(숫자 1~2음절) 임계치(80%)
+    shortRefLen: 4,
+    lowSimil: 0.35,
+    lenRatioGarbage: 2.5,
+    // 내부 판정 전용(절대 UI로 노출하지 않음)
     garbageWords: [
       "배달의민족","영상편집","자막","광고","구독","좋아요","알림설정","스폰서",
       "후원","협찬","문의","링크","다운로드","설명란","채널","스트리밍","썸네일",
@@ -28,7 +30,7 @@
     if (x === null || x === undefined) return '--';
     const v = Number(x);
     if (!isFinite(v)) return '--';
-    return `${Math.round((v > 1 ? v : v * 100))}%`;
+    return `${Math.round(v > 1 ? v : v * 100)}%`;
   }
   function h(tag, attrs = {}, ...kids) {
     const el = document.createElement(tag);
@@ -139,46 +141,34 @@
     return hasBadWord || lenRatioBad || simTooLow;
   }
 
-  // 숫자→한글 강제(로컬 폴백: 서버/전역 유틸이 없을 때 최소 보장)
+  // 숫자→한글 강제(로컬 폴백)
   function localForceHangulNumbers(s){
     let x = String(s||'');
-    // 1→일, 2→이 (최소 요구만 보장)
     x = x.replace(/\b1\b/g,'일').replace(/\b2\b/g,'이');
-    // 날짜/분절 내 숫자도 보정
     x = x.replace(/(^|[^0-9])1([^0-9]|$)/g, '$1일$2');
     x = x.replace(/(^|[^0-9])2([^0-9]|$)/g, '$1이$2');
     return x;
   }
 
-  // ★ 숫자·단위 오인식 보정: 참조를 기준으로 STT 결과를 '맞는 계열'로 스냅
+  // STT 도메인 보정(참조 기반 스냅)
   function coerceTowardsRef(refRaw, hypRaw) {
     let out = hypRaw;
     const ref = refRaw.replace(/\s+/g,'');
     const hyp = hypRaw.replace(/\s+/g,'');
 
-    // 규칙 테이블(둘 다 공백 무시 매칭)
-    // 요구사항: "일=일(로마자/숫자 1 금지), 이=이(로마자/숫자 2 금지)"
     const RULES = [
-      // 단일 숫자/단어
-      { when: /^일$/,  hyp: /^(하나|한|1|Ⅰ)$/ , to:'일' },
-      { when: /^이$/,  hyp: /^(둘|두|2|Ⅱ)$/   , to:'이' },
-
-      // 날짜(일일/이일) 흔한 오인식 → 한자어로 스냅
+      { when: /^일$/,  hyp: /^(하나|한|1|Ⅰ)$/, to:'일' },
+      { when: /^이$/,  hyp: /^(둘|두|2|Ⅱ)$/,   to:'이' },
       { when: /^(일일)$/, hyp: /(한일|하닐|한닐|1일|Ⅰ일)/, to:'일일' },
       { when: /^(이일)$/, hyp: /(두일|둘일|2일|Ⅱ일)/,       to:'이일' },
-
-      // 기존 보정 유지
       { when: /사일/,     hyp: /(네일|내일)/,           to:'사일' },
       { when: /한시/,     hyp: /일시/,                  to:'한시' },
       { when: /십유로/,   hyp: /열유로/,                to:'십유로' },
       { when: /삼십분/,   hyp: /서른분/,                to:'삼십분' },
       { when: /세살/,     hyp: /삼살/,                  to:'세살' }
     ];
-
-    for (const r of RULES) {
-      if (r.when.test(ref) && r.hyp.test(hyp)) return r.to;
-    }
-    return out; // 보정 불가 → 원문 유지
+    for (const r of RULES) { if (r.when.test(ref) && r.hyp.test(hyp)) return r.to; }
+    return out;
   }
 
   // ── UI ─────────────────────────────
@@ -207,7 +197,7 @@
       ui.rec.disabled = true;  ui.rec.classList.add('disabled');
       ui.stop.disabled = false; ui.stop.classList.remove('disabled');
       ui.eval.disabled = true;  ui.eval.classList.add('disabled');
-    } else {
+    } else { // 'stop'
       ui.rec.disabled = false; ui.rec.classList.remove('disabled');
       ui.stop.disabled = true;  ui.stop.classList.add('disabled');
       ui.eval.disabled = false; ui.eval.classList.remove('disabled');
@@ -220,7 +210,7 @@
 
     const ui = buildUI(mountEl);
     let stream = null, rec = null, chunks = [], vu = null, startMs = 0;
-    let mime = pickMime(), lastDur = 0;
+    let mime = pickMime(), lastDur = 0, evalBusy = false;
 
     async function startRec() {
       try {
@@ -256,18 +246,18 @@
     }
 
     async function evalRec() {
+      if (evalBusy) return;
       if (!chunks.length) { ui.msg.textContent = '🔁 Enregistre d’abord / 먼저 녹음해 주세요'; return; }
       const refOrig = String(getRef() || '').trim();
       if (!refOrig) { ui.msg.textContent = '📝 La phrase n’est pas prête / 문장이 아직 준비되지 않았어요'; return; }
 
+      evalBusy = true;
       const blob = new Blob(chunks, { type: mime.split(';')[0] || 'audio/webm' });
       const base64 = await blobToBase64(blob);
 
       ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
       ui.out.textContent = '';
       let transcript = '', accuracy = null, needsRetry = false;
-
-     // ... 생략 (앞부분 동일)
 
       try {
         const res = await postJSON(CFG.endpoint, {
@@ -280,19 +270,18 @@
       } catch (e) {
         console.warn('[eval server]', e);
         ui.msg.textContent = '⚠️ Analyse indisponible. Réessaie. / 분석 서버 오류, 다시 시도';
-        try { onResult({ status:'error', reason:'server_error' }); } catch(_){}
+        try { onResult({ status:'error', reason:'server_error' }); } catch(_) {}
+        evalBusy = false;
         return;
       }
 
       // 숫자→한글 강제
-      if (global.NumHangul?.forceHangulNumbers) {
-        transcript = global.NumHangul.forceHangulNumbers(transcript);
-      } else {
-        transcript = localForceHangulNumbers(transcript);
-      }
-
-      // 참조도 숫자→한글
-      const refForCoerce = (global.NumHangul?.forceHangulNumbers ? global.NumHangul.forceHangulNumbers(refOrig) : localForceHangulNumbers(refOrig));
+      transcript = (global.NumHangul?.forceHangulNumbers)
+        ? global.NumHangul.forceHangulNumbers(transcript)
+        : localForceHangulNumbers(transcript);
+      const refForCoerce = (global.NumHangul?.forceHangulNumbers)
+        ? global.NumHangul.forceHangulNumbers(refOrig)
+        : localForceHangulNumbers(refOrig);
 
       // 도메인 보정(일/이 스냅 등)
       transcript = coerceTowardsRef(refForCoerce, transcript);
@@ -302,12 +291,11 @@
       const hypN = normalizeKo(transcript);
       if (!needsRetry) needsRetry = looksGarbage(refN, hypN);
 
-      // ★ 정확도 단위 통일: 0~1 → 0~100
+      // 정확도 0~100 보정
       if (accuracy !== null && accuracy !== undefined) {
         const a = Number(accuracy);
         accuracy = isFinite(a) ? (a <= 1 ? Math.round(a * 100) : Math.round(a)) : null;
       }
-      // 서버가 정확도 안 주면 로컬 유사도(%)로 계산
       if (accuracy === null || accuracy === undefined) {
         const sim = similarity(refN.ko, hypN.ko);
         accuracy = Math.round(sim * 100);
@@ -318,20 +306,18 @@
       const passCut = Math.round((isShortRef ? CFG.passShortRef : CFG.passBase) * 100);
       const finalStatus = (!needsRetry && accuracy >= passCut) ? 'ok' : 'retry';
 
-      // ★ 디버그 원문 표기 제거
-      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span> · 👂 Reconnu: <span class="korean-font">${transcript || '(vide / 비어 있음)'}</span>`;
-
+      // 🔐 학생 UI: 정확도만 표시 (Transcript/사유 비노출)
+      ui.out.innerHTML = `🎯 Exactitude: <span class="text-blue-600">${pctSafe(accuracy)}</span>`;
       if (finalStatus === 'ok') {
         ui.msg.innerHTML = '✅ C’est bon ! Tu peux passer à la suite / 좋아요! 다음으로 넘어가세요';
-      } else if (needsRetry) {
-        ui.msg.innerHTML = '🤔 Bruit/sous-titres détectés. Réessaie clairement. / 잡음·자막으로 보입니다. 또박또박 다시!';
       } else {
         ui.msg.innerHTML = `💡 Encore un peu: vise ≥ ${passCut}% / 조금만 더 또렷하게 (목표 ${passCut}% 이상)`;
       }
 
-      try { onResult({ status: finalStatus, accuracy, transcript, needsRetry }); } catch(_) {}
-// ... 생략 (뒷부분 동일)
-
+      // 외부 콜백: 상태/점수만 전달
+      try { onResult({ status: finalStatus, accuracy }); } catch(_) {}
+      evalBusy = false;
+    }
 
     // 버튼 바인딩
     ui.rec.addEventListener('click', startRec);
@@ -345,5 +331,5 @@
     });
   }
 
-  global.Pronun = { __v: 42, mount };
+  global.Pronun = { __v: 43, mount };
 })(window);
