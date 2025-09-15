@@ -157,4 +157,254 @@
       ko:q.ko, fr:q.fr, frAnswerGuide:q.guide, voice:q.voice, hints:q.hints,
       userAnswer:{ko:"", replyKo:""}, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted
+      pronunRequired:true, pronunAttempted:false
+    }));
+
+    return [...choice, ...fr_prompt_ko, ...dictation];
+  }
+
+  // ===== 렌더 =====
+  function render(){
+    const q = S.qs[S.idx]; if(!q) return;
+    // Sticky 5×5: Q6부터
+    $('#sticky55').classList.toggle('hidden', q.number < 6);
+
+    $('#progressText').textContent = `Question ${q.number} / ${S.qs.length}`;
+    $('#progressBar').style.width = `${Math.round((S.idx / S.qs.length)*100)}%`;
+
+    const badge = `<span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-white">${label(q.type)}</span>`;
+    let html = `<div class="flex items-center gap-2 mb-1">${badge}<span class="text-sm text-slate-500">Q${q.number}/${S.qs.length}</span></div>`;
+
+    if(q.type==='choice'){
+      html += `<h2 class="text-lg font-semibold mb-1">${q.context}</h2>`;
+      html += `<p class="text-sm text-slate-600 mb-2">Choisissez la bonne réponse. / 알맞은 답을 고르세요.</p>`;
+      q.options.forEach(opt=>{
+        const isSel = (q.userAnswer===opt);
+        html += `<button class="choice-btn ${isSel?'selected':''}" onclick="Quiz.selectChoice('${safe(opt)}')">${opt}</button>`;
+      });
+      // 정답 선택 시 발음 위젯 + 힌트
+      if (q.userAnswer === q.answer) {
+        html += hintBox(q);
+        html += pronunBox(q, q.answer);
+      }
+    }
+
+    if(q.type==='fr_prompt_ko'){
+      html += `<h2 class="text-lg font-semibold mb-1">${q.fr}</h2>`;
+      html += `
+        <div class="flex gap-2 mb-2">
+          <button class="btn btn-primary flex-1" onclick="Quiz.playAudio('${safe(q.audioText)}','${q.voice}',{_btn:this})">Écouter (듣기)</button>
+          <button class="btn" onclick="Quiz.stopAudio()">■ Stop</button>
+        </div>
+        <div class="p-3 bg-white rounded border mb-3 text-sm text-slate-700">
+          <span class="font-medium">Guide (FR)</span> : ${q.frGuide}
+        </div>
+        ${hintBox(q)}
+        <label class="block mb-1 font-semibold">Réponse en coréen (한국어):</label>
+        <div class="flex gap-2">
+          <input id="inpKO" class="input-field flex-1" value="${q.userAnswer||''}" placeholder="Ex. ${q.ko}" oninput="Quiz.onTextInput(this.value)">
+          <button class="btn btn-primary" onclick="Quiz.checkText()">Vérifier / 정답 확인</button>
+        </div>
+      `;
+      if(q.textChecked){
+        const ok = q.textCorrect===true;
+        html += `<div class="mt-3 ${ok?'text-emerald-700':'text-rose-700'} font-semibold">
+          ${ok?'✅ Correct ! 맞았습니다!':'❌ Incorrect. 틀렸습니다.'}
+          ${ok?'':` <span class="ml-2 text-slate-700">Réponse (KO) / 정답: <b>${q.ko}</b></span>`}
+        </div>`;
+        html += pronunBox(q, q.ko);
+      }
+    }
+
+    if(q.type==='dictation'){
+      html += `<h2 class="text-lg font-semibold mb-1">Dictée + Réponse / 받아쓰기 + 대답</h2>`;
+      html += `
+        <div class="flex gap-2 mb-2">
+          <button class="btn btn-primary flex-1" onclick="Quiz.playAudio('${safe(q.ko)}','${q.voice}',{_btn:this})">Écouter (듣기)</button>
+          <button class="btn" onclick="Quiz.stopAudio()">■ Stop</button>
+        </div>
+        <div class="space-y-3">
+          ${hintBox(q)}
+          <div>
+            <label class="block mb-1 font-semibold">1) Dictée (받아쓰기)</label>
+            <input class="input-field" value="${q.userAnswer.ko||''}" placeholder="(Écoutez et écrivez tel quel / 그대로 적기)" oninput="Quiz.updateDictee('ko',this.value)">
+          </div>
+          <div>
+            <label class="block mb-1 font-semibold">2) Réponse (한국어 대답)</label>
+            <input class="input-field input-reply-ko" value="${q.userAnswer.replyKo||''}" placeholder="Ex. 네 시예요 / 10유로예요 …" oninput="Quiz.updateDictee('replyKo',this.value)">
+            <div class="text-xs text-slate-500 mt-1">Ex (FR) : ${q.frAnswerGuide||''}</div>
+          </div>
+          ${pronunBox(q, '(2) votre réponse / 당신의 대답')}
+        </div>`;
+    }
+
+    $('#qArea').innerHTML = html;
+    updateNav();
+
+    // Pronun 위젯 mount
+    const mount = $('#pronunMount');
+    if(mount && window.Pronun){
+      try{
+        const markAttempt = ()=>{ q.pronunAttempted = true; updateNav(); };
+        setTimeout(()=>{
+          mount.querySelectorAll('button')?.forEach(b=>{
+            const t=(b.textContent||'');
+            if(t.includes('Stop')||t.includes('정지')) b.addEventListener('click', markAttempt);
+          });
+        },50);
+        Pronun.mount(mount, {
+          getReferenceText: ()=> refTextResolver(q),
+          onResult: ()=>{ q.pronunAttempted = true; updateNav(); }
+        });
+      }catch(e){ console.warn('Pronun.mount', e); }
+    }
+  }
+
+  function label(t){
+    return (t==='choice'?'Choix / 선택': t==='fr_prompt_ko'?'Français → 한국어 / 불→한':'Dictée + Réponse / 받아쓰기 + 대답');
+  }
+  function safe(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/\n/g,' '); }
+  function hintBox(q){
+    return `
+      <div class="flex flex-wrap gap-2 items-center mb-2">
+        <button class="btn btn-outline" onclick="Quiz.showHint(1)">🙏 Aidez-moi (힌트1: 초성)</button>
+        <button class="btn btn-outline" onclick="Quiz.showHint(2)">🦺 Au secours (힌트2: 부분뜻)</button>
+        <span class="text-xs text-slate-500">H1: ${q.hint1Count||0} · H2: ${q.hint2Count||0}</span>
+      </div>
+      <div id="hintArea" class="text-sm text-slate-700"></div>
+    `;
+  }
+  function pronunBox(q, ref){
+    return `
+      <div class="pronun-card mt-3">
+        <div class="pronun-title">🎤 Enregistrer & tester / 녹음·발음 평가</div>
+        <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${ref}</span></div>
+        <div id="pronunMount"></div>
+      </div>
+    `;
+  }
+  function refTextResolver(q){
+    if(q.type==='choice') return q.answer;
+    if(q.type==='fr_prompt_ko') return q.ko;
+    if(q.type==='dictation') return ($('.input-reply-ko')?.value||'');
+    return '';
+  }
+
+  // ===== 상호작용 =====
+  function selectChoice(val){
+    const q=S.qs[S.idx];
+    q.userAnswer=val;
+    q.isCorrect = (val===q.answer);
+    if(!q.isCorrect){ q.pronunAttempted=false; } // 오답이면 녹음 다시
+    render();
+  }
+  function onTextInput(v){
+    const q=S.qs[S.idx];
+    q.userAnswer=v;
+    q.textChecked=false; q.textCorrect=null; q.pronunAttempted=false;
+    updateNav();
+  }
+  function checkText(){
+    const q=S.qs[S.idx];
+    if(q.type!=='fr_prompt_ko') return;
+    const v = (q.userAnswer||'').trim();
+    if(!v) return;
+    const cands = [q.ko, ...(q.accepted||[])];
+    q.textCorrect = cands.some(ans=> strip(v)===strip(ans));
+    q.textChecked = true;
+    q.isCorrect = q.textCorrect;
+    q.pronunAttempted=false;
+    render();
+  }
+  function updateDictee(part,val){
+    const q=S.qs[S.idx];
+    q.userAnswer[part]=val;
+    updateNav();
+  }
+  function showHint(n){
+    const q=S.qs[S.idx]; if(!q||!q.hints) return;
+    if(n===1){ q.hint1Count=(q.hint1Count||0)+1; $('#hintArea').textContent = `초성: ${q.hints.choseong||'-'}`; }
+    else     { q.hint2Count=(q.hint2Count||0)+1; $('#hintArea').textContent = `Indice (FR): ${q.hints.part||'-'}`; }
+    updateNav();
+  }
+
+  // 다음 버튼 허용: “녹음 1회 시도” 규칙 포함
+  function isNextAllowed(){
+    const q=S.qs[S.idx]; if(!q) return false;
+    if(q.pronunRequired && !q.pronunAttempted) return false;
+
+    if(q.type==='choice'){
+      return !!q.userAnswer;
+    }else if(q.type==='fr_prompt_ko'){
+      return !!q.userAnswer && q.textChecked===true;
+    }else if(q.type==='dictation'){
+      return !!q.userAnswer.ko && !!q.userAnswer.replyKo;
+    }
+    return false;
+  }
+  function updateNav(){
+    $('#btnPrev').disabled = (S.idx<=0);
+    const canNext = isNextAllowed();
+    $('#btnNext').disabled = !canNext;
+    const isLast = (S.idx===S.qs.length-1);
+    $('#btnFinish').classList.toggle('hidden', !isLast);
+    $('#btnFinish').disabled = false; // 마지막 문제에서 항상 누를 수 있게
+  }
+
+  // ===== 제출/저장 =====
+  async function finish(){
+    const end = Date.now();
+    const name = $('#studentName').value?.trim() || 'Élève';
+    const payload = {
+      studentName: name,
+      startTime: new Date(S.start).toISOString(),
+      endTime: new Date(end).toISOString(),
+      totalTimeSeconds: Math.round((end - S.start)/1000),
+      questions: S.qs.map(q=>({
+        number:q.number,
+        ko: q.type==='fr_prompt_ko' ? q.ko : (q.type==='dictation'? q.ko : q.context),
+        fr: q.type==='fr_prompt_ko' ? q.fr : (q.type==='dictation'? q.fr : ''),
+        userAnswer: q.type==='dictation' ? JSON.stringify(q.userAnswer) : (q.userAnswer||''),
+        isCorrect: !!q.isCorrect,
+        listenCount: q.listenCount||0,
+        hint1Count: q.hint1Count||0,
+        hint2Count: q.hint2Count||0
+      }))
+    };
+
+    // 로컬 저장 + 전송
+    localStorage.setItem('pongdang:lastResults', JSON.stringify(payload));
+    try{
+      await SendResults.sendResults(payload);
+      alert('Résultats envoyés / 결과 전송 완료');
+      // 간단 결과 표시
+      $('#finalRow').textContent = `Score final : — · Temps total : ${fmtSecs(end - S.start)}`;
+    }catch(e){
+      alert('Envoi échoué. / 전송 실패');
+    }
+  }
+
+  // ===== 네임게이트 & 초기화 =====
+  function requireName(){
+    const v = $('#studentName').value?.trim();
+    if(!v){ alert('이름을 먼저 입력해 주세요. / Écris ton nom d’abord.'); return false; }
+    S.name = v; return true;
+  }
+
+  // ===== 이벤트 바인딩 =====
+  $('#btnPrev').addEventListener('click', ()=>{ if(S.idx>0){ S.idx--; render(); } });
+  $('#btnNext').addEventListener('click', ()=>{ if(!requireName()) return; if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); } });
+  $('#btnFinish').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
+  $('#btnFinish2').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
+  window.addEventListener('beforeunload', cleanupAudio);
+
+  // 시작
+  S.qs = getQuestions();
+  render();
+
+  // 외부에서 쓰는 함수 export
+  window.Quiz = {
+    playAudio, stopAudio,
+    selectChoice, onTextInput, checkText, updateDictee, showHint
+  };
+})();
