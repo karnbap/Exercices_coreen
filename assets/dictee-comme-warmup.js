@@ -1,7 +1,8 @@
-/* Dictee “Comme” — 개선:
-   - 속도/반복 X
+/* assets/dictee-comme-warmup.js
+   Dictee “Comme” — 개선:
    - 정지→자동평가 + 평가 버튼 재평가
-   - 실시간 자막(엘리먼트/도큐먼트 이벤트 모두 수신) + 폴백 문구
+   - 힌트 버튼 토글(재클릭 시 숨김, 최초 1회만 카운트)
+   - 실시간 자막 수신 + 폴백 문구
    - 저음량 민감도 향상(GainNode, minDecibels, smoothing)
    - VU: DPR 스케일링 + 막대/타임도메인 하이브리드
 */
@@ -116,34 +117,26 @@
       const btnPlay=$('.play',el), listen=$('.listen',el);
       btnPlay.onclick=async()=>{ await ttsPlay(q.ko,q.voice); st[i].listen++; listen.textContent=String(st[i].listen); };
 
-      // ===== 힌트 (카드 위임 + CSS 비의존 인라인 토글) =====
+      // ===== 힌트: 토글(재클릭 숨김) + 최초 1회 카운트 =====
       const boxH1 = el.querySelector('.hint1-box');
       const boxH2 = el.querySelector('.hint2-box');
-
-      // 내용 채우기
       boxH1.innerHTML = `<b>🙏 초성:</b> <span class="kof">${q.hint1 || '—'}</span>`;
       boxH2.innerHTML = `<b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}`;
 
-      // 위임: 카드 한 번만 바인딩
       el.addEventListener('click', (ev) => {
         const b1 = ev.target.closest('.btn-hint1');
         const b2 = ev.target.closest('.btn-hint2');
         if (!b1 && !b2) return;
-
         const btn = b1 || b2;
         const isH1 = !!b1;
         const box = isH1 ? boxH1 : boxH2;
 
-        // CSS 없어도 보이게 인라인 display 토글(우선)
         const nowHidden = (box.style.display === '' ? getComputedStyle(box).display === 'none' : box.style.display === 'none');
         const toShow = nowHidden;
         box.style.display = toShow ? 'block' : 'none';
-
-        // 클래스 토글은 보조(스타일 연결돼 있으면 함께 동작)
         box.classList.toggle('show', toShow);
         btn.setAttribute('aria-pressed', toShow ? 'true' : 'false');
 
-        // 최초 열림 1회만 카운트
         if (toShow && !btn.dataset._opened) {
           if (isH1) st[i].h1++; else st[i].h2++;
           btn.dataset._opened = '1';
@@ -258,6 +251,7 @@
         btnRec.disabled=true; btnStop.disabled=false; btnEval.disabled=true;
         live.textContent='En direct / 실시간… (préparation)';
 
+        // Live STT(있으면) 연결
         if(window.LiveSTT){
           const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
           if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
@@ -290,7 +284,7 @@
       }
       async function recStop(){ if(!mr) return; mr.stop(); }
 
-      // 평가(백엔드)
+      // ===== 평가(백엔드) =====
       async function evaluate(blob, dur){
         const out=$('.out',el);
         try{
@@ -349,8 +343,8 @@
     const pron = st.map(s=>s.acc).filter(x=>typeof x==='number'&&isFinite(x));
     const pronScore=Math.round(100*(pron.reduce((a,b)=>a+b,0)/Math.max(1,pron.length)));
     const overall=Math.round((koScore+frScore)/2);
-    const gm=(window.Grading?.getGradingMessage?.(overall))||null;
 
+    const gm=(window.Grading?.getGradingMessage?.(overall))||null;
     alert(`${gm?gm.emoji+' '+gm.fr+' / '+gm.ko+'\n':''}총점 ${overall}/100\nKO ${koScore}/100 · FR ${frScore}/100 · 발음 ${isFinite(pronScore)?pronScore:0}/100`);
 
     try{
@@ -385,6 +379,16 @@
   });
 
   // ===== init =====
-  window._startTime=new Date().toISOString(); window._startMs=Date.now();
-  document.addEventListener('DOMContentLoaded', render);
+  window._startTime=new Date().toISOString();
+  window._startMs=Date.now();
+  document.addEventListener('DOMContentLoaded', () => {
+    // ✅ 이름 미기입 시 상호작용 차단 + 종료 버튼 비활성
+    if (window.StudentGate){
+      StudentGate.init();
+      StudentGate.requireBeforeInteraction(document);
+      // 버튼에 data-requires-name 달아뒀다면 아래 호출로 시각적 비활성도 적용 가능
+      StudentGate.applyRequiresNameState?.(document);
+    }
+    render();
+  });
 })();
