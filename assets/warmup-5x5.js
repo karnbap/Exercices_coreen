@@ -558,24 +558,22 @@
 
   // --- 결과 전송(타임아웃 + 로컬 저장 폴백 포함) ---
   async function sendResults(){
-    const questions = BUNDLES.map(b=>{
+    questions = BUNDLES.map(b=>{
       const st = state.progress[b.key] || {};
-      const refText = collapse(b.text);
       return {
         number: `WU-${b.key}`,
         type: 'warmup_pronun',
         fr: `${b.label} — vitesse ${state.speed}× · répétitions ×${state.repeats}`,
-        ko: refText,
+        ko: collapse(b.text),
         userAnswer: '',
         isCorrect: true,
         listenCount: state.listenCount[b.key] || 0,
         hint1Count: 0, hint2Count: 0,
-        pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100) },
-        recording: st.audioBase64
-          ? { base64: st.audioBase64, filename:`wu_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration }
-          : null
+        pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100) }
+        // recording: ❌ 보내지 않음 (용량 폭탄 방지)
       };
     });
+
 
     const payload = {
       studentName: (document.getElementById('student-name')?.value || state.name || 'Élève'),
