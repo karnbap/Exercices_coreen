@@ -102,23 +102,31 @@
     return res.json();
   }
 
-  async function sendResults(payload, opts={}){
-    const slim = slimResultsPayload(payload);
-    const bodyStr = JSON.stringify(slim);
-    saveLocal(slim); // 전송 전 백업
-
-    const retries = Math.max(0, Number(opts.retry ?? 2));
-    let attempt = 0, wait = 400;
-    for(;;){
-      try{ return await sendOnce(bodyStr); }
-      catch(err){
-        if(attempt>=retries) throw err;
-        await new Promise(r=>setTimeout(r, wait));
-        wait = Math.min(2000, Math.floor(wait*1.7));
-        attempt++;
-      }
+ async function sendResults(payload) {
+  const slim = slimResultsPayload(payload);
+  try {
+    const res = await fetch('/.netlify/functions/send-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      credentials: 'omit',
+      body: JSON.stringify(slim)
+    });
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch { data = { raw:text }; }
+    if (!res.ok) {
+      console.error('[send-results] HTTP', res.status, data);
+      alert('Envoi échoué. / 전송 실패 (서버 응답 확인 필요)');
+      return { ok:false, status:res.status, data };
     }
+    return { ok:true, status:res.status, data };
+  } catch (err) {
+    console.error('[send-results] fetch error', err);
+    alert('Envoi échoué. / 전송 실패 (네트워크 오류)');
+    return { ok:false, error:String(err) };
   }
+}
+
 
   // ---------- 4) “기존 페이지 수정 없이” 자동 캡처 ----------
   // fetch 가로채기
