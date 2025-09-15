@@ -514,14 +514,22 @@
       </div>`;
     box.classList.remove('hidden');
 
-    // 전송 버튼
+    // --- 전송 버튼 (성공/실패 상관없이 다음 단계 해제 + 로컬 폴백 저장) ---
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
-      const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> ...';
-      try{
-        await sendResults();
-        alert('✅ Résultats envoyés. / 결과 전송 완료');
+      const btn = e.currentTarget;
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
 
-        // 전송 성공 → 다음 연습문제 버튼 활성화
+      try{
+        const ok = await sendResults();
+        if (ok) {
+          alert('✅ Résultats envoyés. / 결과 전송 완료');
+        } else {
+          alert('⚠️ Réseau occupé. Résultats sauvegardés localement. Ils seront renvoyés automatiquement. / 네트워크 문제: 결과를 기기에 임시 저장했고, 다음에 자동 재전송됩니다.');
+        }
+
+        // 성공/실패 상관없이 다음 연습문제 버튼 활성화
         const goEx = document.getElementById('btn-go-ex');
         if (goEx){
           goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
@@ -531,8 +539,8 @@
       }catch(_){
         alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
       }finally{
-        btn.disabled=false;
-        btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Finir · Envoyer';
+        btn.disabled = false;
+        btn.innerHTML = orig;
       }
     }, { once:true });
 
@@ -548,6 +556,7 @@
     }
   }
 
+  // --- 결과 전송(타임아웃 + 로컬 저장 폴백 포함) ---
   async function sendResults(){
     const questions = BUNDLES.map(b=>{
       const st = state.progress[b.key] || {};
@@ -562,7 +571,9 @@
         listenCount: state.listenCount[b.key] || 0,
         hint1Count: 0, hint2Count: 0,
         pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100) },
-        recording: st.audioBase64 ? { base64: st.audioBase64, filename:`wu_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration } : null
+        recording: st.audioBase64
+          ? { base64: st.audioBase64, filename:`wu_${b.key}.webm`, mimeType:'audio/webm', duration: st.duration }
+          : null
       };
     });
 
@@ -580,9 +591,39 @@
       questions
     };
 
-    const r = await fetch(`${FN_BASE}/send-results`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    const j = await r.json().catch(()=> ({}));
-    if(!r.ok || j?.ok===false) throw new Error(j?.error || 'send-results failed');
+    // 네트워크 타임아웃 + 폴백 저장
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), 12000); // 12초 타임아웃
+
+    try{
+      const r = await fetch(`${FN_BASE}/send-results`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+        body: JSON.stringify(payload),
+        signal: ctrl.signal
+      });
+
+      // 응답 파싱(비JSON도 안전 처리)
+      let j = {};
+      try { j = await r.json(); } catch { j = {}; }
+
+      // r.ok이면 대부분 성공. 명시적으로 { ok:false }만 실패로 처리
+      if (!r.ok || j?.ok === false) {
+        throw new Error(`send-results ${r.status} / ${j?.error||'no-ok'}`);
+      }
+
+      // 성공 → 대기열 제거
+      try { localStorage.removeItem('pending-results'); } catch {}
+      return true;
+
+    } catch(err){
+      // 실패 → 로컬에 보관(다음 진입 시 자동 재전송용)
+      try { localStorage.setItem('pending-results', JSON.stringify({ when: Date.now(), payload })); } catch {}
+      console.warn('[send-results] fallback saved:', err?.message||err);
+      return false;
+    } finally {
+      clearTimeout(to);
+    }
   }
 
   // ---------- LiveSTT 로더 ----------
@@ -590,12 +631,36 @@
     return new Promise((resolve,reject)=>{
       if (window.LiveSTT) return resolve();
       const s = document.createElement('script');
+      // 캐시 무효화 쿼리
       s.src = '../assets/live-stt.js?v=' + Date.now();
       s.defer = true;
       s.onload = ()=> resolve();
       s.onerror = ()=> reject(new Error('live-stt load fail'));
       document.head.appendChild(s);
     });
+  }
+
+  // --- 보너스: 보류된 결과 자동 재전송 ---
+  async function tryResendPending(){
+    try{
+      const raw = localStorage.getItem('pending-results');
+      if(!raw) return;
+      const saved = JSON.parse(raw);
+      if(!saved?.payload) return;
+      const r = await fetch(`${FN_BASE}/send-results`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+        body: JSON.stringify(saved.payload)
+      });
+      let j = {};
+      try { j = await r.json(); } catch { j = {}; }
+      if (r.ok && j?.ok !== false) {
+        localStorage.removeItem('pending-results');
+        console.info('[send-results] pending batch flushed.');
+      }
+    }catch(e){
+      // 조용히 무시(다음 진입 때 또 시도)
+    }
   }
 
   // ---------- 공개 API ----------
@@ -619,6 +684,9 @@
   window.WU_go = WU_go;
 
   document.addEventListener('DOMContentLoaded', ()=>{
+    // 보류분 자동 재전송 시도
+    tryResendPending();
+
     const m = new URLSearchParams(location.search).get('mode');
     if(m){ WU_go(m); }
   });
