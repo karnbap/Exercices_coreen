@@ -27,13 +27,25 @@
   };
 
   // ✅ 점수 기반 메시지 + 점수 수치 함께 반환
-  function getGradingMessage(score) {
-    const s = Number(score) || 0;
-    if (s === 100) return { ...gradingMessages.perfect, emoji: "👑", score: s };
-    if (s >= 80)  return { ...gradingMessages.excellent, emoji: "👏", score: s };
-    if (s >= 60)  return { ...gradingMessages.good, emoji: "✅", score: s };
-    return { ...gradingMessages.effort, emoji: "☕", score: s };
+function getGradingMessage(score){
+  // ✅ 특별 케이스: 90점 이상이면 "Parfait absolu!"
+  if (score >= 90) {
+    return {
+      emoji: "👑🎉",
+      fr: "Parfait absolu ! Génie confirmé !",
+      ko: "완벽 그 자체! 천재 인증!"
+    };
   }
+
+  // 🔽 기존 구간별 메시지 로직 유지
+  if (score >= 80) return { emoji:"🌟", fr:"Très bien !", ko:"아주 좋아요!" };
+  if (score >= 60) return { emoji:"👍", fr:"Bien joué", ko:"잘했어요" };
+  if (score >= 40) return { emoji:"🙂", fr:"Peut mieux faire", ko:"더 노력해요" };
+  return { emoji:"💪", fr:"Continue d’essayer", ko:"계속 도전해요" };
+}
+
+window.Grading = { getGradingMessage };
+
 
   // 선택: 페이지에 바로 붙일 예쁜 배너 HTML
   function formatFinalBanner(score) {
