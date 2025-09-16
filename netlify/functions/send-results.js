@@ -124,72 +124,21 @@ function buildHtml(payload){
         <div style="font-size:20px;font-weight:800;color:#1e293b">Résultats de l’exercice</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px">${frDate}</div>
       </div>
-
-      <div style="padding:18px 20px">
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <div style="flex:1 1 220px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px">
-            <div style="font-size:12px;color:#64748b">Nom / 학생</div>
-            <div style="font-size:16px;font-weight:700">${name}</div>
-          </div>
-          <div style="flex:2 1 320px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px">
-            <div style="font-size:12px;color:#64748b">Exercice / 과제</div>
-            <div style="font-size:16px;font-weight:700">${title}${topic?` <span style="font-weight:500;color:#475569">— ${topic}</span>`:''}</div>
-          </div>
-          <div style="flex:1 1 160px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:12px;color:#64748b">Durée</div>
-            <div style="font-size:16px;font-weight:700">${hhmmss(durationSec)}</div>
-          </div>
-        </div>
-
-        ${banner}
-
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-          <div style="flex:1 1 160px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:12px;color:#0e7490">KO</div>
-            <div style="font-size:20px;font-weight:800;color:#0ea5e9">${ko}/100</div>
-          </div>
-          <div style="flex:1 1 160px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:12px;color:#166534">FR</div>
-            <div style="font-size:20px;font-weight:800;color:#22c55e">${fr}/100</div>
-          </div>
-          <div style="flex:1 1 160px;background:#fdf4ff;border:1px solid #f5d0fe;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:12px;color:#6b21a8">Prononciation</div>
-            <div style="font-size:20px;font-weight:800;color:#a855f7">${pron}/100</div>
-          </div>
-          <div style="flex:1 1 180px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:12px;color:#92400e">Global</div>
-            <div style="font-size:22px;font-weight:900;color:#f59e0b">${overall}/100</div>
-          </div>
-        </div>
-
-        <div style="margin-top:18px">
-          <table style="width:100%;border-collapse:collapse;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-            <thead>
-              <tr style="background:#f8fafc;border-bottom:1px solid #e5e7eb">
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">#</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;color:#475569">KO</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;color:#475569">FR (sens)</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">OK</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">KO✓</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">FR✓</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">Pron.</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">Écoutes</th>
-                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#475569">Hints</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${detailRows || `<tr><td colspan="9" style="padding:12px;text-align:center;color:#64748b">Aucun détail de question.</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-
-        <div style="margin-top:12px;font-size:12px;color:#64748b">
-          Période: ${esc(startISO)} → ${esc(endISO)}
-        </div>
+      <div style="padding:18px 20px">${banner}
+        <table style="width:100%;border-collapse:collapse;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:12px">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:1px solid #e5e7eb">
+              <th>#</th><th>KO</th><th>FR</th><th>OK</th>
+              <th>KO✓</th><th>FR✓</th><th>Pron.</th><th>Écoutes</th><th>Hints</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${detailRows || `<tr><td colspan="9" style="padding:12px;text-align:center;color:#64748b">Aucun détail.</td></tr>`}
+          </tbody>
+        </table>
       </div>
-
-      <div style="padding:12px 20px;border-top:1px solid #e5e7eb;font-size:12px;color:#64748b;text-align:center">
-        made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com" style="color:#2563eb;text-decoration:underline">Lapeace29@gmail.com</a>
+      <div style="padding:12px 20px;border-top:1px solid #e5e7eb;font-size:12px;text-align:center">
+        made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
       </div>
     </div>
   </div>`;
@@ -211,7 +160,7 @@ function buildText(payload){
   ].join('\n');
 }
 
-// ========= CORS 공통 =========
+// ========= CORS =========
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -230,7 +179,7 @@ exports.handler = async (event) => {
   let payload = {};
   try {
     payload = sanitizePayload(JSON.parse(event.body || '{}'));
-  } catch (e) {
+  } catch {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok:false, error:'Bad JSON' }) };
   }
 
@@ -240,35 +189,25 @@ exports.handler = async (event) => {
   const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString('fr-FR', { hour12:false });
   const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
 
+  // ========= Gmail 환경변수 사용 =========
+  const GMAIL_USER = process.env.GMAIL_USER || '';
+  const GMAIL_PASS = process.env.GMAIL_PASS || '';
+  const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
 
-  // ========= 환경변수 읽기 =========
-const SMTP_HOST = process.env.SMTP_HOST || '';
-const SMTP_PORT = process.env.SMTP_PORT || '587';
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || `"Pongdang Korean" <${SMTP_USER}>`;
-const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
-
-
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.warn('[send-results] MISSING_ENV', {
-      SMTP_HOST: !!SMTP_HOST, SMTP_USER: !!SMTP_USER, SMTP_PASS: !!SMTP_PASS, RESULTS_RECEIVER: !!RESULTS_RECEIVER
-    });
-    // 환경변수 없으면 일단 200으로 부드럽게 성공 처리(로컬/세션엔 이미 저장되어 있음)
+  if (!GMAIL_USER || !GMAIL_PASS) {
+    console.warn('[send-results] MISSING_ENV', { GMAIL_USER: !!GMAIL_USER, GMAIL_PASS: !!GMAIL_PASS });
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
   }
 
   const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT || 587),
-    secure: String(SMTP_PORT || '587') === '465', // 465만 TLS
-    auth: { user: SMTP_USER, pass: SMTP_PASS }
+    service: 'gmail',
+    auth: { user: GMAIL_USER, pass: GMAIL_PASS }
   });
 
   try {
     await transporter.sendMail({
-      from: SMTP_FROM || `"Pongdang Korean" <${SMTP_USER}>`,
-      to: RESULTS_RECEIVER || 'Lapeace29@gmail.com',
+      from: `"Pongdang Korean" <${GMAIL_USER}>`,
+      to: RESULTS_RECEIVER,
       subject,
       text: buildText(payload),
       html: buildHtml(payload)
@@ -280,4 +219,3 @@ const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
-
