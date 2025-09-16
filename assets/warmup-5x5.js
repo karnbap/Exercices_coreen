@@ -362,6 +362,16 @@ const state = {
 
     let lastRecord = null;
     let liveText = ''; // live-stt 최종 텍스트(숫자→한글 강제 포함)
+    
+    // 🔒 전역 가드용: 이 카드의 발음 상태를 기억해 다음 이동 허용
+    function updatePronunGuard(card, { accuracy=null, res=null } = {}){
+      const st = card.__pronunState || { evalCount: 0, passed: false };
+      st.evalCount += 1;
+      const ok = (typeof accuracy === 'number' && accuracy >= 0.8) || (res && (res.ok || res.passed));
+      if (ok) st.passed = true;
+      card.__pronunState = st;
+}
+
 
     // live-stt 이벤트 리슨(+ 숫자→한글 강제)
     card.addEventListener('livestt:final', (e)=>{
@@ -455,13 +465,14 @@ const state = {
            </div>`;
         fbBox.classList.remove('hidden');
 
-
+        updatePronunGuard(card, { accuracy, res: srv }); // ✅ 카드 상태 반영(점수 0.8↑면 passed)
         checkFinish();
       }catch(_){
         status.textContent = 'Échec de l’évaluation. Réessaie.';
       } finally {
         btnEval.disabled = false;
         state.evalCount++;        // 🔄 성공/실패/재시도 포함 모든 평가 클릭 → 카운트
+        updatePronunGuard(card, {}); // ✅ 점수와 무관하게 evalCount만 +1 보장
         updateNextAvailability();
       }
 
