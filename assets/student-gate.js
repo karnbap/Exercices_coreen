@@ -83,39 +83,43 @@ function toggleFinish(){
   }
 
   // ===== 이름 없으면 상호작용 차단(캡처 단계) =====
-  function requireBeforeInteraction(root=document){
-    const allow = (t)=>{
-      if (!t) return true;
-      if (t.id==='student-name' || (t.closest && t.closest('#student-name'))) return true;
-      // 예외: data-allow-before-name 붙은 요소/조상
-      if (t.closest && t.closest('[data-allow-before-name]')) return true;
-      return false;
-    };
-    const guard = (e)=>{
-      if (getName()) return;
-      const t=e.target;
-      if (allow(t)) return;
+function requireBeforeInteraction(root=document){
+  const needName = (t)=>{
+    if (!t) return false;
+    const el = t.closest('[data-requires-name]');
+    if (!el) return false;
+    if (el.closest('[data-allow-before-name]')) return false;
+    return true;
+  };
 
-      // 키보드로 버튼/링크 활성화도 막기
-      if (e.type==='keydown'){
-        const k=e.key;
-        if (!['Enter',' '].includes(k)) return;
-      }
+  const guard = (e)=>{
+    if (getName()) return;
+    const t = e.target;
+
+    if (e.type === 'keydown' && !['Enter',' '].includes(e.key)) return;
+    if (!needName(t)) return;
+
+    e.preventDefault(); e.stopPropagation();
+    alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+    focusName();
+  };
+
+  root.addEventListener('click',guard,true);
+  root.addEventListener('pointerdown',guard,true);
+  root.addEventListener('touchstart',guard,true);
+  root.addEventListener('keydown',guard,true);
+  root.addEventListener('submit',(e)=>{
+    if(!getName() && needName(e.target)){
       e.preventDefault(); e.stopPropagation();
       alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
       focusName();
-    };
-    // 광범위 이벤트 캡처
-    root.addEventListener('click',       guard, true);
-    root.addEventListener('pointerdown', guard, true);
-    root.addEventListener('touchstart',  guard, true);
-    root.addEventListener('keydown',     guard, true);
-    root.addEventListener('submit', (e)=>{ if(!getName()){ e.preventDefault(); e.stopPropagation(); alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.'); focusName(); }}, true);
+    }
+  },true);
 
-    // 동적 요소 상태 자동 반영
-    const mo=new MutationObserver(()=>applyRequiresNameState(root));
-    mo.observe(root,{childList:true,subtree:true,attributes:true});
-  }
+  const mo = new MutationObserver(()=>applyRequiresNameState(root));
+  mo.observe(root,{childList:true,subtree:true,attributes:true});
+}
+
 
   // ===== 공개 API =====
   window.StudentGate = { init, requireBeforeInteraction, getName, setName, applyRequiresNameState };
