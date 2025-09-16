@@ -7,3 +7,8 @@ external_node_modules = ["form-data"]
 NODE_VERSION = "18"
 # 선택: 설치 속도/안정성
 NPM_FLAGS = "--no-audit --no-fund"
+
+GMAIL_USER = "lapeace29@gmail.com"
+GMAIL_APP_PASSWORD = "********" # 실제 값은 Netlify 환경변수에만 저장
+RESULTS_RECEIVER = "Lapeace29@gmail.com"
+
