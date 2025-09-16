@@ -558,21 +558,21 @@
 
   // --- 결과 전송(타임아웃 + 로컬 저장 폴백 포함) ---
   async function sendResults(){
-    questions = BUNDLES.map(b=>{
-      const st = state.progress[b.key] || {};
-      return {
-        number: `WU-${b.key}`,
-        type: 'warmup_pronun',
-        fr: `${b.label} — vitesse ${state.speed}× · répétitions ×${state.repeats}`,
-        ko: collapse(b.text),
-        userAnswer: '',
-        isCorrect: true,
-        listenCount: state.listenCount[b.key] || 0,
-        hint1Count: 0, hint2Count: 0,
-        pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100) }
-        // recording: ❌ 보내지 않음 (용량 폭탄 방지)
-      };
-    });
+   const questions = BUNDLES.map(b=>{
+  const st = state.progress[b.key] || {};
+  return {
+    number: `WU-${b.key}`,
+    type: 'warmup_pronun',
+    fr: `${b.label} — vitesse ${state.speed}× · répétitions ×${state.repeats}`,
+    ko: collapse(b.text),
+    userAnswer: '',
+    isCorrect: true,
+    listenCount: state.listenCount[b.key] || 0,
+    hint1Count: 0, hint2Count: 0,
+    pronunciation: { accuracy: (st.accuracy ?? (st.score||0)/100) }
+  };
+});
+
 
 
     const payload = {
