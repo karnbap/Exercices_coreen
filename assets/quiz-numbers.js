@@ -470,9 +470,10 @@ function isNextAllowed() {
   const passed   = q.pronunPassed === true;
 
   // 규칙: 발음 평가를 최소 2회 했으면 점수와 상관없이 통과
-  const pronunOK = passed || attempts >= 2;
+// 수정 후: pass 여부 상관없이 시도만 2회 이상이면 OK
+const pronunOK = attempts >= 2;
+if (q.pronunRequired && !pronunOK) return false;
 
-  if (q.pronunRequired && !pronunOK) return false;
 
   if (q.type === 'choice') {
     return !!q.userAnswer && q.userAnswer === q.answer;
