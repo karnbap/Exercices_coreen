@@ -150,11 +150,13 @@
 
     // 상단 헤더 + 총점/시간 + 오답노트 박스 구성
     const name = escapeHTML(payload?.studentName || '-');
-    const graded = (payload?.questions || []).filter(q => typeof q?.isCorrect === 'boolean');
+   const graded = (payload?.questions || []).filter(q => typeof q?.isCorrect === 'boolean');
     const correct = graded.filter(q => q.isCorrect).length;
     const totalG = graded.length || (payload?.questions?.length || 0);
-    const pct = totalG ? Math.round((100 * correct) / totalG) : 0;
+    const pctFromItems = totalG ? Math.round((100 * correct) / totalG) : 0;
+    const final = Number.isFinite(Number(payload?.overall)) ? Number(payload.overall) : pctFromItems;
     const tsec = Number(payload?.totalTimeSeconds || payload?.totalSeconds || 0);
+
 
     root.innerHTML = `
       <header class="mb-4 max-w-3xl mx-auto">
