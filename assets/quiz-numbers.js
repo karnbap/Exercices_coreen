@@ -1,10 +1,10 @@
-// assets/quiz-numbers.js
+<!-- /assets/quiz-numbers.js (final) -->
 // Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
 // - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
 // - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL
 // - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과로 다음 활성화)
 // - Q1에서 ← 누르면 numbers-warmup.html로 이동
-// - 끝내기: 결과 전송 + 요약 화면 표시
+// - 끝내기: 결과 전송 + 요약 화면 표시 + 문항별 발음 테이블
 
 (function(){
   'use strict';
@@ -30,7 +30,6 @@
     for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
     return new Blob([arr],{type:mime});
   };
-  const fmtSecs = t => `${Math.max(0, Math.round(t/1000))} s`;
 
   // ===== Audio =====
   async function playAudio(text, voice='alloy', opts={}){
@@ -173,7 +172,8 @@
     $('#sticky55')?.classList.toggle('hidden', q.number < 6);
 
     $('#progressText').textContent = `Question ${q.number} / ${S.qs.length}`;
-    $('#progressBar').style.width = `${Math.round((S.idx / S.qs.length)*100)}%`;
+    const prog = Math.max(0, Math.min(100, Math.round((S.idx / S.qs.length)*100)));
+    $('#progressBar').style.width = `${prog}%`;
 
     const host = $('#qArea');
     host.innerHTML = '';
@@ -455,19 +455,41 @@
   function updateNav(){
     // Q1에서도 ← 사용 가능(웜업 이동용)
     $('#btnPrev').disabled = false;
+
     const canNext = isNextAllowed();
-    $('#btnNext').disabled = !canNext;
-    const isLast = (S.idx===S.qs.length-1);
-    $('#btnFinish').classList.toggle('hidden', !isLast);
-    $('#btnFinish').disabled = !isLast ? true : false;
+    const isLast  = (S.idx === S.qs.length - 1);
+
+    // 다음 버튼: 마지막 문항에서는 숨김
+    const nextBtn = $('#btnNext');
+    if (nextBtn) {
+      nextBtn.disabled = !canNext || isLast;
+      nextBtn.style.display = isLast ? 'none' : '';
+    }
+
+    // 끝내기 버튼
+    const finishBtn = $('#btnFinish');
+    if (finishBtn) {
+      finishBtn.classList.toggle('hidden', !isLast);
+      finishBtn.disabled = !isLast ? true : false;
+    }
   }
 
   // ===== Finish & Summary =====
   async function finish(){
     const end = Date.now();
     const name = $('#studentName').value?.trim() || 'Élève';
+
+    // 메일/로그 요약에 유용: 과제명 & 전체 점수 포함
+    const rawTitle = (document.title || 'Exercices').trim();
+    const assignmentTitle = rawTitle.replace(/\s*\|\s*.*$/,'').trim(); // "Coréen — Nombres"만 남도록
+    const correct = S.qs.filter(q=>q.isCorrect === true).length;
+    const total   = S.qs.length;
+    const overall = total ? Math.round((100 * correct) / total) : 0;
+
     const payload = {
       studentName: name,
+      assignmentTitle,
+      overall,
       startTime: new Date(S.start).toISOString(),
       endTime: new Date(end).toISOString(),
       totalTimeSeconds: Math.round((end - S.start)/1000),
@@ -496,11 +518,10 @@
   }
 
   function renderSummary(p){
-    const total = p.questions.length;
+    const total   = p.questions.length;
     const correct = p.questions.filter(q=>q.isCorrect).length;
-    const pct = total ? Math.round((100*correct)/total) : 0;
-    const wrong = p.questions.filter(q=>q.isCorrect===false);
-    const pronun = p.questions.filter(q=>q.pronunAttempted);
+    const pct     = total ? Math.round((100*correct)/total) : 0;
+    const wrong   = p.questions.filter(q=>q.isCorrect===false);
 
     const host = $('#qArea');
     host.innerHTML = `
@@ -514,7 +535,7 @@
           </div>
           <div class="sum-box">
             <div class="sum-title">Prononciation</div>
-            <div class="sum-val">${pronun.length}</div>
+            <div class="sum-val">${p.questions.filter(q=>q.pronunAttempted).length}</div>
             <div class="sum-sub">녹음 시도 문항 수</div>
           </div>
           <div class="sum-box">
@@ -524,23 +545,59 @@
           </div>
         </div>
 
-        ${wrong.length ? `
-        <div class="soft-divider"></div>
-        <h3 class="font-semibold mb-1">À revoir / 다시 보기</h3>
-        <ol class="list-decimal pl-5 space-y-2">
-          ${wrong.map(q=>{
-            const ua = (q.type==='dictation') ? JSON.parse(q.userAnswer||'{}')?.ko||'' : (q.userAnswer||'');
-            const ko = q.ko || '';
-            const fr = q.fr || '';
-            return `
-              <li>
-                <div class="text-sm"><b>Q${q.number}</b> ${fr?`<span class="text-slate-500">(${esc(fr)})</span>`:''}</div>
-                <div class="text-sm">🧩 <span class="text-slate-600">정답</span> : <b>${esc(ko)}</b></div>
-                <div class="text-sm">🤔 <span class="text-slate-600">내 답</span> : ${esc(ua||'—')}</div>
-              </li>`;
-          }).join('')}
-        </ol>` : `
-        <div class="pronun-card mt-2">모든 문항을 맞췄습니다. 아주 좋아요! ✨</div>`}
+        ${
+          wrong.length ? `
+          <div class="soft-divider"></div>
+          <h3 class="font-semibold mb-1">À revoir / 다시 보기</h3>
+          <ol class="list-decimal pl-5 space-y-2">
+            ${wrong.map(q=>{
+              const ua = (q.type==='dictation') ? JSON.parse(q.userAnswer||'{}')?.ko||'' : (q.userAnswer||'');
+              const ko = q.ko || '';
+              const fr = q.fr || '';
+              return `
+                <li>
+                  <div class="text-sm"><b>Q${q.number}</b> ${fr?`<span class="text-slate-500">(${esc(fr)})</span>`:''}</div>
+                  <div class="text-sm">🧩 <span class="text-slate-600">정답</span> : <b>${esc(ko)}</b></div>
+                  <div class="text-sm">🤔 <span class="text-slate-600">내 답</span> : ${esc(ua||'—')}</div>
+                </li>`;
+            }).join('')}
+          </ol>` : `
+          <div class="pronun-card mt-2">모든 문항을 맞췄습니다. 아주 좋아요! ✨</div>`
+        }
+
+        <div class="soft-divider mt-4"></div>
+        <h3 class="font-semibold mb-1">Prononciation par question / 문항별 발음 정확도</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border border-slate-200 rounded-md">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-2 py-1 text-left">Q#</th>
+                <th class="px-2 py-1 text-left">Référence (KO)</th>
+                <th class="px-2 py-1 text-left">Tentatives / 시도</th>
+                <th class="px-2 py-1 text-left">Dernier score / 마지막 점수</th>
+                <th class="px-2 py-1 text-left">Passé ?</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${p.questions.map(q=>{
+                const ref = q.ko || '';
+                const tries = q.pronunAttempts || 0;
+                const last  = (typeof q.lastPronunScore === 'number')
+                  ? Math.round(q.lastPronunScore * 100) + '%'
+                  : '—';
+                const ok = q.pronunPassed ? '✅' : (tries ? '❌' : '—');
+                return `
+                  <tr class="border-t">
+                    <td class="px-2 py-1">Q${q.number}</td>
+                    <td class="px-2 py-1">${esc(ref)}</td>
+                    <td class="px-2 py-1">${tries}</td>
+                    <td class="px-2 py-1">${last}</td>
+                    <td class="px-2 py-1">${ok}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
 
         <div class="mt-4 flex justify-end">
           <a class="btn btn-primary" href="../index.html">Fermer / 닫기</a>
@@ -556,7 +613,10 @@
 
   function requireName(){
     const v = $('#studentName').value?.trim();
-    if(!v){ alert('이름을 먼저 입력해 주세요. / Écris ton nom d’abord.'); return false; }
+    if(!v){
+      alert('이름을 먼저 입력해 주세요. / Écris ton nom d’abord.');
+      return false;
+    }
     S.name = v; return true;
   }
 
@@ -564,7 +624,6 @@
   $('#btnPrev').addEventListener('click', ()=>{
     // 첫 문제에서 ← 누르면 웜업으로 이동
     if(S.idx<=0){
-      // 같은 폴더라면 아래 경로 그대로 사용
       window.location.href = 'numbers-warmup.html';
       return;
     }
@@ -575,12 +634,17 @@
     if(!requireName()) return;
 
     const q = S.qs[S.idx];
-    // 발음 선행 안내 (불어)
     const pronunOK =
       (q.pronunPassed === true) ||
       ((q.pronunAttempts||0) >= 2 && (q.lastPronunScore==null || q.lastPronunScore <= 0.8));
+
     if(q.pronunRequired && !pronunOK){
-      alert("Vous devez d’abord enregistrer votre prononciation pour passer à la question suivante. (Après 2 évaluations, si votre dernier score est ≤ 80%, vous pouvez continuer.)");
+      alert(
+        "Enregistrez et évaluez d’abord votre prononciation (≥ 2 fois). " +
+        "Après 2 évaluations, si votre dernier score est ≤ 80%, vous pouvez continuer.\n\n" +
+        "먼저 발음을 녹음하고 평가를 최소 2회 해주세요. " +
+        "2회 평가 후 마지막 점수가 80% 이하이면 다음으로 넘어갈 수 있어요."
+      );
       return;
     }
 
