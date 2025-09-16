@@ -1,4 +1,4 @@
-// assets/pronun-client.js  (v4.4)
+// assets/pronun-client.js  (v4.5)
 // 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void, ui:'classic'|'warmup' })
 // - 기본값은 classic → 기존 연습문제 영향 없음
 // - ui:'warmup' 시 워밍업 스타일(녹음/정지/평가 + VU + LiveSTT 훅) 사용
@@ -8,7 +8,7 @@
   'use strict';
 
   // 중복 로드 방지(버전 가드)
-  if (global.Pronun && Number(global.Pronun.__v||0) >= 44) return;
+  if (global.Pronun && Number(global.Pronun.__v||0) >= 45) return;
 
   // === 전역 UI 기본값(지정 없으면 classic 유지) ===
   global.PRONUN_UI_DEFAULT = global.PRONUN_UI_DEFAULT || 'classic'; // 'classic' | 'warmup'
@@ -150,11 +150,12 @@
       stop: h('button', { class: 'btn btn-secondary disabled', disabled: 'true' }, '⏹️ Stop / 정지'),
       eval: h('button', { class: 'btn btn-primary disabled', disabled: 'true' }, '✅ Évaluer / 평가'),
       cvs:  h('canvas', { width: String(CFG.canvasW), height: String(CFG.canvasH), class: 'border rounded' }),
+      live: h('div', { class: 'pronun-live text-sm p-2 rounded border bg-white w-full' }, '…'),
       msg:  h('div', { class: 'text-sm text-slate-700 w-full' }),
       out:  h('div', { class: 'text-sm font-semibold w-full mt-1' })
     };
     mountEl.innerHTML = '';
-    ui.root.append(ui.rec, ui.stop, ui.eval, ui.cvs, ui.msg, ui.out);
+    ui.root.append(ui.rec, ui.stop, ui.eval, ui.cvs, ui.live, ui.msg, ui.out);
     mountEl.appendChild(ui.root);
     return ui;
   }
@@ -165,7 +166,7 @@
     const btnStop= h('button',{class:'btn btn-outline disabled',disabled:'true'},'⏹️ Stop');
     const btnEval= h('button',{class:'btn btn-primary disabled',disabled:'true'},'✅ Évaluer / 평가');
     const vu     = h('canvas',{width:'800',height:'50',class:'border rounded w-full'});
-    const live   = h('div',{class:'pronun-live text-sm p-2 rounded border bg-white'});
+    const live   = h('div',{class:'pronun-live text-sm p-2 rounded border bg-white'},'…');
     const msg    = h('div',{class:'text-sm text-slate-700'});
     row.append(btnRec, btnStop, btnEval); box.append(row, vu, live, msg);
     mountEl.innerHTML=''; mountEl.appendChild(box);
@@ -184,6 +185,33 @@
 
     // UI 구성
     const ui = (uiMode === 'warmup') ? buildWarmupUI(mountEl) : buildClassicUI(mountEl);
+
+    // 내부 상태: 평가 횟수/통과 여부(다음 버튼 가드용)
+    mountEl.__pronunState = { evalCount: 0, passed: false, lastScore: 0 };
+
+    // Live STT 훅
+    function startLiveSTT(){
+      if (window.LiveSTT && typeof LiveSTT.start === 'function') {
+        try {
+          LiveSTT.start(
+            (partial) => {
+              if (ui?.live) ui.live.textContent = partial || '…';
+              try { mountEl.dispatchEvent(new CustomEvent('livestt:partial', { detail: { text: String(partial||'') } })); } catch(_){}
+            },
+            (finalTxt) => {
+              if (ui?.live) ui.live.textContent = finalTxt || ' ';
+              ui._liveText = finalTxt || '';
+              try { mountEl.dispatchEvent(new CustomEvent('livestt:final', { detail: { text: String(finalTxt||'') } })); } catch(_){}
+            }
+          );
+        } catch(_) { if (ui?.live) ui.live.textContent = 'STT indisponible / 실시간 자막 준비 중'; }
+      } else {
+        if (ui?.live) ui.live.textContent = 'STT indisponible / 실시간 자막 준비 중';
+      }
+    }
+    function stopLiveSTT(){
+      try { if (window.LiveSTT && typeof LiveSTT.stop === 'function') LiveSTT.stop(); } catch(_) {}
+    }
 
     function setState(state){
       if(state==='idle'){
@@ -209,6 +237,8 @@
         rec.ondataavailable = e => { if(e.data && e.data.size>0) chunks.push(e.data); };
         rec.onstop = () => setState('stop');
         vu = startVU(stream, ui.cvs);
+        if (ui?.live) ui.live.textContent = '…';
+        startLiveSTT(); // 🔴 LiveSTT 시작
         rec.start(); startMs = Date.now();
         ui.msg.textContent = '🎧 Enregistrement… / 녹음 중';
         setState('rec');
@@ -219,6 +249,7 @@
     function stopRec(){
       if(rec && rec.state==='recording'){ try{ rec.stop(); }catch(_){} }
       vu?.stop(); vu=null; stopTracks();
+      stopLiveSTT(); // 🔴 LiveSTT 정지
       lastDur = (Date.now()-startMs)/1000;
       if(lastDur < CFG.minSec){ ui.msg.textContent = `⏱️ Un peu plus long (≥ ${CFG.minSec}s) / 조금 더 길게`; ui.eval.disabled=true; ui.eval.classList.add('disabled'); }
       else { ui.msg.textContent = '⏹️ Terminé. Appuie “Évaluer”. / 완료! “평가”를 눌러요'; }
@@ -269,7 +300,7 @@
         duration: lastDur
       };
 
-      // 워밍업 UI: livestt 보정(있을 때만)
+      // 워밍업 UI: LiveSTT 보정(있을 때만)
       if (uiMode === 'warmup' && ui?.live && out.needsRetry) {
         try{
           const liveText = ui._liveText ? String(ui._liveText).trim() : '';
@@ -286,6 +317,15 @@
       else ui.msg.textContent = `✅ Score ≈ ${Math.round((out.accuracy||0)*100)}%`;
 
       try { onResult(out); } catch(_) {}
+
+      // === 평가 이벤트/상태 업데이트 (커스텀) ===
+      const scorePct = Math.round((out.accuracy || 0) * 100);
+      const st = (mountEl.__pronunState ||= { evalCount:0, passed:false, lastScore:0 });
+      st.evalCount += 1;
+      st.lastScore = scorePct;
+      if (scorePct >= 80) st.passed = true;
+      try { mountEl.dispatchEvent(new CustomEvent('pronun:evaluated', { detail: { score: scorePct, evalCount: st.evalCount } })); } catch(_){}
+
       evalBusy=false;
     }
 
@@ -294,7 +334,7 @@
     ui.stop.addEventListener('click', stopRec);
     ui.eval.addEventListener('click', evalRec);
 
-    // LiveSTT 최종 텍스트 수신(warmup 모드에서만 사용)
+    // LiveSTT 최종 텍스트 수신(외부 소스 이벤트 지원)
     if (uiMode === 'warmup') {
       mountEl.addEventListener('livestt:final', (e)=>{ try{ ui._liveText = String(e?.detail?.text||''); }catch(_){} });
     }
@@ -305,5 +345,5 @@
   }
 
   // ===== 공개 API =====
-  global.Pronun = { mount, __v: 44 };
+  global.Pronun = { mount, __v: 45 };
 })(window);
