@@ -1,6 +1,6 @@
 // assets/quiz-numbers.js
 // Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
-// - 이름 체크, Sticky 5×5, 힌트(초성/부분뜻; 1~5는 숨김), 오답 흔들림
+// - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
 // - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL
 // - 끝내기: 결과 전송 + 요약 화면 표시
 
@@ -17,6 +17,7 @@
     audio: { el:null, url:null, btn:null, fetching:false, lock:false, ac:null },
   };
 
+  // ===== Utils =====
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const strip = s => String(s||'').replace(/\s/g,'');
@@ -29,6 +30,7 @@
   };
   const fmtSecs = t => `${Math.max(0, Math.round(t/1000))} s`;
 
+  // ===== Audio =====
   async function playAudio(text, voice='alloy', opts={}){
     const btn = opts._btn || null;
     if (S.audio.lock || S.audio.fetching) {
@@ -97,7 +99,9 @@
     btn.textContent = playing ? 'Pause (일시정지)' : 'Écouter (듣기)';
   }
 
+  // ===== Questions =====
   function getQuestions(){
+    // 1–5 선택(개념)
     const choiceData = [
       { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hints:{choseong:"ㅇㅇ", part:"date: ‘~일’ (Hanja)"} },
       { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hints:{choseong:"ㅎ ㅅ", part:"heure: natif + 시"} },
@@ -106,6 +110,7 @@
       { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hints:{choseong:"ㅅㅅ ㅂ", part:"minutes: sino + 분"} },
     ];
 
+    // 6–15 불→한
     const frKo = [
       { fr:"Quelle heure est-il ?", audio:"몇 시예요?", frGuide:"Ex. Il est 3 h.", ko:"세 시예요.", accepted:["3시예요","세시예요","지금은 세 시예요.","세 시입니다."], voice:"alloy", hints:{choseong:"ㅅ ㅅㅇㅇ", part:"‘~시예요’(c’est ~h)"} },
       { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. Le 10.", ko:"십일이에요.", accepted:["10일이에요","오늘은 십일이에요","오늘 십일이에요"], voice:"shimmer", hints:{choseong:"ㅅㅇㅇㅇ", part:"date: sino + 일"} },
@@ -120,6 +125,7 @@
       { fr:"Combien de secondes ?", audio:"몇 초예요?", frGuide:"Ex. Dix secondes.", ko:"십 초예요.", accepted:["10초예요","십초예요"], voice:"nova", hints:{choseong:"ㅅ ㅊㅇㅇ", part:"secondes: sino + 초"} },
     ];
 
+    // 16–20 받아쓰기
     const dictee = [
       { ko:"지금 몇 시예요?", fr:"Quelle heure est-il ?", guide:"Ex. Il est 3 h.", voice:"shimmer", hints:{choseong:"ㅈㄱ  ㅁ ㅅㅇㅇ?", part:"‘몇 시’ → heure"} },
       { ko:"오늘 며칠이에요?", fr:"Quel jour du mois est-on ?", guide:"Ex. Le 10.", voice:"nova", hints:{choseong:"ㅇㄴ  ㅁㅊㄹㅇㅇ?", part:"‘며칠’ → date (jour)"} },
@@ -155,6 +161,7 @@
     return [...choice, ...fr_prompt_ko, ...dictation];
   }
 
+  // ===== Render =====
   function render(){
     const q = S.qs[S.idx]; if(!q) return;
 
@@ -208,7 +215,7 @@
             b.classList.add('is-correct');
             fb.className = 'feedback good';
             fb.textContent = '✅ Correct ! Tu peux passer à la suite. / 정답! 다음으로 넘어가요.';
-            q.pronunAttempted = false;
+            q.pronunAttempted = false; // 정답 후 발음 시도 요구
           }else{
             b.classList.add('is-wrong');
             fb.className = 'feedback bad';
@@ -241,27 +248,33 @@
       $('#btnListen', controls).addEventListener('click', e=>playAudio(q.audioText, q.voice, {_btn:e.currentTarget}));
       $('#btnStop', controls).addEventListener('click', stopAudio);
 
-      const guide = document.createElement('div');
-      guide.className = 'p-3 bg-white rounded border mb-3 text-sm text-slate-700';
-      guide.innerHTML = `<span class="font-medium">Guide (FR)</span> : ${esc(q.frGuide)}`;
-      card.appendChild(guide);
-
+      // 힌트
       card.insertAdjacentHTML('beforeend', hintBox(q));
 
+      // 입력 라벨 + 강조 입력칸 + FR 예시(작은 글씨, 입력칸 아래로 이동)
       const lab = document.createElement('label');
       lab.className='block mb-1 font-semibold';
       lab.textContent='Réponse en coréen (한국어):';
       card.appendChild(lab);
 
-      const row = document.createElement('div');
-      row.className='flex gap-2';
-      row.innerHTML = `
-        <input id="inpKO" class="input-field flex-1" value="${esc(q.userAnswer||'')}" placeholder="Ex. ${esc(q.ko)}">
-        <button class="btn btn-primary" id="btnCheck">Vérifier / 정답 확인</button>
+      const fieldWrap = document.createElement('div');
+      fieldWrap.className = 'flex flex-col gap-1';
+      fieldWrap.innerHTML = `
+        <input id="inpKO"
+               class="input-field flex-1 border-2 border-blue-500 focus:border-blue-600 rounded-lg p-2"
+               value="${esc(q.userAnswer||'')}"
+               placeholder="여기에 한국어로 입력하세요">
+        <div class="text-xs text-slate-500">Ex (FR) : ${esc(q.frGuide||'')}</div>
       `;
-      card.appendChild(row);
-      $('#inpKO', row).addEventListener('input', (e)=>onTextInput(e.target.value));
-      $('#btnCheck', row).addEventListener('click', checkText);
+      card.appendChild(fieldWrap);
+
+      const checkBtn = document.createElement('button');
+      checkBtn.className = 'btn btn-primary mt-2';
+      checkBtn.textContent = 'Vérifier / 정답 확인';
+      checkBtn.addEventListener('click', checkText);
+      card.appendChild(checkBtn);
+
+      $('#inpKO', fieldWrap).addEventListener('input', (e)=>onTextInput(e.target.value));
 
       if(q.textChecked){
         const ok = q.textCorrect===true;
@@ -302,7 +315,7 @@
         </div>
         <div>
           <label class="block mb-1 font-semibold">2) Réponse (한국어 대답)</label>
-          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo||'')}" placeholder="Ex. 네 시예요 / 10유로예요 …">
+          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo||'')}" placeholder="여기에 한국어로 입력하세요">
           <div class="text-xs text-slate-500 mt-1">Ex (FR) : ${esc(q.frAnswerGuide||'')}</div>
         </div>
       `;
@@ -320,6 +333,7 @@
     return (t==='choice'?'Choix / 선택': t==='fr_prompt_ko'?'Français → 한국어 / 불→한':'Dictée + Réponse / 받아쓰기 + 대답');
   }
 
+  // 힌트(1~5 숨김)
   function hintBox(q){
     if (q.number <= 5) return '';
     return `
@@ -332,6 +346,7 @@
     `;
   }
 
+  // 발음 위젯
   function renderPronunIfNeeded(card, q){
     if(q.type==='choice' && q.userAnswer === q.answer){
       renderPronun(card, q, q.answer);
@@ -367,6 +382,7 @@
     return '';
   }
 
+  // ===== Interactions =====
   function onTextInput(v){
     const q=S.qs[S.idx];
     q.userAnswer=v;
@@ -419,6 +435,7 @@
     $('#btnFinish').disabled = !isLast ? true : false;
   }
 
+  // ===== Finish & Summary =====
   async function finish(){
     const end = Date.now();
     const name = $('#studentName').value?.trim() || 'Élève';
@@ -494,7 +511,8 @@
         </ol>` : `
         <div class="pronun-card mt-2">모든 문항을 맞췄습니다. 아주 좋아요! ✨</div>`}
 
-
+        <div class="mt-4 flex justify-end">
+          <a class="btn btn-primary" href="../index.html">Fermer / 닫기</a>
         </div>
       </div>
     `;
@@ -511,7 +529,15 @@
     S.name = v; return true;
   }
 
-  $('#btnPrev').addEventListener('click', ()=>{ if(S.idx>0){ S.idx--; render(); } });
+  // ===== Nav events =====
+  $('#btnPrev').addEventListener('click', ()=>{
+    // 첫 문제에서 ← 누르면 웜업으로 이동
+    if(S.idx<=0){
+      window.location.href = 'numbers-warmup.html';
+      return;
+    }
+    S.idx--; render();
+  });
   $('#btnNext').addEventListener('click', ()=>{
     if(!requireName()) return;
     if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); }
@@ -519,8 +545,10 @@
   $('#btnFinish').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
   window.addEventListener('beforeunload', cleanupAudio);
 
+  // ===== Start =====
   S.qs = getQuestions();
   render();
 
+  // Expose
   window.Quiz = { playAudio, stopAudio, onTextInput, checkText, updateDictee, showHint };
 })();
