@@ -116,3 +116,23 @@ body{
   40%,60%{transform:translateX(6px)}
 }
 .shake{ animation:shake .45s ease; }
+
+/* === Inputs visibility & size === */
+.input,
+.textarea {
+  width: 100%;
+  font-size: 1.125rem; /* text-lg */
+  min-height: 3rem;    /* 48px */
+}
+.input::placeholder,
+.textarea::placeholder {
+  opacity: 1;                 /* 클릭 전에도 선명하게 */
+  color: #64748b;             /* slate-500 */
+  white-space: normal;        /* 줄바꿈 허용 */
+  text-overflow: clip;        /* 잘림 방지 */
+}
+.textarea {
+  min-height: 4.5rem; /* 72px, 답안칸 더 크게 */
+  resize: vertical;
+}
+
