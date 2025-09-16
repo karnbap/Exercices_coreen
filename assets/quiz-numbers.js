@@ -2,7 +2,8 @@
 // Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
 // - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
 // - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL
-// - 다음 이동 규칙: 모든 문항은 발음 녹음이 선행. (Q16~: 발음 2회 실패해도 통과 허용)
+// - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과로 다음 활성화)
+// - Q1에서 ← 누르면 numbers-warmup.html로 이동
 // - 끝내기: 결과 전송 + 요약 화면 표시
 
 (function(){
@@ -139,7 +140,8 @@
       number:i+1, type:'choice', context:q.context, options:q.options, answer:q.answer,
       hints:q.hints, userAnswer:null, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false, pronunPassed:false, pronunFails:0
+      pronunRequired:true, pronunAttempted:false, pronunPassed:false,
+      pronunFails:0, pronunAttempts:0, lastPronunScore:null
     }));
 
     const fr_prompt_ko = frKo.map((q,i)=>({
@@ -148,7 +150,8 @@
       accepted:q.accepted||[], voice:q.voice||'alloy', hints:q.hints,
       userAnswer:"", textChecked:false, textCorrect:null, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false, pronunPassed:false, pronunFails:0
+      pronunRequired:true, pronunAttempted:false, pronunPassed:false,
+      pronunFails:0, pronunAttempts:0, lastPronunScore:null
     }));
 
     const dictation = dictee.map((q,i)=>({
@@ -156,7 +159,8 @@
       ko:q.ko, fr:q.fr, frAnswerGuide:q.guide, voice:q.voice, hints:q.hints,
       userAnswer:{ko:"", replyKo:""}, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false, pronunPassed:false, pronunFails:0
+      pronunRequired:true, pronunAttempted:false, pronunPassed:false,
+      pronunFails:0, pronunAttempts:0, lastPronunScore:null
     }));
 
     return [...choice, ...fr_prompt_ko, ...dictation];
@@ -252,7 +256,7 @@
       // 힌트(1~5 숨김)
       card.insertAdjacentHTML('beforeend', hintBox(q));
 
-      // 입력 라벨 + 강조 입력칸 + 한-불 안내
+      // 입력 라벨 + 강조 입력칸 + 한/불 안내
       const lab = document.createElement('label');
       lab.className='block mb-1 font-semibold';
       lab.textContent='Réponse en coréen (한국어):';
@@ -305,7 +309,6 @@
       $('#btnListen', controls).addEventListener('click', e=>playAudio(q.ko, q.voice, {_btn:e.currentTarget}));
       $('#btnStop', controls).addEventListener('click', stopAudio);
 
-      // 힌트(1~5 숨김)
       card.insertAdjacentHTML('beforeend', hintBox(q));
 
       const box = document.createElement('div');
@@ -313,8 +316,7 @@
       box.innerHTML = `
         <div>
           <label class="block mb-1 font-semibold">1) Dictée (받아쓰기)</label>
-          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko||'')}"
-                 placeholder="">
+          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko||'')}" placeholder="">
           <div class="text-xs text-slate-500 mt-1">Écoutez et écrivez tel quel / 그대로 적기</div>
         </div>
         <div>
@@ -370,15 +372,17 @@
     const mount = $('#pronunMount', wrap);
     if(mount && window.Pronun){
       try{
-        // onResult에서 통과/실패 추정: res.passed | res.ok | res.score
         Pronun.mount(mount, {
           ui: 'warmup',
           getReferenceText: ()=> refTextResolver(q, ref),
           onStop:  ()=>{ q.pronunAttempted = true; updateNav(); },
           onResult:(res)=>{
-            const passed = !!(res && (res.passed || res.ok || (typeof res.score==='number' && res.score>=0.7)));
+            const score = (res && typeof res.score==='number') ? res.score : null;
+            const passed = !!(res && (res.passed || res.ok || (typeof score==='number' && score>=0.8)));
             if (passed) q.pronunPassed = true;
-            else q.pronunFails = (q.pronunFails||0) + 1;
+            q.pronunAttempts = (q.pronunAttempts||0) + 1;
+            if (!passed) q.pronunFails = (q.pronunFails||0) + 1;
+            q.lastPronunScore = score;
             q.pronunAttempted = true;
             updateNav();
           }
@@ -398,7 +402,9 @@
   function onTextInput(v){
     const q=S.qs[S.idx];
     q.userAnswer=v;
-    q.textChecked=false; q.textCorrect=null; q.pronunAttempted=false; q.pronunPassed=false; q.pronunFails=0;
+    q.textChecked=false; q.textCorrect=null;
+    q.pronunAttempted=false; q.pronunPassed=false;
+    q.pronunFails=0; q.pronunAttempts=0; q.lastPronunScore=null;
     updateNav();
   }
   function checkText(){
@@ -410,7 +416,8 @@
     q.textCorrect = cands.some(ans=> strip(v)===strip(ans));
     q.textChecked = true;
     q.isCorrect = q.textCorrect;
-    q.pronunAttempted=false; q.pronunPassed=false; q.pronunFails=0;
+    q.pronunAttempted=false; q.pronunPassed=false;
+    q.pronunFails=0; q.pronunAttempts=0; q.lastPronunScore=null;
     render();
   }
   function updateDictee(part,val){
@@ -425,14 +432,13 @@
     updateNav();
   }
 
-  // 다음 허용 규칙
+  // 다음 허용 규칙 (발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과)
   function isNextAllowed(){
     const q=S.qs[S.idx]; if(!q) return false;
 
-    // 발음 규칙: 통과했거나(Qx) / (Q16~이고 실패 2회 이상) 이어야 함
     const pronunOK =
       (q.pronunPassed === true) ||
-      (q.number >= 16 && (q.pronunFails||0) >= 2);
+      ((q.pronunAttempts||0) >= 2 && (q.lastPronunScore==null || q.lastPronunScore <= 0.8));
 
     if(q.pronunRequired && !pronunOK) return false;
 
@@ -445,8 +451,10 @@
     }
     return false;
   }
+
   function updateNav(){
-    $('#btnPrev').disabled = (S.idx<=0);
+    // Q1에서도 ← 사용 가능(웜업 이동용)
+    $('#btnPrev').disabled = false;
     const canNext = isNextAllowed();
     $('#btnNext').disabled = !canNext;
     const isLast = (S.idx===S.qs.length-1);
@@ -475,7 +483,9 @@
         hint2Count: q.hint2Count||0,
         pronunAttempted: !!q.pronunAttempted,
         pronunPassed: !!q.pronunPassed,
-        pronunFails: q.pronunFails||0
+        pronunFails: q.pronunFails||0,
+        pronunAttempts: q.pronunAttempts||0,
+        lastPronunScore: q.lastPronunScore
       }))
     };
 
@@ -554,28 +564,29 @@
   $('#btnPrev').addEventListener('click', ()=>{
     // 첫 문제에서 ← 누르면 웜업으로 이동
     if(S.idx<=0){
+      // 같은 폴더라면 아래 경로 그대로 사용
       window.location.href = 'numbers-warmup.html';
       return;
     }
     S.idx--; render();
   });
+
   $('#btnNext').addEventListener('click', ()=>{
     if(!requireName()) return;
 
     const q = S.qs[S.idx];
-    // 발음 미충족 사유일 때 불어 알림
-    const pronunNotOK = q.pronunRequired && !(
-      (q.pronunPassed===true) ||
-      (q.number>=16 && (q.pronunFails||0)>=2)
-    );
-
-    if(pronunNotOK){
-      alert("Chaque question: enregistrez d’abord votre prononciation pour passer à la suivante. (À partir de Q16, vous pouvez avancer après 2 essais ratés.)\n다음 문제로 가려면 발음을 먼저 녹음하세요. (16번부터는 2회 실패 후 통과 가능)");
+    // 발음 선행 안내 (불어)
+    const pronunOK =
+      (q.pronunPassed === true) ||
+      ((q.pronunAttempts||0) >= 2 && (q.lastPronunScore==null || q.lastPronunScore <= 0.8));
+    if(q.pronunRequired && !pronunOK){
+      alert("Vous devez d’abord enregistrer votre prononciation pour passer à la question suivante. (Après 2 évaluations, si votre dernier score est ≤ 80%, vous pouvez continuer.)");
       return;
     }
 
     if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); }
   });
+
   $('#btnFinish').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
   window.addEventListener('beforeunload', cleanupAudio);
 
