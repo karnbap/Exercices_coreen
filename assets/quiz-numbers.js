@@ -494,8 +494,7 @@
         </ol>` : `
         <div class="pronun-card mt-2">모든 문항을 맞췄습니다. 아주 좋아요! ✨</div>`}
 
-        <div class="mt-4 flex justify-end">
-          <a class="btn btn-primary" href="../index.html">Fermer / 닫기</a>
+
         </div>
       </div>
     `;
