@@ -1,10 +1,11 @@
 /* assets/dictee-comme-warmup.js
-   Dictee “Comme” — 개선:
-   - 정지→자동평가 + 평가 버튼 재평가
-   - 힌트 버튼 토글(재클릭 시 숨김, 최초 1회만 카운트)
-   - 실시간 자막 수신 + 폴백 문구
+   Dictée “Comme/처럼” — 최종본
+   - 정지→자동평가 + [⚡ Évaluer]로 재평가 가능
+   - 힌트 버튼: 전역 토글(StudentGate) 사용 + 최초 1회만 카운트
+   - 실시간 자막 수신(LiveSTT 이벤트) + 폴백 문구
    - 저음량 민감도 향상(GainNode, minDecibels, smoothing)
-   - VU: DPR 스케일링 + 막대/타임도메인 하이브리드
+   - VU: DPR 스케일 + 막대/타임도메인 하이브리드
+   - 결과 전송: /.netlify/functions/send-results
 */
 (function(){
   const $  = (s, r=document)=>r.querySelector(s);
@@ -37,11 +38,13 @@
     { ko:"그 남자는 영화배우처럼 잘생겼어요.", fr:"Cet homme est beau comme un acteur de cinéma.",  hint1:"ㄱ ㄴㅈㄴ ㅇㅎㅂㅇㅊㄹ ㅈㅅㄱㅆㅇㅇ", hint2:"영화배우=acteur", voice:vAt(1) }
   ];
 
+  // per-question state
   const st = ex.map(()=>({listen:0,h1:0,h2:0,koOK:false,frOK:false,recBase64:null,recDur:0,acc:null,trans:''}));
 
   // ===== 유틸 =====
-  function base64ToBlob(b64, mime="audio/wav"){
-    const bin=atob(b64), u8=new Uint8Array(bin.length);
+  function base64ToBlob(b64, mime="audio/mpeg"){
+    const clean = b64.includes(',') ? b64.split(',')[1] : b64;
+    const bin=atob(clean), u8=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
     return new Blob([u8],{type:mime});
   }
@@ -56,9 +59,14 @@
       await a.play();
     };
     if(audioCache.has(key)) return play(audioCache.get(key));
-    const r=await fetch('/.netlify/functions/generate-audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice,speed:1.0})});
+    const r=await fetch('/.netlify/functions/generate-audio',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text,voice,speed:1.0})
+    });
     if(!r.ok) throw new Error('TTS '+r.status);
-    const j=await r.json(); const blob=base64ToBlob(j.audioData,j.mimeType||'audio/wav');
+    const j=await r.json();
+    const b64 = j.audioBase64 || j.audioContent || j.audioData;
+    const blob=base64ToBlob(b64, j.mimeType||'audio/mpeg');
     audioCache.set(key,blob); return play(blob);
   }
 
@@ -73,41 +81,42 @@
   function render(){
     const root=$('#dictee-root'); root.innerHTML='';
     ex.forEach((q,i)=>{
-      const el=document.createElement('section'); el.className='card';
+      const el=document.createElement('section'); el.className='card'; el.dataset.card='1';
       el.innerHTML=`
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-3">
             <span class="text-2xl font-extrabold text-indigo-600">${i+1}</span>
-            <button class="btn btn-primary play">▶ Écouter</button>
+            <button class="btn btn-primary play" data-requires-name>▶ Écouter</button>
             <span class="text-sm text-slate-500">écoutes: <b class="listen">0</b></span>
           </div>
           <div class="text-xs text-slate-500">Écouter → KO → FR → 🎙️ Arrêter = évaluer</div>
         </div>
 
         <div class="mt-3 grid gap-2 ml-10">
-          <input class="ko kof p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Écrivez ici (한글로)"/>
-          <input class="fr p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역"/>
+          <input class="ko kof p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Écrivez ici (한글로) / 여기에 한국어로 입력하세요"/>
+          <input class="fr p-2 border-2 rounded-lg focus:border-indigo-500" placeholder="Traduction en français / 불어로 번역을 적으세요"/>
+
           <div class="flex gap-2">
-            <button type="button" class="btn-hint btn-hint1" data-target=".hint1-box" aria-pressed="false">
+            <button type="button" class="btn-hint btn-hint1" data-target=".hint1-box" aria-pressed="false" data-allow-before-name="1">
               🙏 Aidez-moi <span class="ml-1 text-sm text-slate-100">(초성)</span>
             </button>
-            <button type="button" class="btn-hint btn-hint2" data-target=".hint2-box" aria-pressed="false">
+            <button type="button" class="btn-hint btn-hint2" data-target=".hint2-box" aria-pressed="false" data-allow-before-name="1">
               🦺 Au secours <span class="ml-1 text-sm text-slate-100">(단어)</span>
             </button>
             <button class="btn btn-ghost check">Vérifier (정답 확인)</button>
           </div>
 
-          <!-- 힌트 박스: 처음엔 숨김, 버튼으로 토글 -->
-          <div class="hint-box hint1-box" style="display:none"></div>
-          <div class="hint-box hint2-box" style="display:none"></div>
+          <!-- 힌트 박스(전역 토글 사용: .show) -->
+          <div class="hint-box hint1-box"><b>🙏 초성:</b> <span class="kof">${q.hint1 || '—'}</span></div>
+          <div class="hint-box hint2-box"><b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}</div>
 
           <div class="mt-1 flex items-center gap-2">
-            <button class="btn btn-ghost rec">🎙️ Démarrer</button>
-            <button class="btn btn-ghost stop" disabled>⏹️ Arrêter</button>
-            <button class="btn btn-primary eval" disabled>⚡ Évaluer</button>
+            <button class="btn btn-ghost rec"  data-requires-name>🎙️ Démarrer</button>
+            <button class="btn btn-ghost stop" data-requires-name disabled>⏹️ Arrêter</button>
+            <button class="btn btn-primary eval" data-requires-name disabled>⚡ Évaluer</button>
             <span class="text-sm text-slate-500">정지하면 자동 평가</span>
           </div>
-          <canvas class="vu"></canvas>
+          <canvas class="vu" style="width:100%;height:96px;border:1px solid #e2e8f0;border-radius:.5rem;background:#fff"></canvas>
           <div class="live text-xs p-2 rounded border bg-white">En direct / 실시간…</div>
           <div class="out text-sm"></div>
         </div>`;
@@ -117,30 +126,13 @@
       const btnPlay=$('.play',el), listen=$('.listen',el);
       btnPlay.onclick=async()=>{ await ttsPlay(q.ko,q.voice); st[i].listen++; listen.textContent=String(st[i].listen); };
 
-      // ===== 힌트: 토글(재클릭 숨김) + 최초 1회 카운트 =====
-      const boxH1 = el.querySelector('.hint1-box');
-      const boxH2 = el.querySelector('.hint2-box');
-      boxH1.innerHTML = `<b>🙏 초성:</b> <span class="kof">${q.hint1 || '—'}</span>`;
-      boxH2.innerHTML = `<b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}`;
-
-      el.addEventListener('click', (ev) => {
-        const b1 = ev.target.closest('.btn-hint1');
-        const b2 = ev.target.closest('.btn-hint2');
-        if (!b1 && !b2) return;
-        const btn = b1 || b2;
-        const isH1 = !!b1;
-        const box = isH1 ? boxH1 : boxH2;
-
-        const nowHidden = (box.style.display === '' ? getComputedStyle(box).display === 'none' : box.style.display === 'none');
-        const toShow = nowHidden;
-        box.style.display = toShow ? 'block' : 'none';
-        box.classList.toggle('show', toShow);
-        btn.setAttribute('aria-pressed', toShow ? 'true' : 'false');
-
-        if (toShow && !btn.dataset._opened) {
-          if (isH1) st[i].h1++; else st[i].h2++;
-          btn.dataset._opened = '1';
-        }
+      // ===== 힌트 카운트만(전역 토글 사용) =====
+      // student-gate.js가 btn에 'hint-toggle' 이벤트를 디스패치함(bubbles=true)
+      el.addEventListener('hint-toggle', (e)=>{
+        if(!e?.detail?.shown) return;
+        const btn = e.target; // 실제 누른 버튼
+        if(btn.classList.contains('btn-hint1') && !btn.dataset._opened){ st[i].h1++; btn.dataset._opened='1'; }
+        if(btn.classList.contains('btn-hint2') && !btn.dataset._opened){ st[i].h2++; btn.dataset._opened='1'; }
       });
 
       // ===== 채점 =====
@@ -148,7 +140,9 @@
       const pill=(ok,label)=> ok?`<span class="tag tag-green">${label} ✓</span>`:`<span class="tag tag-red">${label} ✗</span>`;
       function grade(){
         const ko=koInp.value||'', fr=frInp.value||'';
-        const gk=window.AnswerJudge?.gradeKO ? window.AnswerJudge.gradeKO(q.ko, ko, { allowSubstring:false }) : { isCorrect:false, note:'(AnswerJudge 없음)' };
+        const gk=window.AnswerJudge?.gradeKO
+          ? window.AnswerJudge.gradeKO(q.ko, ko, { allowSubstring:true })  // “부분 포함도 정답 인정”
+          : { isCorrect:false, note:'(AnswerJudge 없음)' };
         const gf=window.AnswerJudge?.gradeFR ? window.AnswerJudge.gradeFR(q.fr, fr) : { isCorrect:false, note:'(AnswerJudge 없음)' };
         st[i].koOK=gk.isCorrect; st[i].frOK=gf.isCorrect;
         const style=styleHintKO(ko);
@@ -157,7 +151,7 @@
         const ok=gk.isCorrect&&gf.isCorrect;
         out.innerHTML = ok
           ? `<div class="p-3 rounded border bg-emerald-50">🎉 Super! ${pill(true,'KO')} ${pill(true,'FR')}<div class="mt-1 kof"><b>정답(한):</b> ${q.ko}</div><div><b>Traduction:</b> ${q.fr}</div>${notes?`<div class="text-xs mt-1">${notes}</div>`:''}</div>`
-          : `<div class="p-3 rounded border bg-rose-50">👍 거의 맞았어요. ${pill(gk.isCorrect,'KO')} ${pill(gf.isCorrect,'FR')}<div class="mt-1"><b>Ma réponse (KO):</b> ${ko||'(vide)'} / <b>FR:</b> ${fr||'(vide)'}</div><div class="kof"><b>정답(한):</b> ${q.ko}</div><div><b>Traduction:</b> ${q.fr}</div>${notes?`<div class="text-xs mt-1">${notes}</div>`:''}</div>`;
+          : `<div class="p-3 rounded border bg-rose-50">👍 거의 맞았어요. ${pill(st[i].koOK,'KO')} ${pill(st[i].frOK,'FR')}<div class="mt-1"><b>Ma réponse (KO):</b> ${ko||'(vide)'} / <b>FR:</b> ${fr||'(vide)'}</div><div class="kof"><b>정답(한):</b> ${q.ko}</div><div><b>Traduction:</b> ${q.fr}</div>${notes?`<div class="text-xs mt-1">${notes}</div>`:''}</div>`;
       }
       $('.check',el).onclick=grade;
       koInp.addEventListener('keydown',e=>{ if(e.key==='Enter') grade(); });
@@ -214,11 +208,11 @@
         ac=new (window.AudioContext||window.webkitAudioContext)();
         src=ac.createMediaStreamSource(stream);
         gainNode = ac.createGain();
-        gainNode.gain.value = 3.2;
+        gainNode.gain.value = 3.2;                 // 저음량 보정
         src.connect(gainNode);
         an=ac.createAnalyser();
         an.fftSize = 2048;
-        an.minDecibels = -100;
+        an.minDecibels = -100;                     // 민감도 ↑
         an.maxDecibels = -10;
         an.smoothingTimeConstant = 0.85;
         gainNode.connect(an);
@@ -336,7 +330,7 @@
   });
 
   $('#finish-btn')?.addEventListener('click', async ()=>{
-    const name=(window.StudentGate?.getName?.()||$('#student-name')?.value||'').trim()||'N/A';
+    const name=(window.StudentGate?.getName?.()||$('#student-name')?.value||$('#studentName')?.value||'').trim()||'N/A';
     const total=ex.length, koC=st.filter(s=>s.koOK).length, frC=st.filter(s=>s.frOK).length;
     const koScore=Math.round(100*koC/Math.max(1,total));
     const frScore=Math.round(100*frC/Math.max(1,total));
@@ -382,11 +376,10 @@
   window._startTime=new Date().toISOString();
   window._startMs=Date.now();
   document.addEventListener('DOMContentLoaded', () => {
-    // ✅ 이름 미기입 시 상호작용 차단 + 종료 버튼 비활성
+    // 이름 게이트(필요 페이지에서만 동작)
     if (window.StudentGate){
       StudentGate.init();
       StudentGate.requireBeforeInteraction(document);
-      // 버튼에 data-requires-name 달아뒀다면 아래 호출로 시각적 비활성도 적용 가능
       StudentGate.applyRequiresNameState?.(document);
     }
     render();
