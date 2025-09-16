@@ -118,21 +118,71 @@ body{
 .shake{ animation:shake .45s ease; }
 
 /* === Inputs visibility & size === */
+/* === Inputs: 기본 테두리/패딩/포커스 가시성 보강 === */
 .input,
 .textarea {
-  width: 100%;
-  font-size: 1.125rem; /* text-lg */
-  min-height: 3rem;    /* 48px */
+  box-sizing: border-box;
+  padding: 0.75rem 0.9rem;          /* 클릭 전에도 여백 충분 */
+  border: 1px solid var(--border-color);
+  border-radius: .5rem;
+  background: #fff;
+  outline: none;
 }
+
+.input:focus,
+.textarea:focus {
+  border-color: #94a3b8;            /* slate-400 */
+  box-shadow: 0 0 0 3px rgba(148,163,184,.25);
+}
+
+.input.error,
+.textarea.error {
+  border-color: #ef4444;            /* 오류 시 빨간 테두리 */
+}
+
+/* 긴 플레이스홀더도 잘 보이도록(모바일 대비) */
 .input::placeholder,
 .textarea::placeholder {
-  opacity: 1;                 /* 클릭 전에도 선명하게 */
-  color: #64748b;             /* slate-500 */
-  white-space: normal;        /* 줄바꿈 허용 */
-  text-overflow: clip;        /* 잘림 방지 */
+  opacity: 1;
+  color: #64748b;                   /* slate-500 */
+  white-space: normal;
+  text-overflow: clip;
+  line-height: 1.35;
 }
+
+/* 답안 칸을 더 크게(요청 반영) */
 .textarea {
-  min-height: 4.5rem; /* 72px, 답안칸 더 크게 */
+  min-height: 6rem;                 /* 기존 4.5rem → 6rem */
   resize: vertical;
+}
+
+
+/* === Pronun guard & live STT === */
+.shake {
+  animation: shakeX .45s ease both;
+}
+@keyframes shakeX {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+.pronun-live {
+  font-variant-numeric: tabular-nums;
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  min-height: 2.25rem;
+  line-height: 1.4;
+  margin-top: .5rem;
+  color: #0f172a;
+}
+
+.badge-note {
+  display: inline-flex; align-items: center; gap:.4rem;
+  font-size:.9rem; padding:.25rem .5rem; border-radius:.5rem;
+  background:#eef2ff; color:#3730a3;
 }
 
