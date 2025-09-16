@@ -240,7 +240,15 @@ exports.handler = async (event) => {
   const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString('fr-FR', { hour12:false });
   const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
 
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, RESULTS_RECEIVER, SMTP_FROM } = process.env;
+
+  // ========= 환경변수 읽기 =========
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = process.env.SMTP_PORT || '587';
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_FROM = process.env.SMTP_FROM || `"Pongdang Korean" <${SMTP_USER}>`;
+const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
+
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     console.warn('[send-results] MISSING_ENV', {
@@ -272,3 +280,4 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
+
