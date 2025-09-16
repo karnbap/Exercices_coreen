@@ -190,14 +190,19 @@ exports.handler = async (event) => {
   const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
 
   // ========= Gmail 환경변수 사용 =========
-  const GMAIL_USER = process.env.GMAIL_USER || '';
-  const GMAIL_PASS = process.env.GMAIL_PASS || '';
-  const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
+const GMAIL_USER = process.env.GMAIL_USER || process.env.SMTP_USER || '';
+const GMAIL_PASS = process.env.GMAIL_PASS || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
+const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
 
-  if (!GMAIL_USER || !GMAIL_PASS) {
-    console.warn('[send-results] MISSING_ENV', { GMAIL_USER: !!GMAIL_USER, GMAIL_PASS: !!GMAIL_PASS });
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
-  }
+if (!GMAIL_USER || !GMAIL_PASS) {
+  console.warn('[send-results] MISSING_ENV', {
+    GMAIL_USER: !!GMAIL_USER,
+    GMAIL_PASS: !!GMAIL_PASS,
+    GMAIL_APP_PASSWORD: !!process.env.GMAIL_APP_PASSWORD
+  });
+  return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
+}
+
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -219,3 +224,4 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
+
