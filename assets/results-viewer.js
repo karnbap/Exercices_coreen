@@ -1,11 +1,10 @@
 // assets/results-viewer.js
-// 결과 화면 통합 뷰어: 로드(session/local/window) → 렌더(점수/시간/오답) → 1회 전송
+// 결과 화면 통합 뷰어: 로드(session/local/window) → 렌더(점수/시간/오답/발음정확도) → 1회 전송
 (function (global) {
   'use strict';
 
   // ========= 유틸 =========
   const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
   function escapeHTML(s) {
     return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -49,6 +48,7 @@
   // ========= 서버 전송(1회) =========
   async function postResultsOnce(payload) {
     if (!payload || payload._sent) return payload;
+
     // results-compat.js 가 있으면 그걸 사용
     if (global.sendResults && typeof global.sendResults === 'function') {
       try {
@@ -58,6 +58,7 @@
         return payload;
       } catch {}
     }
+
     // 직접 POST (동일 스키마)
     try {
       const slim = toSlimPayload(payload);
@@ -75,7 +76,7 @@
 
   function toSlimPayload(p) {
     const q = Array.isArray(p?.questions) ? p.questions.map(one => {
-      const c = {...one};
+      const c = { ...one };
       if (c?.recording) delete c.recording;
       if (c?.audio) delete c.audio;
       if (c?.audioBase64) delete c.audioBase64;
@@ -103,6 +104,46 @@
     } catch {}
   }
 
+  // ========= 발음 정확도 표 =========
+  function renderPronunTable(root, payload){
+    const mount = root.querySelector('#pronunTable');
+    if (!mount) return;
+
+    const rows = (payload.questions || []).map((q, i) => {
+      const scoreVal = Number(q.pronunScore ?? q.pronScore ?? q.lastScore ?? q.score ?? q.pronunciation ?? 0);
+      const triesVal = Number(q.evalCount ?? q.pronunEvalCount ?? q.tries ?? 0);
+      const label = (q.ko || q.fr || '').toString().slice(0, 40);
+
+      const scoreText = Number.isFinite(scoreVal) ? (Math.round(scoreVal) + '%') : '—';
+      const triesText = triesVal ? String(triesVal) : '—';
+
+      return `
+        <tr>
+          <td class="px-3 py-2 text-slate-600">Q${i+1}</td>
+          <td class="px-3 py-2">${scoreText}</td>
+          <td class="px-3 py-2">${triesText}</td>
+          <td class="px-3 py-2 text-slate-500">${escapeHTML(label)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    mount.innerHTML = `
+      <div class="overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="px-3 py-2 text-left">#</th>
+              <th class="px-3 py-2 text-left">Précision</th>
+              <th class="px-3 py-2 text-left">Essais</th>
+              <th class="px-3 py-2 text-left">Phrase</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   // ========= 렌더 =========
   function render(payload, opts = {}) {
     const root = $(opts.rootSelector || '#app') || document.body;
@@ -128,6 +169,12 @@
         <p>이름 / Nom : <b>${name}</b></p>
         <p id="finalScore" class="mt-1">Score final : <b class="text-blue-700">${pct}%</b></p>
         <p id="totalTime" class="mt-1">Temps total : <b>${fmtHMS(tsec)}</b></p>
+      </section>
+
+      <!-- 발음 정확도 표 -->
+      <section class="max-w-3xl mx-auto mt-4 card">
+        <h3 class="text-lg font-semibold mb-2">Précision de prononciation / 발음 정확도</h3>
+        <div id="pronunTable"></div>
       </section>
 
       <section class="max-w-3xl mx-auto mt-4">
@@ -177,6 +224,9 @@
     // 버튼
     $('#btnPrint')?.addEventListener('click', () => window.print());
     $('#btnBack')?.addEventListener('click', () => history.back());
+
+    // 발음 정확도 표 렌더
+    renderPronunTable(root, payload);
   }
 
   // ========= 마운트(자동 전송 포함) =========
@@ -195,13 +245,12 @@
       return;
     }
 
-    // 중복 렌더/전송 방지(옵션): 체크섬이 같으면 스킵
+    // 중복 렌더/전송 방지(옵션): 체크섬이 같으면 스킵(렌더는 보장)
     const key = 'pongdang:results:hash';
     const curHash = tinyHash(toSlimPayload(payload));
     try {
       const prev = sessionStorage.getItem(key);
       if (options.skipIfSame && prev && prev === curHash) {
-        // 같은 결과면 렌더만 보장(혹시 비워져 있을 수 있으니)
         render(payload, { rootSelector });
         return;
       }
@@ -223,4 +272,5 @@
 
   // ========= export =========
   global.ResultsViewer = { mount, render, fmtHMS };
+
 })(window);
