@@ -415,6 +415,12 @@ const state = {
     });
 
     btnEval.addEventListener('click', async ()=>{
+      function bumpEval(){
+    bumpEval();
+    updatePronunGuard(card, {}); // 카드별 상태 유지
+
+}
+
       if(!lastRecord?.base64) return;
       btnEval.disabled = true; status.textContent = 'Évaluation en cours…';
       try{
@@ -434,6 +440,7 @@ const state = {
             // 재시도 안내(UI 유지, 0점 금지)
             status.textContent = '⚠️ Phrase courte mal reconnue. Réessaie clairement. / 짧은 문장이 길게 인식됐어요. 또박또박 다시 한 번!';
             btnEval.disabled = false;
+            bumpEval(); // ✅ 조기 반환 케이스도 평가 1회로 인정
             return;
           }
         } else {
@@ -477,7 +484,7 @@ const state = {
       }
 
     });
-
+    bumpEval(); // ✅ 오류도 한 번의 시도로 집계
     return card;
   }
 
@@ -525,13 +532,24 @@ const state = {
         }
 
         <!-- 다음 연습문제: 항상 보이되, 전송 전엔 비활성 -->
-        <a id="btn-go-ex" href="/assignments/numbers-exercises.html"
+       <a id="btn-go-ex" href="numbers-exercises.html"
+         class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
+        <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
+      </a>
+
            class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
           <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
         </a>
       </div>`;
     box.classList.remove('hidden');
     updateNextAvailability(); // ✅ 페이지 렌더 시점에서도 2회 이상이면 활성화
+      document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
+  if (!window.isNextAllowed || !window.isNextAllowed()){
+    e.preventDefault();
+    alert("👉 Évalue ta prononciation au moins 2 fois.\n👉 발음을 최소 2회 녹음·평가해 주세요.");
+    window.WU_shake && window.WU_shake();
+  }
+});
 
     // --- 전송 버튼 (성공/실패 상관없이 다음 단계 해제 + 로컬 폴백 저장) ---
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
