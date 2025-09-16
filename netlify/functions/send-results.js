@@ -24,27 +24,43 @@ function avg(arr){
   const s = arr.map(Number).filter(n => Number.isFinite(n));
   return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0;
 }
-function computeFallbackScores(payload){
+
+// (A) isCorrect 기반 총점 계산(클라이언트가 보낸 채점값 사용)
+function computeOverallFromIsCorrect(payload){
+  const qs = Array.isArray(payload?.questions) ? payload.questions : [];
+  const graded = qs.filter(q => typeof q?.isCorrect === 'boolean');
+  const correct = graded.filter(q => q.isCorrect === true).length;
+  const total   = graded.length || qs.length || 0;
+  const pct     = total ? Math.round((100 * correct) / total) : 0;
+  return { correct, total, pct };
+}
+
+// (B) KO/FR/발음 보조 점수(없을 때 폴백용)
+function computeFallbackCategoryScores(payload){
   const qs = Array.isArray(payload?.questions) ? payload.questions : [];
   const total = qs.length || 0;
   const koOK = qs.filter(q => q?.isCorrectKo === true).length;
   const frOK = qs.filter(q => q?.isCorrectFr === true).length;
   const pron = qs.map(q => q?.pronunciation?.accuracy).filter(n => typeof n === 'number');
-  const koScore = total ? Math.round(100 * koOK / total) : 0;
-  const frScore = total ? Math.round(100 * frOK / total) : 0;
+  const ko   = total ? Math.round(100 * koOK / total) : 0;
+  const fr   = total ? Math.round(100 * frOK / total) : 0;
   const pronScore = pron.length ? Math.round(100 * avg(pron)) : 0;
-  const overall = Math.round((koScore + frScore) / 2);
-  return { ko: koScore, fr: frScore, pron: pronScore, overall };
+  const overall = Math.round((ko + fr) / 2);
+  return { ko, fr, pron: pronScore, overall };
 }
+
+// 최종 overall 우선순위: payload.overall → categoryScores.overall → isCorrect 계산 → 폴백 계산
 function pickOverall(payload){
-  const cand = [
-    payload?.categoryScores?.overall,
-    payload?.overall,
-    payload?.score
-  ].map(Number).find(n => Number.isFinite(n));
+  const cand = [payload?.overall, payload?.categoryScores?.overall, payload?.score]
+    .map(Number).find(n => Number.isFinite(n));
   if (Number.isFinite(cand)) return Math.round(cand);
-  return computeFallbackScores(payload).overall;
+
+  const fromCorrect = computeOverallFromIsCorrect(payload).pct;
+  if (Number.isFinite(fromCorrect)) return fromCorrect;
+
+  return computeFallbackCategoryScores(payload).overall || 0;
 }
+
 function safeNum(n, d=0){
   const v = Number(n);
   return Number.isFinite(v) ? v : d;
@@ -74,12 +90,14 @@ function hhmmss(sec){
 
 // ========= HTML 본문 =========
 function buildHtml(payload){
-  const name  = esc((payload?.studentName||'N/A').trim());
-  const title = esc((payload?.assignmentTitle||'Exercice').trim());
-  const topic = esc(payload?.assignmentTopic||'');
+  const name   = esc((payload?.studentName||'N/A').trim());
+  const title  = esc((payload?.assignmentTitle||'Exercice').trim());
+  const topic  = esc(payload?.assignmentTopic||'');
   const startISO = fmtDateISO(payload?.startTime);
   const endISO   = fmtDateISO(payload?.endTime);
-  const cat = payload?.categoryScores || computeFallbackScores(payload);
+
+  // 카테고리 점수(폴백) + 최종 overall
+  const cat = payload?.categoryScores || computeFallbackCategoryScores(payload);
   const ko   = safeNum(cat.ko);
   const fr   = safeNum(cat.fr);
   const pron = safeNum(cat.pron);
@@ -143,10 +161,11 @@ function buildHtml(payload){
     </div>
   </div>`;
 }
+
 function buildText(payload){
   const name  = (payload?.studentName||'N/A').trim();
   const title = (payload?.assignmentTitle||'Exercice').trim();
-  const cat = payload?.categoryScores || computeFallbackScores(payload);
+  const cat   = payload?.categoryScores || computeFallbackCategoryScores(payload);
   const overall = pickOverall(payload);
   return [
     `Résultats de l’exercice`,
@@ -183,26 +202,24 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok:false, error:'Bad JSON' }) };
   }
 
-  const name  = (payload?.studentName || 'N/A').trim();
-  const title = (payload?.assignmentTitle || 'Exercice').trim();
+  // ===== 제목 구성: "학생이름 / 연습문제이름 / 총점"
+  const name   = (payload?.studentName || 'Élève').trim();
+  const title  = (payload?.assignmentTitle || 'Exercice').trim();
   const overall = pickOverall(payload);
   const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString('fr-FR', { hour12:false });
-  const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
+
+  // 최종 제목 형식
+  const subject = `${name} / ${title} / ${overall}/100 (${dateStr})`;
 
   // ========= Gmail 환경변수 사용 =========
-const GMAIL_USER = process.env.GMAIL_USER || process.env.SMTP_USER || '';
-const GMAIL_PASS = process.env.GMAIL_PASS || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
-const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
+  const GMAIL_USER = process.env.GMAIL_USER || '';
+  const GMAIL_PASS = process.env.GMAIL_PASS || '';
+  const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
 
-if (!GMAIL_USER || !GMAIL_PASS) {
-  console.warn('[send-results] MISSING_ENV', {
-    GMAIL_USER: !!GMAIL_USER,
-    GMAIL_PASS: !!GMAIL_PASS,
-    GMAIL_APP_PASSWORD: !!process.env.GMAIL_APP_PASSWORD
-  });
-  return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
-}
-
+  if (!GMAIL_USER || !GMAIL_PASS) {
+    console.warn('[send-results] MISSING_ENV', { GMAIL_USER: !!GMAIL_USER, GMAIL_PASS: !!GMAIL_PASS });
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
+  }
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -224,4 +241,3 @@ if (!GMAIL_USER || !GMAIL_PASS) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
-
