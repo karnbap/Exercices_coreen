@@ -10,12 +10,14 @@
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
-  const state = {
-    speed: 1.0,      // 0.7 / 1.0 / 1.5
-    repeats: 2,      // ×2 기본
-    progress: {}, listenCount: {},
-    startISO: null, startMs: 0, name:'Élève'
-  };
+const state = {
+  speed: 1.0,      // 0.7 / 1.0 / 1.5
+  repeats: 2,      // ×2 기본
+  progress: {}, listenCount: {},
+  startISO: null, startMs: 0, name:'Élève',
+  evalCount: 0     // ✅ 전체 평가 횟수(전역)
+};
+
 
   const SPEEDS = [
     { val:0.7,  label:'0.7× Débutant' },
@@ -452,6 +454,9 @@
              <div class="mt-1"><b>Ma prononciation:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
            </div>`;
         fbBox.classList.remove('hidden');
+        state.evalCount++;        // ✅ 총 평가 횟수 증가
+        updateNextAvailability(); // ✅ 2회 이상이면 다음 버튼 활성화
+
         checkFinish();
       }catch(_){
         status.textContent = 'Échec de l’évaluation. Réessaie.';
@@ -513,6 +518,7 @@
         </a>
       </div>`;
     box.classList.remove('hidden');
+    updateNextAvailability(); // ✅ 페이지 렌더 시점에서도 2회 이상이면 활성화
 
     // --- 전송 버튼 (성공/실패 상관없이 다음 단계 해제 + 로컬 폴백 저장) ---
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
@@ -576,7 +582,7 @@
 
 
     const payload = {
-      studentName: (document.getElementById('student-name')?.value || state.name || 'Élève'),
+      studentName: getStudentName(),
       startTime: state.startISO || new Date().toISOString(),
       endTime: new Date().toISOString(),
       totalTimeSeconds: Math.max(0, Math.round((Date.now() - (state.startMs||Date.now()))/1000)),
@@ -660,12 +666,40 @@
       // 조용히 무시(다음 진입 때 또 시도)
     }
   }
+    function isNextAllowed(){
+  return (state.evalCount || 0) >= 2;  // ✅ 최소 2회 평가
+}
+window.isNextAllowed = isNextAllowed;
+
+function updateNextAvailability(){
+  const goEx = document.getElementById('btn-go-ex');
+  if (!goEx) return;
+  if (isNextAllowed()){
+    goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
+    goEx.classList.add('btn-primary');
+    goEx.removeAttribute('aria-disabled');
+  }
+}
+window.updateNextAvailability = updateNextAvailability;
+
+function WU_shake(){
+  const t = document.getElementById('warmup-screen') || document.body;
+  t.classList.add('shake');
+  setTimeout(()=>t.classList.remove('shake'), 600);
+}
+window.WU_shake = WU_shake;
 
   // ---------- 공개 API ----------
+  function getStudentName(){
+  const el = document.getElementById('student-name') || document.getElementById('studentName');
+  const v  = (el && el.value) ? String(el.value).trim() : '';
+  return v || state.name || 'Élève';
+  }
+
   function WU_go(mode){
     state.speed = (mode==='slow')?0.7 : (mode==='fast')?1.5 : 1.0;
 
-    state.name = (document.getElementById('student-name')?.value || state.name || 'Élève');
+    state.name = getStudentName();
     state.startISO = new Date().toISOString(); state.startMs = Date.now();
 
     document.getElementById('mode-picker')?.classList.add('hidden');
