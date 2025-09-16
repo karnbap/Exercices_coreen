@@ -321,5 +321,16 @@
       }
     });
   </script>
+<script>
+document.getElementById('btnNext')?.addEventListener('click', () => {
+  if (!window.isNextAllowed || !window.isNextAllowed()) {
+    alert("👉 Évalue ta prononciation au moins 2 fois.\n👉 발음을 최소 2회 녹음·평가해 주세요.");
+    window.WU_shake && window.WU_shake();
+    return;
+  }
+  window.location.href = 'numbers-exercises.html';
+});
+</script>
+
 </body>
 </html>
