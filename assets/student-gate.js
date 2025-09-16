@@ -58,12 +58,13 @@ function init(){
 }
 
 
-  function toggleFinish(){
-    const input = document.getElementById('student-name');
-    const finishBtn = document.getElementById('finish-btn');
-    const has = ((input && input.value.trim()) || getName());
-    if (finishBtn) finishBtn.disabled = !has;
-  }
+function toggleFinish(){
+  const input = document.getElementById('student-name') || document.getElementById('studentName');
+  const finishBtn = document.getElementById('finish-btn');
+  const has = ((input && input.value.trim()) || getName());
+  if (finishBtn) finishBtn.disabled = !has;
+}
+
 
   // ===== 시각적 비활성: data-requires-name =====
   function applyRequiresNameState(root=document){
