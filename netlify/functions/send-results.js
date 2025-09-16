@@ -2,43 +2,40 @@
 // 결과 이메일 전송 (학생 제출 → 선생님 메일)
 // Node 18+
 
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 
-// ---- 새로 추가: 안전 필터 (큰 필드 제거) ----
+// ========= 안전 필터 =========
 function sanitizePayload(payload) {
   try {
     if (payload && Array.isArray(payload.questions)) {
       payload.questions.forEach(q => {
-        // 클라이언트 실수로 녹음(base64) 등 큰 데이터가 와도 즉시 제거
-        if (q && q.recording) delete q.recording;
-        if (q && q.audio) delete q.audio;
-        if (q && q.audioBase64) delete q.audioBase64;
+        if (!q) return;
+        if (q.recording) delete q.recording;
+        delete q.audio; delete q.audioBase64; delete q.logs;
       });
     }
   } catch (_) {}
   return payload;
 }
-// ============ 유틸 ============
 
+// ========= 유틸 =========
 function avg(arr){
   if(!Array.isArray(arr) || !arr.length) return 0;
   const s = arr.map(Number).filter(n => Number.isFinite(n));
   return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0;
 }
-
 function computeFallbackScores(payload){
   const qs = Array.isArray(payload?.questions) ? payload.questions : [];
   const total = qs.length || 0;
   const koOK = qs.filter(q => q?.isCorrectKo === true).length;
   const frOK = qs.filter(q => q?.isCorrectFr === true).length;
-  const pron = qs.map(q => q?.pronunciation?.accuracy).filter(n => typeof n === "number");
+  const pron = qs.map(q => q?.pronunciation?.accuracy).filter(n => typeof n === 'number');
   const koScore = total ? Math.round(100 * koOK / total) : 0;
   const frScore = total ? Math.round(100 * frOK / total) : 0;
   const pronScore = pron.length ? Math.round(100 * avg(pron)) : 0;
-  const overall = Math.round((koScore + frScore) / 2); // 프로젝트 규칙
+  const overall = Math.round((koScore + frScore) / 2);
   return { ko: koScore, fr: frScore, pron: pronScore, overall };
 }
-
 function pickOverall(payload){
   const cand = [
     payload?.categoryScores?.overall,
@@ -48,31 +45,25 @@ function pickOverall(payload){
   if (Number.isFinite(cand)) return Math.round(cand);
   return computeFallbackScores(payload).overall;
 }
-
 function safeNum(n, d=0){
   const v = Number(n);
   return Number.isFinite(v) ? v : d;
 }
-
 function esc(s){
   return String(s ?? '')
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
 }
-
 function fmtDateISO(s){
   try { return new Date(s || Date.now()).toISOString(); } catch { return new Date().toISOString(); }
 }
-
 function fmtDateFR(s){
-  try { return new Date(s || Date.now()).toLocaleString("fr-FR", { hour12:false }); } catch { return new Date().toLocaleString("fr-FR", { hour12:false }); }
+  try { return new Date(s || Date.now()).toLocaleString('fr-FR', { hour12:false }); } catch { return new Date().toLocaleString('fr-FR', { hour12:false }); }
 }
-
 function msBetweenISO(startISO, endISO){
   try { return new Date(endISO) - new Date(startISO); } catch { return 0; }
 }
-
 function hhmmss(sec){
   sec = Math.max(0, Math.floor(Number(sec)||0));
   const h = String(Math.floor(sec/3600)).padStart(2,'0');
@@ -81,15 +72,13 @@ function hhmmss(sec){
   return `${h}:${m}:${s}`;
 }
 
-// ============ HTML 본문 ============
-
+// ========= HTML 본문 =========
 function buildHtml(payload){
-  const name  = esc((payload?.studentName||"N/A").trim());
-  const title = esc((payload?.assignmentTitle||"Exercice").trim());
-  const topic = esc(payload?.assignmentTopic||"");
+  const name  = esc((payload?.studentName||'N/A').trim());
+  const title = esc((payload?.assignmentTitle||'Exercice').trim());
+  const topic = esc(payload?.assignmentTopic||'');
   const startISO = fmtDateISO(payload?.startTime);
   const endISO   = fmtDateISO(payload?.endTime);
-  // 우선 payload 값, 없으면 재계산
   const cat = payload?.categoryScores || computeFallbackScores(payload);
   const ko   = safeNum(cat.ko);
   const fr   = safeNum(cat.fr);
@@ -100,10 +89,8 @@ function buildHtml(payload){
   const durationSec = safeNum(payload?.totalTimeSeconds, Math.max(1, Math.floor(msBetweenISO(startISO,endISO)/1000)));
   const banner = (overall >= 90)
     ? `<div style="margin:16px 0;padding:14px;border-radius:12px;background:#fff7ed;border:1px solid #fdba74;text-align:center;font-weight:700">
-         👑 Parfait absolu ! 👑🎉 Génie confirmé !<br/>
-         완벽 그 자체! 👑🎉 천재 인증!
-       </div>`
-    : "";
+         👑 Parfait absolu ! 👑🎉 Génie confirmé !<br/>완벽 그 자체! 👑🎉 천재 인증!
+       </div>` : '';
 
   const detailRows = (Array.isArray(payload?.questions) ? payload.questions : []).map(q=>{
     const n = safeNum(q?.number);
@@ -128,7 +115,7 @@ function buildHtml(payload){
         <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${lc}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${h1}/${h2}</td>
       </tr>`;
-  }).join("");
+  }).join('');
 
   return `
   <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Noto Sans','Apple SD Gothic Neo',sans-serif;color:#0f172a;background:#f8fafc;padding:20px">
@@ -207,10 +194,9 @@ function buildHtml(payload){
     </div>
   </div>`;
 }
-
 function buildText(payload){
-  const name  = (payload?.studentName||"N/A").trim();
-  const title = (payload?.assignmentTitle||"Exercice").trim();
+  const name  = (payload?.studentName||'N/A').trim();
+  const title = (payload?.assignmentTitle||'Exercice').trim();
   const cat = payload?.categoryScores || computeFallbackScores(payload);
   const overall = pickOverall(payload);
   return [
@@ -225,59 +211,64 @@ function buildText(payload){
   ].join('\n');
 }
 
-// ============ 핸들러 ============
+// ========= CORS 공통 =========
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST,OPTIONS'
+};
 
+// ========= 핸들러 =========
 exports.handler = async (event) => {
-  const cors = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
-
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: cors, body: '' };
+    return { statusCode: 200, headers: CORS, body: '' };
   }
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: cors, body: 'Only POST' };
+    return { statusCode: 405, headers: CORS, body: 'Only POST' };
   }
 
   let payload = {};
   try {
-    payload = sanitizePayload(JSON.parse(event.body || "{}"));
+    payload = sanitizePayload(JSON.parse(event.body || '{}'));
   } catch (e) {
-    return { statusCode: 400, headers: cors, body: JSON.stringify({ ok:false, error:'Bad JSON' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok:false, error:'Bad JSON' }) };
   }
 
-  const name  = (payload?.studentName || "N/A").trim();
-  const title = (payload?.assignmentTitle || "Exercice").trim();
+  const name  = (payload?.studentName || 'N/A').trim();
+  const title = (payload?.assignmentTitle || 'Exercice').trim();
   const overall = pickOverall(payload);
-  const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString("fr-FR", { hour12:false });
+  const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString('fr-FR', { hour12:false });
   const subject = `Résultats ${overall}/100 – ${title} – ${name} (${dateStr})`;
 
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, RESULTS_RECEIVER, SMTP_FROM } = process.env;
+
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.warn('[send-results] MISSING_ENV', { SMTP_HOST:!!SMTP_HOST, SMTP_USER:!!SMTP_USER, SMTP_PASS:!!SMTP_PASS, RESULTS_RECEIVER:!!RESULTS_RECEIVER });
-    return { statusCode: 200, headers: cors, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
+    console.warn('[send-results] MISSING_ENV', {
+      SMTP_HOST: !!SMTP_HOST, SMTP_USER: !!SMTP_USER, SMTP_PASS: !!SMTP_PASS, RESULTS_RECEIVER: !!RESULTS_RECEIVER
+    });
+    // 환경변수 없으면 일단 200으로 부드럽게 성공 처리(로컬/세션엔 이미 저장되어 있음)
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
   }
 
   const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: Number(SMTP_PORT || 587),
-    secure: String(SMTP_PORT || '587') === '465',
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    secure: String(SMTP_PORT || '587') === '465', // 465만 TLS
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
   });
 
   try {
     await transporter.sendMail({
-      from: `"Pongdang Korean" <${SMTP_FROM || SMTP_USER}>`,
-      to: RESULTS_RECEIVER || "Lapeace29@gmail.com",
+      from: SMTP_FROM || `"Pongdang Korean" <${SMTP_USER}>`,
+      to: RESULTS_RECEIVER || 'Lapeace29@gmail.com',
       subject,
       text: buildText(payload),
-      html: buildHtml(payload),
+      html: buildHtml(payload)
     });
 
-    return { statusCode: 200, headers: cors, body: JSON.stringify({ ok:true }) };
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:true }) };
   } catch (e) {
     console.error('[send-results] error', e);
-    return { statusCode: 500, headers: cors, body: JSON.stringify({ ok:false, error:String(e) }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
