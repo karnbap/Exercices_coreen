@@ -470,11 +470,15 @@ function isNextAllowed() {
   const passed   = q.pronunPassed === true;
 
   // 규칙: 발음 평가를 최소 2회 했으면 점수와 상관없이 통과
-// 수정 후: pass 여부 상관없이 시도만 2회 이상이면 OK
-const pronunOK = attempts >= 2;
-if (q.pronunRequired && !pronunOK) return false;
+  const pronunOK = passed || attempts >= 2;
 
+  // 발음 필수인데 아직 조건 못 채우면 false
+  if (q.pronunRequired && !pronunOK) return false;
 
+  // 발음 조건 충족 시 → 다른 답 조건은 무시하고 바로 true
+  if (pronunOK) return true;
+
+  // (폴백: 아직 발음 안했으면 기존 조건 적용)
   if (q.type === 'choice') {
     return !!q.userAnswer && q.userAnswer === q.answer;
   } else if (q.type === 'fr_prompt_ko') {
