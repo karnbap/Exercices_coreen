@@ -1,14 +1,14 @@
 // assets/quiz-numbers.js
 // Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
-// - 이름 체크, 상단 인쇄, Sticky 5×5, 힌트2(초성/부분뜻), 녹음 1회 시도→다음 활성화
-// - 오디오 base64→Blob→URL 재생, 끝내기 시 결과 저장+전송
+// - 이름 체크, Sticky 5×5, 힌트(초성/부분뜻; 1~5는 숨김), 오답 흔들림
+// - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL
+// - 끝내기: 결과 전송 + 요약 화면 표시
 
 (function(){
   'use strict';
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
-  // ===== 상태 =====
   const S = {
     start: Date.now(),
     name: '',
@@ -17,9 +17,10 @@
     audio: { el:null, url:null, btn:null, fetching:false, lock:false, ac:null },
   };
 
-  // ===== 유틸 =====
-  const $ = (s,r=document)=>r.querySelector(s);
+  const $  = (s,r=document)=>r.querySelector(s);
+  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const strip = s => String(s||'').replace(/\s/g,'');
+  const esc = s => String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   const base64ToBlob = (b64, mime='audio/mpeg')=>{
     const clean = b64.includes(',') ? b64.split(',')[1] : b64;
     const bin = atob(clean); const arr = new Uint8Array(bin.length);
@@ -28,11 +29,9 @@
   };
   const fmtSecs = t => `${Math.max(0, Math.round(t/1000))} s`;
 
-  // ===== 오디오 =====
   async function playAudio(text, voice='alloy', opts={}){
     const btn = opts._btn || null;
     if (S.audio.lock || S.audio.fetching) {
-      // 같은 버튼이면 토글
       if (S.audio.el && S.audio.btn===btn){
         try{
           if (!S.audio.el.paused) { S.audio.el.pause(); markBtn(btn,false); }
@@ -44,10 +43,8 @@
     S.audio.lock = true; setTimeout(()=>S.audio.lock=false, 220);
 
     try{
-      // 기존 재생 정리
       cleanupAudio();
 
-      // 요청
       S.audio.fetching = true;
       const ac = new AbortController(); S.audio.ac = ac;
       const res = await fetch(`${FN_BASE}/generate-audio`,{
@@ -56,7 +53,7 @@
         body: JSON.stringify({ text, voice, speed:(opts.speed??1.0) }),
         signal: ac.signal
       });
-      if(!res.ok){ throw new Error(`TTS ${res.status}`); }
+      if(!res.ok) throw new Error(`TTS ${res.status}`);
       const data = await res.json();
 
       let srcUrl = null;
@@ -74,7 +71,6 @@
       audio.addEventListener('ended',   ()=> markBtn(btn,false));
       audio.addEventListener('error',   ()=> markBtn(btn,false));
 
-      // 듣기 카운트
       const q = S.qs[S.idx]; if(q) q.listenCount = (q.listenCount||0)+1;
 
       await audio.play();
@@ -101,9 +97,7 @@
     btn.textContent = playing ? 'Pause (일시정지)' : 'Écouter (듣기)';
   }
 
-  // ===== 문제 세트 =====
   function getQuestions(){
-    // 1–5 선택(개념)
     const choiceData = [
       { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hints:{choseong:"ㅇㅇ", part:"date: ‘~일’ (Hanja)"} },
       { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hints:{choseong:"ㅎ ㅅ", part:"heure: natif + 시"} },
@@ -112,7 +106,6 @@
       { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hints:{choseong:"ㅅㅅ ㅂ", part:"minutes: sino + 분"} },
     ];
 
-    // 6–15 불→한 (듣고 한국어로)
     const frKo = [
       { fr:"Quelle heure est-il ?", audio:"몇 시예요?", frGuide:"Ex. Il est 3 h.", ko:"세 시예요.", accepted:["3시예요","세시예요","지금은 세 시예요.","세 시입니다."], voice:"alloy", hints:{choseong:"ㅅ ㅅㅇㅇ", part:"‘~시예요’(c’est ~h)"} },
       { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. Le 10.", ko:"십일이에요.", accepted:["10일이에요","오늘은 십일이에요","오늘 십일이에요"], voice:"shimmer", hints:{choseong:"ㅅㅇㅇㅇ", part:"date: sino + 일"} },
@@ -127,7 +120,6 @@
       { fr:"Combien de secondes ?", audio:"몇 초예요?", frGuide:"Ex. Dix secondes.", ko:"십 초예요.", accepted:["10초예요","십초예요"], voice:"nova", hints:{choseong:"ㅅ ㅊㅇㅇ", part:"secondes: sino + 초"} },
     ];
 
-    // 16–20 받아쓰기
     const dictee = [
       { ko:"지금 몇 시예요?", fr:"Quelle heure est-il ?", guide:"Ex. Il est 3 h.", voice:"shimmer", hints:{choseong:"ㅈㄱ  ㅁ ㅅㅇㅇ?", part:"‘몇 시’ → heure"} },
       { ko:"오늘 며칠이에요?", fr:"Quel jour du mois est-on ?", guide:"Ex. Le 10.", voice:"nova", hints:{choseong:"ㅇㄴ  ㅁㅊㄹㅇㅇ?", part:"‘며칠’ → date (jour)"} },
@@ -163,114 +155,173 @@
     return [...choice, ...fr_prompt_ko, ...dictation];
   }
 
-  // ===== 렌더 =====
   function render(){
     const q = S.qs[S.idx]; if(!q) return;
-    // Sticky 5×5: Q6부터
-    $('#sticky55').classList.toggle('hidden', q.number < 6);
+
+    $('#sticky55')?.classList.toggle('hidden', q.number < 6);
 
     $('#progressText').textContent = `Question ${q.number} / ${S.qs.length}`;
     $('#progressBar').style.width = `${Math.round((S.idx / S.qs.length)*100)}%`;
 
-    const badge = `<span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-white">${label(q.type)}</span>`;
-    let html = `<div class="flex items-center gap-2 mb-1">${badge}<span class="text-sm text-slate-500">Q${q.number}/${S.qs.length}</span></div>`;
+    const host = $('#qArea');
+    host.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card';
+    host.appendChild(card);
+
+    const head = document.createElement('div');
+    head.className = 'flex items-center gap-2 mb-1';
+    head.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-white">${label(q.type)}</span><span class="text-sm text-slate-500">Q${q.number}/${S.qs.length}</span>`;
+    card.appendChild(head);
 
     if(q.type==='choice'){
-      html += `<h2 class="text-lg font-semibold mb-1">${q.context}</h2>`;
-      html += `<p class="text-sm text-slate-600 mb-2">Choisissez la bonne réponse. / 알맞은 답을 고르세요.</p>`;
-      q.options.forEach(opt=>{
-        const isSel = (q.userAnswer===opt);
-        html += `<button class="choice-btn ${isSel?'selected':''}" onclick="Quiz.selectChoice('${safe(opt)}')">${opt}</button>`;
+      const h2 = document.createElement('h2');
+      h2.className = 'text-lg font-semibold mb-1';
+      h2.textContent = q.context;
+      card.appendChild(h2);
+
+      const p = document.createElement('p');
+      p.className = 'text-sm text-slate-600 mb-2';
+      p.textContent = 'Choisissez la bonne réponse. / 알맞은 답을 고르세요.';
+      card.appendChild(p);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'choices';
+      card.appendChild(wrap);
+
+      const fb = document.createElement('div');
+      fb.id = 'qFeedback';
+      fb.className = 'feedback';
+      card.appendChild(fb);
+
+      q.options.forEach((label) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'choice-btn';
+        b.textContent = label;
+        b.addEventListener('click', () => {
+          q.userAnswer = label;
+          q.isCorrect  = (label === q.answer);
+
+          $$('.choice-btn', card).forEach(x=>x.classList.remove('is-correct','is-wrong'));
+          if(q.isCorrect){
+            b.classList.add('is-correct');
+            fb.className = 'feedback good';
+            fb.textContent = '✅ Correct ! Tu peux passer à la suite. / 정답! 다음으로 넘어가요.';
+            q.pronunAttempted = false;
+          }else{
+            b.classList.add('is-wrong');
+            fb.className = 'feedback bad';
+            fb.textContent = "❌ Mauvaise réponse. Relis bien et choisis de nouveau. / 오답이에요. 다시 골라주세요.";
+            card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+            q.pronunAttempted = false;
+          }
+          updateNav();
+          renderPronunIfNeeded(card, q);
+        });
+        wrap.appendChild(b);
       });
-      // 정답 선택 시 발음 위젯 + 힌트
-      if (q.userAnswer === q.answer) {
-        html += hintBox(q);
-        html += pronunBox(q, q.answer);
-      }
+
+      renderPronunIfNeeded(card, q);
     }
 
     if(q.type==='fr_prompt_ko'){
-      html += `<h2 class="text-lg font-semibold mb-1">${q.fr}</h2>`;
-      html += `
-        <div class="flex gap-2 mb-2">
-          <button class="btn btn-primary flex-1" onclick="Quiz.playAudio('${safe(q.audioText)}','${q.voice}',{_btn:this})">Écouter (듣기)</button>
-          <button class="btn" onclick="Quiz.stopAudio()">■ Stop</button>
-        </div>
-        <div class="p-3 bg-white rounded border mb-3 text-sm text-slate-700">
-          <span class="font-medium">Guide (FR)</span> : ${q.frGuide}
-        </div>
-        function hintBoxHTML(q){
-          // 1~5번(개념 선택)은 힌트 숨김
-          if (q.number <= 5) return '';
-          return `
-            <div class="flex flex-wrap gap-2 items-center mb-2">
-              <button class="btn btn-outline" onclick="Quiz.showHint(1)">🙏 Aidez-moi (힌트1: 초성)</button>
-              <button class="btn btn-outline" onclick="Quiz.showHint(2)">🦺 Au secours (힌트2: 부분뜻)</button>
-              <span class="text-xs text-slate-500">H1: ${q.hint1Count||0} · H2: ${q.hint2Count||0}</span>
-            </div>
-            <div id="hintArea" class="text-sm text-slate-700"></div>
-          `;
-        }
+      const h2 = document.createElement('h2');
+      h2.className = 'text-lg font-semibold mb-1';
+      h2.textContent = q.fr;
+      card.appendChild(h2);
+
+      const controls = document.createElement('div');
+      controls.className = 'flex gap-2 mb-2';
+      controls.innerHTML = `
+        <button class="btn btn-primary flex-1" id="btnListen">Écouter (듣기)</button>
+        <button class="btn" id="btnStop">■ Stop</button>
+      `;
+      card.appendChild(controls);
+      $('#btnListen', controls).addEventListener('click', e=>playAudio(q.audioText, q.voice, {_btn:e.currentTarget}));
+      $('#btnStop', controls).addEventListener('click', stopAudio);
+
+      const guide = document.createElement('div');
+      guide.className = 'p-3 bg-white rounded border mb-3 text-sm text-slate-700';
+      guide.innerHTML = `<span class="font-medium">Guide (FR)</span> : ${esc(q.frGuide)}`;
+      card.appendChild(guide);
+
+      card.insertAdjacentHTML('beforeend', hintBox(q));
+
+      const lab = document.createElement('label');
+      lab.className='block mb-1 font-semibold';
+      lab.textContent='Réponse en coréen (한국어):';
+      card.appendChild(lab);
+
+      const row = document.createElement('div');
+      row.className='flex gap-2';
+      row.innerHTML = `
+        <input id="inpKO" class="input-field flex-1" value="${esc(q.userAnswer||'')}" placeholder="Ex. ${esc(q.ko)}">
+        <button class="btn btn-primary" id="btnCheck">Vérifier / 정답 확인</button>
+      `;
+      card.appendChild(row);
+      $('#inpKO', row).addEventListener('input', (e)=>onTextInput(e.target.value));
+      $('#btnCheck', row).addEventListener('click', checkText);
 
       if(q.textChecked){
         const ok = q.textCorrect===true;
-        html += `<div class="mt-3 ${ok?'text-emerald-700':'text-rose-700'} font-semibold">
-          ${ok?'✅ Correct ! 맞았습니다!':'❌ Incorrect. 틀렸습니다.'}
-          ${ok?'':` <span class="ml-2 text-slate-700">Réponse (KO) / 정답: <b>${q.ko}</b></span>`}
-        </div>`;
-        html += pronunBox(q, q.ko);
+        const res = document.createElement('div');
+        res.className = `mt-3 ${ok?'text-emerald-700':'text-rose-700'} font-semibold`;
+        res.innerHTML = ok
+          ? '✅ Correct ! 맞았습니다!'
+          : `❌ Incorrect. 틀렸습니다. <span class="ml-2 text-slate-700">Réponse (KO) / 정답: <b>${esc(q.ko)}</b></span>`;
+        card.appendChild(res);
+        renderPronun(card, q); // 발음 시도 필요
       }
     }
 
     if(q.type==='dictation'){
-      html += `<h2 class="text-lg font-semibold mb-1">Dictée + Réponse / 받아쓰기 + 대답</h2>`;
-      html += `
-        <div class="flex gap-2 mb-2">
-          <button class="btn btn-primary flex-1" onclick="Quiz.playAudio('${safe(q.ko)}','${q.voice}',{_btn:this})">Écouter (듣기)</button>
-          <button class="btn" onclick="Quiz.stopAudio()">■ Stop</button>
+      const h2 = document.createElement('h2');
+      h2.className = 'text-lg font-semibold mb-1';
+      h2.textContent = 'Dictée + Réponse / 받아쓰기 + 대답';
+      card.appendChild(h2);
+
+      const controls = document.createElement('div');
+      controls.className = 'flex gap-2 mb-2';
+      controls.innerHTML = `
+        <button class="btn btn-primary flex-1" id="btnListen">Écouter (듣기)</button>
+        <button class="btn" id="btnStop">■ Stop</button>
+      `;
+      card.appendChild(controls);
+      $('#btnListen', controls).addEventListener('click', e=>playAudio(q.ko, q.voice, {_btn:e.currentTarget}));
+      $('#btnStop', controls).addEventListener('click', stopAudio);
+
+      card.insertAdjacentHTML('beforeend', hintBox(q));
+
+      const box = document.createElement('div');
+      box.className = 'space-y-3';
+      box.innerHTML = `
+        <div>
+          <label class="block mb-1 font-semibold">1) Dictée (받아쓰기)</label>
+          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko||'')}" placeholder="(Écoutez et écrivez tel quel / 그대로 적기)">
         </div>
-        <div class="space-y-3">
-          ${hintBox(q)}
-          <div>
-            <label class="block mb-1 font-semibold">1) Dictée (받아쓰기)</label>
-            <input class="input-field" value="${q.userAnswer.ko||''}" placeholder="(Écoutez et écrivez tel quel / 그대로 적기)" oninput="Quiz.updateDictee('ko',this.value)">
-          </div>
-          <div>
-            <label class="block mb-1 font-semibold">2) Réponse (한국어 대답)</label>
-            <input class="input-field input-reply-ko" value="${q.userAnswer.replyKo||''}" placeholder="Ex. 네 시예요 / 10유로예요 …" oninput="Quiz.updateDictee('replyKo',this.value)">
-            <div class="text-xs text-slate-500 mt-1">Ex (FR) : ${q.frAnswerGuide||''}</div>
-          </div>
-          ${pronunBox(q, '(2) votre réponse / 당신의 대답')}
-        </div>`;
+        <div>
+          <label class="block mb-1 font-semibold">2) Réponse (한국어 대답)</label>
+          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo||'')}" placeholder="Ex. 네 시예요 / 10유로예요 …">
+          <div class="text-xs text-slate-500 mt-1">Ex (FR) : ${esc(q.frAnswerGuide||'')}</div>
+        </div>
+      `;
+      card.appendChild(box);
+      $('#dicKO', box).addEventListener('input', e=>updateDictee('ko', e.target.value));
+      $('#dicReply', box).addEventListener('input', e=>updateDictee('replyKo', e.target.value));
+
+      renderPronun(card, q, '(2) votre réponse / 당신의 대답');
     }
 
-    $('#qArea').innerHTML = html;
     updateNav();
-
-    // Pronun 위젯 mount
-    const mount = $('#pronunMount');
-    if(mount && window.Pronun){
-      try{
-        const markAttempt = ()=>{ q.pronunAttempted = true; updateNav(); };
-        setTimeout(()=>{
-          mount.querySelectorAll('button')?.forEach(b=>{
-            const t=(b.textContent||'');
-            if(t.includes('Stop')||t.includes('정지')) b.addEventListener('click', markAttempt);
-          });
-        },50);
-        Pronun.mount(mount, {
-          getReferenceText: ()=> refTextResolver(q),
-          onResult: ()=>{ q.pronunAttempted = true; updateNav(); }
-        });
-      }catch(e){ console.warn('Pronun.mount', e); }
-    }
   }
 
   function label(t){
     return (t==='choice'?'Choix / 선택': t==='fr_prompt_ko'?'Français → 한국어 / 불→한':'Dictée + Réponse / 받아쓰기 + 대답');
   }
-  function safe(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/\n/g,' '); }
+
   function hintBox(q){
+    if (q.number <= 5) return '';
     return `
       <div class="flex flex-wrap gap-2 items-center mb-2">
         <button class="btn btn-outline" onclick="Quiz.showHint(1)">🙏 Aidez-moi (힌트1: 초성)</button>
@@ -280,30 +331,42 @@
       <div id="hintArea" class="text-sm text-slate-700"></div>
     `;
   }
-  function pronunBox(q, ref){
-    return `
-      <div class="pronun-card mt-3">
-        <div class="pronun-title">🎤 Enregistrer & tester / 녹음·발음 평가</div>
-        <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${ref}</span></div>
-        <div id="pronunMount"></div>
-      </div>
-    `;
+
+  function renderPronunIfNeeded(card, q){
+    if(q.type==='choice' && q.userAnswer === q.answer){
+      renderPronun(card, q, q.answer);
+    }
   }
-  function refTextResolver(q){
+  function renderPronun(card, q, ref){
+    const wrap = document.createElement('div');
+    wrap.className = 'pronun-card mt-3';
+    wrap.innerHTML = `
+      <div class="pronun-title">🎤 Enregistrer & tester / 녹음·발음 평가</div>
+      <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${esc(ref || refTextResolver(q))}</span></div>
+      <div id="pronunMount"></div>
+    `;
+    card.appendChild(wrap);
+
+    const mount = $('#pronunMount', wrap);
+    if(mount && window.Pronun){
+      try{
+        Pronun.mount(mount, {
+          ui: 'warmup',
+          getReferenceText: ()=> refTextResolver(q, ref),
+          onStop:  ()=>{ q.pronunAttempted = true; updateNav(); },
+          onResult:()=>{ q.pronunAttempted = true; updateNav(); }
+        });
+      }catch(e){ console.warn('Pronun.mount', e); }
+    }
+  }
+  function refTextResolver(q, refOverride){
+    if(refOverride) return String(refOverride||'');
     if(q.type==='choice') return q.answer;
     if(q.type==='fr_prompt_ko') return q.ko;
     if(q.type==='dictation') return ($('.input-reply-ko')?.value||'');
     return '';
   }
 
-  // ===== 상호작용 =====
-  function selectChoice(val){
-    const q=S.qs[S.idx];
-    q.userAnswer=val;
-    q.isCorrect = (val===q.answer);
-    if(!q.isCorrect){ q.pronunAttempted=false; } // 오답이면 녹음 다시
-    render();
-  }
   function onTextInput(v){
     const q=S.qs[S.idx];
     q.userAnswer=v;
@@ -334,13 +397,12 @@
     updateNav();
   }
 
-  // 다음 버튼 허용: “녹음 1회 시도” 규칙 포함
   function isNextAllowed(){
     const q=S.qs[S.idx]; if(!q) return false;
     if(q.pronunRequired && !q.pronunAttempted) return false;
 
     if(q.type==='choice'){
-      return !!q.userAnswer;
+      return !!q.userAnswer && q.userAnswer === q.answer;
     }else if(q.type==='fr_prompt_ko'){
       return !!q.userAnswer && q.textChecked===true;
     }else if(q.type==='dictation'){
@@ -354,10 +416,9 @@
     $('#btnNext').disabled = !canNext;
     const isLast = (S.idx===S.qs.length-1);
     $('#btnFinish').classList.toggle('hidden', !isLast);
-    $('#btnFinish').disabled = false; // 마지막 문제에서 항상 누를 수 있게
+    $('#btnFinish').disabled = !isLast ? true : false;
   }
 
-  // ===== 제출/저장 =====
   async function finish(){
     const end = Date.now();
     const name = $('#studentName').value?.trim() || 'Élève';
@@ -368,49 +429,99 @@
       totalTimeSeconds: Math.round((end - S.start)/1000),
       questions: S.qs.map(q=>({
         number:q.number,
+        type:q.type,
         ko: q.type==='fr_prompt_ko' ? q.ko : (q.type==='dictation'? q.ko : q.context),
         fr: q.type==='fr_prompt_ko' ? q.fr : (q.type==='dictation'? q.fr : ''),
         userAnswer: q.type==='dictation' ? JSON.stringify(q.userAnswer) : (q.userAnswer||''),
         isCorrect: !!q.isCorrect,
         listenCount: q.listenCount||0,
         hint1Count: q.hint1Count||0,
-        hint2Count: q.hint2Count||0
+        hint2Count: q.hint2Count||0,
+        pronunAttempted: !!q.pronunAttempted
       }))
     };
 
-    // 로컬 저장 + 전송
-    localStorage.setItem('pongdang:lastResults', JSON.stringify(payload));
-    try{
-      await SendResults.sendResults(payload);
-      alert('Résultats envoyés / 결과 전송 완료');
-      // 간단 결과 표시
-      $('#finalRow').textContent = `Score final : — · Temps total : ${fmtSecs(end - S.start)}`;
-    }catch(e){
-      alert('Envoi échoué. / 전송 실패');
-    }
+    try{ localStorage.setItem('pongdang:lastResults', JSON.stringify(payload)); }catch(_){}
+    try{ await SendResults.sendResults(payload); }catch(e){ console.warn('send fail', e); }
+
+    renderSummary(payload);
   }
 
-  // ===== 네임게이트 & 초기화 =====
+  function renderSummary(p){
+    const total = p.questions.length;
+    const correct = p.questions.filter(q=>q.isCorrect).length;
+    const pct = total ? Math.round((100*correct)/total) : 0;
+    const wrong = p.questions.filter(q=>q.isCorrect===false);
+    const pronun = p.questions.filter(q=>q.pronunAttempted);
+
+    const host = $('#qArea');
+    host.innerHTML = `
+      <div class="card">
+        <h2 class="text-xl font-semibold mb-2">Bilan / 총정리</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div class="sum-box">
+            <div class="sum-title">Score</div>
+            <div class="sum-val">${pct}%</div>
+            <div class="sum-sub">${correct} / ${total}</div>
+          </div>
+          <div class="sum-box">
+            <div class="sum-title">Prononciation</div>
+            <div class="sum-val">${pronun.length}</div>
+            <div class="sum-sub">녹음 시도 문항 수</div>
+          </div>
+          <div class="sum-box">
+            <div class="sum-title">Temps</div>
+            <div class="sum-val">${Math.max(0, p.totalTimeSeconds|0)}s</div>
+            <div class="sum-sub">총 소요</div>
+          </div>
+        </div>
+
+        ${wrong.length ? `
+        <div class="soft-divider"></div>
+        <h3 class="font-semibold mb-1">À revoir / 다시 보기</h3>
+        <ol class="list-decimal pl-5 space-y-2">
+          ${wrong.map(q=>{
+            const ua = (q.type==='dictation') ? JSON.parse(q.userAnswer||'{}')?.ko||'' : (q.userAnswer||'');
+            const ko = q.ko || '';
+            const fr = q.fr || '';
+            return `
+              <li>
+                <div class="text-sm"><b>Q${q.number}</b> ${fr?`<span class="text-slate-500">(${esc(fr)})</span>`:''}</div>
+                <div class="text-sm">🧩 <span class="text-slate-600">정답</span> : <b>${esc(ko)}</b></div>
+                <div class="text-sm">🤔 <span class="text-slate-600">내 답</span> : ${esc(ua||'—')}</div>
+              </li>`;
+          }).join('')}
+        </ol>` : `
+        <div class="pronun-card mt-2">모든 문항을 맞췄습니다. 아주 좋아요! ✨</div>`}
+
+        <div class="mt-4 flex justify-end">
+          <a class="btn btn-primary" href="../index.html">Fermer / 닫기</a>
+        </div>
+      </div>
+    `;
+
+    // 네비 비활성화
+    $('#btnPrev').disabled = true;
+    $('#btnNext').disabled = true;
+    $('#btnFinish').disabled = true;
+  }
+
   function requireName(){
     const v = $('#studentName').value?.trim();
     if(!v){ alert('이름을 먼저 입력해 주세요. / Écris ton nom d’abord.'); return false; }
     S.name = v; return true;
   }
 
-  // ===== 이벤트 바인딩 =====
   $('#btnPrev').addEventListener('click', ()=>{ if(S.idx>0){ S.idx--; render(); } });
-  $('#btnNext').addEventListener('click', ()=>{ if(!requireName()) return; if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); } });
+  $('#btnNext').addEventListener('click', ()=>{
+    if(!requireName()) return;
+    if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); }
+  });
   $('#btnFinish').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
-  $('#btnFinish2').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
   window.addEventListener('beforeunload', cleanupAudio);
 
-  // 시작
   S.qs = getQuestions();
   render();
 
-  // 외부에서 쓰는 함수 export
-  window.Quiz = {
-    playAudio, stopAudio,
-    selectChoice, onTextInput, checkText, updateDictee, showHint
-  };
+  window.Quiz = { playAudio, stopAudio, onTextInput, checkText, updateDictee, showHint };
 })();
