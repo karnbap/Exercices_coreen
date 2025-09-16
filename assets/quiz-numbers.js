@@ -438,28 +438,29 @@
   }
 
   // 다음 허용 규칙 (발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과)
+// ===== Interactions =====
 function isNextAllowed() {
-  const q = S.qs[S.idx]; if (!q) return false;
+  const q = S.qs[S.idx]; 
+  if (!q) return false;
 
   const attempts = q.pronunAttempts || 0;
-  const passed = q.pronunPassed === true;
-  const last = q.lastPronunScore;
+  const passed   = q.pronunPassed === true;
 
-  // 규칙: 평가 2번 이상 시도했고 → 점수가 0.8 이상이거나, 
-  // 최소 2회 시도했으면 점수와 상관없이 통과
+  // 규칙: 발음 평가를 최소 2회 했으면 점수와 상관없이 통과
   const pronunOK = passed || attempts >= 2;
 
   if (q.pronunRequired && !pronunOK) return false;
 
-    if (q.type === 'choice') {
-      return !!q.userAnswer && q.userAnswer === q.answer;
-    } else if (q.type === 'fr_prompt_ko') {
-      return !!q.userAnswer && q.textChecked === true;
-    } else if (q.type === 'dictation') {
-      return !!q.userAnswer.ko && !!q.userAnswer.replyKo;
-    }
-    return false;
-    }
+  if (q.type === 'choice') {
+    return !!q.userAnswer && q.userAnswer === q.answer;
+  } else if (q.type === 'fr_prompt_ko') {
+    return !!q.userAnswer && q.textChecked === true;
+  } else if (q.type === 'dictation') {
+    return !!q.userAnswer.ko && !!q.userAnswer.replyKo;
+  }
+  return false;
+}
+
 
   function updateNav() {
     // Q1에서도 ← 사용 가능(웜업 이동용)
