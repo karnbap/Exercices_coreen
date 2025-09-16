@@ -50,17 +50,7 @@ function computeFallbackCategoryScores(payload){
 }
 
 // 최종 overall 우선순위: payload.overall → categoryScores.overall → isCorrect 계산 → 폴백 계산
-function pickOverall(payload){
-  const cand = [payload?.overall, payload?.categoryScores?.overall, payload?.score]
-    .map(Number).find(n => Number.isFinite(n));
-  if (Number.isFinite(cand)) return Math.round(cand);
-
-  const fromCorrect = computeOverallFromIsCorrect(payload).pct;
-  if (Number.isFinite(fromCorrect)) return fromCorrect;
-
-  return computeFallbackCategoryScores(payload).overall || 0;
-}
-
+pickOverall
 function safeNum(n, d=0){
   const v = Number(n);
   return Number.isFinite(v) ? v : d;
@@ -243,4 +233,5 @@ const transporter = nodemailer.createTransport({
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
+
 
