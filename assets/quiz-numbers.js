@@ -366,11 +366,17 @@
   }
 
   // 발음 위젯
-  function renderPronunIfNeeded(card, q) {
-    if (q.type === 'choice' && q.userAnswer === q.answer) {
-      renderPronun(card, q, q.answer);
-    }
+function renderPronunIfNeeded(card, q) {
+  if (q.type === 'choice' && q.userAnswer === q.answer) {
+    renderPronun(card, q, q.answer);
+  } else if (q.type === 'fr_prompt_ko' && q.textChecked === true) {
+    renderPronun(card, q, q.ko);
+  } else if (q.type === 'dictation') {
+    // dictation 문제는 학생 답변(replyKo)을 기준으로 평가
+    renderPronun(card, q, q.ko);
   }
+}
+
   function renderPronun(card, q, ref) {
     const wrap = document.createElement('div');
     wrap.className = 'pronun-card mt-3';
