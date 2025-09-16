@@ -1,12 +1,15 @@
-<!-- /assets/quiz-numbers.js (final) -->
-// Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
-// - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
-// - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL
-// - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과로 다음 활성화)
-// - Q1에서 ← 누르면 numbers-warmup.html로 이동
-// - 끝내기: 결과 전송 + 요약 화면 표시 + 문항별 발음 테이블
+/* /assets/quiz-numbers.js (final)
+ * Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
+ * - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
+ * - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL (Blob URL로 안정 재생)
+ * - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과로 다음 활성화)
+ * - Q1에서 ← 누르면 numbers-warmup.html로 이동
+ * - 끝내기: 결과 전송 + 요약 화면 표시 + 문항별 발음 테이블
+ * - 학생 화면엔 H1/H2(힌트 카운트) 숨김: <span class="hint-metrics">…</span> (CSS에서 display:none)
+ *   ※ 선생님 메일에는 카운트 포함(전송 데이터 유지)
+ */
 
-(function(){
+(function () {
   'use strict';
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
@@ -16,163 +19,162 @@
     name: '',
     idx: 0,
     qs: [],
-    audio: { el:null, url:null, btn:null, fetching:false, lock:false, ac:null },
+    audio: { el: null, url: null, btn: null, fetching: false, lock: false, ac: null },
   };
 
   // ===== Utils =====
-  const $  = (s,r=document)=>r.querySelector(s);
-  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
-  const strip = s => String(s||'').replace(/\s/g,'');
-  const esc = s => String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
-  const base64ToBlob = (b64, mime='audio/mpeg')=>{
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const strip = s => String(s || '').replace(/\s/g, '');
+  const esc = s => String(s || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+  const base64ToBlob = (b64, mime = 'audio/mpeg') => {
     const clean = b64.includes(',') ? b64.split(',')[1] : b64;
     const bin = atob(clean); const arr = new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-    return new Blob([arr],{type:mime});
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
   };
 
-  // ===== Audio =====
-  async function playAudio(text, voice='alloy', opts={}){
+  // ===== Audio (TTS) =====
+  async function playAudio(text, voice = 'alloy', opts = {}) {
     const btn = opts._btn || null;
     if (S.audio.lock || S.audio.fetching) {
-      if (S.audio.el && S.audio.btn===btn){
-        try{
-          if (!S.audio.el.paused) { S.audio.el.pause(); markBtn(btn,false); }
-          else { await S.audio.el.play(); markBtn(btn,true); }
-        }catch(_){}
+      if (S.audio.el && S.audio.btn === btn) {
+        try {
+          if (!S.audio.el.paused) { S.audio.el.pause(); markBtn(btn, false); }
+          else { await S.audio.el.play(); markBtn(btn, true); }
+        } catch (_) {}
       }
       return;
     }
-    S.audio.lock = true; setTimeout(()=>S.audio.lock=false, 220);
+    S.audio.lock = true; setTimeout(() => S.audio.lock = false, 220);
 
-    try{
+    try {
       cleanupAudio();
-
       S.audio.fetching = true;
       const ac = new AbortController(); S.audio.ac = ac;
-      const res = await fetch(`${FN_BASE}/generate-audio`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
-        body: JSON.stringify({ text, voice, speed:(opts.speed??1.0) }),
+      const res = await fetch(`${FN_BASE}/generate-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        body: JSON.stringify({ text, voice, speed: (opts.speed ?? 1.0) }),
         signal: ac.signal
       });
-      if(!res.ok) throw new Error(`TTS ${res.status}`);
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
       const data = await res.json();
 
       let srcUrl = null;
-      if(data.audioBase64 || data.audioContent){
-        const blob = base64ToBlob(data.audioBase64||data.audioContent, data.mimeType||'audio/mpeg');
+      if (data.audioBase64 || data.audioContent) {
+        const blob = base64ToBlob(data.audioBase64 || data.audioContent, data.mimeType || 'audio/mpeg');
         srcUrl = URL.createObjectURL(blob);
-      }else if(data.audioUrl){ srcUrl = data.audioUrl; }
+      } else if (data.audioUrl) { srcUrl = data.audioUrl; }
       else { throw new Error('Invalid TTS response'); }
 
       const audio = new Audio(srcUrl);
       S.audio.el = audio; S.audio.url = srcUrl; S.audio.btn = btn;
 
-      audio.addEventListener('playing', ()=> markBtn(btn,true));
-      audio.addEventListener('pause',   ()=> markBtn(btn,false));
-      audio.addEventListener('ended',   ()=> markBtn(btn,false));
-      audio.addEventListener('error',   ()=> markBtn(btn,false));
+      audio.addEventListener('playing', () => markBtn(btn, true));
+      audio.addEventListener('pause', () => markBtn(btn, false));
+      audio.addEventListener('ended', () => markBtn(btn, false));
+      audio.addEventListener('error', () => markBtn(btn, false));
 
-      const q = S.qs[S.idx]; if(q) q.listenCount = (q.listenCount||0)+1;
-
+      const q = S.qs[S.idx]; if (q) q.listenCount = (q.listenCount || 0) + 1;
       await audio.play();
-    }catch(e){
+    } catch (e) {
       console.error(e);
       alert('오디오 재생 오류가 발생했습니다. 다시 시도해 주세요.');
-    }finally{
+    } finally {
       S.audio.fetching = false;
     }
   }
-  function stopAudio(){
-    if(!S.audio.el) return;
-    try { S.audio.el.pause(); S.audio.el.currentTime = 0; } catch(_){}
-    markBtn(S.audio.btn,false);
+  function stopAudio() {
+    if (!S.audio.el) return;
+    try { S.audio.el.pause(); S.audio.el.currentTime = 0; } catch (_) {}
+    markBtn(S.audio.btn, false);
   }
-  function cleanupAudio(){
-    try{ if(S.audio.el) S.audio.el.pause(); }catch(_){}
-    if(S.audio.url){ URL.revokeObjectURL(S.audio.url); }
-    S.audio = { el:null, url:null, btn:null, fetching:false, lock:false, ac:null };
+  function cleanupAudio() {
+    try { if (S.audio.el) S.audio.el.pause(); } catch (_) {}
+    if (S.audio.url) { URL.revokeObjectURL(S.audio.url); }
+    S.audio = { el: null, url: null, btn: null, fetching: false, lock: false, ac: null };
   }
-  function markBtn(btn, playing){
-    if(!btn) return;
+  function markBtn(btn, playing) {
+    if (!btn) return;
     btn.classList.toggle('playing', playing);
     btn.textContent = playing ? 'Pause (일시정지)' : 'Écouter (듣기)';
   }
 
   // ===== Questions =====
-  function getQuestions(){
+  function getQuestions() {
     // 1–5 선택(개념)
     const choiceData = [
-      { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hints:{choseong:"ㅇㅇ", part:"date: ‘~일’ (Hanja)"} },
-      { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hints:{choseong:"ㅎ ㅅ", part:"heure: natif + 시"} },
-      { context:"Pour l'âge '3살', on dit :", options:["세 살","삼 살"], answer:"세 살", hints:{choseong:"ㅅ ㅅ", part:"âge: natif + 살"} },
-      { context:"Pour l'argent '10 euro', on dit :", options:["십 유로","열 유로"], answer:"십 유로", hints:{choseong:"ㅅ ㅇㄹ", part:"argent: Hanja + 유로"} },
-      { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hints:{choseong:"ㅅㅅ ㅂ", part:"minutes: Hanja + 분"} },
+      { context: "Pour la date '1일', on dit :", options: ["일일", "하나일"], answer: "일일", hints: { choseong: "ㅇㅇ", part: "date: ‘~일’ (Hanja)" } },
+      { context: "Pour l'heure '1시', on dit :", options: ["한 시", "일 시"], answer: "한 시", hints: { choseong: "ㅎ ㅅ", part: "heure: natif + 시" } },
+      { context: "Pour l'âge '3살', on dit :", options: ["세 살", "삼 살"], answer: "세 살", hints: { choseong: "ㅅ ㅅ", part: "âge: natif + 살" } },
+      { context: "Pour l'argent '10 euro', on dit :", options: ["십 유로", "열 유로"], answer: "십 유로", hints: { choseong: "ㅅ ㅇㄹ", part: "argent: Hanja + 유로" } },
+      { context: "Pour 30 minutes (30분), on dit :", options: ["삼십 분", "서른 분"], answer: "삼십 분", hints: { choseong: "ㅅㅅ ㅂ", part: "minutes: Hanja + 분" } },
     ];
 
     // 6–15 불→한
     const frKo = [
-      { fr:"Quelle heure est-il ?", audio:"몇 시예요?", frGuide:"Ex. Il est 3 h.", ko:"세 시예요.", accepted:["3시예요","세시예요","지금은 세 시예요.","세 시입니다."], voice:"alloy", hints:{choseong:"ㅅ ㅅㅇㅇ", part:"‘~시예요’(c’est ~h)"} },
-      { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. Le 10.", ko:"십일이에요.", accepted:["10일이에요","오늘은 십일이에요","오늘 십일이에요"], voice:"shimmer", hints:{choseong:"ㅅㅇㅇㅇ", part:"date: Hanja + 일"} },
-      { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. 10 euros.", ko:"십 유로예요.", accepted:["10유로예요","십유로예요","열 유로예요"], voice:"alloy", hints:{choseong:"ㅅ ㅇㄹㅇㅇ", part:"prix: Hanja + 유로"} },
-      { fr:"Combien de personnes ?", audio:"몇 명이에요?", frGuide:"Ex. Huit.", ko:"여덟 명이에요.", accepted:["8명이에요","여덟명이에요"], voice:"nova", hints:{choseong:"ㅇㄷ  ㅁㅇㅇㅇ", part:"compter personnes: natif + 명"} },
-      { fr:"Combien de minutes ?", audio:"몇 분이에요?", frGuide:"Ex. 30.", ko:"삼십 분이에요.", accepted:["30분이에요","서른 분이에요"], voice:"echo", hints:{choseong:"ㅅㅅ ㅂㅇㅇㅇ", part:"minutes: Hanja + 분"} },
+      { fr: "Quelle heure est-il ?", audio: "몇 시예요?", frGuide: "Ex. Il est 3 h.", ko: "세 시예요.", accepted: ["3시예요", "세시예요", "지금은 세 시예요.", "세 시입니다."], voice: "alloy", hints: { choseong: "ㅅ ㅅㅇㅇ", part: "‘~시예요’(c’est ~h)" } },
+      { fr: "Quel jour du mois ?", audio: "며칠이에요?", frGuide: "Ex. Le 10.", ko: "십일이에요.", accepted: ["10일이에요", "오늘은 십일이에요", "오늘 십일이에요"], voice: "shimmer", hints: { choseong: "ㅅㅇㅇㅇ", part: "date: Hanja + 일" } },
+      { fr: "Combien ça coûte ?", audio: "얼마예요?", frGuide: "Ex. 10 euros.", ko: "십 유로예요.", accepted: ["10유로예요", "십유로예요", "열 유로예요"], voice: "alloy", hints: { choseong: "ㅅ ㅇㄹㅇㅇ", part: "prix: Hanja + 유로" } },
+      { fr: "Combien de personnes ?", audio: "몇 명이에요?", frGuide: "Ex. Huit.", ko: "여덟 명이에요.", accepted: ["8명이에요", "여덟명이에요"], voice: "nova", hints: { choseong: "ㅇㄷ  ㅁㅇㅇㅇ", part: "compter personnes: natif + 명" } },
+      { fr: "Combien de minutes ?", audio: "몇 분이에요?", frGuide: "Ex. 30.", ko: "삼십 분이에요.", accepted: ["30분이에요", "서른 분이에요"], voice: "echo", hints: { choseong: "ㅅㅅ ㅂㅇㅇㅇ", part: "minutes: Hanja + 분" } },
 
-      { fr:"À quelle heure est le rendez-vous ?", audio:"약속이 몇 시예요?", frGuide:"Ex. 4 h.", ko:"네 시예요.", accepted:["4시예요","네시예요"], voice:"fable", hints:{choseong:"ㄴ ㅅㅇㅇ", part:"heure: natif + 시"} },
-      { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. 15.", ko:"십오일이에요.", accepted:["15일이에요"], voice:"alloy", hints:{choseong:"ㅅㅇㅇㅇㅇ", part:"date: Hanja + 일"} },
-      { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. 12 euros.", ko:"십이 유로예요.", accepted:["12유로예요","십이유로예요"], voice:"shimmer", hints:{choseong:"ㅅㅇ ㅇㄹㅇㅇ", part:"prix: Hanja + 유로"} },
-      { fr:"Combien de tasses de café ?", audio:"커피 몇 잔이에요?", frGuide:"Ex. Trois.", ko:"세 잔이에요.", accepted:["3잔이에요","세잔이에요"], voice:"alloy", hints:{choseong:"ㅅ  ㅈㅇㅇㅇ", part:"compter tasses: natif + 잔"} },
-      { fr:"Combien de secondes ?", audio:"몇 초예요?", frGuide:"Ex. Dix secondes.", ko:"십 초예요.", accepted:["10초예요","십초예요"], voice:"nova", hints:{choseong:"ㅅ ㅊㅇㅇ", part:"secondes: Hanja + 초"} },
+      { fr: "À quelle heure est le rendez-vous ?", audio: "약속이 몇 시예요?", frGuide: "Ex. 4 h.", ko: "네 시예요.", accepted: ["4시예요", "네시예요"], voice: "fable", hints: { choseong: "ㄴ ㅅㅇㅇ", part: "heure: natif + 시" } },
+      { fr: "Quel jour du mois ?", audio: "며칠이에요?", frGuide: "Ex. 15.", ko: "십오일이에요.", accepted: ["15일이에요"], voice: "alloy", hints: { choseong: "ㅅㅇㅇㅇㅇ", part: "date: Hanja + 일" } },
+      { fr: "Combien ça coûte ?", audio: "얼마예요?", frGuide: "Ex. 12 euros.", ko: "십이 유로예요.", accepted: ["12유로예요", "십이유로예요"], voice: "shimmer", hints: { choseong: "ㅅㅇ ㅇㄹㅇㅇ", part: "prix: Hanja + 유로" } },
+      { fr: "Combien de tasses de café ?", audio: "커피 몇 잔이에요?", frGuide: "Ex. Trois.", ko: "세 잔이에요.", accepted: ["3잔이에요", "세잔이에요"], voice: "alloy", hints: { choseong: "ㅅ  ㅈㅇㅇㅇ", part: "compter tasses: natif + 잔" } },
+      { fr: "Combien de secondes ?", audio: "몇 초예요?", frGuide: "Ex. Dix secondes.", ko: "십 초예요.", accepted: ["10초예요", "십초예요"], voice: "nova", hints: { choseong: "ㅅ ㅊㅇㅇ", part: "secondes: Hanja + 초" } },
     ];
 
     // 16–20 받아쓰기
     const dictee = [
-      { ko:"지금 몇 시예요?", fr:"Quelle heure est-il ?", guide:"Ex. Il est 3 h.", voice:"shimmer", hints:{choseong:"ㅈㄱ  ㅁ ㅅㅇㅇ?", part:"‘몇 시’ → heure"} },
-      { ko:"오늘 며칠이에요?", fr:"Quel jour du mois est-on ?", guide:"Ex. Le 10.", voice:"nova", hints:{choseong:"ㅇㄴ  ㅁㅊㄹㅇㅇ?", part:"‘며칠’ → date (jour)"} },
-      { ko:"얼마예요?", fr:"Combien ça coûte ?", guide:"Ex. 12 euros.", voice:"alloy", hints:{choseong:"ㅇㄹㅁ ㅇㅇ?", part:"prix"} },
-      { ko:"몇 명이에요?", fr:"Combien de personnes ?", guide:"Ex. Huit.", voice:"echo", hints:{choseong:"ㅁ  ㅁㅇㅇㅇ?", part:"compter personnes"} },
-      { ko:"지금 몇 시 몇 분이에요?", fr:"Quelle heure et quelle minute est-il ?", guide:"Ex. 2 h 30.", voice:"fable", hints:{choseong:"ㅈㄱ  ㅁ ㅅ  ㅁ ㅂㄴㅇㅇ?", part:"heure + minutes"} },
+      { ko: "지금 몇 시예요?", fr: "Quelle heure est-il ?", guide: "Ex. Il est 3 h.", voice: "shimmer", hints: { choseong: "ㅈㄱ  ㅁ ㅅㅇㅇ?", part: "‘몇 시’ → heure" } },
+      { ko: "오늘 며칠이에요?", fr: "Quel jour du mois est-on ?", guide: "Ex. Le 10.", voice: "nova", hints: { choseong: "ㅇㄴ  ㅁㅊㄹㅇㅇ?", part: "‘며칠’ → date (jour)" } },
+      { ko: "얼마예요?", fr: "Combien ça coûte ?", guide: "Ex. 12 euros.", voice: "alloy", hints: { choseong: "ㅇㄹㅁ ㅇㅇ?", part: "prix" } },
+      { ko: "몇 명이에요?", fr: "Combien de personnes ?", guide: "Ex. Huit.", voice: "echo", hints: { choseong: "ㅁ  ㅁㅇㅇㅇ?", part: "compter personnes" } },
+      { ko: "지금 몇 시 몇 분이에요?", fr: "Quelle heure et quelle minute est-il ?", guide: "Ex. 2 h 30.", voice: "fable", hints: { choseong: "ㅈㄱ  ㅁ ㅅ  ㅁ ㅂㄴㅇㅇ?", part: "heure + minutes" } },
     ];
 
-    const choice = choiceData.map((q,i)=>({
-      number:i+1, type:'choice', context:q.context, options:q.options, answer:q.answer,
-      hints:q.hints, userAnswer:null, isCorrect:null,
-      listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false, pronunPassed:false,
-      pronunFails:0, pronunAttempts:0, lastPronunScore:null
+    const choice = choiceData.map((q, i) => ({
+      number: i + 1, type: 'choice', context: q.context, options: q.options, answer: q.answer,
+      hints: q.hints, userAnswer: null, isCorrect: null,
+      listenCount: 0, hint1Count: 0, hint2Count: 0,
+      pronunRequired: true, pronunAttempted: false, pronunPassed: false,
+      pronunFails: 0, pronunAttempts: 0, lastPronunScore: null
     }));
 
-    const fr_prompt_ko = frKo.map((q,i)=>({
-      number: choice.length + i + 1, type:'fr_prompt_ko',
-      fr:q.fr, audioText:q.audio, frGuide:q.frGuide, ko:q.ko,
-      accepted:q.accepted||[], voice:q.voice||'alloy', hints:q.hints,
-      userAnswer:"", textChecked:false, textCorrect:null, isCorrect:null,
-      listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false, pronunPassed:false,
-      pronunFails:0, pronunAttempts:0, lastPronunScore:null
+    const fr_prompt_ko = frKo.map((q, i) => ({
+      number: choice.length + i + 1, type: 'fr_prompt_ko',
+      fr: q.fr, audioText: q.audio, frGuide: q.frGuide, ko: q.ko,
+      accepted: q.accepted || [], voice: q.voice || 'alloy', hints: q.hints,
+      userAnswer: "", textChecked: false, textCorrect: null, isCorrect: null,
+      listenCount: 0, hint1Count: 0, hint2Count: 0,
+      pronunRequired: true, pronunAttempted: false, pronunPassed: false,
+      pronunFails: 0, pronunAttempts: 0, lastPronunScore: null
     }));
 
-    const dictation = dictee.map((q,i)=>({
-      number: choice.length + fr_prompt_ko.length + i + 1, type:'dictation',
-      ko:q.ko, fr:q.fr, frAnswerGuide:q.guide, voice:q.voice, hints:q.hints,
-      userAnswer:{ko:"", replyKo:""}, isCorrect:null,
-      listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false, pronunPassed:false,
-      pronunFails:0, pronunAttempts:0, lastPronunScore:null
+    const dictation = dictee.map((q, i) => ({
+      number: choice.length + fr_prompt_ko.length + i + 1, type: 'dictation',
+      ko: q.ko, fr: q.fr, frAnswerGuide: q.guide, voice: q.voice, hints: q.hints,
+      userAnswer: { ko: "", replyKo: "" }, isCorrect: null,
+      listenCount: 0, hint1Count: 0, hint2Count: 0,
+      pronunRequired: true, pronunAttempted: false, pronunPassed: false,
+      pronunFails: 0, pronunAttempts: 0, lastPronunScore: null
     }));
 
     return [...choice, ...fr_prompt_ko, ...dictation];
   }
 
   // ===== Render =====
-  function render(){
-    const q = S.qs[S.idx]; if(!q) return;
+  function render() {
+    const q = S.qs[S.idx]; if (!q) return;
 
+    // Sticky 5x5: Q1~Q5에는 숨김
     $('#sticky55')?.classList.toggle('hidden', q.number < 6);
 
     $('#progressText').textContent = `Question ${q.number} / ${S.qs.length}`;
-    const prog = Math.max(0, Math.min(100, Math.round((S.idx / S.qs.length)*100)));
+    const prog = Math.max(0, Math.min(100, Math.round((S.idx / S.qs.length) * 100)));
     $('#progressBar').style.width = `${prog}%`;
 
     const host = $('#qArea');
@@ -186,7 +188,7 @@
     head.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-white">${label(q.type)}</span><span class="text-sm text-slate-500">Q${q.number}/${S.qs.length}</span>`;
     card.appendChild(head);
 
-    if(q.type==='choice'){
+    if (q.type === 'choice') {
       const h2 = document.createElement('h2');
       h2.className = 'text-lg font-semibold mb-1';
       h2.textContent = q.context;
@@ -206,22 +208,23 @@
       fb.className = 'feedback';
       card.appendChild(fb);
 
-      q.options.forEach((label) => {
+      q.options.forEach((labelOpt) => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'choice-btn';
-        b.textContent = label;
+        b.textContent = labelOpt;
         b.addEventListener('click', () => {
-          q.userAnswer = label;
-          q.isCorrect  = (label === q.answer);
+          q.userAnswer = labelOpt;
+          q.isCorrect = (labelOpt === q.answer);
 
-          $$('.choice-btn', card).forEach(x=>x.classList.remove('is-correct','is-wrong'));
-          if(q.isCorrect){
+          $$('.choice-btn', card).forEach(x => x.classList.remove('is-correct', 'is-wrong'));
+          if (q.isCorrect) {
             b.classList.add('is-correct');
+            // ✅ 정답 피드백(축하 + 발음 유도)
             fb.className = 'feedback good';
-            fb.textContent = '✅ Correct ! Tu peux passer à la suite. / 정답! 다음으로 넘어가요.';
+            fb.textContent = '🎉 Bravo ! Maintenant, place à la prononciation 😄 / 축하해요! 이제 발음 연습할 시간!';
             q.pronunAttempted = false; // 정답 후 발음 시도 요구
-          }else{
+          } else {
             b.classList.add('is-wrong');
             fb.className = 'feedback bad';
             fb.textContent = "❌ Mauvaise réponse. Relis bien et choisis de nouveau. / 오답이에요. 다시 골라주세요.";
@@ -237,7 +240,7 @@
       renderPronunIfNeeded(card, q);
     }
 
-    if(q.type==='fr_prompt_ko'){
+    if (q.type === 'fr_prompt_ko') {
       const h2 = document.createElement('h2');
       h2.className = 'text-lg font-semibold mb-1';
       h2.textContent = q.fr;
@@ -250,7 +253,7 @@
         <button class="btn" id="btnStop">■ Stop</button>
       `;
       card.appendChild(controls);
-      $('#btnListen', controls).addEventListener('click', e=>playAudio(q.audioText, q.voice, {_btn:e.currentTarget}));
+      $('#btnListen', controls).addEventListener('click', e => playAudio(q.audioText, q.voice, { _btn: e.currentTarget }));
       $('#btnStop', controls).addEventListener('click', stopAudio);
 
       // 힌트(1~5 숨김)
@@ -258,8 +261,8 @@
 
       // 입력 라벨 + 강조 입력칸 + 한/불 안내
       const lab = document.createElement('label');
-      lab.className='block mb-1 font-semibold';
-      lab.textContent='Réponse en coréen (한국어):';
+      lab.className = 'block mb-1 font-semibold';
+      lab.textContent = 'Réponse en coréen (한국어):';
       card.appendChild(lab);
 
       const fieldWrap = document.createElement('div');
@@ -267,9 +270,9 @@
       fieldWrap.innerHTML = `
         <input id="inpKO"
                class="input-field flex-1 border-2 border-blue-500 focus:border-blue-600 rounded-lg p-2"
-               value="${esc(q.userAnswer||'')}"
+               value="${esc(q.userAnswer || '')}"
                placeholder="여기에 한국어로 입력하세요 / Écris en coréen ici">
-        <div class="text-xs text-slate-500">Ex (FR): ${esc(q.frGuide||'')}</div>
+        <div class="text-xs text-slate-500">Ex (FR): ${esc(q.frGuide || '')}</div>
       `;
       card.appendChild(fieldWrap);
 
@@ -279,12 +282,12 @@
       checkBtn.addEventListener('click', checkText);
       card.appendChild(checkBtn);
 
-      $('#inpKO', fieldWrap).addEventListener('input', (e)=>onTextInput(e.target.value));
+      $('#inpKO', fieldWrap).addEventListener('input', (e) => onTextInput(e.target.value));
 
-      if(q.textChecked){
-        const ok = q.textCorrect===true;
+      if (q.textChecked) {
+        const ok = q.textCorrect === true;
         const res = document.createElement('div');
-        res.className = `mt-3 ${ok?'text-emerald-700':'text-rose-700'} font-semibold`;
+        res.className = `mt-3 ${ok ? 'text-emerald-700' : 'text-rose-700'} font-semibold`;
         res.innerHTML = ok
           ? '✅ Correct ! 맞았습니다!'
           : `❌ Incorrect. 틀렸습니다. <span class="ml-2 text-slate-700">Réponse (KO) / 정답: <b>${esc(q.ko)}</b></span>`;
@@ -293,7 +296,7 @@
       }
     }
 
-    if(q.type==='dictation'){
+    if (q.type === 'dictation') {
       const h2 = document.createElement('h2');
       h2.className = 'text-lg font-semibold mb-1';
       h2.textContent = 'Dictée + Réponse / 받아쓰기 + 대답';
@@ -306,7 +309,7 @@
         <button class="btn" id="btnStop">■ Stop</button>
       `;
       card.appendChild(controls);
-      $('#btnListen', controls).addEventListener('click', e=>playAudio(q.ko, q.voice, {_btn:e.currentTarget}));
+      $('#btnListen', controls).addEventListener('click', e => playAudio(q.ko, q.voice, { _btn: e.currentTarget }));
       $('#btnStop', controls).addEventListener('click', stopAudio);
 
       card.insertAdjacentHTML('beforeend', hintBox(q));
@@ -316,19 +319,19 @@
       box.innerHTML = `
         <div>
           <label class="block mb-1 font-semibold">1) Dictée (받아쓰기)</label>
-          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko||'')}" placeholder="">
+          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko || '')}" placeholder="">
           <div class="text-xs text-slate-500 mt-1">Écoutez et écrivez tel quel / 그대로 적기</div>
         </div>
         <div>
           <label class="block mb-1 font-semibold">2) Réponse (한국어 대답)</label>
-          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo||'')}"
+          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo || '')}"
                  placeholder="여기에 한국어로 입력하세요 / Écris en coréen ici">
-          <div class="text-xs text-slate-500 mt-1">Ex (FR): ${esc(q.frAnswerGuide||'')}</div>
+          <div class="text-xs text-slate-500 mt-1">Ex (FR): ${esc(q.frAnswerGuide || '')}</div>
         </div>
       `;
       card.appendChild(box);
-      $('#dicKO', box).addEventListener('input', e=>updateDictee('ko', e.target.value));
-      $('#dicReply', box).addEventListener('input', e=>updateDictee('replyKo', e.target.value));
+      $('#dicKO', box).addEventListener('input', e => updateDictee('ko', e.target.value));
+      $('#dicReply', box).addEventListener('input', e => updateDictee('replyKo', e.target.value));
 
       renderPronun(card, q, '(2) votre réponse / 당신의 대답');
     }
@@ -336,30 +339,32 @@
     updateNav();
   }
 
-  function label(t){
-    return (t==='choice'?'Choix / 선택': t==='fr_prompt_ko'?'Français → 한국어 / 불→한':'Dictée + Réponse / 받아쓰기 + 대답');
+  function label(t) {
+    return (t === 'choice' ? 'Choix / 선택'
+      : t === 'fr_prompt_ko' ? 'Français → 한국어 / 불→한'
+      : 'Dictée + Réponse / 받아쓰기 + 대답');
   }
 
   // 힌트(1~5 숨김)
-  function hintBox(q){
+  function hintBox(q) {
     if (q.number <= 5) return '';
     return `
       <div class="flex flex-wrap gap-2 items-center mb-2">
-        <button class="btn btn-outline" onclick="Quiz.showHint(1)">🙏 Aidez-moi (힌트1: 초성)</button>
-        <button class="btn btn-outline" onclick="Quiz.showHint(2)">🦺 Au secours (힌트2: 부분뜻)</button>
-        <span class="text-xs text-slate-500">H1: ${q.hint1Count||0} · H2: ${q.hint2Count||0}</span>
+        <button class="btn btn-outline" onclick="Quiz.showHint(1)">🙏 Aidez-moi (도움1: 초성)</button>
+        <button class="btn btn-outline" onclick="Quiz.showHint(2)">🦺 Au secours (도움2: 부분뜻)</button>
+        <span class="hint-metrics text-xs text-slate-500">H1: ${q.hint1Count || 0} · H2: ${q.hint2Count || 0}</span>
       </div>
       <div id="hintArea" class="text-sm text-slate-700"></div>
     `;
   }
 
   // 발음 위젯
-  function renderPronunIfNeeded(card, q){
-    if(q.type==='choice' && q.userAnswer === q.answer){
+  function renderPronunIfNeeded(card, q) {
+    if (q.type === 'choice' && q.userAnswer === q.answer) {
       renderPronun(card, q, q.answer);
     }
   }
-  function renderPronun(card, q, ref){
+  function renderPronun(card, q, ref) {
     const wrap = document.createElement('div');
     wrap.className = 'pronun-card mt-3';
     wrap.innerHTML = `
@@ -370,94 +375,94 @@
     card.appendChild(wrap);
 
     const mount = $('#pronunMount', wrap);
-    if(mount && window.Pronun){
-      try{
+    if (mount && window.Pronun) {
+      try {
         Pronun.mount(mount, {
           ui: 'warmup',
-          getReferenceText: ()=> refTextResolver(q, ref),
-          onStop:  ()=>{ q.pronunAttempted = true; updateNav(); },
-          onResult:(res)=>{
-            const score = (res && typeof res.score==='number') ? res.score : null;
-            const passed = !!(res && (res.passed || res.ok || (typeof score==='number' && score>=0.8)));
+          getReferenceText: () => refTextResolver(q, ref),
+          onStop: () => { q.pronunAttempted = true; updateNav(); },
+          onResult: (res) => {
+            const score = (res && typeof res.score === 'number') ? res.score : null;
+            const passed = !!(res && (res.passed || res.ok || (typeof score === 'number' && score >= 0.8)));
             if (passed) q.pronunPassed = true;
-            q.pronunAttempts = (q.pronunAttempts||0) + 1;
-            if (!passed) q.pronunFails = (q.pronunFails||0) + 1;
+            q.pronunAttempts = (q.pronunAttempts || 0) + 1;
+            if (!passed) q.pronunFails = (q.pronunFails || 0) + 1;
             q.lastPronunScore = score;
             q.pronunAttempted = true;
             updateNav();
           }
         });
-      }catch(e){ console.warn('Pronun.mount', e); }
+      } catch (e) { console.warn('Pronun.mount', e); }
     }
   }
-  function refTextResolver(q, refOverride){
-    if(refOverride) return String(refOverride||'');
-    if(q.type==='choice') return q.answer;
-    if(q.type==='fr_prompt_ko') return q.ko;
-    if(q.type==='dictation') return ($('.input-reply-ko')?.value||'');
+  function refTextResolver(q, refOverride) {
+    if (refOverride) return String(refOverride || '');
+    if (q.type === 'choice') return q.answer;
+    if (q.type === 'fr_prompt_ko') return q.ko;
+    if (q.type === 'dictation') return ($('.input-reply-ko')?.value || '');
     return '';
   }
 
   // ===== Interactions =====
-  function onTextInput(v){
-    const q=S.qs[S.idx];
-    q.userAnswer=v;
-    q.textChecked=false; q.textCorrect=null;
-    q.pronunAttempted=false; q.pronunPassed=false;
-    q.pronunFails=0; q.pronunAttempts=0; q.lastPronunScore=null;
+  function onTextInput(v) {
+    const q = S.qs[S.idx];
+    q.userAnswer = v;
+    q.textChecked = false; q.textCorrect = null;
+    q.pronunAttempted = false; q.pronunPassed = false;
+    q.pronunFails = 0; q.pronunAttempts = 0; q.lastPronunScore = null;
     updateNav();
   }
-  function checkText(){
-    const q=S.qs[S.idx];
-    if(q.type!=='fr_prompt_ko') return;
-    const v = (q.userAnswer||'').trim();
-    if(!v) return;
-    const cands = [q.ko, ...(q.accepted||[])];
-    q.textCorrect = cands.some(ans=> strip(v)===strip(ans));
+  function checkText() {
+    const q = S.qs[S.idx];
+    if (q.type !== 'fr_prompt_ko') return;
+    const v = (q.userAnswer || '').trim();
+    if (!v) return;
+    const cands = [q.ko, ...(q.accepted || [])];
+    q.textCorrect = cands.some(ans => strip(v) === strip(ans));
     q.textChecked = true;
     q.isCorrect = q.textCorrect;
-    q.pronunAttempted=false; q.pronunPassed=false;
-    q.pronunFails=0; q.pronunAttempts=0; q.lastPronunScore=null;
+    q.pronunAttempted = false; q.pronunPassed = false;
+    q.pronunFails = 0; q.pronunAttempts = 0; q.lastPronunScore = null;
     render();
   }
-  function updateDictee(part,val){
-    const q=S.qs[S.idx];
-    q.userAnswer[part]=val;
+  function updateDictee(part, val) {
+    const q = S.qs[S.idx];
+    q.userAnswer[part] = val;
     updateNav();
   }
-  function showHint(n){
-    const q=S.qs[S.idx]; if(!q||!q.hints) return;
-    if(n===1){ q.hint1Count=(q.hint1Count||0)+1; $('#hintArea').textContent = `초성: ${q.hints.choseong||'-'}`; }
-    else     { q.hint2Count=(q.hint2Count||0)+1; $('#hintArea').textContent = `Indice (FR): ${q.hints.part||'-'}`; }
+  function showHint(n) {
+    const q = S.qs[S.idx]; if (!q || !q.hints) return;
+    if (n === 1) { q.hint1Count = (q.hint1Count || 0) + 1; $('#hintArea').textContent = `초성: ${q.hints.choseong || '-'}`; }
+    else { q.hint2Count = (q.hint2Count || 0) + 1; $('#hintArea').textContent = `Indice (FR): ${q.hints.part || '-'}`; }
     updateNav();
   }
 
   // 다음 허용 규칙 (발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과)
-  function isNextAllowed(){
-    const q=S.qs[S.idx]; if(!q) return false;
+  function isNextAllowed() {
+    const q = S.qs[S.idx]; if (!q) return false;
 
     const pronunOK =
       (q.pronunPassed === true) ||
-      ((q.pronunAttempts||0) >= 2 && (q.lastPronunScore==null || q.lastPronunScore <= 0.8));
+      ((q.pronunAttempts || 0) >= 2 && (q.lastPronunScore == null || q.lastPronunScore <= 0.8));
 
-    if(q.pronunRequired && !pronunOK) return false;
+    if (q.pronunRequired && !pronunOK) return false;
 
-    if(q.type==='choice'){
+    if (q.type === 'choice') {
       return !!q.userAnswer && q.userAnswer === q.answer;
-    }else if(q.type==='fr_prompt_ko'){
-      return !!q.userAnswer && q.textChecked===true;
-    }else if(q.type==='dictation'){
+    } else if (q.type === 'fr_prompt_ko') {
+      return !!q.userAnswer && q.textChecked === true;
+    } else if (q.type === 'dictation') {
       return !!q.userAnswer.ko && !!q.userAnswer.replyKo;
     }
     return false;
-  }
+    }
 
-  function updateNav(){
+  function updateNav() {
     // Q1에서도 ← 사용 가능(웜업 이동용)
     $('#btnPrev').disabled = false;
 
     const canNext = isNextAllowed();
-    const isLast  = (S.idx === S.qs.length - 1);
+    const isLast = (S.idx === S.qs.length - 1);
 
     // 다음 버튼: 마지막 문항에서는 숨김
     const nextBtn = $('#btnNext');
@@ -475,15 +480,15 @@
   }
 
   // ===== Finish & Summary =====
-  async function finish(){
+  async function finish() {
     const end = Date.now();
     const name = $('#studentName').value?.trim() || 'Élève';
 
     // 메일/로그 요약에 유용: 과제명 & 전체 점수 포함
     const rawTitle = (document.title || 'Exercices').trim();
-    const assignmentTitle = rawTitle.replace(/\s*\|\s*.*$/,'').trim(); // "Coréen — Nombres"만 남도록
-    const correct = S.qs.filter(q=>q.isCorrect === true).length;
-    const total   = S.qs.length;
+    const assignmentTitle = rawTitle.replace(/\s*\|\s*.*$/, '').trim(); // "Coréen — Nombres"만 남도록
+    const correct = S.qs.filter(q => q.isCorrect === true).length;
+    const total = S.qs.length;
     const overall = total ? Math.round((100 * correct) / total) : 0;
 
     const payload = {
@@ -492,36 +497,66 @@
       overall,
       startTime: new Date(S.start).toISOString(),
       endTime: new Date(end).toISOString(),
-      totalTimeSeconds: Math.round((end - S.start)/1000),
-      questions: S.qs.map(q=>({
-        number:q.number,
-        type:q.type,
-        ko: q.type==='fr_prompt_ko' ? q.ko : (q.type==='dictation'? q.ko : q.context),
-        fr: q.type==='fr_prompt_ko' ? q.fr : (q.type==='dictation'? q.fr : ''),
-        userAnswer: q.type==='dictation' ? JSON.stringify(q.userAnswer) : (q.userAnswer||''),
+      totalTimeSeconds: Math.round((end - S.start) / 1000),
+      questions: S.qs.map(q => ({
+        number: q.number,
+        type: q.type,
+        ko: q.type === 'fr_prompt_ko' ? q.ko : (q.type === 'dictation' ? q.ko : q.context),
+        fr: q.type === 'fr_prompt_ko' ? q.fr : (q.type === 'dictation' ? q.fr : ''),
+        userAnswer: q.type === 'dictation' ? JSON.stringify(q.userAnswer) : (q.userAnswer || ''),
         isCorrect: !!q.isCorrect,
-        listenCount: q.listenCount||0,
-        hint1Count: q.hint1Count||0,
-        hint2Count: q.hint2Count||0,
+        listenCount: q.listenCount || 0,
+        hint1Count: q.hint1Count || 0,
+        hint2Count: q.hint2Count || 0,
         pronunAttempted: !!q.pronunAttempted,
         pronunPassed: !!q.pronunPassed,
-        pronunFails: q.pronunFails||0,
-        pronunAttempts: q.pronunAttempts||0,
+        pronunFails: q.pronunFails || 0,
+        pronunAttempts: q.pronunAttempts || 0,
         lastPronunScore: q.lastPronunScore
       }))
     };
 
-    try{ localStorage.setItem('pongdang:lastResults', JSON.stringify(payload)); }catch(_){}
-    try{ await SendResults.sendResults(payload); }catch(e){ console.warn('send fail', e); }
+    // 결과 저장(요약/결과 페이지용)
+    try { localStorage.setItem('pongdang:lastResults', JSON.stringify(payload)); } catch (_) {}
+
+    // 전송 (SendResults 네임스페이스/전역/폴백POST 모두 지원)
+    try {
+      const callSend = (window.SendResults && window.SendResults.sendResults)
+        ? window.SendResults.sendResults
+        : (window.sendResults || null);
+
+      if (typeof callSend === 'function') {
+        await callSend(payload);
+      } else {
+        const slim = {
+          studentName: payload.studentName,
+          assignmentTitle: payload.assignmentTitle,
+          overall: payload.overall,
+          startTime: payload.startTime,
+          endTime: payload.endTime,
+          totalTimeSeconds: payload.totalTimeSeconds,
+          questions: payload.questions.map(q => {
+            const c = { ...q };
+            delete c.audio; delete c.audioBase64; delete c.recording; delete c.logs;
+            return c;
+          })
+        };
+        await fetch('/.netlify/functions/send-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(slim)
+        });
+      }
+    } catch (e) { console.warn('send fail', e); }
 
     renderSummary(payload);
   }
 
-  function renderSummary(p){
-    const total   = p.questions.length;
-    const correct = p.questions.filter(q=>q.isCorrect).length;
-    const pct     = total ? Math.round((100*correct)/total) : 0;
-    const wrong   = p.questions.filter(q=>q.isCorrect===false);
+  function renderSummary(p) {
+    const total = p.questions.length;
+    const correct = p.questions.filter(q => q.isCorrect).length;
+    const pct = total ? Math.round((100 * correct) / total) : 0;
+    const wrong = p.questions.filter(q => q.isCorrect === false);
 
     const host = $('#qArea');
     host.innerHTML = `
@@ -535,12 +570,12 @@
           </div>
           <div class="sum-box">
             <div class="sum-title">Prononciation</div>
-            <div class="sum-val">${p.questions.filter(q=>q.pronunAttempted).length}</div>
+            <div class="sum-val">${p.questions.filter(q => q.pronunAttempted).length}</div>
             <div class="sum-sub">녹음 시도 문항 수</div>
           </div>
           <div class="sum-box">
             <div class="sum-title">Temps</div>
-            <div class="sum-val">${Math.max(0, p.totalTimeSeconds|0)}s</div>
+            <div class="sum-val">${Math.max(0, p.totalTimeSeconds | 0)}s</div>
             <div class="sum-sub">총 소요</div>
           </div>
         </div>
@@ -550,15 +585,15 @@
           <div class="soft-divider"></div>
           <h3 class="font-semibold mb-1">À revoir / 다시 보기</h3>
           <ol class="list-decimal pl-5 space-y-2">
-            ${wrong.map(q=>{
-              const ua = (q.type==='dictation') ? JSON.parse(q.userAnswer||'{}')?.ko||'' : (q.userAnswer||'');
+            ${wrong.map(q => {
+              const ua = (q.type === 'dictation') ? JSON.parse(q.userAnswer || '{}')?.ko || '' : (q.userAnswer || '');
               const ko = q.ko || '';
               const fr = q.fr || '';
               return `
                 <li>
-                  <div class="text-sm"><b>Q${q.number}</b> ${fr?`<span class="text-slate-500">(${esc(fr)})</span>`:''}</div>
+                  <div class="text-sm"><b>Q${q.number}</b> ${fr ? `<span class="text-slate-500">(${esc(fr)})</span>` : ''}</div>
                   <div class="text-sm">🧩 <span class="text-slate-600">정답</span> : <b>${esc(ko)}</b></div>
-                  <div class="text-sm">🤔 <span class="text-slate-600">내 답</span> : ${esc(ua||'—')}</div>
+                  <div class="text-sm">🤔 <span class="text-slate-600">내 답</span> : ${esc(ua || '—')}</div>
                 </li>`;
             }).join('')}
           </ol>` : `
@@ -579,10 +614,10 @@
               </tr>
             </thead>
             <tbody>
-              ${p.questions.map(q=>{
+              ${p.questions.map(q => {
                 const ref = q.ko || '';
                 const tries = q.pronunAttempts || 0;
-                const last  = (typeof q.lastPronunScore === 'number')
+                const last = (typeof q.lastPronunScore === 'number')
                   ? Math.round(q.lastPronunScore * 100) + '%'
                   : '—';
                 const ok = q.pronunPassed ? '✅' : (tries ? '❌' : '—');
@@ -611,9 +646,9 @@
     $('#btnFinish').disabled = true;
   }
 
-  function requireName(){
+  function requireName() {
     const v = $('#studentName').value?.trim();
-    if(!v){
+    if (!v) {
       alert('이름을 먼저 입력해 주세요. / Écris ton nom d’abord.');
       return false;
     }
@@ -621,24 +656,24 @@
   }
 
   // ===== Nav events =====
-  $('#btnPrev').addEventListener('click', ()=>{
+  $('#btnPrev').addEventListener('click', () => {
     // 첫 문제에서 ← 누르면 웜업으로 이동
-    if(S.idx<=0){
+    if (S.idx <= 0) {
       window.location.href = 'numbers-warmup.html';
       return;
     }
     S.idx--; render();
   });
 
-  $('#btnNext').addEventListener('click', ()=>{
-    if(!requireName()) return;
+  $('#btnNext').addEventListener('click', () => {
+    if (!requireName()) return;
 
     const q = S.qs[S.idx];
     const pronunOK =
       (q.pronunPassed === true) ||
-      ((q.pronunAttempts||0) >= 2 && (q.lastPronunScore==null || q.lastPronunScore <= 0.8));
+      ((q.pronunAttempts || 0) >= 2 && (q.lastPronunScore == null || q.lastPronunScore <= 0.8));
 
-    if(q.pronunRequired && !pronunOK){
+    if (q.pronunRequired && !pronunOK) {
       alert(
         "Enregistrez et évaluez d’abord votre prononciation (≥ 2 fois). " +
         "Après 2 évaluations, si votre dernier score est ≤ 80%, vous pouvez continuer.\n\n" +
@@ -648,16 +683,17 @@
       return;
     }
 
-    if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); }
+    if (isNextAllowed() && S.idx < S.qs.length - 1) { S.idx++; render(); }
   });
 
-  $('#btnFinish').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
+  $('#btnFinish').addEventListener('click', () => { if (!requireName()) return; finish(); });
   window.addEventListener('beforeunload', cleanupAudio);
 
   // ===== Start =====
   S.qs = getQuestions();
   render();
 
-  // Expose
+  // Expose (전역에서 힌트/입력 제어)
   window.Quiz = { playAudio, stopAudio, onTextInput, checkText, updateDictee, showHint };
+
 })();
