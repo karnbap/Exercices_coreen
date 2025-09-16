@@ -150,9 +150,29 @@ async function evalRec(){
       const blob = new Blob(chunks, { type: (mime.split(';')[0]||'audio/webm') });
       const base64 = await blobToBase64(blob);
       ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
-      let transcript='', accuracy=null, needsRetry=false;
-      // 빈/초단편 transcript 방지 — 서버가 뭘 내놔도 최소 기준 미달이면 재시도
-// (서버 보정이 꺼져 있을 때 빈 결과가 더 자주 나올 수 있으므로)
+let transcript = '', accuracy = null, needsRetry = false;
+
+try {
+  const res = await postJSON(CFG.endpoint, {
+    referenceText: refOrig,
+    options: { strictTranscript: true, disableLM: true },
+    audio: {
+      base64,
+      mimeType: blob.type || 'audio/webm',
+      filename: 'rec.webm',
+      duration: lastDur
+    }
+  });
+  accuracy = res?.accuracy ?? null;
+  transcript = String(res?.transcript || '');
+  needsRetry = !!res?.needsRetry;
+} catch (e) {
+  ui.msg.textContent='⚠️ Analyse indisponible. Réessaie. / 서버 오류';
+  evalBusy=false; try{ onResult({ status:'error', reason:'server_error' }); }catch(_){}
+  return;
+}
+
+// 👉 서버 응답을 받은 "다음"에 빈/초단편 가드
 if (!transcript || transcript.replace(/\s+/g,'').length < 2) {
   const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:'too_short_transcript' };
   ui.msg.textContent = '⚠️ 더 또렷하고 길게 말해 주세요 / Parlez plus clairement et un peu plus longtemps';
@@ -161,29 +181,20 @@ if (!transcript || transcript.replace(/\s+/g,'').length < 2) {
   return;
 }
 
-      try {
-        const res = await postJSON(CFG.endpoint, {
-          referenceText: refOrig,
-          // 서버 쪽 확률적 보정(언어모델 보정) 비활성 요청
-          // 서버가 지원하면 이 플래그를 보고 보정을 끄게 됨
-          options: { strictTranscript: true, disableLM: true },
-        
-          audio: {
-            base64,
-            mimeType: blob.type || 'audio/webm',
-            filename: 'rec.webm',
-            duration: lastDur
-          }
-        });
+transcript = localForceHangulNumbers(transcript);
+const refForCoerce = localForceHangulNumbers(refOrig);
+transcript = coerceTowardsRef(refForCoerce, transcript);
 
-        accuracy = res?.accuracy ?? null; transcript = String(res?.transcript||''); needsRetry = !!res?.needsRetry;
-      } catch(e){ ui.msg.textContent='⚠️ Analyse indisponible. Réessaie. / 서버 오류'; evalBusy=false; try{ onResult({ status:'error', reason:'server_error' }); }catch(_){} return; }
+const refN = normalizeKo(refForCoerce);
+const hypN = normalizeKo(transcript);
+const g = isGarbageTranscript(refN, hypN, transcript, lastDur);
+if (g.bad) {
+  const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:g.reason };
+  ui.msg.textContent = '⚠️ Parlez plus distinctement. / 또박또박 더 분명하게 말해요.';
+  try { onResult(out); } catch(_) {}
+  evalBusy=false; return;
+}
 
-      transcript = localForceHangulNumbers(transcript);
-      const refForCoerce = localForceHangulNumbers(refOrig);
-      transcript = coerceTowardsRef(refForCoerce, transcript);
-
-      const refN = normalizeKo(refForCoerce); const hypN = normalizeKo(transcript);
       const g = isGarbageTranscript(refN, hypN, transcript, lastDur);
       if (g.bad) {
         const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:g.reason };
