@@ -16,14 +16,14 @@ body{
   margin:20px;
 }
 
-/* 컨테이너(선택) */
+/* 컨테이너 */
 .container{
   max-width:800px;margin:auto;padding:20px;background:#fff;
   border:1px solid var(--border-color);border-radius:10px;
   box-shadow:0 4px 8px rgba(0,0,0,.1);
 }
 
-/* 버튼(선택) */
+/* 버튼 */
 .button{
   padding:10px 20px;border:none;border-radius:8px;font-size:16px;font-weight:700;
   cursor:pointer;transition:background-color .3s, transform .2s;
@@ -32,13 +32,13 @@ body{
 .button-primary{ background:var(--royal-blue); color:#fff; }
 .button-secondary{ background:var(--gold-leaf); color:#fff; }
 
-/* 결과 박스(선택) */
+/* 결과 박스 */
 #result-display{
   padding:20px;margin-top:20px;border-radius:8px;text-align:center;
   font-size:1.5em;font-weight:700;color:#fff;
 }
 
-/* 칩 UI(선택) */
+/* 칩 UI */
 .chips-wrap{ display:flex; flex-wrap:wrap; gap:.4rem .5rem; }
 .chip{
   display:inline-block; padding:.2rem .55rem; border-radius:.5rem;
@@ -54,7 +54,7 @@ body{
   100%{ box-shadow:0 0 0 0 rgba(99,102,241,.0); background:transparent }
 }
 
-/* 소형 VU / 녹음표시 (선택) */
+/* 소형 VU / 녹음표시 */
 .vu-mini{ height:16px !important; }
 .rec-indicator{ display:none; font-size:12px; color:#dc2626; margin-left:.5rem; }
 .is-recording .rec-indicator{ display:inline; }
@@ -87,17 +87,17 @@ body{
   transform:translateY(-2px);
 }
 
-/* 힌트 박스: 기본 숨김, .show 시 표시 */
+/* 힌트 박스 */
 .hint-box{
   display:none; margin-top:.5rem; padding:.6rem .8rem; border-radius:.5rem;
   font-size:.9rem; line-height:1.4; background:#fefce8; border:1px solid #fef08a; color:#854d0e;
 }
 .hint-box.show{ display:block; }
 
-/* 이름 필요 요소 비활성 시 비주얼 */
+/* 이름 필요 요소 비활성 */
 [data-requires-name].is-disabled{ pointer-events:none; opacity:.5; }
 
-/* ===== Numbers exercises 전용(있을 때만 사용됨) ===== */
+/* ===== Numbers exercises 전용 ===== */
 .choices{ display:flex; flex-wrap:wrap; gap:.5rem; }
 .choice-btn{
   padding:.6rem .9rem; border:1px solid var(--border,#e5e7eb);
@@ -117,48 +117,42 @@ body{
 }
 .shake{ animation:shake .45s ease; }
 
-/* === Inputs visibility & size === */
 /* === Inputs: 기본 테두리/패딩/포커스 가시성 보강 === */
 .input,
 .textarea {
+  width: 100%;
+  font-size: 1.125rem;
   box-sizing: border-box;
-  padding: 0.75rem 0.9rem;          /* 클릭 전에도 여백 충분 */
+  padding: 0.75rem 0.9rem;
   border: 1px solid var(--border-color);
   border-radius: .5rem;
   background: #fff;
   outline: none;
 }
-
 .input:focus,
 .textarea:focus {
-  border-color: #94a3b8;            /* slate-400 */
+  border-color: #94a3b8;
   box-shadow: 0 0 0 3px rgba(148,163,184,.25);
 }
-
 .input.error,
 .textarea.error {
-  border-color: #ef4444;            /* 오류 시 빨간 테두리 */
+  border-color: #ef4444;
 }
-
-/* 긴 플레이스홀더도 잘 보이도록(모바일 대비) */
 .input::placeholder,
 .textarea::placeholder {
   opacity: 1;
-  color: #64748b;                   /* slate-500 */
+  color: #64748b;
   white-space: normal;
   text-overflow: clip;
   line-height: 1.35;
 }
-
-/* 답안 칸을 더 크게(요청 반영) */
 .textarea {
-  min-height: 6rem;                 /* 기존 4.5rem → 6rem */
+  min-height: 6rem;
   resize: vertical;
 }
 
-
 /* === Pronun guard & live STT === */
-.shake {
+.shake-x {
   animation: shakeX .45s ease both;
 }
 @keyframes shakeX {
@@ -185,4 +179,3 @@ body{
   font-size:.9rem; padding:.25rem .5rem; border-radius:.5rem;
   background:#eef2ff; color:#3730a3;
 }
-
