@@ -67,22 +67,30 @@
   
   
     // ===== 시각적 비활성: data-requires-name =====
-    function applyRequiresNameState(root=document){
-      const hasName = !!getName();
-      root.querySelectorAll('[data-requires-name]').forEach(el=>{
-  if (!hasName){
-    if (!el.dataset._origTitle) {
-      el.dataset._origTitle = el.getAttribute('title') || '';
+   function applyRequiresNameState(root = document){
+  const hasName = !!getName();
+  root.querySelectorAll('[data-requires-name]').forEach(el => {
+    // 1) 시각적/접근성 비활성 상태 반영
+    if ('disabled' in el) el.disabled = !hasName;
+    el.classList.toggle('is-disabled', !hasName);
+    el.setAttribute('aria-disabled', hasName ? 'false' : 'true');
+
+    // 2) title 관리: 이름 없을 때 원래 title 보관 → 경고 문구로 교체
+    if (!hasName) {
+      if (!el.dataset._origTitle) {
+        el.dataset._origTitle = el.getAttribute('title') || '';
+      }
+      el.setAttribute('title', '이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+    } else {
+      // 3) 이름 생기면 원래 title 복구 후 data-* 깨끗이 제거
+      if (el.dataset._origTitle != null) {
+        el.setAttribute('title', el.dataset._origTitle);
+        delete el.dataset._origTitle;
+      }
     }
-    el.setAttribute('title','이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
-  } else {
-    if (el.dataset._origTitle != null) {
-      el.setAttribute('title', el.dataset._origTitle);
-      delete el.dataset._origTitle;   // ← 원복 후 깔끔히 제거
-    }
-  }
-  );
-    }
+  });
+}
+
   
     // ===== 이름 없으면 상호작용 차단(캡처 단계) =====
   function requireBeforeInteraction(root=document){
