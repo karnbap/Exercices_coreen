@@ -2,6 +2,7 @@
 // Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
 // - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
 // - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL
+// - 다음 이동 규칙: 모든 문항은 발음 녹음이 선행. (Q16~: 발음 2회 실패해도 통과 허용)
 // - 끝내기: 결과 전송 + 요약 화면 표시
 
 (function(){
@@ -106,23 +107,23 @@
       { context:"Pour la date '1일', on dit :", options:["일일","하나일"], answer:"일일", hints:{choseong:"ㅇㅇ", part:"date: ‘~일’ (Hanja)"} },
       { context:"Pour l'heure '1시', on dit :", options:["한 시","일 시"], answer:"한 시", hints:{choseong:"ㅎ ㅅ", part:"heure: natif + 시"} },
       { context:"Pour l'âge '3살', on dit :", options:["세 살","삼 살"], answer:"세 살", hints:{choseong:"ㅅ ㅅ", part:"âge: natif + 살"} },
-      { context:"Pour l'argent '10 euro', on dit :", options:["십 유로","열 유로"], answer:"십 유로", hints:{choseong:"ㅅ ㅇㄹ", part:"argent: sino + 유로"} },
-      { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hints:{choseong:"ㅅㅅ ㅂ", part:"minutes: sino + 분"} },
+      { context:"Pour l'argent '10 euro', on dit :", options:["십 유로","열 유로"], answer:"십 유로", hints:{choseong:"ㅅ ㅇㄹ", part:"argent: Hanja + 유로"} },
+      { context:"Pour 30 minutes (30분), on dit :", options:["삼십 분","서른 분"], answer:"삼십 분", hints:{choseong:"ㅅㅅ ㅂ", part:"minutes: Hanja + 분"} },
     ];
 
     // 6–15 불→한
     const frKo = [
       { fr:"Quelle heure est-il ?", audio:"몇 시예요?", frGuide:"Ex. Il est 3 h.", ko:"세 시예요.", accepted:["3시예요","세시예요","지금은 세 시예요.","세 시입니다."], voice:"alloy", hints:{choseong:"ㅅ ㅅㅇㅇ", part:"‘~시예요’(c’est ~h)"} },
-      { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. Le 10.", ko:"십일이에요.", accepted:["10일이에요","오늘은 십일이에요","오늘 십일이에요"], voice:"shimmer", hints:{choseong:"ㅅㅇㅇㅇ", part:"date: sino + 일"} },
-      { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. 10 euros.", ko:"십 유로예요.", accepted:["10유로예요","십유로예요","열 유로예요"], voice:"alloy", hints:{choseong:"ㅅ ㅇㄹㅇㅇ", part:"prix: sino + 유로"} },
+      { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. Le 10.", ko:"십일이에요.", accepted:["10일이에요","오늘은 십일이에요","오늘 십일이에요"], voice:"shimmer", hints:{choseong:"ㅅㅇㅇㅇ", part:"date: Hanja + 일"} },
+      { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. 10 euros.", ko:"십 유로예요.", accepted:["10유로예요","십유로예요","열 유로예요"], voice:"alloy", hints:{choseong:"ㅅ ㅇㄹㅇㅇ", part:"prix: Hanja + 유로"} },
       { fr:"Combien de personnes ?", audio:"몇 명이에요?", frGuide:"Ex. Huit.", ko:"여덟 명이에요.", accepted:["8명이에요","여덟명이에요"], voice:"nova", hints:{choseong:"ㅇㄷ  ㅁㅇㅇㅇ", part:"compter personnes: natif + 명"} },
-      { fr:"Combien de minutes ?", audio:"몇 분이에요?", frGuide:"Ex. 30.", ko:"삼십 분이에요.", accepted:["30분이에요","서른 분이에요"], voice:"echo", hints:{choseong:"ㅅㅅ ㅂㅇㅇㅇ", part:"minutes: sino + 분"} },
+      { fr:"Combien de minutes ?", audio:"몇 분이에요?", frGuide:"Ex. 30.", ko:"삼십 분이에요.", accepted:["30분이에요","서른 분이에요"], voice:"echo", hints:{choseong:"ㅅㅅ ㅂㅇㅇㅇ", part:"minutes: Hanja + 분"} },
 
       { fr:"À quelle heure est le rendez-vous ?", audio:"약속이 몇 시예요?", frGuide:"Ex. 4 h.", ko:"네 시예요.", accepted:["4시예요","네시예요"], voice:"fable", hints:{choseong:"ㄴ ㅅㅇㅇ", part:"heure: natif + 시"} },
-      { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. 15.", ko:"십오일이에요.", accepted:["15일이에요"], voice:"alloy", hints:{choseong:"ㅅㅇㅇㅇㅇ", part:"date: sino + 일"} },
-      { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. 12 euros.", ko:"십이 유로예요.", accepted:["12유로예요","십이유로예요"], voice:"shimmer", hints:{choseong:"ㅅㅇ ㅇㄹㅇㅇ", part:"prix: sino + 유로"} },
+      { fr:"Quel jour du mois ?", audio:"며칠이에요?", frGuide:"Ex. 15.", ko:"십오일이에요.", accepted:["15일이에요"], voice:"alloy", hints:{choseong:"ㅅㅇㅇㅇㅇ", part:"date: Hanja + 일"} },
+      { fr:"Combien ça coûte ?", audio:"얼마예요?", frGuide:"Ex. 12 euros.", ko:"십이 유로예요.", accepted:["12유로예요","십이유로예요"], voice:"shimmer", hints:{choseong:"ㅅㅇ ㅇㄹㅇㅇ", part:"prix: Hanja + 유로"} },
       { fr:"Combien de tasses de café ?", audio:"커피 몇 잔이에요?", frGuide:"Ex. Trois.", ko:"세 잔이에요.", accepted:["3잔이에요","세잔이에요"], voice:"alloy", hints:{choseong:"ㅅ  ㅈㅇㅇㅇ", part:"compter tasses: natif + 잔"} },
-      { fr:"Combien de secondes ?", audio:"몇 초예요?", frGuide:"Ex. Dix secondes.", ko:"십 초예요.", accepted:["10초예요","십초예요"], voice:"nova", hints:{choseong:"ㅅ ㅊㅇㅇ", part:"secondes: sino + 초"} },
+      { fr:"Combien de secondes ?", audio:"몇 초예요?", frGuide:"Ex. Dix secondes.", ko:"십 초예요.", accepted:["10초예요","십초예요"], voice:"nova", hints:{choseong:"ㅅ ㅊㅇㅇ", part:"secondes: Hanja + 초"} },
     ];
 
     // 16–20 받아쓰기
@@ -138,7 +139,7 @@
       number:i+1, type:'choice', context:q.context, options:q.options, answer:q.answer,
       hints:q.hints, userAnswer:null, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false
+      pronunRequired:true, pronunAttempted:false, pronunPassed:false, pronunFails:0
     }));
 
     const fr_prompt_ko = frKo.map((q,i)=>({
@@ -147,7 +148,7 @@
       accepted:q.accepted||[], voice:q.voice||'alloy', hints:q.hints,
       userAnswer:"", textChecked:false, textCorrect:null, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false
+      pronunRequired:true, pronunAttempted:false, pronunPassed:false, pronunFails:0
     }));
 
     const dictation = dictee.map((q,i)=>({
@@ -155,7 +156,7 @@
       ko:q.ko, fr:q.fr, frAnswerGuide:q.guide, voice:q.voice, hints:q.hints,
       userAnswer:{ko:"", replyKo:""}, isCorrect:null,
       listenCount:0, hint1Count:0, hint2Count:0,
-      pronunRequired:true, pronunAttempted:false
+      pronunRequired:true, pronunAttempted:false, pronunPassed:false, pronunFails:0
     }));
 
     return [...choice, ...fr_prompt_ko, ...dictation];
@@ -248,10 +249,10 @@
       $('#btnListen', controls).addEventListener('click', e=>playAudio(q.audioText, q.voice, {_btn:e.currentTarget}));
       $('#btnStop', controls).addEventListener('click', stopAudio);
 
-      // 힌트
+      // 힌트(1~5 숨김)
       card.insertAdjacentHTML('beforeend', hintBox(q));
 
-      // 입력 라벨 + 강조 입력칸 + FR 예시(작은 글씨, 입력칸 아래로 이동)
+      // 입력 라벨 + 강조 입력칸 + 한-불 안내
       const lab = document.createElement('label');
       lab.className='block mb-1 font-semibold';
       lab.textContent='Réponse en coréen (한국어):';
@@ -263,8 +264,8 @@
         <input id="inpKO"
                class="input-field flex-1 border-2 border-blue-500 focus:border-blue-600 rounded-lg p-2"
                value="${esc(q.userAnswer||'')}"
-               placeholder="여기에 한국어로 입력하세요">
-        <div class="text-xs text-slate-500">Ex (FR) : ${esc(q.frGuide||'')}</div>
+               placeholder="여기에 한국어로 입력하세요 / Écris en coréen ici">
+        <div class="text-xs text-slate-500">Ex (FR): ${esc(q.frGuide||'')}</div>
       `;
       card.appendChild(fieldWrap);
 
@@ -304,19 +305,23 @@
       $('#btnListen', controls).addEventListener('click', e=>playAudio(q.ko, q.voice, {_btn:e.currentTarget}));
       $('#btnStop', controls).addEventListener('click', stopAudio);
 
+      // 힌트(1~5 숨김)
       card.insertAdjacentHTML('beforeend', hintBox(q));
 
       const box = document.createElement('div');
-      box.className = 'space-y-3';
+      box.className = 'space-y-2';
       box.innerHTML = `
         <div>
           <label class="block mb-1 font-semibold">1) Dictée (받아쓰기)</label>
-          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko||'')}" placeholder="(Écoutez et écrivez tel quel / 그대로 적기)">
+          <input class="input-field" id="dicKO" value="${esc(q.userAnswer.ko||'')}"
+                 placeholder="">
+          <div class="text-xs text-slate-500 mt-1">Écoutez et écrivez tel quel / 그대로 적기</div>
         </div>
         <div>
           <label class="block mb-1 font-semibold">2) Réponse (한국어 대답)</label>
-          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo||'')}" placeholder="여기에 한국어로 입력하세요">
-          <div class="text-xs text-slate-500 mt-1">Ex (FR) : ${esc(q.frAnswerGuide||'')}</div>
+          <input class="input-field input-reply-ko" id="dicReply" value="${esc(q.userAnswer.replyKo||'')}"
+                 placeholder="여기에 한국어로 입력하세요 / Écris en coréen ici">
+          <div class="text-xs text-slate-500 mt-1">Ex (FR): ${esc(q.frAnswerGuide||'')}</div>
         </div>
       `;
       card.appendChild(box);
@@ -365,11 +370,18 @@
     const mount = $('#pronunMount', wrap);
     if(mount && window.Pronun){
       try{
+        // onResult에서 통과/실패 추정: res.passed | res.ok | res.score
         Pronun.mount(mount, {
           ui: 'warmup',
           getReferenceText: ()=> refTextResolver(q, ref),
           onStop:  ()=>{ q.pronunAttempted = true; updateNav(); },
-          onResult:()=>{ q.pronunAttempted = true; updateNav(); }
+          onResult:(res)=>{
+            const passed = !!(res && (res.passed || res.ok || (typeof res.score==='number' && res.score>=0.7)));
+            if (passed) q.pronunPassed = true;
+            else q.pronunFails = (q.pronunFails||0) + 1;
+            q.pronunAttempted = true;
+            updateNav();
+          }
         });
       }catch(e){ console.warn('Pronun.mount', e); }
     }
@@ -386,7 +398,7 @@
   function onTextInput(v){
     const q=S.qs[S.idx];
     q.userAnswer=v;
-    q.textChecked=false; q.textCorrect=null; q.pronunAttempted=false;
+    q.textChecked=false; q.textCorrect=null; q.pronunAttempted=false; q.pronunPassed=false; q.pronunFails=0;
     updateNav();
   }
   function checkText(){
@@ -398,7 +410,7 @@
     q.textCorrect = cands.some(ans=> strip(v)===strip(ans));
     q.textChecked = true;
     q.isCorrect = q.textCorrect;
-    q.pronunAttempted=false;
+    q.pronunAttempted=false; q.pronunPassed=false; q.pronunFails=0;
     render();
   }
   function updateDictee(part,val){
@@ -413,9 +425,16 @@
     updateNav();
   }
 
+  // 다음 허용 규칙
   function isNextAllowed(){
     const q=S.qs[S.idx]; if(!q) return false;
-    if(q.pronunRequired && !q.pronunAttempted) return false;
+
+    // 발음 규칙: 통과했거나(Qx) / (Q16~이고 실패 2회 이상) 이어야 함
+    const pronunOK =
+      (q.pronunPassed === true) ||
+      (q.number >= 16 && (q.pronunFails||0) >= 2);
+
+    if(q.pronunRequired && !pronunOK) return false;
 
     if(q.type==='choice'){
       return !!q.userAnswer && q.userAnswer === q.answer;
@@ -454,7 +473,9 @@
         listenCount: q.listenCount||0,
         hint1Count: q.hint1Count||0,
         hint2Count: q.hint2Count||0,
-        pronunAttempted: !!q.pronunAttempted
+        pronunAttempted: !!q.pronunAttempted,
+        pronunPassed: !!q.pronunPassed,
+        pronunFails: q.pronunFails||0
       }))
     };
 
@@ -540,6 +561,19 @@
   });
   $('#btnNext').addEventListener('click', ()=>{
     if(!requireName()) return;
+
+    const q = S.qs[S.idx];
+    // 발음 미충족 사유일 때 불어 알림
+    const pronunNotOK = q.pronunRequired && !(
+      (q.pronunPassed===true) ||
+      (q.number>=16 && (q.pronunFails||0)>=2)
+    );
+
+    if(pronunNotOK){
+      alert("Chaque question: enregistrez d’abord votre prononciation pour passer à la suivante. (À partir de Q16, vous pouvez avancer après 2 essais ratés.)\n다음 문제로 가려면 발음을 먼저 녹음하세요. (16번부터는 2회 실패 후 통과 가능)");
+      return;
+    }
+
     if(isNextAllowed() && S.idx<S.qs.length-1){ S.idx++; render(); }
   });
   $('#btnFinish').addEventListener('click', ()=>{ if(!requireName()) return; finish(); });
