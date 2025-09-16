@@ -516,33 +516,33 @@
 
     // --- 전송 버튼 (성공/실패 상관없이 다음 단계 해제 + 로컬 폴백 저장) ---
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
-      const btn = e.currentTarget;
-      const orig = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
+  const btn = e.currentTarget;
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
 
-      try{
-        const ok = await sendResults();
-        if (ok) {
-          alert('✅ Résultats envoyés. / 결과 전송 완료');
-        } else {
-          alert('⚠️ Réseau occupé. Résultats sauvegardés localement. Ils seront renvoyés automatiquement. / 네트워크 문제: 결과를 기기에 임시 저장했고, 다음에 자동 재전송됩니다.');
-        }
+  try{
+    const ok = await sendResults();
+    if (ok) {
+      alert('✅ Résultats envoyés. / 결과 전송 완료');
+    } else {
+      alert('⚠️ Réseau occupé. Résultats sauvegardés localement. Ils seront renvoyés automatiquement. / 네트워크 문제: 결과를 기기에 임시 저장했고, 다음에 자동 재전송됩니다.');
+    }
+  }catch(_){
+    alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
+  }finally{
+    // ✅ 성공/실패와 무관하게 다음 연습문제 버튼 활성화
+    const goEx = document.getElementById('btn-go-ex');
+    if (goEx){
+      goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
+      goEx.classList.add('btn-primary');
+      goEx.removeAttribute('aria-disabled');
+    }
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}, { once:true });
 
-        // 성공/실패 상관없이 다음 연습문제 버튼 활성화
-        const goEx = document.getElementById('btn-go-ex');
-        if (goEx){
-          goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
-          goEx.classList.add('btn-primary');
-          goEx.removeAttribute('aria-disabled');
-        }
-      }catch(_){
-        alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
-      }finally{
-        btn.disabled = false;
-        btn.innerHTML = orig;
-      }
-    }, { once:true });
 
     // 다음 속도로 재시작
     const ns = document.getElementById('btn-next-speed');
