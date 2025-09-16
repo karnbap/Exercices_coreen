@@ -221,3 +221,6 @@ body{
 
 /* === 다음버튼 가드 배지/흔들림 여백 === */
 .badge-note{ margin-top:.4rem; }
+
+.hint-metrics { display: none; }  /* 학생 화면 숨김 (메일 전송엔 영향 없음) */
+
