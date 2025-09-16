@@ -1,4 +1,4 @@
-// netlify/functions/send-results.js
+// netlify/functions/send-results.js (final)
 // 결과 이메일 전송 (학생 제출 → 선생님 메일)
 // Node 18+
 
@@ -10,8 +10,9 @@ function sanitizePayload(payload) {
     if (payload && Array.isArray(payload.questions)) {
       payload.questions.forEach(q => {
         if (!q) return;
-        if (q.recording) delete q.recording;
-        delete q.audio; delete q.audioBase64; delete q.logs;
+        if (q.recording) delete q.recording;     // 대용량 제거
+        delete q.audio; delete q.audioBase64;    // 불필요 필드 제거
+        delete q.logs;
       });
     }
   } catch (_) {}
@@ -19,39 +20,7 @@ function sanitizePayload(payload) {
 }
 
 // ========= 유틸 =========
-function avg(arr){
-  if(!Array.isArray(arr) || !arr.length) return 0;
-  const s = arr.map(Number).filter(n => Number.isFinite(n));
-  return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0;
-}
-
-// (A) isCorrect 기반 총점 계산(클라이언트가 보낸 채점값 사용)
-function computeOverallFromIsCorrect(payload){
-  const qs = Array.isArray(payload?.questions) ? payload.questions : [];
-  const graded = qs.filter(q => typeof q?.isCorrect === 'boolean');
-  const correct = graded.filter(q => q.isCorrect === true).length;
-  const total   = graded.length || qs.length || 0;
-  const pct     = total ? Math.round((100 * correct) / total) : 0;
-  return { correct, total, pct };
-}
-
-// (B) KO/FR/발음 보조 점수(없을 때 폴백용)
-function computeFallbackCategoryScores(payload){
-  const qs = Array.isArray(payload?.questions) ? payload.questions : [];
-  const total = qs.length || 0;
-  const koOK = qs.filter(q => q?.isCorrectKo === true).length;
-  const frOK = qs.filter(q => q?.isCorrectFr === true).length;
-  const pron = qs.map(q => q?.pronunciation?.accuracy).filter(n => typeof n === 'number');
-  const ko   = total ? Math.round(100 * koOK / total) : 0;
-  const fr   = total ? Math.round(100 * frOK / total) : 0;
-  const pronScore = pron.length ? Math.round(100 * avg(pron)) : 0;
-  const overall = Math.round((ko + fr) / 2);
-  return { ko, fr, pron: pronScore, overall };
-}
-
-// 최종 overall 우선순위: payload.overall → categoryScores.overall → isCorrect 계산 → 폴백 계산
-pickOverall
-function safeNum(n, d=0){
+function safeNum(n, d = 0) {
   const v = Number(n);
   return Number.isFinite(v) ? v : d;
 }
@@ -77,6 +46,57 @@ function hhmmss(sec){
   const s = String(sec%60).padStart(2,'0');
   return `${h}:${m}:${s}`;
 }
+function avg(arr){
+  if(!Array.isArray(arr) || !arr.length) return 0;
+  const s = arr.map(Number).filter(n => Number.isFinite(n));
+  return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0;
+}
+
+// (A) isCorrect 기반 총점 계산(클라이언트 채점 활용)
+function computeOverallFromIsCorrect(payload){
+  try {
+    const qs = Array.isArray(payload?.questions) ? payload.questions : [];
+    const graded = qs.filter(q => typeof q?.isCorrect === 'boolean');
+    const correct = graded.filter(q => q.isCorrect === true).length;
+    const total   = graded.length || qs.length || 0;
+    const pct     = total ? Math.round((100 * correct) / total) : 0;
+    return { correct, total, pct };
+  } catch { return { correct:0, total:0, pct:0 }; }
+}
+
+// (B) KO/FR/발음 보조 점수(폴백용)
+function computeFallbackCategoryScores(payload){
+  try {
+    const qs = Array.isArray(payload?.questions) ? payload.questions : [];
+    const total = qs.length || 0;
+    const koOK = qs.filter(q => q?.isCorrectKo === true).length;
+    const frOK = qs.filter(q => q?.isCorrectFr === true).length;
+    const pronArr = qs.map(q => q?.pronunciation?.accuracy).filter(n => typeof n === 'number');
+
+    const ko   = total ? Math.round(100 * koOK / total) : 0;
+    const fr   = total ? Math.round(100 * frOK / total) : 0;
+    const pron = pronArr.length ? Math.round(100 * avg(pronArr)) : 0;
+    const overall = Math.round((ko + fr) / 2);
+
+    return { ko, fr, pron, overall };
+  } catch { return { ko:0, fr:0, pron:0, overall:0 }; }
+}
+
+// ⚠️ 서버 최종 점수 선택 규칙
+function pickOverall(payload){
+  // 1) 클라이언트가 보낸 overall/score가 있으면 최우선
+  const cand = [payload?.overall, payload?.categoryScores?.overall, payload?.score]
+    .map(Number).find(n => Number.isFinite(n));
+  if (Number.isFinite(cand)) return Math.round(cand);
+
+  // 2) 문항 isCorrect 기반(채점 문항 ≥1개)
+  const from = computeOverallFromIsCorrect(payload); // {correct,total,pct}
+  if (Number.isFinite(from.pct) && from.total > 0) return from.pct;
+
+  // 3) 최후 폴백: 카테고리 평균
+  const fb = computeFallbackCategoryScores(payload).overall;
+  return Number.isFinite(fb) ? fb : 0;
+}
 
 // ========= HTML 본문 =========
 function buildHtml(payload){
@@ -86,7 +106,6 @@ function buildHtml(payload){
   const startISO = fmtDateISO(payload?.startTime);
   const endISO   = fmtDateISO(payload?.endTime);
 
-  // 카테고리 점수(폴백) + 최종 overall
   const cat = payload?.categoryScores || computeFallbackCategoryScores(payload);
   const ko   = safeNum(cat.ko);
   const fr   = safeNum(cat.fr);
@@ -125,6 +144,8 @@ function buildHtml(payload){
       </tr>`;
   }).join('');
 
+  const durHMS = hhmmss(durationSec);
+
   return `
   <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Noto Sans','Apple SD Gothic Neo',sans-serif;color:#0f172a;background:#f8fafc;padding:20px">
     <div style="max-width:860px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 20px rgba(2,6,23,.06);overflow:hidden">
@@ -132,6 +153,15 @@ function buildHtml(payload){
         <div style="font-size:20px;font-weight:800;color:#1e293b">Résultats de l’exercice</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px">${frDate}</div>
       </div>
+
+      <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap">
+        <div><b>Nom</b>: ${name}</div>
+        <div><b>Exercice</b>: ${title}${topic ? ` · ${topic}` : ''}</div>
+        <div><b>Durée</b>: ${durHMS}</div>
+        <div><b>Global</b>: <b>${overall}</b>/100</div>
+        <div>KO: ${ko}/100 · FR: ${fr}/100 · Pron.: ${pron}/100</div>
+      </div>
+
       <div style="padding:18px 20px">${banner}
         <table style="width:100%;border-collapse:collapse;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:12px">
           <thead>
@@ -145,6 +175,7 @@ function buildHtml(payload){
           </tbody>
         </table>
       </div>
+
       <div style="padding:12px 20px;border-top:1px solid #e5e7eb;font-size:12px;text-align:center">
         made by <b>성일, Pongdang</b> · <a href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
       </div>
@@ -193,30 +224,28 @@ exports.handler = async (event) => {
   }
 
   // ===== 제목 구성: "학생이름 / 연습문제이름 / 총점"
-  const name   = (payload?.studentName || 'Élève').trim();
-  const title  = (payload?.assignmentTitle || 'Exercice').trim();
+  const name    = (payload?.studentName || 'Élève').trim();
+  const title   = (payload?.assignmentTitle || 'Exercice').trim();
   const overall = pickOverall(payload);
   const dateStr = new Date(payload?.endTime || Date.now()).toLocaleString('fr-FR', { hour12:false });
 
-  // 최종 제목 형식
   const subject = `${name} / ${title} / ${overall}/100 (${dateStr})`;
 
-// ========= Gmail 환경변수 사용 =========
-const GMAIL_USER = process.env.GMAIL_USER || '';
-// 바뀐 이름: GMAIL_APP_PASSWORD (기존 GMAIL_PASS도 폴백으로 허용)
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || '';
-const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
+  // ========= Gmail 환경변수 사용 =========
+  const GMAIL_USER = process.env.GMAIL_USER || '';
+  // 새 이름: GMAIL_APP_PASSWORD (기존 GMAIL_PASS는 폴백 허용)
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || '';
+  const RESULTS_RECEIVER = process.env.RESULTS_RECEIVER || 'Lapeace29@gmail.com';
 
-if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-  console.warn('[send-results] MISSING_ENV', { GMAIL_USER: !!GMAIL_USER, GMAIL_APP_PASSWORD: !!GMAIL_APP_PASSWORD });
-  return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
-}
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    console.warn('[send-results] MISSING_ENV', { GMAIL_USER: !!GMAIL_USER, GMAIL_APP_PASSWORD: !!GMAIL_APP_PASSWORD });
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
+  }
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
-});
-
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
+  });
 
   try {
     await transporter.sendMail({
@@ -233,5 +262,3 @@ const transporter = nodemailer.createTransport({
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok:false, error:String(e) }) };
   }
 };
-
-
