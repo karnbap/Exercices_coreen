@@ -199,13 +199,19 @@
         <div class="p-3 bg-white rounded border mb-3 text-sm text-slate-700">
           <span class="font-medium">Guide (FR)</span> : ${q.frGuide}
         </div>
-        ${hintBox(q)}
-        <label class="block mb-1 font-semibold">Réponse en coréen (한국어):</label>
-        <div class="flex gap-2">
-          <input id="inpKO" class="input-field flex-1" value="${q.userAnswer||''}" placeholder="Ex. ${q.ko}" oninput="Quiz.onTextInput(this.value)">
-          <button class="btn btn-primary" onclick="Quiz.checkText()">Vérifier / 정답 확인</button>
-        </div>
-      `;
+        function hintBoxHTML(q){
+          // 1~5번(개념 선택)은 힌트 숨김
+          if (q.number <= 5) return '';
+          return `
+            <div class="flex flex-wrap gap-2 items-center mb-2">
+              <button class="btn btn-outline" onclick="Quiz.showHint(1)">🙏 Aidez-moi (힌트1: 초성)</button>
+              <button class="btn btn-outline" onclick="Quiz.showHint(2)">🦺 Au secours (힌트2: 부분뜻)</button>
+              <span class="text-xs text-slate-500">H1: ${q.hint1Count||0} · H2: ${q.hint2Count||0}</span>
+            </div>
+            <div id="hintArea" class="text-sm text-slate-700"></div>
+          `;
+        }
+
       if(q.textChecked){
         const ok = q.textCorrect===true;
         html += `<div class="mt-3 ${ok?'text-emerald-700':'text-rose-700'} font-semibold">
