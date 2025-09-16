@@ -454,15 +454,17 @@ const state = {
              <div class="mt-1"><b>Ma prononciation:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
            </div>`;
         fbBox.classList.remove('hidden');
-        state.evalCount++;        // ✅ 총 평가 횟수 증가
-        updateNextAvailability(); // ✅ 2회 이상이면 다음 버튼 활성화
+
 
         checkFinish();
       }catch(_){
         status.textContent = 'Échec de l’évaluation. Réessaie.';
-      }finally{
+      } finally {
         btnEval.disabled = false;
+        state.evalCount++;        // 🔄 성공/실패/재시도 포함 모든 평가 클릭 → 카운트
+        updateNextAvailability();
       }
+
     });
 
     return card;
