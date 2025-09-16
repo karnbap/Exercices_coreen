@@ -27,31 +27,28 @@
     void el.offsetWidth; // reflow
     el.classList.add('flash-on');
   }
-  function focusName(){
-    const input = document.getElementById('student-name');
-    if (!input) return;
-    input.focus({ preventScroll:true });
-    (input.closest('.card')||input).scrollIntoView({behavior:'smooth',block:'center'});
-    flash(input.closest('.card')||input);
-  }
+function focusName(){
+  const input = document.getElementById('student-name') || document.getElementById('studentName');
+  if (!input) return;
+  input.focus({ preventScroll:true });
+  (input.closest('.card')||input).scrollIntoView({behavior:'smooth',block:'center'});
+  flash(input.closest('.card')||input);
+}
 
   // ===== 초기화 =====
-  function init(){
-    const input = document.getElementById('student-name');
-    if (input){
-      const cur=getName();
-      if (cur && !input.value) input.value = cur;
-
-      input.addEventListener('change', e=>{
-        const v=String(e.target.value||'').trim();
-        if (v) setName(v);
-      });
-      input.addEventListener('keyup', e=>{
-        if (e.key==='Enter'){
-          const v=String(e.target.value||'').trim();
-          if (v) setName(v);
-        }
-      });
+function init(){
+  const input = document.getElementById('student-name') || document.getElementById('studentName');
+  if (input){
+    const cur=getName();
+    if (cur && !input.value) input.value = cur;
+    const commit = ()=>{ const v=String(input.value||'').trim(); if (v) setName(v); };
+    input.addEventListener('change', commit);
+    input.addEventListener('keyup', e=>{ if(e.key==='Enter') commit(); });
+    if (!input.placeholder || /Ex\./i.test(input.placeholder)){
+      const names=['Camille','Noé','Chloé','Lucas','Léa','Louis','Emma','Hugo','Manon','Arthur','Jules','Zoé','Léna','Nina','Paul','Sofia'];
+      input.placeholder=`Ex. ${names[Math.floor(Math.random()*names.length)]}`;
+    }
+  }
 
       // 랜덤 프랑스 이름 placeholder
       if (!input.placeholder || /Ex\./i.test(input.placeholder)){
