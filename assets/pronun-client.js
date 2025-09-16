@@ -125,19 +125,57 @@
   // ... buildClassicUI / buildWarmupUI / mount 정의 그대로 ...
   // [중략: 원본과 동일, 차이는 evalRec 내부만 아래처럼 수정됨]
 
-    async function evalRec(){
-      if(evalBusy) return;
-      if (lastDur < CFG.minSec) { ui.msg.textContent = `⏱️ Un peu plus long (≥ ${CFG.minSec}s) / 조금 더 길게`; return; }
-      if(!chunks.length){ ui.msg.textContent='🔁 Enregistre d’abord / 먼저 녹음'; return; }
-      const refOrig = String(getRef()||'').trim(); if(!refOrig){ ui.msg.textContent='📝 Phrase non prête / 문장 준비 중'; return; }
-      evalBusy=true;
+async function evalRec(){
+  if (evalBusy) return;
+
+  // ⛔ 최소 발화 길이 가드 — 너무 짧으면 평가 자체 중단
+  if (lastDur < CFG.minSec) {
+    ui.msg.textContent = `⏱️ 좀 더 길게 말해 주세요 (≥ ${CFG.minSec}s) / Parlez un peu plus longtemps`;
+    // 평가 스킵 (onResult 콜백도 호출하지 않음)
+    return;
+  }
+
+  if (!chunks.length) {
+    ui.msg.textContent = '🔁 먼저 녹음하세요 / Enregistrez d’abord';
+    return;
+  }
+  const refOrig = String(getRef()||'').trim();
+  if (!refOrig){
+    ui.msg.textContent = '📝 문장 준비 중 / Phrase non prête';
+    return;
+  }
+  evalBusy = true;
+  // 이하 기존 로직 유지…
+
       const blob = new Blob(chunks, { type: (mime.split(';')[0]||'audio/webm') });
       const base64 = await blobToBase64(blob);
       ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
       let transcript='', accuracy=null, needsRetry=false;
+      // 빈/초단편 transcript 방지 — 서버가 뭘 내놔도 최소 기준 미달이면 재시도
+// (서버 보정이 꺼져 있을 때 빈 결과가 더 자주 나올 수 있으므로)
+if (!transcript || transcript.replace(/\s+/g,'').length < 2) {
+  const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:'too_short_transcript' };
+  ui.msg.textContent = '⚠️ 더 또렷하고 길게 말해 주세요 / Parlez plus clairement et un peu plus longtemps';
+  try { onResult(out); } catch(_) {}
+  evalBusy = false;
+  return;
+}
+
       try {
-        const res = await postJSON(CFG.endpoint, { referenceText: refOrig,
-          audio: { base64, mimeType: blob.type || 'audio/webm', filename: 'rec.webm', duration: lastDur }});
+        const res = await postJSON(CFG.endpoint, {
+          referenceText: refOrig,
+          // 서버 쪽 확률적 보정(언어모델 보정) 비활성 요청
+          // 서버가 지원하면 이 플래그를 보고 보정을 끄게 됨
+          options: { strictTranscript: true, disableLM: true },
+        
+          audio: {
+            base64,
+            mimeType: blob.type || 'audio/webm',
+            filename: 'rec.webm',
+            duration: lastDur
+          }
+        });
+
         accuracy = res?.accuracy ?? null; transcript = String(res?.transcript||''); needsRetry = !!res?.needsRetry;
       } catch(e){ ui.msg.textContent='⚠️ Analyse indisponible. Réessaie. / 서버 오류'; evalBusy=false; try{ onResult({ status:'error', reason:'server_error' }); }catch(_){} return; }
 
