@@ -2,7 +2,7 @@
  * Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
  * - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
  * - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL (Blob URL로 안정 재생)
- * - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과로 다음 활성화)
+ * - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했으면 다음 문제로 고고)
  * - Q1에서 ← 누르면 numbers-warmup.html로 이동
  * - 끝내기: 결과 전송 + 요약 화면 표시 + 문항별 발음 테이블
  * - 학생 화면엔 H1/H2(힌트 카운트) 숨김: <span class="hint-metrics">…</span> (CSS에서 display:none)
@@ -437,7 +437,7 @@
     updateNav();
   }
 
-  // 다음 허용 규칙 (발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과)
+  // 다음 허용 규칙 (발음 2회 평가했고)
 // ===== Interactions =====
 function isNextAllowed() {
   const q = S.qs[S.idx]; 
