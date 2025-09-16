@@ -11,12 +11,19 @@
   }
 
   function fmtHMS(total) {
+  
     total = Math.max(0, Number(total) || 0);
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     const s = Math.floor(total % 60);
     return (h ? `${h} h ` : '') + (m ? `${m} min ` : '') + `${s} s`;
   }
+  function toPct(n){
+  const x = Number(n);
+  if (!Number.isFinite(x)) return null;
+  // 0~1 스케일이면 0~100으로 환산
+  return Math.round(x <= 1 ? x * 100 : x);
+}
 
   // 간단 체크섬(중복 렌더/전송 방지에 사용)
   function tinyHash(o) {
@@ -27,52 +34,87 @@
       return String(h >>> 0);
     } catch { return ''; }
   }
-
+  function reportError(kind, err, payload){
+  try {
+    const body = JSON.stringify({
+      kind,
+      message: (err && err.message) ? err.message : String(err || ''),
+      when: new Date().toISOString(),
+      studentName: payload?.studentName || '',
+      totalTimeSeconds: Number(payload?.totalTimeSeconds || payload?.totalSeconds || 0),
+      hash: tinyHash(toSlimPayload(payload || {})),
+      context: 'results-viewer'
+    });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/.netlify/functions/log-error', body);
+    } else {
+      fetch('/.netlify/functions/log-error', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body
+      }).catch(()=>{});
+    }
+  } catch(_) {}
+}
   // ========= 데이터 로드 =========
   function loadPayload() {
-    // 우선순위: window → sessionStorage → localStorage
-    if (global.PONGDANG_RESULTS && typeof global.PONGDANG_RESULTS === 'object') {
-      return global.PONGDANG_RESULTS;
-    }
-    try {
-      const s = sessionStorage.getItem('pondant_results');
-      if (s) return JSON.parse(s);
-    } catch {}
-    try {
-      const l = localStorage.getItem('pongdang:lastResults');
-      if (l) return JSON.parse(l);
-    } catch {}
-    return null;
+  // 우선순위: window → sessionStorage(pongdang|pondant 호환) → localStorage
+  if (global.PONGDANG_RESULTS && typeof global.PONGDANG_RESULTS === 'object') {
+    return global.PONGDANG_RESULTS;
   }
+  try {
+    // 표준 키
+    const s1 = sessionStorage.getItem('pongdang_results');
+    if (s1) return JSON.parse(s1);
+  } catch {}
+  try {
+    // 레거시 오타 키(호환)
+    const s2 = sessionStorage.getItem('pondant_results');
+    if (s2) return JSON.parse(s2);
+  } catch {}
+  try {
+    const l = localStorage.getItem('pongdang:lastResults');
+    if (l) return JSON.parse(l);
+  } catch {}
+  return null;
+}
+
 
   // ========= 서버 전송(1회) =========
-  async function postResultsOnce(payload) {
-    if (!payload || payload._sent) return payload;
+async function postResultsOnce(payload) {
+  if (!payload || payload._sent) return payload;
 
-    // results-compat.js 가 있으면 그걸 사용
-    if (global.sendResults && typeof global.sendResults === 'function') {
-      try {
-        await global.sendResults(payload);
-        payload._sent = true;
-        persistBack(payload);
-        return payload;
-      } catch {}
-    }
-
-    // 직접 POST (동일 스키마)
+  // results-compat.js 경유
+  if (global.sendResults && typeof global.sendResults === 'function') {
     try {
-      const slim = toSlimPayload(payload);
-      await fetch('/.netlify/functions/send-results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        mode: 'cors',
-        body: JSON.stringify(slim)
-      });
+      await global.sendResults(payload);
       payload._sent = true;
       persistBack(payload);
-    } catch {}
-    return payload;
+      return payload;
+    } catch (e) {
+      reportError('sendResults-fallback', e, payload);
+    }
   }
+
+  // 직접 POST
+  try {
+    const slim = toSlimPayload(payload);
+    await fetch('/.netlify/functions/send-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify(slim)
+    });
+    payload._sent = true;
+    persistBack(payload);
+  } catch (e) {
+    reportError('direct-post-failed', e, payload);
+  }
+
+  return payload;
+}
+
+
 
   function toSlimPayload(p) {
     const q = Array.isArray(p?.questions) ? p.questions.map(one => {
@@ -92,17 +134,19 @@
   }
 
   function persistBack(p) {
-    try {
-      if (sessionStorage.getItem('pondant_results')) {
-        sessionStorage.setItem('pondant_results', JSON.stringify(p));
-      } else if (localStorage.getItem('pongdang:lastResults')) {
-        localStorage.setItem('pongdang:lastResults', JSON.stringify(p));
-      } else {
-        // 기본은 sessionStorage에 저장
-        sessionStorage.setItem('pondant_results', JSON.stringify(p));
-      }
-    } catch {}
-  }
+  try {
+    const json = JSON.stringify(p);
+    // 항상 표준 키로 저장
+    sessionStorage.setItem('pongdang_results', json);
+
+    // 기존 localStorage 키도 유지(읽기 호환)
+    localStorage.setItem('pongdang:lastResults', json);
+
+    // 레거시 키가 남아있다면 최신값으로 덮어, 추후 마이그레이션 쉬움
+    sessionStorage.setItem('pondant_results', json);
+  } catch {}
+}
+
 
   // ========= 발음 정확도 표 =========
   function renderPronunTable(root, payload){
@@ -114,7 +158,8 @@
       const triesVal = Number(q.evalCount ?? q.pronunEvalCount ?? q.tries ?? 0);
       const label = (q.ko || q.fr || '').toString().slice(0, 40);
 
-      const scoreText = Number.isFinite(scoreVal) ? (Math.round(scoreVal) + '%') : '—';
+    const pct = toPct(scoreVal);
+    const scoreText = (pct === null) ? '—' : (pct + '%');
       const triesText = triesVal ? String(triesVal) : '—';
 
       return `
@@ -148,14 +193,23 @@
   function render(payload, opts = {}) {
     const root = $(opts.rootSelector || '#app') || document.body;
 
-    // 상단 헤더 + 총점/시간 + 오답노트 박스 구성
-    const name = escapeHTML(payload?.studentName || '-');
-   const graded = (payload?.questions || []).filter(q => typeof q?.isCorrect === 'boolean');
-    const correct = graded.filter(q => q.isCorrect).length;
-    const totalG = graded.length || (payload?.questions?.length || 0);
-    const pctFromItems = totalG ? Math.round((100 * correct) / totalG) : 0;
-    const final = Number.isFinite(Number(payload?.overall)) ? Number(payload.overall) : pctFromItems;
-    const tsec = Number(payload?.totalTimeSeconds || payload?.totalSeconds || 0);
+// 상단 헤더 + 총점/시간 + 오답노트 박스 구성
+const name = escapeHTML(payload?.studentName || '-');
+
+// 1) 채점된 문항 기준
+const graded = (payload?.questions || []).filter(q => typeof q?.isCorrect === 'boolean');
+const correct = graded.filter(q => q.isCorrect).length;
+const totalG = graded.length || (payload?.questions?.length || 0);
+const pctFromItems = totalG ? Math.round((100 * correct) / totalG) : 0;
+
+// 2) payload.overall 이 숫자면 우선, 아니면 항목 기반
+const overallNum = Number(payload?.overall);
+const final = Number.isFinite(overallNum)
+  ? toPct(overallNum)
+  : pctFromItems;
+
+
+const tsec = Number(payload?.totalTimeSeconds || payload?.totalSeconds || 0);
 
 
     root.innerHTML = `
