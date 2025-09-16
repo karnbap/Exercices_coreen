@@ -128,23 +128,36 @@
 async function evalRec(){
   if (evalBusy) return;
 
-  // ⛔ 최소 발화 길이 가드 — 너무 짧으면 평가 자체 중단
+  // ⛔ 최소 발화 길이 가드 — 너무 짧으면 평가 자체 중단(+다시 시도 가능)
   if (lastDur < CFG.minSec) {
     ui.msg.textContent = `⏱️ 좀 더 길게 말해 주세요 (≥ ${CFG.minSec}s) / Parlez un peu plus longtemps`;
-    // 평가 스킵 (onResult 콜백도 호출하지 않음)
+    // ▶ 다시 시도 가능하도록 버튼 상태 복구
+    ui.btnStart.disabled = false;
+    ui.btnStop.disabled  = true;
+    ui.btnEval.disabled  = true;
     return;
   }
 
   if (!chunks.length) {
     ui.msg.textContent = '🔁 먼저 녹음하세요 / Enregistrez d’abord';
+    ui.btnStart.disabled = false;
+    ui.btnStop.disabled  = true;
+    ui.btnEval.disabled  = true;
     return;
   }
   const refOrig = String(getRef()||'').trim();
   if (!refOrig){
     ui.msg.textContent = '📝 문장 준비 중 / Phrase non prête';
+    ui.btnStart.disabled = false;
+    ui.btnStop.disabled  = true;
+    ui.btnEval.disabled  = true;
     return;
   }
+
   evalBusy = true;
+  // ... (이하 기존 로직 유지)
+}
+
   // 이하 기존 로직 유지…
 
       const blob = new Blob(chunks, { type: (mime.split(';')[0]||'audio/webm') });
