@@ -169,7 +169,7 @@
 
       <section class="bg-white rounded-xl p-5 shadow max-w-3xl mx-auto">
         <p>이름 / Nom : <b>${name}</b></p>
-        <p id="finalScore" class="mt-1">Score final : <b class="text-blue-700">${pct}%</b></p>
+        <p id="finalScore" class="mt-1">Score final : <b class="text-blue-700">${final}%</b></p>
         <p id="totalTime" class="mt-1">Temps total : <b>${fmtHMS(tsec)}</b></p>
       </section>
 
