@@ -115,3 +115,10 @@ body {
   color:#854d0e;
 }
 .hint-box.show { display:block; }
+
+/* 이름 필요인데 아직 입력 안 된 경우 → 비활성화 표시 */
+[data-requires-name].is-disabled {
+  pointer-events: none;
+  opacity: .5;
+}
+
