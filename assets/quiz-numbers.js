@@ -670,26 +670,20 @@ function isNextAllowed() {
     S.idx--; render();
   });
 
-  $('#btnNext').addEventListener('click', () => {
-    if (!requireName()) return;
+$('#btnNext').addEventListener('click', () => {
+  if (!requireName()) return;
 
-    const q = S.qs[S.idx];
-    const pronunOK =
-      (q.pronunPassed === true) ||
-      ((q.pronunAttempts || 0) >= 2 && (q.lastPronunScore == null || q.lastPronunScore <= 0.8));
+  // 통일 규칙: 발음 평가는 최소 2회 (점수 무관)
+  if (!isNextAllowed()) {
+    alert(
+      "👉 Enregistrez et évaluez votre prononciation au moins 2 fois.\n" +
+      "👉 발음을 최소 2회 녹음·평가해 주세요."
+    );
+    return;
+  }
 
-    if (q.pronunRequired && !pronunOK) {
-      alert(
-        "Enregistrez et évaluez d’abord votre prononciation (≥ 2 fois). " +
-        "Après 2 évaluations, si votre dernier score est ≤ 80%, vous pouvez continuer.\n\n" +
-        "먼저 발음을 녹음하고 평가를 최소 2회 해주세요. " +
-        "2회 평가 후 마지막 점수가 80% 이하이면 다음으로 넘어갈 수 있어요."
-      );
-      return;
-    }
-
-    if (isNextAllowed() && S.idx < S.qs.length - 1) { S.idx++; render(); }
-  });
+  if (S.idx < S.qs.length - 1) { S.idx++; render(); }
+});
 
   $('#btnFinish').addEventListener('click', () => { if (!requireName()) return; finish(); });
   window.addEventListener('beforeunload', cleanupAudio);
