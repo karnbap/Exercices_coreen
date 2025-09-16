@@ -5,15 +5,64 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Coréen — Nombres | Exos</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 공통 기본 -->
   <link rel="stylesheet" href="/assets/style.css?v=4.4">
-</head>
-<body class="bg-slate-50 text-slate-800">
-  <header class="max-w-3xl mx-auto p-4 flex items-center justify-between">
-    <div class="font-semibold">Exercices – Nombres</div>
-    <button onclick="window.print()" class="btn">Imprimer / 인쇄</button>
-  </header>
+  <!-- 웜업과 동일한 시각 톤 유지용: 폰트 + 아이콘 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <main class="max-w-3xl mx-auto p-4 space-y-4">
+  <!-- ✅ Warmup의 스타일 블록을 그대로 포함: 카드/버튼/색상/섹션 톤 통일 -->
+  <style>
+    :root{
+      --ink:#0f172a; --muted:#64748b; --brand:#2563eb; --brand-700:#1d4ed8;
+      --surface:#f4f6f8; --card:#ffffff; --border:#e5e7eb;
+      --slow-bg:#ecfdf5; --slow-bd:#a7f3d0; --slow-t:#065f46;
+      --normal-bg:#eef2ff; --normal-bd:#c7d2fe; --normal-t:#3730a3;
+      --fast-bg:#fff7ed; --fast-bd:#fed7aa; --fast-t:#9a3412;
+    }
+    body{font-family:'Poppins','Noto Sans KR',sans-serif;background:var(--surface);color:var(--ink)}
+    .quiz-container{max-width:960px;margin:1.5rem auto;padding:1.5rem;background:var(--card);border-radius:1rem;border:1px solid var(--border);box-shadow:0 8px 20px rgba(15,23,42,.06)}
+    .topbar{position:sticky;top:0;z-index:40;background:#ffffffd9;backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--border)}
+
+    /* 버튼 UI (warmup과 동일) */
+    .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem .9rem;border-radius:.8rem;font-weight:700;border:1px solid transparent;cursor:pointer;transition:.2s}
+    .btn:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 4px rgba(37,99,235,.25)}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-700)}
+    .btn-secondary{background:#f8fafc;border-color:var(--border);color:#111827}
+    .btn-secondary:hover{background:#eef2ff;border-color:#c7d2fe}
+    .btn-outline{background:#fff;border-color:var(--border);color:#111827}
+    .btn-outline:hover{border-color:#cbd5e1;background:#f8fafc}
+
+    /* 카드 톤 */
+    .card{background:#fff;border:1px solid var(--border);border-radius:1rem;padding:1rem;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+    .input{width:100%;border:2px solid #cbd5e1;border-radius:.75rem;padding:.65rem .8rem}
+    .input:focus{outline:none;border-color:#93c5fd}
+
+    /* 보조 요소 */
+    .kicker{color:var(--muted);letter-spacing:.02em}
+    .info-card{background:#fff;border:1px solid var(--border);border-radius:1rem;padding:1.15rem 1.25rem;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+    .callout{background:#fff7ed;border:1px solid #fde68a;color:#9a3412;padding:.9rem 1rem;border-radius:.85rem}
+    .soft-divider{height:1px;margin:1.25rem 0;background:linear-gradient(to right, transparent, var(--border), transparent)}
+  </style>
+</head>
+
+<body>
+  <!-- 상단 프린트 고정 바(톤 통일) -->
+  <div class="topbar">
+    <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 text-sm text-slate-600">
+        <i class="fa-solid fa-water"></i>
+        <span>Pongdang · made by 성일</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="btn btn-outline"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ main을 quiz-container로 감싸 동일 카드 톤 적용 -->
+  <main class="quiz-container space-y-4">
     <!-- 1) 이름 확인 -->
     <section class="card">
       <label class="block text-sm mb-1">Nom de l’élève / 학생 이름</label>
@@ -25,7 +74,7 @@
     <section class="card">
       <div class="flex justify-between items-center mb-2">
         <span id="progressText" class="text-sm text-slate-600"></span>
-        <button id="btnPrintTop" class="btn" onclick="window.print()">Imprimer / 인쇄</button>
+        <button id="btnPrintTop" class="btn btn-outline" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
       </div>
       <div class="w-full h-2 bg-slate-200 rounded">
         <div id="progressBar" class="h-2 bg-blue-500 rounded" style="width:0%"></div>
@@ -48,9 +97,9 @@
 
     <!-- 4) 네비게이션 -->
     <section class="card flex gap-2 justify-between">
-      <a href="../index.html" class="btn">← Précédent (이전)</a>
+      <a href="../index.html" class="btn btn-outline">← Précédent (이전)</a>
       <div class="flex gap-2">
-        <button id="btnPrev" class="btn">←</button>
+        <button id="btnPrev" class="btn btn-secondary">←</button>
         <button id="btnNext" class="btn btn-primary" disabled>Suivant (다음) →</button>
         <button id="btnFinish" class="btn btn-primary hidden">Terminer / 끝내기</button>
       </div>
@@ -60,20 +109,20 @@
     <section class="card">
       <div id="finalRow" class="text-sm text-slate-600">Score final : — · Temps total : —</div>
       <div class="mt-2 flex gap-2">
-        <button id="btnFinish2" class="btn-primary">Terminer / 끝내기</button>
-        <a href="../index.html" class="btn">← Précédent (이전)</a>
+        <button id="btnFinish2" class="btn btn-primary">Terminer / 끝내기</button>
+        <a href="../index.html" class="btn btn-outline">← Précédent (이전)</a>
       </div>
     </section>
 
-    <footer class="text-center text-xs text-slate-500 pt-6">
+    <footer class="text-center text-xs text-slate-500 pt-2">
       made by 성일, Pongdang · Lapeace29@gmail.com
     </footer>
   </main>
 
   <!-- 공통 스크립트 -->
   <script>window.PONGDANG_FN_BASE='/.netlify/functions';</script>
-  <script src="../assets/pronun-client.js?v=4.3"></script>
-  <script src="../assets/results-compat.js?v=4.3"></script>
+  <script src="../assets/pronun-client.js?v=4.4"></script>
+  <script src="../assets/results-compat.js?v=4.4"></script>
 
   <!-- 페이지 전용 로직 -->
   <script src="../assets/quiz-numbers.js?v=1.0"></script>
