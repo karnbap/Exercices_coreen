@@ -39,27 +39,24 @@ function focusName(){
 function init(){
   const input = document.getElementById('student-name') || document.getElementById('studentName');
   if (input){
-    const cur=getName();
+    const cur = getName();
     if (cur && !input.value) input.value = cur;
-    const commit = ()=>{ const v=String(input.value||'').trim(); if (v) setName(v); };
-    input.addEventListener('change', commit);
-    input.addEventListener('keyup', e=>{ if(e.key==='Enter') commit(); });
-    if (!input.placeholder || /Ex\./i.test(input.placeholder)){
-      const names=['Camille','Noé','Chloé','Lucas','Léa','Louis','Emma','Hugo','Manon','Arthur','Jules','Zoé','Léna','Nina','Paul','Sofia'];
-      input.placeholder=`Ex. ${names[Math.floor(Math.random()*names.length)]}`;
-    }
-  }
 
-      // 랜덤 프랑스 이름 placeholder
-      if (!input.placeholder || /Ex\./i.test(input.placeholder)){
-        const names=['Camille','Noé','Chloé','Lucas','Léa','Louis','Emma','Hugo','Manon','Arthur','Jules','Zoé','Léna','Nina','Paul','Sofia'];
-        const pick=()=>names[Math.floor(Math.random()*names.length)];
-        input.placeholder=`Ex. ${pick()}, ${pick()}, ${pick()}...`;
-      }
+    const commit = ()=>{ const v = String(input.value||'').trim(); if (v) setName(v); };
+    input.addEventListener('change', commit);
+    input.addEventListener('keyup', e=>{ if (e.key === 'Enter') commit(); });
+
+    // 랜덤 프랑스 이름 placeholder (1회)
+    if (!input.placeholder || /Ex\./i.test(input.placeholder)){
+      const names = ['Camille','Noé','Chloé','Lucas','Léa','Louis','Emma','Hugo','Manon','Arthur','Jules','Zoé','Léna','Nina','Paul','Sofia'];
+      const pick = ()=>names[Math.floor(Math.random()*names.length)];
+      input.placeholder = `Ex. ${pick()}, ${pick()}, ${pick()}...`;
     }
-    toggleFinish();
-    applyRequiresNameState(document);
   }
+  toggleFinish();
+  applyRequiresNameState(document);
+}
+
 
   function toggleFinish(){
     const input = document.getElementById('student-name');
