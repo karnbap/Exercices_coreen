@@ -61,7 +61,6 @@
     .btn-outline.active,.btn-secondary.active{outline:2px solid rgba(37,99,235,.25);box-shadow:0 0 0 3px rgba(37,99,235,.12) inset}
   </style>
 </head>
-<script src="../assets/live-stt.js"></script>
 
 <body>
   <div class="topbar">
@@ -202,7 +201,7 @@
       <h4 class="font-bold text-lg mb-1">Méthode 5×5 🗣️</h4>
       <p class="text-sm text-slate-600 mb-2"><b>Explication / 설명</b></p>
       <p class="mb-2">📌 <b>FR</b> — Apprendre les nombres coréens en <b>groupes de 5</b>, comme une petite chanson. C’est plus efficace que de mémoriser séparément (1=un, 2=deux…). Les enfants coréens eux-mêmes répètent ces paquets comme une chanson 🎵.</p>
-      <p class="mb-3">📌 <b>KO</b> — 한국어 숫자는 <b>5개씩 묶어서</b> <b>노래처럼</b> 반복하면 훨씬 잘 외워져요 🎶</p>
+      <p class="mb-3"><b>KO</b> — 한국어 숫자는 <b>5개씩 묶어서</b> <b>노래처럼</b> 반복하면 훨씬 잘 외워져요 🎶</p>
 
       <div class="grid md:grid-cols-2 gap-3 text-sm">
         <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Natifs 1–5</div><div>하나 · 둘 · 셋 · 넷 · 다섯</div></div>
@@ -211,7 +210,8 @@
         <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Hanja 6–10</div><div>육 · 칠 · 팔 · 구 · 십</div></div>
       </div>
 
-      <p class="mt-3 text-slate-700">🔁 <b>Répétitions</b> : <b>2× par défaut</b> (recommandé 3×) / <b>기본 2회</b>(권장 3회)</p>    </div>
+      <p class="mt-3 text-slate-700">🔁 <b>Répétitions</b> : <b>2× par défaut</b> (recommandé 3×) / <b>기본 2회</b>(권장 3회)</p>
+    </div>
 
     <p class="text-center text-sm text-slate-600 mb-4">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
     <div class="segmented">
@@ -272,12 +272,13 @@
     window.WARMUP_REPEAT = 2; // 기본 반복 2회
   </script>
 
-  <!-- 공통 스크립트 -->
+  <!-- 공통 스크립트 (모두 defer) -->
   <script defer src="../assets/student-gate.js"></script>
   <script defer src="../assets/pronun-utils.js"></script>
   <script defer src="../assets/pronun-vowel-middleware.js"></script>
   <script defer src="../assets/grading-criteria.js"></script>
   <script defer src="../assets/pronun-client.js"></script>
+  <script defer src="../assets/live-stt.js"></script>
   <script defer src="../assets/warmup-5x5.js"></script>
 
   <!-- 화면 전환 & 이름 게이트 -->
@@ -308,6 +309,19 @@
           window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
         }
       });
+
+      // 워밍업 끝 → 본 연습문제로 이동
+      const sendBtn = document.getElementById('btn-send');
+      if (sendBtn) {
+        sendBtn.addEventListener('click', () => {
+          // 이름을 쿼리로 넘기고 싶으면 아래 주석 해제
+          // const name = (localStorage.getItem('korean.studentName') || '').trim();
+          // const qs = name ? `?name=${encodeURIComponent(name)}` : '';
+          // location.href = 'numbers-exercises.html' + qs;
+
+          location.href = 'numbers-exercises.html';
+        });
+      }
     });
   </script>
 
@@ -321,16 +335,5 @@
       }
     });
   </script>
-<script>
-document.getElementById('btnNext')?.addEventListener('click', () => {
-  if (!window.isNextAllowed || !window.isNextAllowed()) {
-    alert("👉 Évalue ta prononciation au moins 2 fois.\n👉 발음을 최소 2회 녹음·평가해 주세요.");
-    window.WU_shake && window.WU_shake();
-    return;
-  }
-  window.location.href = 'numbers-exercises.html';
-});
-</script>
-
 </body>
 </html>
