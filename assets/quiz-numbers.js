@@ -26,6 +26,13 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const strip = s => String(s || '').replace(/\s/g, '');
+  // 한글 비교용(공백/구두점/라틴문자 제거 + 소문자화)
+  const norm = s => String(s || '')
+    .toLowerCase()
+    .replace(/[.,!?…·/\\_\-:;'"(){}\[\]`~]/g, '')
+    .replace(/\s+/g, '')
+    .replace(/[a-z]/gi, ''); // 라틴 문자 삭제(ga teun 등 금지 규칙)
+
   const esc = s => String(s || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
   const base64ToBlob = (b64, mime = 'audio/mpeg') => {
     const clean = b64.includes(',') ? b64.split(',')[1] : b64;
@@ -418,7 +425,11 @@
     const v = (q.userAnswer || '').trim();
     if (!v) return;
     const cands = [q.ko, ...(q.accepted || [])];
-    q.textCorrect = cands.some(ans => strip(v) === strip(ans));
+    q.textCorrect = cands.some(ans => {
+      const u = norm(v);
+      const a = norm(ans);
+      return (u === a) || u.includes(a);
+    });
     q.textChecked = true;
     q.isCorrect = q.textCorrect;
     q.pronunAttempted = false; q.pronunPassed = false;
@@ -426,10 +437,22 @@
     render();
   }
   function updateDictee(part, val) {
-    const q = S.qs[S.idx];
-    q.userAnswer[part] = val;
-    updateNav();
+  const q = S.qs[S.idx];
+  q.userAnswer[part] = val;
+
+  // 둘 다 입력됐을 때 채점
+  const hasBoth = !!q.userAnswer.ko && !!q.userAnswer.replyKo;
+  if (hasBoth) {
+    // 규칙: “정답 형태가 학생 답 안에 부분 포함돼도 정답”
+    const ok = norm(q.userAnswer.ko).includes(norm(q.ko));
+    q.isCorrect = !!ok;
+  } else {
+    q.isCorrect = false; // 아직 미완성 → 오답 처리(총점 100% 방지)
   }
+
+  updateNav();
+}
+
   function showHint(n) {
     const q = S.qs[S.idx]; if (!q || !q.hints) return;
     if (n === 1) { q.hint1Count = (q.hint1Count || 0) + 1; $('#hintArea').textContent = `초성: ${q.hints.choseong || '-'}`; }
@@ -487,6 +510,14 @@ function isNextAllowed() {
   // ===== Finish & Summary =====
   async function finish() {
     const end = Date.now();
+    // 받아쓰기 중 isCorrect 누락된 문항 보완 채점(부분 포함 허용)
+S.qs.forEach(q => {
+  if (q.type === 'dictation' && (q.isCorrect == null)) {
+    const ua = (q.userAnswer && q.userAnswer.ko) ? q.userAnswer.ko : '';
+    q.isCorrect = norm(ua).includes(norm(q.ko));
+  }
+});
+
     const name = $('#studentName').value?.trim() || 'Élève';
 
     // 메일/로그 요약에 유용: 과제명 & 전체 점수 포함
