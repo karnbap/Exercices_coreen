@@ -17,6 +17,13 @@
 
   // ===== name storage =====
   const KEY = 'korean.studentName';
+
+  // ===== messages =====
+  const MSG = {
+    needName : '이름을 먼저 입력해주세요 / Entrez votre nom d’abord.',
+    needPronun: '👉 Enregistrez et évaluez votre prononciation d’abord.\n👉 먼저 발음을 녹음하고 평가를 눌러주세요.'
+  };
+
   function getName(){
     try { return localStorage.getItem(KEY) || ''; } catch { return ''; }
   }
@@ -30,7 +37,9 @@
   // ===== UX helpers =====
   function flash(el){
     if(!el) return;
-    el.classList.remove('flash-on'); void el.offsetWidth; el.classList.add('flash-on');
+    el.classList.remove('flash-on'); void el.offsetWidth;
+    el.classList.add('flash-on');
+    setTimeout(()=>el.classList.remove('flash-on'), 500);
   }
   function focusName(){
     const input = document.getElementById('student-name') || document.getElementById('studentName');
@@ -50,6 +59,12 @@
       const commit = ()=>{ const v=String(input.value||'').trim(); if(v) setName(v); };
       input.addEventListener('change', commit);
       input.addEventListener('keyup', e=>{ if(e.key==='Enter') commit(); });
+
+      // 입력 중에도 UI 상태 갱신(저장은 Enter/blur)
+      input.addEventListener('input', ()=>{
+        toggleFinish();
+        applyRequiresNameState(document);
+      });
 
       // fun placeholder
       if (!input.placeholder || /Ex\./i.test(input.placeholder)){
@@ -80,7 +95,7 @@
 
       if (!hasName){
         if (!el.dataset._origTitle) el.dataset._origTitle = el.getAttribute('title') || '';
-        el.setAttribute('title','이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+        el.setAttribute('title', MSG.needName);
       }else{
         if (el.dataset._origTitle != null){
           el.setAttribute('title', el.dataset._origTitle);
@@ -106,7 +121,7 @@
       if (e.type==='keydown' && !['Enter',' '].includes(e.key)) return;
       if (!needName(t)) return;
       e.preventDefault(); e.stopPropagation();
-      alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+      alert(MSG.needName);
       focusName();
     };
 
@@ -117,12 +132,20 @@
     root.addEventListener('submit', (e)=>{
       if (!getName() && needName(e.target)){
         e.preventDefault(); e.stopPropagation();
-        alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+        alert(MSG.needName);
         focusName();
       }
     }, true);
 
-    const mo = new MutationObserver(()=>applyRequiresNameState(root));
+    // 변화 감지 최적화
+    let raf = null;
+    const mo = new MutationObserver(()=>{
+      if (raf) return;
+      raf = requestAnimationFrame(()=>{
+        raf = null;
+        applyRequiresNameState(root);
+      });
+    });
     mo.observe(root,{childList:true,subtree:true,attributes:true});
   }
 
@@ -183,6 +206,16 @@
     };
   }
 
+  // ===== multi-tab sync =====
+  window.addEventListener('storage', (e)=>{
+    if (e.key !== KEY) return;
+    const v = getName();
+    const input = document.getElementById('student-name') || document.getElementById('studentName');
+    if (input && input.value !== v) input.value = v || '';
+    applyRequiresNameState(document);
+    toggleFinish();
+  });
+
   // ===== auto init (only when needed) =====
   document.addEventListener('DOMContentLoaded', ()=>{
     const hasNameUI = !!(document.getElementById('student-name') || document.getElementById('studentName'));
@@ -206,7 +239,7 @@ document.addEventListener('click', (e)=>{
   // 이름 필수면 data-requires-name을 버튼(또는 래퍼)에 붙여 활용 가능
   if (!window.StudentGate?.getName?.() && btn.closest('[data-requires-name]') && !btn.closest('[data-allow-before-name]')){
     e.preventDefault(); e.stopPropagation();
-    alert('이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+    alert((window.MSG&&MSG.needName) || '이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
     return;
   }
 
@@ -224,10 +257,65 @@ document.addEventListener('click', (e)=>{
   box.style.display = show ? 'block' : 'none';
   btn.setAttribute('aria-pressed', show ? 'true' : 'false');
 
-  // (선택) 분석 이벤트
+  // 집계 이벤트(페이지 스크립트에서 수집 가능)
   try {
-    btn.dispatchEvent(new CustomEvent('hint-toggle', {
-      bubbles:true, detail:{ shown:show, targetSelector: sel || '.hint-box' }
+    const type = btn.classList.contains('btn-hint1') ? 'hint1' :
+                 btn.classList.contains('btn-hint2') ? 'hint2' : 'hint';
+    btn.dispatchEvent(new CustomEvent('hint-used', {
+      bubbles:true, detail:{ type, shown:show }
     }));
   } catch {}
 });
+
+// === Pronunciation-before-next guard (FR+KO) ===
+(function(){
+  function findCurrentCard(btn){
+    // 버튼에서 가장 가까운 문제 카드 탐색
+    return btn.closest('.card, [data-card], section') || document.body;
+  }
+  function canGoNext(card){
+    const st = card && card.__pronunState;
+    if (!st) return false;             // 아직 한 번도 녹음/평가를 안한 상태
+    if (st.passed) return true;        // 80점 이상 통과
+    if (st.evalCount >= 2) return true;// 2회 평가했으면 통과(요청사항)
+    return false;
+  }
+  function nudge(card, msg){
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) {
+      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+      card.addEventListener('animationend', ()=>card.classList.remove('shake'), {once:true});
+    }
+    const line = document.createElement('div');
+    line.className = 'badge-note';
+    line.setAttribute('role','alert');
+    line.setAttribute('aria-live','polite');
+    line.innerHTML = '🔊 <b>Enregistrez & évaluez d’abord</b> / 먼저 <b>발음 연습(녹음+평가)</b>을 해주세요.';
+    const old = card.querySelector('.badge-note'); if (old) old.remove();
+    (card.querySelector('h2, h3, .title') || card.firstElementChild || card).after(line);
+    if (msg) alert(msg);
+  }
+
+  // “다음” 버튼들: data-next, [data-action=next], 텍스트 매칭(FR/KO)
+  function isNextBtn(el){
+    if (!el || el.disabled) return false;
+    if (el.matches('[data-next], [data-action="next"]')) return true;
+    const t = (el.textContent || el.getAttribute('aria-label') || '')
+                .toLowerCase().replace(/\s+/g,' ').trim();
+    return ['suivant','suivante','continuer','next','다음','다 음'].some(k=>t.includes(k));
+  }
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('button, a');
+    if (!isNextBtn(btn)) return;
+
+    const card = findCurrentCard(btn);
+    if (canGoNext(card)) return; // 통과 → 그대로 진행
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const msg = (window.MSG&&MSG.needPronun) || '👉 Enregistrez et évaluez votre prononciation d’abord.\n👉 먼저 발음을 녹음하고 평가를 눌러주세요.';
+    nudge(card, msg);
+  }, true);
+})();
