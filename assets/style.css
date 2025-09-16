@@ -179,3 +179,46 @@ body{
   font-size:.9rem; padding:.25rem .5rem; border-radius:.5rem;
   background:#eef2ff; color:#3730a3;
 }
+
+
+/* === 공용 카드/버튼 === */
+.card{
+  background:#fff; border:1px solid var(--border-color);
+  border-radius:12px; padding:16px; box-shadow:0 4px 10px rgba(0,0,0,.04);
+}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  padding:.65rem 1rem; border-radius:.65rem; font-weight:700; cursor:pointer;
+  border:1px solid var(--border-color); background:#fff; transition:.18s;
+}
+.btn:hover{ transform:translateY(-1px); }
+.btn:disabled{ opacity:.5; cursor:not-allowed; }
+.btn-primary{ background:var(--royal-blue); color:#fff; border-color:transparent; }
+.btn-outline{ background:#fff; color:#111827; }
+.btn-secondary{ background:#f8fafc; }
+
+/* === 입력칸(quiz) 가독성: 클릭 안 해도 테두리 보이게 === */
+.input-field{
+  width:100%; font-size:1.125rem; padding:.75rem .9rem;
+  border:2px solid #94a3b8; border-radius:.6rem; outline:none; background:#fff;
+}
+.input-field:focus{ border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.22); }
+.input-field::placeholder{ opacity:1; color:#64748b; }
+
+/* === 발음 카드/요약 박스 === */
+.pronun-card{
+  background:#f8fafc; border:1px solid var(--border-color);
+  border-radius:.75rem; padding:12px;
+}
+.pronun-title{ font-weight:800; margin-bottom:.25rem; color:#0f172a; }
+
+.sum-box{
+  background:#fff; border:1px solid var(--border-color);
+  border-radius:.9rem; padding:14px; text-align:center;
+}
+.sum-title{ font-size:.85rem; color:#64748b; font-weight:700; }
+.sum-val{ font-size:1.75rem; font-weight:900; line-height:1.15; }
+.sum-sub{ font-size:.8rem; color:#64748b; }
+
+/* === 다음버튼 가드 배지/흔들림 여백 === */
+.badge-note{ margin-top:.4rem; }
