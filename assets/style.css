@@ -122,3 +122,22 @@ body {
   opacity: .5;
 }
 
+
+/* --- Numbers exercises: choices layout & feedback --- */
+.choices{display:flex;flex-wrap:wrap;gap:.5rem}
+.choice-btn{padding:.6rem .9rem;border:1px solid var(--border,#e5e7eb);
+  border-radius:.75rem;background:#fff;font-weight:600}
+.choice-btn:hover{border-color:#cbd5e1}
+.choice-btn.is-correct{background:#ecfdf5;border-color:#a7f3d0}
+.choice-btn.is-wrong{background:#fff5f5;border-color:#fecaca}
+.feedback{font-size:.9rem;margin-top:.5rem}
+.feedback.bad{color:#b91c1c}
+.feedback.good{color:#065f46}
+
+/* wrong answer shake */
+@keyframes shake{10%,90%{transform:translateX(-2px)}
+  20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-6px)}
+  40%,60%{transform:translateX(6px)}}
+.shake{animation:shake .45s ease}
+
