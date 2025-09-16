@@ -438,14 +438,18 @@
   }
 
   // 다음 허용 규칙 (발음 2회 평가했고 마지막 점수 ≤ 0.8이면 통과)
-  function isNextAllowed() {
-    const q = S.qs[S.idx]; if (!q) return false;
+function isNextAllowed() {
+  const q = S.qs[S.idx]; if (!q) return false;
 
-    const pronunOK =
-      (q.pronunPassed === true) ||
-      ((q.pronunAttempts || 0) >= 2 && (q.lastPronunScore == null || q.lastPronunScore <= 0.8));
+  const attempts = q.pronunAttempts || 0;
+  const passed = q.pronunPassed === true;
+  const last = q.lastPronunScore;
 
-    if (q.pronunRequired && !pronunOK) return false;
+  // 규칙: 평가 2번 이상 시도했고 → 점수가 0.8 이상이거나, 
+  // 최소 2회 시도했으면 점수와 상관없이 통과
+  const pronunOK = passed || attempts >= 2;
+
+  if (q.pronunRequired && !pronunOK) return false;
 
     if (q.type === 'choice') {
       return !!q.userAnswer && q.userAnswer === q.answer;
