@@ -47,9 +47,11 @@
     <div class="topbar">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 text-sm text-slate-600">
-          <i class="fa-solid fa-water"></i>
-          <span>Pongdang · made by 성일</span>
-        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-600">
+  <i class="fa-solid fa-water"></i>
+  <span>made by 성일, Pongdang · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a></span>
+</div>
+
         <div class="flex items-center gap-2">
           <button onclick="window.print()" class="btn btn-outline"><i class="fa-solid fa-print"></i> Imprimer / 인쇄</button>
         </div>
@@ -61,6 +63,19 @@
       <section class="card">
         <label class="block text-sm mb-1">Nom de l’élève / 학생 이름</label>
         <input id="student-name" class="input" placeholder="Ex. Camille Durand"/>
+  <script>
+  (function(){
+    const el = document.getElementById('student-name');
+    if(!el) return;
+    const fr = [
+      'Camille Durand','Louis Martin','Chloé Bernard','Hugo Moreau',
+      'Léa Petit','Jules Lefèvre','Emma Robert','Nolan Roussel',
+      'Zoé Garcia','Lucas Fontaine','Manon Chevalier','Léo Caron'
+    ];
+    el.placeholder = fr[Math.floor(Math.random()*fr.length)];
+  })();
+</script>
+
         <p class="text-xs text-slate-500 mt-1">Tu as écrit ton nom ? / 이름 썼나요?</p>
       </section>
   
@@ -92,6 +107,7 @@
 
   
       <!-- 4) 네비게이션 -->
+  
       <section class="card flex gap-2 justify-between items-center">
         <button id="btnPrev" class="btn btn-secondary">← Précédent (이전)</button>
         <div class="flex gap-2">
@@ -99,7 +115,12 @@
           <button id="btnFinish" class="btn btn-outline hidden">Terminer / 끝내기</button>
         </div>
       </section>
-  
+      <section class="card mt-2">
+      <a href="./numbers-warmup.html" class="btn btn-outline w-full justify-center">
+        ← Exercice précédent / 이전 연습문제
+      </a>
+    </section>
+
       <footer class="text-center text-xs text-slate-500 pt-2">
         made by 성일, Pongdang · Lapeace29@gmail.com
       </footer>
