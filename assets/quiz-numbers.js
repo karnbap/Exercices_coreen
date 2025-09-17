@@ -372,9 +372,10 @@ function renderPronunIfNeeded(card, q) {
   } else if (q.type === 'fr_prompt_ko' && q.textChecked === true) {
     renderPronun(card, q, q.ko);
   } else if (q.type === 'dictation') {
-    // dictation 문제는 학생 답변(replyKo)을 기준으로 평가
-    renderPronun(card, q, q.ko);
+    // dictation은 학생의 대답(replyKo)을 기준으로 평가해야 함 → ref 생략하여 resolver가 input 값을 사용
+    renderPronun(card, q);
   }
+
 }
 
  function renderPronun(card, q, ref) {
@@ -430,7 +431,7 @@ function renderPronunIfNeeded(card, q) {
     if (refOverride) return String(refOverride || '');
     if (q.type === 'choice') return q.answer;
     if (q.type === 'fr_prompt_ko') return q.ko;
-    if (q.type === 'dictation') return ($('.input-reply-ko')?.value || '');
+    if (q.type === 'dictation') {     const reply = $('.input-reply-ko')?.value || '';     return reply || q.ko; // 입력 전엔 원문으로 안내, 입력하면 학생 답 기준   }
     return '';
   }
 
