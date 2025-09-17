@@ -340,7 +340,7 @@
       $('#dicKO', box).addEventListener('input', e => updateDictee('ko', e.target.value));
       $('#dicReply', box).addEventListener('input', e => updateDictee('replyKo', e.target.value));
 
-      renderPronun(card, q, '(2) votre réponse / 당신의 대답');
+      renderPronun(card, q);
     }
 
     updateNav();
@@ -395,34 +395,51 @@ function renderPronunIfNeeded(card, q) {
 
   const mount = wrap.querySelector('#pronunMount');
 
-  // 🔧 Pronun이 아직 로드 전이면 1회 지연 시도
-  if (!window.Pronun) {
-    setTimeout(() => {
-      if (window.Pronun && mount && !mount.__mounted) doMount();
-    }, 300);
-    return;
-  }
-  doMount();
+ // 🔧 Pronun이 아직 로드 전이면 재시도 루프(최대 5초)
+if (!window.Pronun) {
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries++;
+    if (window.Pronun && mount && !mount.__mounted) {
+      clearInterval(timer);
+      doMount();
+    }
+    if (tries >= 20) clearInterval(timer); // 20×250ms = 5s
+  }, 250);
+  return;
+}
+doMount();
+
 
   function doMount(){
     if (!mount || mount.__mounted) return;
     mount.__mounted = true;
     try {
-      Pronun.mount(mount, {
-        ui: 'warmup',
-        getReferenceText: () => refTextResolver(q, ref),
-        onStop: () => { q.pronunAttempted = true; updateNav(); },
-        onResult: (res) => {
-          const score  = (res && typeof res.score === 'number') ? res.score : null;
-          const passed = !!(res && (res.passed || res.ok || (typeof score === 'number' && score >= 0.8)));
-          if (passed) q.pronunPassed = true;
-          q.pronunAttempts = (q.pronunAttempts || 0) + 1;
-          if (!passed) q.pronunFails = (q.pronunFails || 0) + 1;
-          q.lastPronunScore = score;
-          q.pronunAttempted = true;
-          updateNav();
-        }
-      });
+Pronun.mount(mount, {
+  ui: 'warmup',
+  getReferenceText: () => refTextResolver(q, ref),
+  onStop: () => { q.pronunAttempted = true; updateNav(); },
+  onResult: (res) => {
+    const score = (res && typeof res.score === 'number') ? res.score : null;
+    const passed = !!(res && (res.passed || res.ok || (typeof score === 'number' && score >= 0.8)));
+
+    // 기록
+    q.pronunAttempts = (q.pronunAttempts || 0) + 1;
+    q.lastPronunScore = score;
+    if (passed) {
+      q.pronunPassed = true;
+    } else {
+      q.pronunFails = (q.pronunFails || 0) + 1;
+    }
+    q.pronunAttempted = true;
+
+    // ★ 통과 여부와 무관하게 "2회 이상 시도"면 다음으로 갈 수 있음
+    q.pronunAttemptsOk = (q.pronunAttempts >= 2);
+
+    updateNav();
+  }
+});
+
     } catch(e){ console.warn('Pronun mount fail:', e); }
   }
 }
@@ -548,7 +565,7 @@ S.qs.forEach(q => {
   }
 });
 
-    const name = $('#studentName').value?.trim() || 'Élève';
+const name = document.querySelector('#student-name')?.value?.trim() || 'Élève';
 
     // 메일/로그 요약에 유용: 과제명 & 전체 점수 포함
     const rawTitle = (document.title || 'Exercices').trim();
@@ -713,7 +730,7 @@ S.qs.forEach(q => {
   }
 
   function requireName() {
-    const v = $('#studentName').value?.trim();
+const v = document.querySelector('#student-name')?.value?.trim();
     if (!v) {
       alert('이름을 먼저 입력해 주세요. / Écris ton nom d’abord.');
       return false;
