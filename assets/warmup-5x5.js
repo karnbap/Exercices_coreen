@@ -372,14 +372,13 @@ const state = {
       card.__pronunState = st;
 }
 
-
     // live-stt 이벤트 리슨(+ 숫자→한글 강제)
     card.addEventListener('livestt:final', (e)=>{
       if (e?.detail?.text) {
         const raw = String(e.detail.text).trim();
         liveText = normalizeKoNumberish(raw);
       }
-    });
+    }); 
 
     btnStart.addEventListener('click', async ()=>{
       btnStart.disabled = true; btnStop.disabled = false; btnEval.disabled = true;
@@ -414,79 +413,79 @@ const state = {
       }
     });
 
-    btnEval.addEventListener('click', async ()=>{
-      function bumpEval(){
-    bumpEval();
-    updatePronunGuard(card, {}); // 카드별 상태 유지
+btnEval.addEventListener('click', async ()=>{
+  if(!lastRecord?.base64) return;
 
-}
-
-      if(!lastRecord?.base64) return;
-      btnEval.disabled = true; status.textContent = 'Évaluation en cours…';
-      try{
-        // 1차: 서버 채점
-        const srv = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
-        let accuracy = (typeof srv.accuracy==='number') ? srv.accuracy : 0;
-        let transcript = String(srv.transcript||'');
-
-        // 2차: needsRetry 구제 (LiveSTT가 충분히 비슷하면 그걸로 점수)
-        const ref = collapse(refEval);
-        if (srv.needsRetry) {
-          const fb = liveText ? bestSimAgainstRef(ref, liveText) : 0;
-          if (fb >= 0.75) {
-            accuracy = Math.max(accuracy, fb);
-            transcript = liveText || transcript;
-          } else {
-            // 재시도 안내(UI 유지, 0점 금지)
-            status.textContent = '⚠️ Phrase courte mal reconnue. Réessaie clairement. / 짧은 문장이 길게 인식됐어요. 또박또박 다시 한 번!';
-            btnEval.disabled = false;
-            bumpEval(); // ✅ 조기 반환 케이스도 평가 1회로 인정
-            return;
-          }
-        } else {
-          // 일반 폴백: LiveSTT가 더 좋으면 교체
-          if (liveText) {
-            const fb = bestSimAgainstRef(ref, liveText);
-            if (!transcript || accuracy < fb) { accuracy = fb; transcript = liveText; }
-          }
-        }
-
-        const percent = Math.round((accuracy || 0)*100);
-        scoreTag.textContent = `Score: ${percent}%`;
-        scoreTag.classList.remove('hidden');
-        status.textContent = 'Groupe évalué. Passe au suivant.';
-
-        state.progress[bundle.key] = {
-          done:true, score:percent, accuracy,
-          audioBase64: toBareBase64(lastRecord.base64),
-          duration:lastRecord.duration, friendly:[]
-        };
-        card.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
-
-        // 피드백
-        fbBox.querySelector('.feedback-body').innerHTML =
-          `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
-           <div class="text-sm">
-             <div><b>Référence:</b> <span class="korean-font">${refDisplay}</span></div>
-             <div class="mt-1"><b>Ma prononciation:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
-           </div>`;
-        fbBox.classList.remove('hidden');
-
-        updatePronunGuard(card, { accuracy, res: srv }); // ✅ 카드 상태 반영(점수 0.8↑면 passed)
-        checkFinish();
-      }catch(_){
-        status.textContent = 'Échec de l’évaluation. Réessaie.';
-      } finally {
-        btnEval.disabled = false;
-        state.evalCount++;        // 🔄 성공/실패/재시도 포함 모든 평가 클릭 → 카운트
-        updatePronunGuard(card, {}); // ✅ 점수와 무관하게 evalCount만 +1 보장
-        updateNextAvailability();
-      }
-
-    });
-    bumpEval(); // ✅ 오류도 한 번의 시도로 집계
-    return card;
+  // 평가 클릭 회수 + 다음 버튼 활성화 상태 갱신 (모든 시도 포함)
+  function bumpEvalOnce(){
+    state.evalCount = (state.evalCount || 0) + 1;
+    updatePronunGuard(card, {}); // 카드별 시도 카운트만 반영
+    updateNextAvailability();
   }
+
+  btnEval.disabled = true;
+  status.textContent = 'Évaluation en cours…';
+
+  try{
+    // 1차: 서버 채점
+    const srv = await analyzePronunciation({ referenceText: refEval, record: lastRecord });
+    let accuracy = (typeof srv.accuracy==='number') ? srv.accuracy : 0;
+    let transcript = String(srv.transcript||'');
+
+    // 2차: needsRetry 구제 (LiveSTT가 충분히 비슷하면 그걸로 점수)
+    const ref = collapse(refEval);
+    if (srv.needsRetry) {
+      const fb = liveText ? bestSimAgainstRef(ref, liveText) : 0;
+      if (fb >= 0.75) {
+        accuracy = Math.max(accuracy, fb);
+        transcript = liveText || transcript;
+      } else {
+        status.textContent = '⚠️ Phrase courte mal reconnue. Réessaie clairement. / 짧은 문장이 길게 인식됐어요. 또박또박 다시 한 번!';
+        btnEval.disabled = false;
+        bumpEvalOnce(); // 재시도 안내도 1회 시도로 집계
+        return;
+      }
+    } else {
+      // 일반 폴백: LiveSTT가 더 좋으면 교체
+      if (liveText) {
+        const fb = bestSimAgainstRef(ref, liveText);
+        if (!transcript || accuracy < fb) { accuracy = fb; transcript = liveText; }
+      }
+    }
+
+    const percent = Math.round((accuracy || 0)*100);
+    scoreTag.textContent = `Score: ${percent}%`;
+    scoreTag.classList.remove('hidden');
+    status.textContent = 'Groupe évalué. Passe au suivant.';
+
+    state.progress[bundle.key] = {
+      done:true, score:percent, accuracy,
+      audioBase64: toBareBase64(lastRecord.base64),
+      duration:lastRecord.duration, friendly:[]
+    };
+    card.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
+
+    // 피드백
+    fbBox.querySelector('.feedback-body').innerHTML =
+      `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
+       <div class="text-sm">
+         <div><b>Référence:</b> <span class="korean-font">${refDisplay}</span></div>
+         <div class="mt-1"><b>Ma prononciation:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
+       </div>`;
+    fbBox.classList.remove('hidden');
+
+    updatePronunGuard(card, { accuracy, res: srv }); // 점수 0.8↑면 passed
+    checkFinish();
+  }catch(_){
+    status.textContent = 'Échec de l’évaluation. Réessaie.';
+  } finally {
+    btnEval.disabled = false;
+    bumpEvalOnce(); // 성공/실패/재시도 모두 1회 시도로 집계
+  }
+});
+
+      return card;
+    }
 
   function updateProgress(doneCount){
     document.querySelectorAll('#global-progress .progress-dot')
@@ -510,46 +509,44 @@ const state = {
               : 'Passe aux exercices / 다음 연습문제로 이동해요.')
       : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
 
-    box.innerHTML = `
-      <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
-        <div class="text-lg font-extrabold">🎉 Warming up</div>
-        <div class="text-slate-600 mt-1">${subtitle}</div>
-      </div>
-      <div class="flex flex-wrap gap-2 justify-center">
-        <!-- 끝내기(전송) 버튼은 항상 활성 -->
-        <button id="btn-finish-send" class="btn btn-primary btn-lg">
-          <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
-        </button>
+   box.innerHTML = `
+  <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
+    <div class="text-lg font-extrabold">🎉 Warming up</div>
+    <div class="text-slate-600 mt-1">${subtitle}</div>
+  </div>
+  <div class="flex flex-wrap gap-2 justify-center">
+    <!-- 끝내기(전송) 버튼은 항상 활성 -->
+    <button id="btn-finish-send" class="btn btn-primary btn-lg">
+      <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
+    </button>
 
-        <!-- 다음 속도: 남아 있으면 활성, 없으면 비활성 표시 -->
-        ${
-          next
-            ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">
-                 ${nextLabel} → Vitesse suivante / 다음 속도
-               </button>`
-            : `<button id="btn-next-speed" class="btn btn-secondary btn-lg" disabled
-                     style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
-        }
+    <!-- 다음 속도: 남아 있으면 활성, 없으면 비활성 표시 -->
+    ${
+      next
+        ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">
+             ${nextLabel} → Vitesse suivante / 다음 속도
+           </button>`
+        : `<button id="btn-next-speed" class="btn btn-secondary btn-lg" disabled
+                 style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
+    }
 
-        <!-- 다음 연습문제: 항상 보이되, 전송 전엔 비활성 -->
-       <a id="btn-go-ex" href="numbers-exercises.html"
-         class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
-        <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
-      </a>
+    <!-- 다음 연습문제: 항상 보이되, 전송 전엔 비활성 -->
+    <a id="btn-go-ex" href="numbers-exercises.html"
+       class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
+      <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
+    </a>
+  </div>`;
 
-           class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
-          <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
-        </a>
-      </div>`;
     box.classList.remove('hidden');
     updateNextAvailability(); // ✅ 페이지 렌더 시점에서도 2회 이상이면 활성화
-      document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
+document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
   if (!window.isNextAllowed || !window.isNextAllowed()){
     e.preventDefault();
     alert("👉 Évalue ta prononciation au moins 2 fois.\n👉 발음을 최소 2회 녹음·평가해 주세요.");
     window.WU_shake && window.WU_shake();
   }
 });
+
 
     // --- 전송 버튼 (성공/실패 상관없이 다음 단계 해제 + 로컬 폴백 저장) ---
     document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
