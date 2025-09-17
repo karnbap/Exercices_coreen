@@ -377,37 +377,55 @@ function renderPronunIfNeeded(card, q) {
   }
 }
 
-  function renderPronun(card, q, ref) {
-    const wrap = document.createElement('div');
-    wrap.className = 'pronun-card mt-3';
-    wrap.innerHTML = `
-      <div class="pronun-title">🎤 Enregistrer & tester / 녹음·발음 평가</div>
-      <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${esc(ref || refTextResolver(q))}</span></div>
-      <div id="pronunMount"></div>
-    `;
-    card.appendChild(wrap);
+ function renderPronun(card, q, ref) {
+  // 이미 그렸으면 재마운트 금지
+  if (card.__pronMounted) return;
+  card.__pronMounted = true;
 
-    const mount = $('#pronunMount', wrap);
-    if (mount && window.Pronun) {
-      try {
-        Pronun.mount(mount, {
-          ui: 'warmup',
-          getReferenceText: () => refTextResolver(q, ref),
-          onStop: () => { q.pronunAttempted = true; updateNav(); },
-          onResult: (res) => {
-            const score = (res && typeof res.score === 'number') ? res.score : null;
-            const passed = !!(res && (res.passed || res.ok || (typeof score === 'number' && score >= 0.8)));
-            if (passed) q.pronunPassed = true;
-            q.pronunAttempts = (q.pronunAttempts || 0) + 1;
-            if (!passed) q.pronunFails = (q.pronunFails || 0) + 1;
-            q.lastPronunScore = score;
-            q.pronunAttempted = true;
-            updateNav();
-          }
-        });
-      } catch (e) { console.warn('Pronun.mount', e); }
-    }
+  const wrap = document.createElement('div');
+  wrap.className = 'pronun-card mt-3';
+  const refText = esc(ref || refTextResolver(q));
+  wrap.innerHTML = `
+    <div class="pronun-title">🎤 Enregistrer & tester / 녹음·발음 평가</div>
+    <div class="text-xs text-slate-600 mb-1">Référence (KO): <span class="font-semibold">${refText}</span></div>
+    <div id="pronunMount"></div>
+  `;
+  card.appendChild(wrap);
+
+  const mount = wrap.querySelector('#pronunMount');
+
+  // 🔧 Pronun이 아직 로드 전이면 1회 지연 시도
+  if (!window.Pronun) {
+    setTimeout(() => {
+      if (window.Pronun && mount && !mount.__mounted) doMount();
+    }, 300);
+    return;
   }
+  doMount();
+
+  function doMount(){
+    if (!mount || mount.__mounted) return;
+    mount.__mounted = true;
+    try {
+      Pronun.mount(mount, {
+        ui: 'warmup',
+        getReferenceText: () => refTextResolver(q, ref),
+        onStop: () => { q.pronunAttempted = true; updateNav(); },
+        onResult: (res) => {
+          const score  = (res && typeof res.score === 'number') ? res.score : null;
+          const passed = !!(res && (res.passed || res.ok || (typeof score === 'number' && score >= 0.8)));
+          if (passed) q.pronunPassed = true;
+          q.pronunAttempts = (q.pronunAttempts || 0) + 1;
+          if (!passed) q.pronunFails = (q.pronunFails || 0) + 1;
+          q.lastPronunScore = score;
+          q.pronunAttempted = true;
+          updateNav();
+        }
+      });
+    } catch(e){ console.warn('Pronun mount fail:', e); }
+  }
+}
+
   function refTextResolver(q, refOverride) {
     if (refOverride) return String(refOverride || '');
     if (q.type === 'choice') return q.answer;
