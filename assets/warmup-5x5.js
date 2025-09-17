@@ -811,14 +811,18 @@ function canGoNext(){
 
 
 function updateNextAvailability(){
-  // ✅ 항상 활성화
-  document.querySelectorAll('[data-next-speed],[data-next-exo]').forEach(btn=>{
-    btn.disabled = false;
-    btn.classList.add('btn-primary');
-    btn.classList.remove('btn-outline');
-    btn.setAttribute('aria-disabled', 'false');
+  const btnSpeed  = document.querySelector('#btnNextSpeed,#btn-next-speed');
+  const btnNextEx = document.querySelector('#btnNextExercise,#btn-go-ex');
+
+  [btnSpeed, btnNextEx].forEach(b=>{
+    if(!b) return;
+    b.disabled = false;
+    b.removeAttribute('aria-disabled');
+    b.classList?.remove('pointer-events-none','opacity-50');
+    b.title = '';
   });
 }
+
 
 
 // ===== 클릭 가드(속도 전환/다음 연습문제) =====
@@ -858,14 +862,26 @@ function bindNextGuards(){
   
 // 추가: 초기 진입 시 버튼은 잠그고, 이후 시도되면 열림
 document.addEventListener('DOMContentLoaded', ()=>{
-  bindNextGuards();          // ← 추가
   updateNextAvailability();
-  tryResendPending();
-  const m = new URLSearchParams(location.search).get('mode');
-  if (m){ WU_go(m); }
-});
 
-})();
+  const speedBtn = document.querySelector('#btnNextSpeed,#btn-next-speed');
+  const exBtn    = document.querySelector('#btnNextExercise,#btn-go-ex');
+
+  // 다음 속도: 조건 없이 즉시 다음 속도
+  speedBtn?.addEventListener('click', ()=>{
+    const next = getNextSpeed(state.speed);
+    if(next){ state.speed = next; renderAll(); window.scrollTo({top:0,behavior:'smooth'}); }
+  });
+
+  // 다음 연습문제로: 조건 없이 즉시 이동
+  exBtn?.addEventListener('click', (e)=>{
+    const href = exBtn.getAttribute('href') || '/assignments/numbers-exercises.html';
+    e.preventDefault();
+    location.href = href;
+  });
+});
+  
+  
 
 
     
