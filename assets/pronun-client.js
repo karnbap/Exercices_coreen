@@ -1,17 +1,21 @@
-// assets/pronun-client.js  (v4.5 patched)
+// assets/pronun-client.js  (v4.6 final)
 // 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void, ui:'classic'|'warmup' })
-// - 기본값은 classic → 기존 연습문제 영향 없음
-// - ui:'warmup' 시 워밍업 스타일(녹음/정지/평가 + VU + LiveSTT 훅) 사용
-// - 내부 로직/채점/네트워크 동일
+// - 짧은 녹음/에러 시에도 항상 재녹음 가능(버튼 복구)
+// - 서버측 보정 비활성 요청(strictTranscript/disableLM)
+// - 공용 위젯이라 모든 미래 연습문제에 자동 적용
 (function (global) {
   'use strict';
-  if (global.Pronun && Number(global.Pronun.__v||0) >= 45) return;
 
+  // 중복 로드 가드
+  if (global.Pronun && Number(global.Pronun.__v||0) >= 46) return;
+
+  // 기본 UI 모드(외부에서 window.PRONUN_UI_DEFAULT='warmup' 등 지정 가능)
   global.PRONUN_UI_DEFAULT = global.PRONUN_UI_DEFAULT || 'classic';
 
+  // ===== 설정 =====
   const CFG = {
     endpoint: (global.PONGDANG_FN_BASE || '/.netlify/functions') + '/analyze-pronunciation',
-    minSec: 1.0,   // 최소 발화 길이 (기존 0.8s → 1.0s)
+    minSec: 1.0,           // ⏱️ 최소 발화 길이
     maxSec: 12,
     canvasW: 240, canvasH: 40,
     passBase: 0.75, passShortRef: 0.80, shortRefLen: 4,
@@ -22,9 +26,16 @@
       '유튜브','클릭','이벤트','특가','광고주','제휴','비디오','구매','할인'
     ]
   };
+  // 외부 오버라이드(선택)
+  if (Number.isFinite(global.PRONUN_MIN_SEC)) {
+    CFG.minSec = Math.max(0.5, Number(global.PRONUN_MIN_SEC));
+  }
 
   // ===== Utils =====
-  function h(tag, attrs = {}, ...kids) { const el = document.createElement(tag);
+  const $ = (s, r=document)=>r.querySelector(s);
+
+  function h(tag, attrs = {}, ...kids) {
+    const el = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') el.className = attrs[k];
       else if (k === 'html') el.innerHTML = attrs[k];
@@ -33,6 +44,7 @@
     kids.forEach(k => el.appendChild(typeof k === 'string' ? document.createTextNode(k) : k));
     return el;
   }
+
   function pickMime() {
     const M = window.MediaRecorder;
     if (!M || !M.isTypeSupported) return 'audio/webm';
@@ -41,6 +53,7 @@
     if (M.isTypeSupported('audio/mp4')) return 'audio/mp4';
     return 'audio/webm';
   }
+
   function blobToBase64(blob) {
     return new Promise((res, rej) => {
       const fr = new FileReader();
@@ -49,15 +62,17 @@
       fr.readAsDataURL(blob);
     });
   }
+
   async function postJSON(url, payload) {
     const r = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       body: JSON.stringify(payload)
     });
-    if (!r.ok) { const t = await r.text().catch(()=>''); throw new Error(`HTTP ${r.status} ${t}`); }
+    if (!r.ok) { const t = await r.text().catch(()=> ''); throw new Error(`HTTP ${r.status} ${t}`); }
     return r.json();
   }
+
   function normalizeKo(s){
     if(!s) return { raw:'', ko:'' };
     let t = String(s).toLowerCase()
@@ -68,6 +83,7 @@
     const onlyKo = t.replace(/[^ㄱ-ㅎ가-힣0-9\s]/g,'').replace(/\s+/g,'').trim();
     return { raw:t, ko:onlyKo };
   }
+
   function similarity(a, b){
     if(a===b) return 1; const m=a.length,n=b.length; if(!m||!n) return 0;
     const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
@@ -78,6 +94,7 @@
     }
     return 1 - (dp[m][n] / Math.max(m,n));
   }
+
   function localForceHangulNumbers(s){
     let x = String(s||'');
     x = x.replace(/\b1\b/g,'일').replace(/\b2\b/g,'이');
@@ -85,6 +102,7 @@
     x = x.replace(/(^|[^0-9])2([^0-9]|$)/g,'$1이$2');
     return x;
   }
+
   function coerceTowardsRef(refRaw, hypRaw) {
     let out = hypRaw; const ref = refRaw.replace(/\s+/g,''), hyp = hypRaw.replace(/\s+/g,'');
     const RULES = [
@@ -107,7 +125,6 @@
     const koRef = refN?.ko || ''; const koHyp = hypN?.ko || ''; const raw = String(rawTranscript || '').trim();
     if (!Number.isFinite(durSec) || durSec < CFG.minSec) return { bad:true, reason:'too_short' };
     if (!koHyp || koHyp.length < 2) return { bad:true, reason:'empty_or_tiny' };
-    // 한국어 비율 체크
     const rawNoSpace = (hypN.raw || '').replace(/\s+/g,'');
     const koRatio = hypN.ko.length / Math.max(1, rawNoSpace.length);
     if (koRatio < 0.35) return { bad:true, reason:'low_korean_ratio' };
@@ -120,105 +137,286 @@
     return { bad:false };
   }
 
-  // ===== VU, UI ===== (생략: 기존 그대로 유지)
-
-  // ... buildClassicUI / buildWarmupUI / mount 정의 그대로 ...
-  // [중략: 원본과 동일, 차이는 evalRec 내부만 아래처럼 수정됨]
-
-async function evalRec(){
-  if (evalBusy) return;
-
-  // ⛔ 최소 발화 길이 가드 — 너무 짧으면 평가 자체 중단(+다시 시도 가능)
-  if (lastDur < CFG.minSec) {
-    ui.msg.textContent = `⏱️ 좀 더 길게 말해 주세요 (≥ ${CFG.minSec}s) / Parlez un peu plus longtemps`;
-    // ▶ 다시 시도 가능하도록 버튼 상태 복구
-    ui.btnStart.disabled = false;
-    ui.btnStop.disabled  = true;
-    ui.btnEval.disabled  = true;
-    return;
-  }
-
-  if (!chunks.length) {
-    ui.msg.textContent = '🔁 먼저 녹음하세요 / Enregistrez d’abord';
-    ui.btnStart.disabled = false;
-    ui.btnStop.disabled  = true;
-    ui.btnEval.disabled  = true;
-    return;
-  }
-  const refOrig = String(getRef()||'').trim();
-  if (!refOrig){
-    ui.msg.textContent = '📝 문장 준비 중 / Phrase non prête';
-    ui.btnStart.disabled = false;
-    ui.btnStop.disabled  = true;
-    ui.btnEval.disabled  = true;
-    return;
-  }
-
-  evalBusy = true;
-  // ... (이하 기존 로직 유지)
-}
-
-  // 이하 기존 로직 유지…
-
-      const blob = new Blob(chunks, { type: (mime.split(';')[0]||'audio/webm') });
-      const base64 = await blobToBase64(blob);
-      ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
-let transcript = '', accuracy = null, needsRetry = false;
-
-try {
-  const res = await postJSON(CFG.endpoint, {
-    referenceText: refOrig,
-    options: { strictTranscript: true, disableLM: true },
-    audio: {
-      base64,
-      mimeType: blob.type || 'audio/webm',
-      filename: 'rec.webm',
-      duration: lastDur
+  // === 실패/짧은녹음 시 재시도 가능하게 복구 ===
+  function _recoverToReady(ui){
+    if (!ui) return;
+    if (ui.btnStart) ui.btnStart.disabled = false;
+    if (ui.btnStop)  ui.btnStop.disabled  = true;
+    if (ui.btnEval)  ui.btnEval.disabled  = true;
+    if (typeof global.PRONUN_ON_SHORT === 'function') {
+      try { global.PRONUN_ON_SHORT(CFG.minSec); } catch(_){}
     }
-  });
-  accuracy = res?.accuracy ?? null;
-  transcript = String(res?.transcript || '');
-  needsRetry = !!res?.needsRetry;
-} catch (e) {
-  ui.msg.textContent='⚠️ Analyse indisponible. Réessaie. / 서버 오류';
-  evalBusy=false; try{ onResult({ status:'error', reason:'server_error' }); }catch(_){}
-  return;
-}
+  }
 
-// 👉 서버 응답을 받은 "다음"에 빈/초단편 가드
-if (!transcript || transcript.replace(/\s+/g,'').length < 2) {
-  const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:'too_short_transcript' };
-  ui.msg.textContent = '⚠️ 더 또렷하고 길게 말해 주세요 / Parlez plus clairement et un peu plus longtemps';
-  try { onResult(out); } catch(_) {}
-  evalBusy = false;
-  return;
-}
+  // ===== 공용 UI 빌더 =====
+  function buildVUCanvas(w,h){
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    c.className = 'mt-1 w-full'; return c;
+  }
 
-transcript = localForceHangulNumbers(transcript);
-const refForCoerce = localForceHangulNumbers(refOrig);
-transcript = coerceTowardsRef(refForCoerce, transcript);
+  function buildClassicUI(root){
+    const ui = {};
+    root.classList.add('pronun-classic');
+    const title = h('div', { class:'text-sm text-slate-600 mb-1' }, '🎤 Enregistrer & tester / 녹음·발음 평가');
+    const ctrl  = h('div', { class:'flex items-center gap-2 mb-1' });
+    ui.btnStart = h('button', { class:'btn btn-secondary' }, 'Démarrer');
+    ui.btnStop  = h('button', { class:'btn btn-outline', disabled:'' }, '■ Stop');
+    ui.btnEval  = h('button', { class:'btn btn-primary', disabled:'' }, 'Évaluer');
+    ctrl.append(ui.btnStart, ui.btnStop, ui.btnEval);
 
-const refN = normalizeKo(refForCoerce);
-const hypN = normalizeKo(transcript);
-const g = isGarbageTranscript(refN, hypN, transcript, lastDur);
-if (g.bad) {
-  const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:g.reason };
-  ui.msg.textContent = '⚠️ Parlez plus distinctement. / 또박또박 더 분명하게 말해요.';
-  try { onResult(out); } catch(_) {}
-  evalBusy=false; return;
-}
+    ui.canvas = buildVUCanvas(CFG.canvasW, CFG.canvasH);
+    ui.msg = h('div', { class:'text-sm text-slate-600 mt-1' }, 'Démarrer → Arrêter → Évaluer.');
 
-      const g = isGarbageTranscript(refN, hypN, transcript, lastDur);
-      if (g.bad) {
-        const out = { status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:g.reason };
-        ui.msg.textContent = '⚠️ Parlez plus distinctement. / 또박또박 더 분명하게 말해요.';
-        try { onResult(out); } catch(_) {}
-        evalBusy=false; return;
+    root.append(title, ctrl, ui.canvas, ui.msg);
+    return ui;
+  }
+
+  function buildWarmupUI(root){
+    const ui = {};
+    root.classList.add('pronun-warmup');
+    const title = h('div', { class:'text-sm text-slate-600 mb-1' }, '🎤 Enregistrer & tester / 녹음·발음 평가');
+
+    const ctrl  = h('div', { class:'flex flex-wrap gap-2 mb-2' });
+    ui.btnStart = h('button', { class:'px-3 py-1 rounded bg-emerald-600 text-white' }, '● Rec');
+    ui.btnStop  = h('button', { class:'px-3 py-1 rounded bg-slate-300', disabled:'' }, '■ Stop');
+    ui.btnEval  = h('button', { class:'px-3 py-1 rounded bg-blue-600 text-white', disabled:'' }, '✔ Évaluer');
+    ctrl.append(ui.btnStart, ui.btnStop, ui.btnEval);
+
+    ui.canvas = buildVUCanvas(CFG.canvasW, CFG.canvasH);
+    ui.msg = h('div', { class:'text-xs text-slate-600 mt-1' }, 'Démarrer → Arrêter → Évaluer.');
+
+    root.append(title, ctrl, ui.canvas, ui.msg);
+    return ui;
+  }
+
+  // ===== 녹음 내부 =====
+  function makeRecorder(drawCanvas){
+    let mediaRecorder=null, chunksLocal=[], raf=0, ac=null, analyser=null, stream=null, mime='audio/webm';
+
+    function clearCanvas(){
+      if (!drawCanvas) return;
+      const g = drawCanvas.getContext('2d'); g.clearRect(0,0,drawCanvas.width,drawCanvas.height);
+    }
+
+    async function start(){
+      stop(); // 중복 방지
+      stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      mime = pickMime();
+      mediaRecorder = mime ? new MediaRecorder(stream, { mimeType:mime }) : new MediaRecorder(stream);
+      chunksLocal = [];
+      mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunksLocal.push(e.data); };
+
+      const AC = window.AudioContext||window.webkitAudioContext;
+      ac = new AC();
+      const source = ac.createMediaStreamSource(stream);
+      analyser = ac.createAnalyser(); analyser.fftSize = 512;
+      source.connect(analyser);
+
+      const g = drawCanvas.getContext('2d'), w = drawCanvas.width, h = drawCanvas.height;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      (function loop(){
+        raf = requestAnimationFrame(loop);
+        analyser.getByteFrequencyData(data);
+        g.clearRect(0,0,w,h);
+        g.fillStyle = '#6366f1';
+        const bars=32, step=Math.floor(data.length/bars);
+        for(let i=0;i<bars;i++){
+          const v=data[i*step]/255, bh=v*h;
+          g.fillRect(i*(w/bars)+2, h-bh, (w/bars)-4, bh);
+        }
+      })();
+
+      mediaRecorder.start(50);
+      return { mime, stop:() => new Promise(resolve=>{
+        const finalize=()=>resolve({ chunks:chunksLocal.slice(), mime });
+        if (mediaRecorder && mediaRecorder.state==='recording') {
+          mediaRecorder.addEventListener('stop', finalize, { once:true });
+          mediaRecorder.stop();
+        } else finalize();
+      })};
+    }
+
+    function stop(){
+      try { if (mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); } catch(_){}
+      try { stream?.getTracks().forEach(t => t.stop()); } catch(_){}
+      try { ac?.close(); } catch(_){}
+      stream=null; mediaRecorder=null; analyser=null;
+      if (raf) cancelAnimationFrame(raf); raf=0;
+      clearCanvas();
+    }
+
+    async function finalizeToBlobDuration(chunks, mimeType){
+      const blob = new Blob(chunks, { type:(mimeType.split(';')[0]||'audio/webm') });
+      // 메타데이터 기반 실제 길이 산출(브라우저/버퍼 영향 최소화)
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      return await new Promise((resolve)=>{
+        audio.addEventListener('loadedmetadata', ()=>{
+          const dur = Number(audio.duration||0);
+          URL.revokeObjectURL(url);
+          resolve({ blob, duration: dur });
+        }, { once:true });
+      });
+    }
+
+    return { start, stop, finalizeToBlobDuration, get mime(){ return mime; } };
+  }
+
+  // ===== 전역 상태 =====
+  let chunks=[], lastDur=0, mime='audio/webm', evalBusy=false;
+
+  // ===== 메인 평가 =====
+  async function doEvaluate(ui, getRef, onResult){
+    if (evalBusy) return;
+
+    if (lastDur < CFG.minSec) {
+      ui.msg.textContent = `⏱️ 좀 더 길게 말해 주세요 (≥ ${CFG.minSec}s) / Parlez un peu plus longtemps`;
+      _recoverToReady(ui);
+      return;
+    }
+    if (!chunks.length) {
+      ui.msg.textContent = '🔁 먼저 녹음하세요 / Enregistrez d’abord';
+      _recoverToReady(ui);
+      return;
+    }
+    const refOrig = String(getRef?.()||'').trim();
+    if (!refOrig){
+      ui.msg.textContent = '📝 문장 준비 중 / Phrase non prête';
+      _recoverToReady(ui);
+      return;
+    }
+
+    evalBusy = true;
+
+    const blob = new Blob(chunks, { type: (mime.split(';')[0]||'audio/webm') });
+    const base64 = await blobToBase64(blob).catch(()=> '');
+
+    ui.msg.textContent = '⏳ Évaluation… / 평가 중…';
+    let transcript = '', accuracy = null, needsRetry = false;
+
+    try {
+      const res = await postJSON(CFG.endpoint, {
+        referenceText: refOrig,
+        options: { strictTranscript: true, disableLM: true },
+        audio: {
+          base64,
+          mimeType: blob.type || 'audio/webm',
+          filename: 'rec.webm',
+          duration: lastDur
+        }
+      });
+      accuracy = res?.accuracy ?? null;
+      transcript = String(res?.transcript || '');
+      needsRetry = !!res?.needsRetry;
+    } catch (e) {
+      ui.msg.textContent='⚠️ Analyse indisponible. Réessaie. / 서버 오류';
+      try{ onResult?.({ status:'error', reason:'server_error' }); }catch(_){}
+      evalBusy=false; _recoverToReady(ui); return;
+    }
+
+    if (!transcript || transcript.replace(/\s+/g,'').length < 2) {
+      ui.msg.textContent = '⚠️ 더 또렷하고 길게 말해 주세요 / Parlez plus clairement et un peu plus longtemps';
+      try { onResult?.({ status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:'too_short_transcript' }); } catch(_){}
+      evalBusy = false; _recoverToReady(ui); return;
+    }
+
+    transcript = localForceHangulNumbers(transcript);
+    const refForCoerce = localForceHangulNumbers(refOrig);
+    transcript = coerceTowardsRef(refForCoerce, transcript);
+
+    const refN = normalizeKo(refForCoerce);
+    const hypN = normalizeKo(transcript);
+    const g = isGarbageTranscript(refN, hypN, transcript, lastDur);
+    if (g.bad) {
+      ui.msg.textContent = '⚠️ Parlez plus distinctement. / 또박또박 더 분명하게 말해요.';
+      try { onResult?.({ status:'retry', transcript:'', accuracy:0, needsRetry:true, duration:lastDur, reason:g.reason }); } catch(_){}
+      evalBusy=false; _recoverToReady(ui); return;
+    }
+
+    const refLen = refN.ko.length;
+    const need = (refLen >= CFG.shortRefLen) ? CFG.passBase : CFG.passShortRef;
+    const score = (typeof accuracy === 'number')
+      ? (accuracy > 1 ? accuracy/100 : accuracy)
+      : similarity(refN.ko, hypN.ko);
+    const ok = score >= need;
+
+    const out = { status:'ok', transcript, accuracy:score, score, ok, passed:ok, needsRetry, duration:lastDur };
+    ui.msg.textContent = ok ? '✅ Bon travail ! / 좋아요!' : 'ℹ️ Encore une fois, essaie plus clairement. / 한 번 더 또박또박!';
+    try { onResult?.(out); } catch(_){}
+    evalBusy = false;
+
+    // 평가 후에도 재녹음 허용
+    _recoverToReady(ui);
+  }
+
+  // ===== 장착 =====
+  function mount(root, opts={}){
+    if (!root) return;
+    const host = (typeof root === 'string') ? $(root) : root;
+    if (!host) return;
+
+    const getRef  = typeof opts.getReferenceText === 'function' ? opts.getReferenceText : ()=> '';
+    const onResult= typeof opts.onResult === 'function' ? opts.onResult : ()=> {};
+    const uiMode  = (opts.ui || global.PRONUN_UI_DEFAULT || 'classic');
+
+    const ui = (uiMode === 'warmup') ? buildWarmupUI(host) : buildClassicUI(host);
+    const R = makeRecorder(ui.canvas);
+
+    // Start
+    ui.btnStart.addEventListener('click', async ()=>{
+      try{
+        ui.btnStart.disabled = true;
+        ui.btnStop.disabled  = true;
+        ui.btnEval.disabled  = true;
+        ui.msg.textContent   = '🎙️ Enregistrement… / 녹음 중…';
+
+        const session = await R.start();
+        // 최소 1초 지나야 Stop 활성(실수 방지)
+        setTimeout(()=>{ ui.btnStop.disabled = false; }, 1000);
+
+        // Stop을 눌렀을 때 결과 정리
+        ui.btnStop.addEventListener('click', async onStopOnce, { once:true });
+        async function onStopOnce(){
+          try{
+            ui.btnStop.disabled = true;
+            const out = await session.stop();
+            // 실제 길이로 duration 산출
+            const { blob, duration } = await R.finalizeToBlobDuration(out.chunks, out.mime);
+            chunks = out.chunks.slice(); // 원시 청크 유지
+            lastDur = Math.min(CFG.maxSec, Math.max(0, duration));
+            mime = out.mime || 'audio/webm';
+
+            // 항상 Start 복구
+            ui.btnStart.disabled = false;
+
+            if (!chunks.length || lastDur < CFG.minSec) {
+              ui.btnEval.disabled = true;
+              ui.msg.textContent = `⏱️ 너무 짧아요. 조금 더 길게 말해 주세요 (≥ ${CFG.minSec}s).`;
+            } else {
+              ui.btnEval.disabled = false;
+              ui.msg.textContent = `✅ ${lastDur.toFixed(1)} s · “Évaluer / 평가”를 눌러보세요.`;
+            }
+          }catch(_){
+            _recoverToReady(ui);
+            ui.msg.textContent = '🎙️ 마이크 처리 중 문제가 있었어요. 다시 시도해 주세요.';
+          } finally {
+            try{ R.stop(); }catch(_){}
+          }
+        }
+      }catch(_){
+        _recoverToReady(ui);
+        ui.msg.textContent = '🎙️ 마이크 권한을 확인해 주세요 / Autorisez le micro';
       }
+    });
 
-      // 이하 원본과 동일 (needsRetry 보정, accuracy 보정, out 구성, 콜백, 상태 업데이트)
-    }
+    // Eval
+    ui.btnEval.addEventListener('click', async ()=>{
+      await doEvaluate(ui, getRef, onResult);
+    });
+
+    return { ui };
+  }
 
   // ===== 공개 API =====
-  global.Pronun = { mount, __v: 45 };
+  global.Pronun = { mount, __v: 46 };
 })(window);
