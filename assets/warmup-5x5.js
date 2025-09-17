@@ -269,7 +269,8 @@ const state = {
     // ---------- 렌더 ----------
     function renderAll(){
       renderSpeedToolbar();
-  
+  updateNextAvailability();
+
       const wrap = document.getElementById('stages-wrap'); if(!wrap) return;
       wrap.innerHTML=''; state.progress={}; state.listenCount={};
   
@@ -369,13 +370,18 @@ const state = {
       let liveText = ''; // live-stt 최종 텍스트(숫자→한글 강제 포함)
       
       // 🔒 전역 가드용: 이 카드의 발음 상태를 기억해 다음 이동 허용
-      function updatePronunGuard(card, { accuracy=null, res=null } = {}){
-        const st = card.__pronunState || { evalCount: 0, passed: false };
-        st.evalCount += 1;
-        const ok = (typeof accuracy === 'number' && accuracy >= 0.8) || (res && (res.ok || res.passed));
-        if (ok) st.passed = true;
-        card.__pronunState = st;
-  }
+     // 교체
+function updatePronunGuard(card, { accuracy=null, res=null } = {}){
+  const st = card.__pronunState || { evalCount: 0, passed: false };
+  st.evalCount += 1;
+  // 통과 여부는 참고만, 다음 버튼 활성화 조건에서 제외
+  const ok = (typeof accuracy === 'number' && accuracy >= 0.8) || (res && (res.ok || res.passed));
+  if (ok) st.passed = true;
+  card.__pronunState = st;
+  // 시도 횟수 기준으로 즉시 다음 버튼 활성화 상태 갱신
+  updateNextAvailability();
+}
+
   
       // live-stt 이벤트 리슨(+ 숫자→한글 강제)
       card.addEventListener('livestt:final', (e)=>{
@@ -745,24 +751,55 @@ const state = {
   }
   window.isNextAllowed = isNextAllowed;
   
-  function updateNextAvailability(){
-    const goEx = document.getElementById('btn-go-ex');
-    if (!goEx) return;
-    if (isNextAllowed()){
-      goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
-      goEx.classList.add('btn-primary');
-      goEx.removeAttribute('aria-disabled');
-    }
-  }
-  window.updateNextAvailability = updateNextAvailability;
-  
+ 
+
+    
   function WU_shake(){
     const t = document.getElementById('warmup-screen') || document.body;
     t.classList.add('shake');
     setTimeout(()=>t.classList.remove('shake'), 600);
   }
   window.WU_shake = WU_shake;
-  
+  // 추가
+function findNextButtons(){
+  const ids = ['btnNext','btnNextExos','go-next','btnToExercises','btn-go-ex'];
+  const q = ids.map(id => document.getElementById(id)).filter(Boolean);
+  const dataBtns = Array.from(document.querySelectorAll('[data-action="go-next"],[data-next]'));
+  return [...q, ...dataBtns];
+}
+
+
+
+function getTotalEvalAttempts(){
+  const cards = Array.from(document.querySelectorAll('[data-card="warmup"]')) || [];
+  const sumCard = cards.reduce((a,c)=> a + ((c.__pronunState && c.__pronunState.evalCount) || 0), 0);
+  const globalTry = Number(state.evalCount || 0);
+  return Math.max(sumCard, globalTry);
+}
+
+function updateNextAvailability(){
+  const btns = findNextButtons();
+  if (!btns.length) return;
+  const tries = getTotalEvalAttempts();
+  const enable = tries >= 2; // 규칙: 2회 이상 시도 시 활성화
+  btns.forEach(b => {
+    b.disabled = !enable;
+    b.classList.toggle('opacity-50', !enable);
+    if (enable){
+      b.classList.remove('pointer-events-none','btn-outline');
+      b.classList.add('btn-primary');
+      b.removeAttribute('aria-disabled');
+      b.title = '';
+    }else{
+      b.classList.add('pointer-events-none');
+      b.setAttribute('aria-disabled','true');
+      b.title = '발음 평가를 최소 2회 시도해 주세요';
+    }
+  });
+}
+window.updateNextAvailability = updateNextAvailability;
+
+
     // ---------- 공개 API ----------
     function getStudentName(){
     const el = document.getElementById('student-name') || document.getElementById('studentName');
@@ -789,11 +826,14 @@ const state = {
     }
     window.WU_go = WU_go;
   
-    document.addEventListener('DOMContentLoaded', ()=>{
-      // 보류분 자동 재전송 시도
-      tryResendPending();
-  
-      const m = new URLSearchParams(location.search).get('mode');
-      if(m){ WU_go(m); }
-    });
-  })();
+// 추가: 초기 진입 시 버튼은 잠그고, 이후 시도되면 열림
+document.addEventListener('DOMContentLoaded', ()=>{
+  updateNextAvailability();     // 초기 잠금 상태 반영
+  tryResendPending();           // 보류분 재전송
+  const m = new URLSearchParams(location.search).get('mode');
+  if (m){ WU_go(m); }           // 자동 시작 옵션
+});
+
+
+
+    
