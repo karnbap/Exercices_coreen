@@ -582,6 +582,9 @@ function updatePronunGuard(card, { accuracy=null, res=null } = {}){
         : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
   
      box.innerHTML = `
+      box.classList.remove('hidden');
+updateNextAvailability();
+
     <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
       <div class="text-lg font-extrabold">🎉 Warming up</div>
       <div class="text-slate-600 mt-1">${subtitle}</div>
