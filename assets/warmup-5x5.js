@@ -819,20 +819,6 @@ function bindNextGuards(){
 
 
 
-  // 다음 연습문제(예: 본 퀴즈 페이지로 이동)
-  document.querySelectorAll('[data-next-exo]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      if (!canGoNext()){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        alert('🎤 발음 연습(녹음+평가)을 먼저 2회 해주세요.\nEnregistrez et évaluez au moins 2 fois.');
-        return;
-      }
-      // 통과 시 그대로 진행(링크 이동/기존 onClick 실행)
-    }, true);
-  });
-}
-
 
     // ---------- 공개 API ----------
     function getStudentName(){
