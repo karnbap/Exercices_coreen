@@ -777,27 +777,59 @@ function getTotalEvalAttempts(){
   return Math.max(sumCard, globalTry);
 }
 
+function getTotalEvalCount(){
+  let n = 0;
+  document.querySelectorAll('[data-card="warmup"]').forEach(c=>{
+    n += (c.__pronunState?.evalCount || 0);
+  });
+  return n;
+}
+function canGoNext(){ return getTotalEvalCount() >= 2; }
+
 function updateNextAvailability(){
-  const btns = findNextButtons();
-  if (!btns.length) return;
-  const tries = getTotalEvalAttempts();
-  const enable = tries >= 2; // 규칙: 2회 이상 시도 시 활성화
-  btns.forEach(b => {
-    b.disabled = !enable;
-    b.classList.toggle('opacity-50', !enable);
-    if (enable){
-      b.classList.remove('pointer-events-none','btn-outline');
-      b.classList.add('btn-primary');
-      b.removeAttribute('aria-disabled');
-      b.title = '';
-    }else{
-      b.classList.add('pointer-events-none');
-      b.setAttribute('aria-disabled','true');
-      b.title = '발음 평가를 최소 2회 시도해 주세요';
-    }
+  const ok = canGoNext();
+  document.querySelectorAll('[data-next-speed],[data-next-exo]').forEach(btn=>{
+    btn.disabled = !ok;
+    btn.classList.toggle('btn-primary', ok);
+    btn.classList.toggle('btn-outline', !ok);
+    btn.setAttribute('aria-disabled', String(!ok));
+  });
+} // ← 반드시 닫아줘!
+
+// ===== 클릭 가드(속도 전환/다음 연습문제) =====
+function bindNextGuards(){
+  document.querySelectorAll('[data-next-speed]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      if (!canGoNext()){
+        e.preventDefault(); e.stopImmediatePropagation();
+        alert('🎤 발음 연습(녹음+평가) 최소 2회!\nEnregistrez et évaluez au moins 2 fois.');
+      }
+    }, true);
+  });
+  document.querySelectorAll('[data-next-exo]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      if (!canGoNext()){
+        e.preventDefault(); e.stopImmediatePropagation();
+        alert('🎤 발음 연습(녹음+평가) 최소 2회!\nEnregistrez et évaluez au moins 2 fois.');
+      }
+    }, true);
   });
 }
-window.updateNextAvailability = updateNextAvailability;
+
+
+  // 다음 연습문제(예: 본 퀴즈 페이지로 이동)
+  document.querySelectorAll('[data-next-exo]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      if (!canGoNext()){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        alert('🎤 발음 연습(녹음+평가)을 먼저 2회 해주세요.\nEnregistrez et évaluez au moins 2 fois.');
+        return;
+      }
+      // 통과 시 그대로 진행(링크 이동/기존 onClick 실행)
+    }, true);
+  });
+}
 
 
     // ---------- 공개 API ----------
@@ -828,10 +860,11 @@ window.updateNextAvailability = updateNextAvailability;
   
 // 추가: 초기 진입 시 버튼은 잠그고, 이후 시도되면 열림
 document.addEventListener('DOMContentLoaded', ()=>{
-  updateNextAvailability();     // 초기 잠금 상태 반영
-  tryResendPending();           // 보류분 재전송
+  bindNextGuards();          // ← 추가
+  updateNextAvailability();
+  tryResendPending();
   const m = new URLSearchParams(location.search).get('mode');
-  if (m){ WU_go(m); }           // 자동 시작 옵션
+  if (m){ WU_go(m); }
 });
 
 })();
