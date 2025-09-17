@@ -834,6 +834,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if (m){ WU_go(m); }           // 자동 시작 옵션
 });
 
+})();
 
 
     
