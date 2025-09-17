@@ -80,7 +80,7 @@
 
       audio.addEventListener('playing', () => markBtn(btn, true));
       audio.addEventListener('pause', () => markBtn(btn, false));
-      audio.addEventListener('ended', () => markBtn(btn, false));
+      audio.addEventListener('ended', () => {   markBtn(btn, false);   try { if (S.audio?.url) URL.revokeObjectURL(S.audio.url); } catch (_) {}   S.audio = { el: null, url: null, btn: null, fetching: false, lock: false, ac: null }; });
       audio.addEventListener('error', () => markBtn(btn, false));
 
       const q = S.qs[S.idx]; if (q) q.listenCount = (q.listenCount || 0) + 1;
@@ -92,11 +92,13 @@
       S.audio.fetching = false;
     }
   }
-  function stopAudio() {
-    if (!S.audio.el) return;
-    try { S.audio.el.pause(); S.audio.el.currentTime = 0; } catch (_) {}
-    markBtn(S.audio.btn, false);
-  }
+function stopAudio() {
+  try { S.audio?.ac?.abort(); } catch (_) {}
+  if (!S.audio?.el) { markBtn(S.audio?.btn, false); return; }
+  try { S.audio.el.pause(); S.audio.el.currentTime = 0; } catch (_) {}
+  markBtn(S.audio.btn, false);
+}
+
   function cleanupAudio() {
     try { if (S.audio.el) S.audio.el.pause(); } catch (_) {}
     if (S.audio.url) { URL.revokeObjectURL(S.audio.url); }
@@ -418,27 +420,22 @@ doMount();
 Pronun.mount(mount, {
   ui: 'warmup',
   getReferenceText: () => refTextResolver(q, ref),
-  onStop: () => { q.pronunAttempted = true; updateNav(); },
   onResult: (res) => {
     const score = (res && typeof res.score === 'number') ? res.score : null;
     const passed = !!(res && (res.passed || res.ok || (typeof score === 'number' && score >= 0.8)));
 
-    // 기록
     q.pronunAttempts = (q.pronunAttempts || 0) + 1;
     q.lastPronunScore = score;
-    if (passed) {
-      q.pronunPassed = true;
-    } else {
-      q.pronunFails = (q.pronunFails || 0) + 1;
-    }
+    if (passed) q.pronunPassed = true;
+    else q.pronunFails = (q.pronunFails || 0) + 1;
+
     q.pronunAttempted = true;
-
-    // ★ 통과 여부와 무관하게 "2회 이상 시도"면 다음으로 갈 수 있음
-    q.pronunAttemptsOk = (q.pronunAttempts >= 2);
-
+    q.pronunAttemptsOk = (q.pronunAttempts >= 2); // 2회 이상 시도 허용 규칙
     updateNav();
   }
 });
+
+
 
     } catch(e){ console.warn('Pronun mount fail:', e); }
   }
