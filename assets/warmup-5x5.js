@@ -197,22 +197,31 @@ const state = {
         stream=null; ctx=null; analyser=null; if(raf) cancelAnimationFrame(raf); raf=0;
         if(canvas){ const g=canvas.getContext('2d'); g.clearRect(0,0,canvas.width,canvas.height); }
       }
-  async function getResult(){
+ async function getResult(){
   return await new Promise((resolve)=>{
     const finish = ()=>{
       const blob = new Blob(chunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audio.addEventListener('loadedmetadata', ()=>{
-        const dur = (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : 0;
+        let dur = Number(audio.duration || 0);
+        if (!isFinite(dur) || dur <= 0) {
+          // fallback: Blob 크기 기반 (대략 32kbps opus 기준)
+          dur = blob.size / 4000; // 4000 bytes ≈ 1s
+        }
         URL.revokeObjectURL(url);
+
         const reader = new FileReader();
-        reader.onloadend = ()=> resolve({
-          base64: reader.result,
-          duration: dur,
-          blob,
-          mime: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm'
-        });
+        reader.onloadend = ()=>{
+          const full = String(reader.result||'');
+          const base64 = full.includes(',') ? full.split(',')[1] : full;
+          resolve({
+            base64,
+            duration: dur,
+            blob,
+            mime: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm'
+          });
+        };
         reader.readAsDataURL(blob);
       }, { once:true });
     };
@@ -222,6 +231,7 @@ const state = {
     } else finish();
   });
 }
+
 
       return { start, stop, getResult };
     }
