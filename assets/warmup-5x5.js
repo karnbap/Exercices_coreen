@@ -197,22 +197,32 @@ const state = {
         stream=null; ctx=null; analyser=null; if(raf) cancelAnimationFrame(raf); raf=0;
         if(canvas){ const g=canvas.getContext('2d'); g.clearRect(0,0,canvas.width,canvas.height); }
       }
-      async function getResult(){
-        return await new Promise((resolve)=>{
-          const finish = ()=>{
-            const blob = new Blob(chunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
-            const reader = new FileReader(); const audio = new Audio(URL.createObjectURL(blob));
-            audio.addEventListener('loadedmetadata', ()=>{
-              const duration = (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : 0.05;
-              reader.onloadend = ()=> resolve({ base64: reader.result, duration, blob, mime: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
-              reader.readAsDataURL(blob);
-            }, { once:true });
-          };
-          if(mediaRecorder && mediaRecorder.state==='recording'){
-            mediaRecorder.addEventListener('stop', finish, { once:true }); mediaRecorder.stop();
-          } else finish();
+  async function getResult(){
+  return await new Promise((resolve)=>{
+    const finish = ()=>{
+      const blob = new Blob(chunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.addEventListener('loadedmetadata', ()=>{
+        const dur = (isFinite(audio.duration) && audio.duration > 0) ? audio.duration : 0;
+        URL.revokeObjectURL(url);
+        const reader = new FileReader();
+        reader.onloadend = ()=> resolve({
+          base64: reader.result,
+          duration: dur,
+          blob,
+          mime: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm'
         });
-      }
+        reader.readAsDataURL(blob);
+      }, { once:true });
+    };
+    if(mediaRecorder && mediaRecorder.state==='recording'){
+      mediaRecorder.addEventListener('stop', finish, { once:true });
+      mediaRecorder.stop();
+    } else finish();
+  });
+}
+
       return { start, stop, getResult };
     }
   
@@ -746,9 +756,10 @@ function updatePronunGuard(card, { accuracy=null, res=null } = {}){
         // 조용히 무시(다음 진입 때 또 시도)
       }
     }
-      function isNextAllowed(){
-    return (state.evalCount || 0) >= 2;  // ✅ 최소 2회 평가
-  }
+function isNextAllowed(){
+  return true; // ✅ 클릭 차단 로직도 무력화
+}
+
   window.isNextAllowed = isNextAllowed;
   
  
@@ -784,37 +795,28 @@ function getTotalEvalCount(){
   });
   return n;
 }
-function canGoNext(){ return getTotalEvalCount() >= 2; }
+function canGoNext(){
+  return true; // ✅ 항상 통과
+}
+
 
 function updateNextAvailability(){
-  const ok = canGoNext();
+  // ✅ 항상 활성화
   document.querySelectorAll('[data-next-speed],[data-next-exo]').forEach(btn=>{
-    btn.disabled = !ok;
-    btn.classList.toggle('btn-primary', ok);
-    btn.classList.toggle('btn-outline', !ok);
-    btn.setAttribute('aria-disabled', String(!ok));
+    btn.disabled = false;
+    btn.classList.add('btn-primary');
+    btn.classList.remove('btn-outline');
+    btn.setAttribute('aria-disabled', 'false');
   });
-} // ← 반드시 닫아줘!
+}
+
 
 // ===== 클릭 가드(속도 전환/다음 연습문제) =====
 function bindNextGuards(){
-  document.querySelectorAll('[data-next-speed]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      if (!canGoNext()){
-        e.preventDefault(); e.stopImmediatePropagation();
-        alert('🎤 발음 연습(녹음+평가) 최소 2회!\nEnregistrez et évaluez au moins 2 fois.');
-      }
-    }, true);
-  });
-  document.querySelectorAll('[data-next-exo]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      if (!canGoNext()){
-        e.preventDefault(); e.stopImmediatePropagation();
-        alert('🎤 발음 연습(녹음+평가) 최소 2회!\nEnregistrez et évaluez au moins 2 fois.');
-      }
-    }, true);
-  });
+  // ✅ 가드 비활성화(그냥 통과)
+  // 아무 것도 하지 않음
 }
+
 
 
   // 다음 연습문제(예: 본 퀴즈 페이지로 이동)
