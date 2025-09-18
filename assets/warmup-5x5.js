@@ -564,56 +564,54 @@ function updatePronunGuard(card, { accuracy=null, res=null } = {}){
         .forEach((d,idx)=> d.classList.toggle('on', idx < doneCount));
     }
   
-    function checkFinish(){
-      const keys = BUNDLES.map(b=>b.key);
-      const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
-      updateProgress(doneCount);
-  
-      const box = document.getElementById('finish-wrap');
-      if(!box) return;
-  
-      const next = getNextSpeed(state.speed);
-      const nextLabel = next ? `${next.toFixed(1)}×` : '';
-  
-      // ✅ 진행률 안내 문구(완료 전에도 노출)
-      const subtitle = (doneCount === keys.length)
-        ? (next ? 'Passe à la vitesse suivante / 다음 속도로 넘어가요.'
-                : 'Passe aux exercices / 다음 연습문제로 이동해요.')
-        : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
-  
-     box.innerHTML = `
-      box.classList.remove('hidden');
-updateNextAvailability();
+function checkFinish(){
+  const keys = BUNDLES.map(b=>b.key);
+  const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
+  updateProgress(doneCount);
 
+  const box = document.getElementById('finish-wrap');
+  if(!box) return;
+
+  const next = getNextSpeed(state.speed);
+  const nextLabel = next ? `${next.toFixed(1)}×` : '';
+
+  const subtitle = (doneCount === keys.length)
+    ? (next ? 'Passe à la vitesse suivante / 다음 속도로 넘어가요.'
+            : 'Passe aux exercices / 다음 연습문제로 이동해요.')
+    : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
+
+  // ✅ HTML만 템플릿에 넣는다
+  box.innerHTML = `
     <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
       <div class="text-lg font-extrabold">🎉 Warming up</div>
       <div class="text-slate-600 mt-1">${subtitle}</div>
     </div>
     <div class="flex flex-wrap gap-2 justify-center">
-      <!-- 끝내기(전송) 버튼은 항상 활성 -->
       <button id="btn-finish-send" class="btn btn-primary btn-lg">
         <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
       </button>
-  
-      <!-- 다음 속도: 남아 있으면 활성, 없으면 비활성 표시 -->
+
       ${
         next
           ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">
                ${nextLabel} → Vitesse suivante / 다음 속도
              </button>`
           : `<button id="btn-next-speed" class="btn btn-secondary btn-lg" disabled
-                   style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
+               style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
       }
-  
-      <!-- 다음 연습문제: 항상 보이되, 전송 전엔 비활성 -->
+
       <a id="btn-go-ex" href="numbers-exercises.html"
          class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
         <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
       </a>
-    </div>`;
-  
-      box.classList.remove('hidden');
-      updateNextAvailability(); // ✅ 페이지 렌더 시점에서도 2회 이상이면 활성화
+    </div>
+  `;
+
+  // ✅ 이 두 줄은 템플릿 바깥에서 실행
+  box.classList.remove('hidden');
+  updateNextAvailability();
+
+  // 다음 연습문제 클릭 가드(지금은 항상 통과지만, 안전하게 유지)
   document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
     if (!window.isNextAllowed || !window.isNextAllowed()){
       e.preventDefault();
@@ -621,26 +619,21 @@ updateNextAvailability();
       window.WU_shake && window.WU_shake();
     }
   });
-  
-  
-      // --- 전송 버튼 (성공/실패 상관없이 다음 단계 해제 + 로컬 폴백 저장) ---
-      document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
+
+  // 전송 버튼
+  document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
     const btn = e.currentTarget;
     const orig = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
-  
+
     try{
       const ok = await sendResults();
-      if (ok) {
-        alert('✅ Résultats envoyés. / 결과 전송 완료');
-      } else {
-        alert('⚠️ Réseau occupé. Résultats sauvegardés localement. Ils seront renvoyés automatiquement. / 네트워크 문제: 결과를 기기에 임시 저장했고, 다음에 자동 재전송됩니다.');
-      }
+      if (ok) alert('✅ Résultats envoyés. / 결과 전송 완료');
+      else    alert('⚠️ Réseau occupé. Résultats sauvegardés localement. / 네트워크 문제: 임시 저장');
     }catch(_){
       alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
     }finally{
-      // ✅ 성공/실패와 무관하게 다음 연습문제 버튼 활성화
       const goEx = document.getElementById('btn-go-ex');
       if (goEx){
         goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
@@ -651,19 +644,19 @@ updateNextAvailability();
       btn.innerHTML = orig;
     }
   }, { once:true });
-  
-  
-      // 다음 속도로 재시작
-      const ns = document.getElementById('btn-next-speed');
-      if (ns && next) {
-        ns.addEventListener('click', ()=>{
-          state.speed = next;
-          state.startISO = new Date().toISOString(); state.startMs = Date.now();
-          renderAll();
-          window.scrollTo({ top: document.getElementById('warmup-screen').offsetTop - 8, behavior:'smooth' });
-        }, { once:true });
-      }
-    }
+
+  // 다음 속도로 재시작
+  const ns = document.getElementById('btn-next-speed');
+  if (ns && next) {
+    ns.addEventListener('click', ()=>{
+      state.speed = next;
+      state.startISO = new Date().toISOString(); state.startMs = Date.now();
+      renderAll();
+      window.scrollTo({ top: document.getElementById('warmup-screen').offsetTop - 8, behavior:'smooth' });
+    }, { once:true });
+  }
+}
+
   
     // --- 결과 전송(타임아웃 + 로컬 저장 폴백 포함) ---
     async function sendResults(){
