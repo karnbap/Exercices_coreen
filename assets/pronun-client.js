@@ -375,7 +375,7 @@
         setTimeout(()=>{ ui.btnStop.disabled = false; }, 1000);
 
         // Stop을 눌렀을 때 결과 정리
-        ui.btnStop.addEventListener('click', async onStopOnce, { once:true });
+        ui.btnStop.addEventListener('click', onStopOnce, { once:true });
         async function onStopOnce(){
           try{
             ui.btnStop.disabled = true;
