@@ -841,6 +841,7 @@ function bindNextGuards(){
     }
   
     function WU_go(mode){
+      window.WU_go = WU_go;
       state.speed = (mode==='slow')?0.7 : (mode==='fast')?1.5 : 1.0;
   
       state.name = getStudentName();
