@@ -814,12 +814,13 @@ function updateNextAvailability(){
 
   [btnSpeed, btnNextEx].forEach(b=>{
     if(!b) return;
-    b.disabled = false;
+    b.disabled = false; // ← 추가: 버튼 타입일 때도 열어줌
     b.removeAttribute('aria-disabled');
     b.classList?.remove('pointer-events-none','opacity-50');
     b.title = '';
   });
 }
+
 
 
 
@@ -856,18 +857,13 @@ function bindNextGuards(){
         setTimeout(()=>wu.classList.remove('flash-on'), 900);
       }
     }
-window.WU_go = function(mode){
-  const map = { slow:0.7, normal:1.0, fast:1.5 };
-  state.speed = map[String(mode)||'normal'] ?? 1.0;
-  try{ renderAll(); }catch(e){ console.error('renderAll failed:', e); }
-  document.getElementById('btn-repeat-2')?.classList.add('active');
-  document.getElementById('btn-repeat-3')?.classList.remove('active');
-};
+
 
 
   
 // 추가: 초기 진입 시 버튼은 잠그고, 이후 시도되면 열림
 document.addEventListener('DOMContentLoaded', ()=>{
+  tryResendPending();
   updateNextAvailability();
 
   const speedBtn = document.querySelector('#btnNextSpeed,#btn-next-speed');
@@ -886,7 +882,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     location.href = href;
   });
 });
-  
+})();
+
   
 
 
