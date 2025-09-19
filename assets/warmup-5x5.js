@@ -538,13 +538,14 @@ function updatePronunGuard(card, { accuracy=null, res=null } = {}){
       card.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
   
       // 피드백
-    fbBox.querySelector('.feedback-body').innerHTML =
+fbBox.querySelector('.feedback-body').innerHTML =
   `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
    <div class="text-slate-600">
      Référence: <code>${esc(refDisplay)}</code><br/>
      Reconnu: <code>${esc(transcript || '(vide)')}</code>
    </div>`;
 fbBox.classList.remove('hidden');
+
 
   
       updatePronunGuard(card, { accuracy, res: srv }); // 점수 0.8↑면 passed
@@ -855,14 +856,12 @@ function bindNextGuards(){
         setTimeout(()=>wu.classList.remove('flash-on'), 900);
       }
     }
-   window.WU_go = function(mode){
-  const m = String(mode||'normal');
-  const map = { slow: 0.7, normal: 1.0, fast: 1.5 };
-  state.speed = map[m] ?? 1.0;
-  try { renderAll(); } catch (e) { console.error('renderAll failed:', e); }
-  const r2 = document.getElementById('btn-repeat-2');
-  const r3 = document.getElementById('btn-repeat-3');
-  r2?.classList.add('active'); r3?.classList.remove('active');
+window.WU_go = function(mode){
+  const map = { slow:0.7, normal:1.0, fast:1.5 };
+  state.speed = map[String(mode)||'normal'] ?? 1.0;
+  try{ renderAll(); }catch(e){ console.error('renderAll failed:', e); }
+  document.getElementById('btn-repeat-2')?.classList.add('active');
+  document.getElementById('btn-repeat-3')?.classList.remove('active');
 };
 
 
