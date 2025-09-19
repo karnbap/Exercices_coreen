@@ -538,13 +538,14 @@ function updatePronunGuard(card, { accuracy=null, res=null } = {}){
       card.classList.add('ring-2','ring-emerald-300','bg-emerald-50');
   
       // 피드백
-      fbBox.querySelector('.feedback-body').innerHTML =
-        `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
-         <div class="text-sm">
-           <div><b>Référence:</b> <span class="korean-font">${refDisplay}</span></div>
-           <div class="mt-1"><b>Ma prononciation:</b> <span class="korean-font">${esc(transcript||'')}</span></div>
-         </div>`;
-      fbBox.classList.remove('hidden');
+    fbBox.querySelector('.feedback-body').innerHTML =
+  `<div class="text-slate-800 mb-1">Score: <b>${percent}%</b></div>
+   <div class="text-slate-600">
+     Référence: <code>${esc(refDisplay)}</code><br/>
+     Reconnu: <code>${esc(transcript || '(vide)')}</code>
+   </div>`;
+fbBox.classList.remove('hidden');
+
   
       updatePronunGuard(card, { accuracy, res: srv }); // 점수 0.8↑면 passed
       checkFinish();
@@ -854,7 +855,17 @@ function bindNextGuards(){
         setTimeout(()=>wu.classList.remove('flash-on'), 900);
       }
     }
-    window.WU_go = WU_go;
+   window.WU_go = function(mode){
+  const m = String(mode||'normal');
+  const map = { slow: 0.7, normal: 1.0, fast: 1.5 };
+  state.speed = map[m] ?? 1.0;
+  try { renderAll(); } catch (e) { console.error('renderAll failed:', e); }
+  const r2 = document.getElementById('btn-repeat-2');
+  const r3 = document.getElementById('btn-repeat-3');
+  r2?.classList.add('active'); r3?.classList.remove('active');
+};
+
+
   
 // 추가: 초기 진입 시 버튼은 잠그고, 이후 시도되면 열림
 document.addEventListener('DOMContentLoaded', ()=>{
