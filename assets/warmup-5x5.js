@@ -840,24 +840,26 @@ function bindNextGuards(){
     return v || state.name || 'Élève';
     }
   
-    function WU_go(mode){
-      window.WU_go = WU_go;
-      state.speed = (mode==='slow')?0.7 : (mode==='fast')?1.5 : 1.0;
-  
-      state.name = getStudentName();
-      state.startISO = new Date().toISOString(); state.startMs = Date.now();
-  
-      document.getElementById('mode-picker')?.classList.add('hidden');
-      const wu = document.getElementById('warmup-screen'); wu?.classList.remove('hidden');
-  
-      renderAll();
-  
-      if (wu){
-        window.scrollTo({ top: wu.offsetTop-8, behavior:'smooth' });
-        wu.classList.remove('flash-on'); void wu.offsetWidth; wu.classList.add('flash-on');
-        setTimeout(()=>wu.classList.remove('flash-on'), 900);
-      }
-    }
+   function WU_go(mode){
+  state.speed = (mode==='slow')?0.7 : (mode==='fast')?1.5 : 1.0;
+
+  state.name = getStudentName();
+  state.startISO = new Date().toISOString(); state.startMs = Date.now();
+
+  document.getElementById('mode-picker')?.classList.add('hidden');
+  const wu = document.getElementById('warmup-screen'); wu?.classList.remove('hidden');
+
+  renderAll();
+
+  if (wu){
+    window.scrollTo({ top: wu.offsetTop-8, behavior:'smooth' });
+    wu.classList.remove('flash-on'); void wu.offsetWidth; wu.classList.add('flash-on');
+    setTimeout(()=>wu.classList.remove('flash-on'), 900);
+  }
+}
+// ★ 추가: 함수 정의 “바로 아래” 전역으로 노출
+window.WU_go = WU_go;
+
 
 
 
