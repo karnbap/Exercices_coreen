@@ -748,14 +748,10 @@ const v = document.querySelector('#student-name')?.value?.trim();
 $('#btnNext').addEventListener('click', () => {
   if (!requireName()) return;
 
-  // 통일 규칙: 발음 평가는 최소 2회 (점수 무관)
-  if (!isNextAllowed()) {
-    alert(
-      "👉 Enregistrez et évaluez votre prononciation au moins 2 fois.\n" +
-      "👉 발음을 최소 2회 녹음·평가해 주세요."
-    );
-    return;
-  }
+ if (!isNextAllowed()) {
+  // 팝업 제거: 진행만 막고 조용히 반환
+  return;
+}
 
   if (S.idx < S.qs.length - 1) { S.idx++; render(); }
 });
