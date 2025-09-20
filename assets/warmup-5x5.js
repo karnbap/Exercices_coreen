@@ -620,7 +620,7 @@ document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
   location.href = href;
 });
 
-  });
+
 
   // 전송 버튼
   document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
