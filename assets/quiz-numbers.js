@@ -1,3 +1,7 @@
+// /assets/quiz-numbers.js
+console.log('[quiz-numbers] build=2025-09-20 02:45');
+
+
 /* /assets/quiz-numbers.js (final)
  * Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
  * - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
