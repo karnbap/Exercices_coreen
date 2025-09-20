@@ -613,13 +613,13 @@ function checkFinish(){
   box.classList.remove('hidden');
   updateNextAvailability();
 
-  // 다음 연습문제 클릭 가드(지금은 항상 통과지만, 안전하게 유지)
-  document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
-    if (!window.isNextAllowed || !window.isNextAllowed()){
-      e.preventDefault();
-      alert("👉 Évalue ta prononciation au moins 2 fois.\n👉 발음을 최소 2회 녹음·평가해 주세요.");
-      window.WU_shake && window.WU_shake();
-    }
+document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
+  // ✅ 가드 없이 바로 이동
+  e.preventDefault();
+  const href = e.currentTarget.getAttribute('href') || '/assignments/numbers-exercises.html';
+  location.href = href;
+});
+
   });
 
   // 전송 버튼
@@ -765,8 +765,9 @@ function checkFinish(){
       }
     }
 function isNextAllowed(){
-  return true; // ✅ 클릭 차단 로직도 무력화
+  return true; // 항상 허용
 }
+
 
   window.isNextAllowed = isNextAllowed;
   
@@ -811,15 +812,15 @@ function canGoNext(){
 function updateNextAvailability(){
   const btnSpeed  = document.querySelector('#btnNextSpeed,#btn-next-speed');
   const btnNextEx = document.querySelector('#btnNextExercise,#btn-go-ex');
-
   [btnSpeed, btnNextEx].forEach(b=>{
     if(!b) return;
-    b.disabled = false; // ← 추가: 버튼 타입일 때도 열어줌
+    b.disabled = false;
     b.removeAttribute('aria-disabled');
     b.classList?.remove('pointer-events-none','opacity-50');
     b.title = '';
   });
 }
+
 
 
 
