@@ -47,6 +47,7 @@
     <div class="topbar">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 text-sm text-slate-600">
+        <div class="flex items-center gap-3 text-sm text-slate-600">
   <i class="fa-solid fa-water"></i>
   <span>made by 성일, Pongdang · <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a></span>
 </div>
@@ -124,60 +125,14 @@
         made by 성일, Pongdang · Lapeace29@gmail.com
       </footer>
     </main>
-  <script>window.PONGDANG_FN_BASE='/.netlify/functions';</script>
-<script defer src="../assets/student-gate.js"></script>
+  
+<script>window.PONGDANG_FN_BASE='/.netlify/functions';</script>
+<script defer src="../assets/student-gate.js"></script>   <!-- ★ 추가 -->
 <script defer src="../assets/results-compat.js?v=4.4"></script>
 <script defer src="../assets/live-stt.js"></script>
 <script defer src="../assets/pronun-client.js?v=4.6"></script>
+<script src="../assets/quiz-numbers.js?v=20250920-0300"></script>
 
-<!-- ✅ 다음 문제 이동 가드 해제: quiz-numbers.js보다 먼저 둠 -->
-<script>
-// 1) 논리 가드 무력화
-window.isNextAllowed = () => true;
-
-// 2) 버튼 잠금 해제
-function unlockNextButtons() {
-  const sels = [
-    '#btnNext', '#btnNextExos', '#go-next', '#btnToExercises', '#btn-go-ex',
-    '[data-action="go-next"]', '[data-next]'
-  ];
-  document.querySelectorAll(sels.join(',')).forEach(btn => {
-    try {
-      btn.disabled = false;
-      btn.classList?.remove('pointer-events-none','opacity-50');
-      btn.removeAttribute?.('aria-disabled');
-      btn.title = '';
-    } catch(_) {}
-  });
-}
-// 초기/갱신 시점에 반복 호출
-document.addEventListener('DOMContentLoaded', unlockNextButtons);
-document.addEventListener('eval:updated', unlockNextButtons);
-document.addEventListener('click', (e)=>{
-  if (e.target.closest('#btnEval,#btn-eval,[data-action="eval"]')) {
-    setTimeout(unlockNextButtons, 0);
-  }
-});
-
-// (선택) 혹시 외부 스크립트가 다시 잠그면 바로 풀도록 감시자 추가
-new MutationObserver(unlockNextButtons).observe(document.body, {subtree:true, attributes:true, attributeFilter:['disabled','class','aria-disabled']});
-</script>
-
-
-<!-- ✅ 최신만 유지 -->
-<script src="../assets/quiz-numbers.js?v=20250922-0130" defer></script>
-
-
-// 초기/갱신 타이밍마다 열어두기
-document.addEventListener('DOMContentLoaded', unlockNextButtons);
-document.addEventListener('eval:updated', unlockNextButtons);   // 평가 로직이 이벤트 쏘면 여기서도 언락
-document.addEventListener('click', (e)=>{
-  if (e.target.closest('#btnEval,#btn-eval,[data-action="eval"]')) {
-    // 평가 버튼 눌러도 곧바로 풀어둠
-    setTimeout(unlockNextButtons, 0);
-  }
-});
-</script>
 
 
 <script src="../assets/quiz-numbers.js?v=20250922-0130" defer></script>
