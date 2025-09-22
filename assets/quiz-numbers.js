@@ -1,5 +1,11 @@
 // /assets/quiz-numbers.js
-console.log('[quiz-numbers] build=2025-09-20 02:45');
+console.log('[quiz-numbers] build=2025-09-22 01:00, path=', location.pathname);
+
+const IS_EX_PAGE = /numbers-exercises/i.test(location.pathname); // ← 경로 가드(폴더 포함)
+if (!IS_EX_PAGE) {
+  console.log('[quiz-numbers] skip: not exercises page');
+}
+
 
 
 /* /assets/quiz-numbers.js (final)
@@ -15,6 +21,41 @@ console.log('[quiz-numbers] build=2025-09-20 02:45');
 
 (function () {
   'use strict';
+  // === ensure scaffold (필수 DOM이 없으면 자동 생성) ===
+(function ensureScaffold(){
+  // 진행바
+  if (!document.getElementById('sticky55')) {
+    const dv = document.createElement('div');
+    dv.id = 'sticky55'; dv.className = 'hidden';
+    document.body.prepend(dv);
+  }
+  if (!document.getElementById('progressText') || !document.getElementById('progressBar')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex items-center gap-2 my-2';
+    wrap.innerHTML = `
+      <div id="progressText" class="text-sm text-slate-600">Question 0 / 0</div>
+      <div class="w-40 h-2 bg-slate-200 rounded overflow-hidden">
+        <div id="progressBar" class="h-2 bg-indigo-500" style="width:0%"></div>
+      </div>`;
+    document.body.appendChild(wrap);
+  }
+  // 문제 영역
+  if (!document.getElementById('qArea')) {
+    const q = document.createElement('div');
+    q.id = 'qArea';
+    document.body.appendChild(q);
+  }
+  // 네비게이션
+  if (!document.getElementById('btnPrev') || !document.getElementById('btnNext') || !document.getElementById('btnFinish')) {
+    const nav = document.createElement('div');
+    nav.className = 'mt-3 flex gap-2';
+    nav.innerHTML = `
+      <button id="btnPrev"   class="btn">← Précédent</button>
+      <button id="btnNext"   class="btn btn-primary">Suivant →</button>
+      <button id="btnFinish" class="btn btn-secondary hidden">Terminer</button>`;
+    document.body.appendChild(nav);
+  }
+})();
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
@@ -445,13 +486,18 @@ Pronun.mount(mount, {
   }
 }
 
-  function refTextResolver(q, refOverride) {
-    if (refOverride) return String(refOverride || '');
-    if (q.type === 'choice') return q.answer;
-    if (q.type === 'fr_prompt_ko') return q.ko;
-    if (q.type === 'dictation') {     const reply = $('.input-reply-ko')?.value || '';     return reply || q.ko; // 입력 전엔 원문으로 안내, 입력하면 학생 답 기준   }
-    return '';
+function refTextResolver(q, refOverride) {
+  if (refOverride) return String(refOverride || '');
+  if (q.type === 'choice') return q.answer;
+  if (q.type === 'fr_prompt_ko') return q.ko;
+  if (q.type === 'dictation') {
+    const el = document.querySelector('.input-reply-ko');
+    const reply = el && el.value ? el.value : '';
+    // 입력 전엔 원문, 입력하면 학생 답 기준
+    return reply || q.ko;
   }
+  return '';
+}
 
   // ===== Interactions =====
   function onTextInput(v) {
@@ -739,29 +785,41 @@ const v = document.querySelector('#student-name')?.value?.trim();
     S.name = v; return true;
   }
 
-  // ===== Nav events =====
-  $('#btnPrev').addEventListener('click', () => {
-    // 첫 문제에서 ← 누르면 웜업으로 이동
-    if (S.idx <= 0) {
-      window.location.href = 'numbers-warmup.html';
-      return;
-    }
-    S.idx--; render();
-  });
+// ===== Nav events (null-safe) =====
+const prevBtn   = $('#btnPrev');
+const nextBtn   = $('#btnNext');
+const finishBtn = $('#btnFinish');
 
-$('#btnNext').addEventListener('click', () => {
-  if (!requireName()) return;
-
- if (!isNextAllowed()) {
-  // 팝업 제거: 진행만 막고 조용히 반환
-  return;
-}
-
-  if (S.idx < S.qs.length - 1) { S.idx++; render(); }
+prevBtn?.addEventListener('click', () => {
+  // 첫 문제에서 ← 누르면 웜업으로 이동
+  if (S.idx <= 0) {
+    window.location.href = 'numbers-warmup.html';
+    return;
+  }
+  S.idx--; render();
 });
 
-  $('#btnFinish').addEventListener('click', () => { if (!requireName()) return; finish(); });
-  window.addEventListener('beforeunload', cleanupAudio);
+nextBtn?.addEventListener('click', () => {
+  if (!requireName()) return;
+
+  if (!isNextAllowed()) {
+    // 팝업 없이 조용히 막기
+    return;
+  }
+
+  if (S.idx < S.qs.length - 1) {
+    S.idx++;
+    render();
+  }
+});
+
+// 마지막 문제에서만 보이게 처리하는 로직은 updateNav()에서 함
+finishBtn?.addEventListener('click', () => {
+  if (!requireName()) return;
+  finish();
+});
+
+window.addEventListener('beforeunload', cleanupAudio);
 
   // ===== Start =====
   S.qs = getQuestions();
