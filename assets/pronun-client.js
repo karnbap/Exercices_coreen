@@ -1,5 +1,7 @@
-// assets/pronun-client.js  (v4.6 final)
-// 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void, ui:'classic'|'warmup' })
+// assets/pronun-client.js  (v4.8 final)
+// 공용 발음기: Pronun.mount(el, { getReferenceText:()=>string, onResult:(res)=>void, ui:'classic'|'warmup', maxSeconds?:number })
+// - 실시간 경과시간 표시(예: "🎙️ 녹음 중… 1.3 s")
+// - maxSeconds(기본 12초) 옵션/전역 오버라이드 지원(PRONUN_MAX_SEC)
 // - 짧은 녹음/에러 시에도 항상 재녹음 가능(버튼 복구)
 // - 서버측 보정 비활성 요청(strictTranscript/disableLM)
 // - 공용 위젯이라 모든 미래 연습문제에 자동 적용
@@ -7,7 +9,7 @@
   'use strict';
 
   // 중복 로드 가드
-  if (global.Pronun && Number(global.Pronun.__v||0) >= 46) return;
+  if (global.Pronun && Number(global.Pronun.__v||0) >= 48) return;
 
   // 기본 UI 모드(외부에서 window.PRONUN_UI_DEFAULT='warmup' 등 지정 가능)
   global.PRONUN_UI_DEFAULT = global.PRONUN_UI_DEFAULT || 'classic';
@@ -16,7 +18,7 @@
   const CFG = {
     endpoint: (global.PONGDANG_FN_BASE || '/.netlify/functions') + '/analyze-pronunciation',
     minSec: 1.0,           // ⏱️ 최소 발화 길이
-    maxSec: 12,
+    maxSec: 12,            // ⏱️ 최대 녹음 길이(실시간 타이머/자동정지에 사용)
     canvasW: 240, canvasH: 40,
     passBase: 0.75, passShortRef: 0.80, shortRefLen: 4,
     lowSimil: 0.35, lenRatioGarbage: 2.5,
@@ -26,9 +28,12 @@
       '유튜브','클릭','이벤트','특가','광고주','제휴','비디오','구매','할인'
     ]
   };
-  // 외부 오버라이드(선택)
+  // 전역 오버라이드(선택)
   if (Number.isFinite(global.PRONUN_MIN_SEC)) {
     CFG.minSec = Math.max(0.5, Number(global.PRONUN_MIN_SEC));
+  }
+  if (Number.isFinite(global.PRONUN_MAX_SEC)) {
+    CFG.maxSec = Math.max(CFG.minSec + 1, Number(global.PRONUN_MAX_SEC));
   }
 
   // ===== Utils =====
@@ -39,7 +44,7 @@
     for (const k in attrs) {
       if (k === 'class') el.className = attrs[k];
       else if (k === 'html') el.innerHTML = attrs[k];
-      else el.setAttribute(k, attrs[k]);
+      else if (attrs[k] !== undefined) el.setAttribute(k, attrs[k]);
     }
     kids.forEach(k => el.appendChild(typeof k === 'string' ? document.createTextNode(k) : k));
     return el;
@@ -95,6 +100,7 @@
     return 1 - (dp[m][n] / Math.max(m,n));
   }
 
+  // 숫자/날짜 간단 보정(로컬)
   function localForceHangulNumbers(s){
     let x = String(s||'');
     x = x.replace(/\b1\b/g,'일').replace(/\b2\b/g,'이');
@@ -103,6 +109,7 @@
     return x;
   }
 
+  // 참조 형태로 유도(자주 헷갈리는 페어 교정)
   function coerceTowardsRef(refRaw, hypRaw) {
     let out = hypRaw; const ref = refRaw.replace(/\s+/g,''), hyp = hypRaw.replace(/\s+/g,'');
     const RULES = [
@@ -341,7 +348,7 @@
     const ok = score >= need;
 
     const out = { status:'ok', transcript, accuracy:score, score, ok, passed:ok, needsRetry, duration:lastDur };
-    ui.msg.textContent = ok ? '✅ Bon travail ! / 좋아요!' : 'ℹ️ Encore une fois, essaie plus clairement. / 한 번 더 또박또박!';
+    ui.msg.textContent = ok ? `✅ ${lastDur.toFixed(1)} s · Bon travail ! / 좋아요!` : `ℹ️ ${lastDur.toFixed(1)} s · 한 번 더 또박또박!`;
     try { onResult?.(out); } catch(_){}
     evalBusy = false;
 
@@ -355,12 +362,35 @@
     const host = (typeof root === 'string') ? $(root) : root;
     if (!host) return;
 
+    // 인스턴스별 오버라이드
+    if (Number.isFinite(opts.maxSeconds)) {
+      CFG.maxSec = Math.max(CFG.minSec + 1, Number(opts.maxSeconds));
+    }
+
     const getRef  = typeof opts.getReferenceText === 'function' ? opts.getReferenceText : ()=> '';
     const onResult= typeof opts.onResult === 'function' ? opts.onResult : ()=> {};
     const uiMode  = (opts.ui || global.PRONUN_UI_DEFAULT || 'classic');
 
     const ui = (uiMode === 'warmup') ? buildWarmupUI(host) : buildClassicUI(host);
     const R = makeRecorder(ui.canvas);
+
+    // 녹음 타이머(실시간 경과 표기)
+    let recStart = 0, recTimer = 0;
+    function startRecTimer(){
+      recStart = Date.now();
+      stopRecTimer();
+      recTimer = window.setInterval(()=>{
+        const sec = Math.min(CFG.maxSec, (Date.now() - recStart)/1000);
+        ui.msg.textContent = `🎙️ Enregistrement… / 녹음 중…  ${sec.toFixed(1)} s`;
+        // 최대길이 자동 정지
+        if (sec >= CFG.maxSec) {
+          try { ui.btnStop.click(); } catch(_){}
+        }
+      }, 100);
+    }
+    function stopRecTimer(){
+      if (recTimer) { clearInterval(recTimer); recTimer = 0; }
+    }
 
     // Start
     ui.btnStart.addEventListener('click', async ()=>{
@@ -369,14 +399,15 @@
         ui.btnStop.disabled  = true;
         ui.btnEval.disabled  = true;
         ui.msg.textContent   = '🎙️ Enregistrement… / 녹음 중…';
+        startRecTimer();
 
         const session = await R.start();
         // 최소 1초 지나야 Stop 활성(실수 방지)
         setTimeout(()=>{ ui.btnStop.disabled = false; }, 1000);
 
-        // Stop을 눌렀을 때 결과 정리
-        ui.btnStop.addEventListener('click', onStopOnce, { once:true });
-        async function onStopOnce(){
+        // Stop을 눌렀을 때 결과 정리 (한 세션에 한 번만)
+        const onStopOnce = async ()=>{
+          stopRecTimer();
           try{
             ui.btnStop.disabled = true;
             const out = await session.stop();
@@ -402,8 +433,11 @@
           } finally {
             try{ R.stop(); }catch(_){}
           }
-        }
+        };
+        // once: true라서 매 세션에 리스너가 누적되지 않음
+        ui.btnStop.addEventListener('click', onStopOnce, { once:true });
       }catch(_){
+        stopRecTimer();
         _recoverToReady(ui);
         ui.msg.textContent = '🎙️ 마이크 권한을 확인해 주세요 / Autorisez le micro';
       }
@@ -418,5 +452,5 @@
   }
 
   // ===== 공개 API =====
-  global.Pronun = { mount, __v: 46 };
+  global.Pronun = { mount, __v: 48 };
 })(window);
