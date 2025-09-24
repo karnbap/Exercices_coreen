@@ -12,7 +12,7 @@ if (!IS_EX_PAGE) {
  * Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
  * - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
  * - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL (Blob URL로 안정 재생)
- * - 규칙: 발음 녹음 먼저. (모든 문항: 발음 2회 평가했으면 다음 문제로 고고)
+ * - 규칙: 발음 녹음은 선택(스킵 가능). Next는 이름 입력만 통과 조건(정답 확인/녹음과 무관).
  * - Q1에서 ← 누르면 numbers-warmup.html로 이동
  * - 끝내기: 결과 전송 + 요약 화면 표시 + 문항별 발음 테이블
  * - 학생 화면엔 H1/H2(힌트 카운트) 숨김: <span class="hint-metrics">…</span> (CSS에서 display:none)
@@ -21,7 +21,53 @@ if (!IS_EX_PAGE) {
 
 (function () {
   'use strict';
+
+  if (!IS_EX_PAGE) {
+    console.log('[quiz-numbers] abort: not exercises page');
+    return;
+  }
+
   // === ensure scaffold (필수 DOM이 없으면 자동 생성) ===
+  (function ensureScaffold(){
+    // 진행바
+    if (!document.getElementById('sticky55')) {
+      const dv = document.createElement('div');
+      dv.id = 'sticky55'; dv.className = 'hidden';
+      document.body.prepend(dv);
+    }
+    if (!document.getElementById('progressText') || !document.getElementById('progressBar')) {
+      const wrap = document.createElement('div');
+      wrap.className = 'flex items-center gap-2 my-2';
+      wrap.innerHTML = `
+        <div id="progressText" class="text-sm text-slate-600">Question 0 / 0</div>
+        <div class="w-40 h-2 bg-slate-200 rounded overflow-hidden">
+          <div id="progressBar" class="h-2 bg-indigo-500" style="width:0%"></div>
+        </div>`;
+      document.body.appendChild(wrap);
+    }
+    // 문제 영역
+    if (!document.getElementById('qArea')) {
+      const q = document.createElement('div');
+      q.id = 'qArea';
+      document.body.appendChild(q);
+    }
+    // 네비게이션
+    if (!document.getElementById('btnPrev') || !document.getElementById('btnNext') || !document.getElementById('btnFinish')) {
+      const nav = document.createElement('div');
+      nav.className = 'mt-3 flex gap-2';
+      nav.innerHTML = `
+        <button id="btnPrev"   class="btn">← Précédent</button>
+        <button id="btnNext"   class="btn btn-primary">Suivant →</button>
+        <button id="btnFinish" class="btn btn-secondary hidden">Terminer</button>`;
+      document.body.appendChild(nav);
+    }
+  })();
+
+  // ⬇️ (여기부터 기존 로직 계속)
+  const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
+  ...
+})();
+
 (function ensureScaffold(){
   // 진행바
   if (!document.getElementById('sticky55')) {
@@ -209,13 +255,17 @@ function stopAudio() {
     }));
 
     const dictation = dictee.map((q, i) => ({
-      number: choice.length + fr_prompt_ko.length + i + 1, type: 'dictation',
+      number: choice.length + fr_prompt_ko.length + i + 1,
+      type: 'dictation',
       ko: q.ko, fr: q.fr, frAnswerGuide: q.guide, voice: q.voice, hints: q.hints,
-      userAnswer: { ko: "", replyKo: "" }, isCorrect: null,
+      userAnswer: { ko: "", replyKo: "" },
+      isCorrect: null,
+      textChecked: false,        // ⬅️ 추가
       listenCount: 0, hint1Count: 0, hint2Count: 0,
       pronunRequired: true, pronunAttempted: false, pronunPassed: false,
       pronunFails: 0, pronunAttempts: 0, lastPronunScore: null
     }));
+
 
     return [...choice, ...fr_prompt_ko, ...dictation];
   }
@@ -387,7 +437,30 @@ function stopAudio() {
       $('#dicKO', box).addEventListener('input', e => updateDictee('ko', e.target.value));
       $('#dicReply', box).addEventListener('input', e => updateDictee('replyKo', e.target.value));
 
-      renderPronun(card, q);
+// ... 기존 입력 UI 생성까지 동일 ...
+
+// ⬇️ 확인 버튼 추가
+const checkBtn = document.createElement('button');
+checkBtn.className = 'btn btn-primary mt-2';
+checkBtn.textContent = 'Vérifier / 정답 확인';
+checkBtn.addEventListener('click', checkDictee);
+card.appendChild(checkBtn);
+
+// ⬇️ 확인한 뒤에만 피드백 출력
+if (q.textChecked) {
+  const ok = q.isCorrect === true;
+  const res = document.createElement('div');
+  res.className = `mt-3 ${ok ? 'text-emerald-700' : 'text-rose-700'} font-semibold`;
+  res.innerHTML = ok
+    ? '✅ Correct ! 맞았습니다!'
+    : `❌ Incorrect. 정답: <b>${esc(q.ko)}</b>`;
+  card.appendChild(res);
+}
+
+// ⬇️ (중요) 이전 코드의 `renderPronun(card, q);` 호출은 삭제하고,
+// 확인을 누른 경우에만 나타나도록 helper로 위임
+renderPronunIfNeeded(card, q);
+
     }
 
     updateNav();
@@ -419,11 +492,13 @@ function renderPronunIfNeeded(card, q) {
   } else if (q.type === 'fr_prompt_ko' && q.textChecked === true) {
     renderPronun(card, q, q.ko);
   } else if (q.type === 'dictation') {
-    // dictation은 학생의 대답(replyKo)을 기준으로 평가해야 함 → ref 생략하여 resolver가 input 값을 사용
-    renderPronun(card, q);
+    // ✅ 받아쓰기: "정답 확인"을 누른 경우에만 표시
+    if (q.textChecked === true) {
+      renderPronun(card, q); // ref는 replyKo 우선 (refTextResolver 그대로 사용)
+    }
   }
-
 }
+
 
  function renderPronun(card, q, ref) {
   // 이미 그렸으면 재마운트 금지
@@ -475,7 +550,7 @@ Pronun.mount(mount, {
     else q.pronunFails = (q.pronunFails || 0) + 1;
 
     q.pronunAttempted = true;
-    q.pronunAttemptsOk = (q.pronunAttempts >= 2); // 2회 이상 시도 허용 규칙
+    q.pronunAttemptsOk = (q.pronunAttempts >= 1); // 1회 이상 시도 허용// 2회 이상 시도 허용 규칙
     updateNav();
   }
 });
@@ -525,22 +600,46 @@ function refTextResolver(q, refOverride) {
     q.pronunFails = 0; q.pronunAttempts = 0; q.lastPronunScore = null;
     render();
   }
-  function updateDictee(part, val) {
+ function updateDictee(part, val) {
   const q = S.qs[S.idx];
   q.userAnswer[part] = val;
 
-  // 둘 다 입력됐을 때 채점
+  // 입력 중에는 채점만 준비(진행버튼 잠금을 위해 isCorrect 갱신)
   const hasBoth = !!q.userAnswer.ko && !!q.userAnswer.replyKo;
   if (hasBoth) {
-    // 규칙: “정답 형태가 학생 답 안에 부분 포함돼도 정답”
     const ok = norm(q.userAnswer.ko).includes(norm(q.ko));
     q.isCorrect = !!ok;
   } else {
-    q.isCorrect = false; // 아직 미완성 → 오답 처리(총점 100% 방지)
+    q.isCorrect = false;
   }
 
+  // 🔁 여기서는 재렌더(발음 표시) 하지 않음 — 확인 버튼이 트리거
   updateNav();
 }
+  function checkDictee() {
+  const q = S.qs[S.idx];
+  if (!q || q.type !== 'dictation') return;
+
+  const hasBoth = !!(q.userAnswer.ko && q.userAnswer.replyKo);
+  if (!hasBoth) {
+    // 입력이 부족하면 확인 처리를 하지 않음(조용히 유지)
+    return;
+  }
+
+  const ok = norm(q.userAnswer.ko).includes(norm(q.ko));
+  q.isCorrect = !!ok;
+  q.textChecked = true;
+
+  // 발음 시도 상태 초기화(확인 후 새로 녹음 평가하도록)
+  q.pronunAttempted = false;
+  q.pronunPassed = false;
+  q.pronunFails = 0;
+  q.pronunAttempts = 0;
+  q.lastPronunScore = null;
+
+  render(); // 재렌더 → 위 조건에 따라 발음 위젯 표시
+}
+
 
   function showHint(n) {
     const q = S.qs[S.idx]; if (!q || !q.hints) return;
@@ -552,30 +651,7 @@ function refTextResolver(q, refOverride) {
   // 다음 허용 규칙 (발음 2회 평가했고)
 // ===== Interactions =====
 function isNextAllowed() {
-  const q = S.qs[S.idx]; 
-  if (!q) return false;
-
-  const attempts = q.pronunAttempts || 0;
-  const passed   = q.pronunPassed === true;
-
-  // 규칙: 발음 평가를 최소 2회 했으면 점수와 상관없이 통과
-  const pronunOK = passed || attempts >= 2;
-
-  // 발음 필수인데 아직 조건 못 채우면 false
-  if (q.pronunRequired && !pronunOK) return false;
-
-  // 발음 조건 충족 시 → 다른 답 조건은 무시하고 바로 true
-  if (pronunOK) return true;
-
-  // (폴백: 아직 발음 안했으면 기존 조건 적용)
-  if (q.type === 'choice') {
-    return !!q.userAnswer && q.userAnswer === q.answer;
-  } else if (q.type === 'fr_prompt_ko') {
-    return !!q.userAnswer && q.textChecked === true;
-  } else if (q.type === 'dictation') {
-    return !!q.userAnswer.ko && !!q.userAnswer.replyKo;
-  }
-  return false;
+  return true; // 무조건 다음 가능
 }
 
 
@@ -631,7 +707,11 @@ const name = document.querySelector('#student-name')?.value?.trim() || 'Élève'
       questions: S.qs.map(q => ({
         number: q.number,
         type: q.type,
-        ko: q.type === 'fr_prompt_ko' ? q.ko : (q.type === 'dictation' ? q.ko : q.context),
+  ko: (q.type === 'fr_prompt_ko')
+        ? q.ko
+        : (q.type === 'dictation'
+            ? q.ko
+            : (q.answer || q.context)),
         fr: q.type === 'fr_prompt_ko' ? q.fr : (q.type === 'dictation' ? q.fr : ''),
         userAnswer: q.type === 'dictation' ? JSON.stringify(q.userAnswer) : (q.userAnswer || ''),
         isCorrect: !!q.isCorrect,
