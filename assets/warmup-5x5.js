@@ -545,20 +545,25 @@ function checkFinish(){
     ? 'Passe aux exercices / 다음 연습문제로 이동해요.'
     : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
 
-  box.innerHTML = `
-    <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
-      <div class="text-lg font-extrabold">🎉 Warming up</div>
-      <div class="text-slate-600 mt-1">${subtitle}</div>
-    </div>
-    <div class="flex flex-wrap gap-2 justify-center">
-      <button id="btn-finish-send" class="btn btn-primary btn-lg">
-        <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
-      </button>
-      <a id="btn-go-ex" href="numbers-exercises.html" class="btn btn-secondary btn-lg">
-        <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
-      </a>
-    </div>
-  `;
+box.innerHTML = `
+      <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
+        <div class="text-lg font-extrabold">🎉 Warming up</div>
+        <div class="text-slate-600 mt-1">${subtitle}</div>
+      </div>
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button id="btn-finish-send" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
+        </button>
+        <button id="btn-refaire" class="btn btn-secondary btn-lg">
+          Refaire (1.0× · ×2)
+        </button>
+        <a id="btn-go-ex" href="numbers-exercises.html"
+           class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
+          <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
+        </a>
+      </div>
+    `;
+
   box.classList.remove('hidden');
 
   document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
