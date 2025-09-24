@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="icon" href="../assets/favicon.ico">
+
   <style>
     :root{
       --ink:#0f172a; --muted:#64748b; --brand:#2563eb; --brand-700:#1d4ed8;
@@ -220,10 +222,9 @@
         <div class="text-slate-600 mt-1">Envoie le résultat au professeur.</div>
       </div>
       <div class="flex flex-wrap gap-2 justify-center">
-        <button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('slow')">0.7× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">1.0× Refaire</button>
-        <button class="btn btn-secondary btn-lg" onclick="WU_go('fast')">1.5× Refaire</button>
+<button id="btn-send" class="btn btn-primary btn-lg"><i class="fa-solid fa-paper-plane"></i> Terminer · Envoyer</button>
+        <button class="btn btn-secondary btn-lg" onclick="WU_go('normal')">Refaire (1.0× · ×2)</button>
+
       </div>
     </div>
   </div>
@@ -372,53 +373,40 @@
   <script defer src="../assets/live-stt.js"></script>
   <script defer src="/assets/warmup-5x5.js?v=4.7"></script>
 
-  <!-- 화면 전환 & 이름 게이트 & 반복버튼 & 모드 진입 -->
-  <script>
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const exp = document.getElementById('explanation-screen');
-      const pick = document.getElementById('mode-picker');
-      const wu   = document.getElementById('warmup-screen');
-  
-  // 반복은 ×2로 고정 (UI 없음)
-  if (window.WarmupPlayer) WarmupPlayer.setRepeat(2);
+<!-- 화면 전환 & 이름 게이트 (간소화) -->
+<script>
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const exp = document.getElementById('explanation-screen');
+    const wu  = document.getElementById('warmup-screen');
 
-      // 이름 → 모드 선택
-      const goBtn = document.getElementById('explanation-next-btn');
-      goBtn?.setAttribute('type','button');
-     goBtn?.addEventListener('click', ()=>{
-  const nameEl = document.getElementById('student-name');
-  const name = (nameEl?.value || '').trim();
-  if(!name){ alert("이름을 먼저 입력해 주세요 / Entre d'abord ton nom."); nameEl?.focus(); return; }
-  try{ localStorage.setItem('korean.studentName', name); }catch{}
-  exp.classList.add('hidden'); pick.classList.add('hidden'); wu.classList.remove('hidden');
-  if (typeof window.WU_go === 'function') { WU_go('normal'); } // 1.0× 고정
-  window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
-});
-
-
- // 항상 설명 → 워밍업 순서 (속도는 1.0× 고정)
-exp.classList.remove('hidden');
-pick.classList.add('hidden');
-wu.classList.add('hidden');
-
-
-      // 모드 선택 화면에서 카드 클릭 시 워밍업 진입 (세이프티넷)
-      pick.addEventListener('click',(e)=>{
-        const btn = e.target.closest('.seg-btn');
-        if(btn){
-          pick.classList.add('hidden'); wu.classList.remove('hidden');
-          window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
-          if (typeof window.WU_go === 'function') { WU_go('normal'); }
-        }
-      });
-
-      // 워밍업 끝 → 본 연습문제로 이동
-      const sendBtn = document.getElementById('btn-send');
-      sendBtn?.addEventListener('click', () => {
-        location.href = 'numbers-exercises.html';
-      });
+    const goBtn = document.getElementById('explanation-next-btn');
+    goBtn?.setAttribute('type','button');
+    goBtn?.addEventListener('click', ()=>{
+      const nameEl = document.getElementById('student-name');
+      const name = (nameEl?.value || '').trim();
+      if(!name){
+        alert("이름을 먼저 입력해 주세요 / Entre d'abord ton nom.");
+        nameEl?.focus();
+        return;
+      }
+      try{ localStorage.setItem('korean.studentName', name); }catch{}
+      exp.classList.add('hidden');
+      wu.classList.remove('hidden');
+      if (typeof window.WU_go === 'function') { WU_go('normal'); } // 1배속 고정
+      window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
     });
-  </script>
+
+    // URL로 바로 들어오는 경우(옵션)
+    if (new URLSearchParams(location.search).has('mode')) {
+      exp.classList.add('hidden');
+      wu.classList.remove('hidden');
+      if (typeof window.WU_go === 'function') { WU_go('normal'); }
+    }
+  });
+</script>
+
+
+
 
   <!-- StudentGate: 클릭/입력 전 차단 -->
   <script>
