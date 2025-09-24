@@ -1,27 +1,19 @@
 // /assets/quiz-numbers.js
 console.log('[quiz-numbers] build=2025-09-22 01:00, path=', location.pathname);
 
-const IS_EX_PAGE = /numbers-exercises/i.test(location.pathname); // ← 경로 가드(폴더 포함)
+// 경로 가드: exercises / exos 둘 다 허용 + data-attr 백업
+const IS_EX_PAGE =
+  /numbers-(exercises|exos)/i.test(location.pathname) ||
+  (document.body?.dataset?.page === 'numbers-exercises');
+
 if (!IS_EX_PAGE) {
   console.log('[quiz-numbers] skip: not exercises page');
 }
 
-
-
-/* /assets/quiz-numbers.js (final)
- * Nombres 종합 퀴즈: 선택(5) → 불→한(10) → 받아쓰기(5)
- * - 이름 체크, Sticky 5×5, 힌트(1~5 숨김), 오답 흔들림
- * - 발음 녹음/평가(warmup UI), 오디오 base64→Blob→URL (Blob URL로 안정 재생)
- * - 규칙: 발음 녹음은 선택(스킵 가능). Next는 이름 입력만 통과 조건(정답 확인/녹음과 무관).
- * - Q1에서 ← 누르면 numbers-warmup.html로 이동
- * - 끝내기: 결과 전송 + 요약 화면 표시 + 문항별 발음 테이블
- * - 학생 화면엔 H1/H2(힌트 카운트) 숨김: <span class="hint-metrics">…</span> (CSS에서 display:none)
- *   ※ 선생님 메일에는 카운트 포함(전송 데이터 유지)
- */
-
 (function () {
   'use strict';
 
+  // 페이지가 아니면 즉시 종료(다른 페이지에 스캐폴드/리스너 안 붙임)
   if (!IS_EX_PAGE) {
     console.log('[quiz-numbers] abort: not exercises page');
     return;
@@ -29,12 +21,13 @@ if (!IS_EX_PAGE) {
 
   // === ensure scaffold (필수 DOM이 없으면 자동 생성) ===
   (function ensureScaffold(){
-    // 진행바
+    // 진행바 컨테이너(상단 5×5 토글용)
     if (!document.getElementById('sticky55')) {
       const dv = document.createElement('div');
       dv.id = 'sticky55'; dv.className = 'hidden';
       document.body.prepend(dv);
     }
+    // 진행 텍스트/바
     if (!document.getElementById('progressText') || !document.getElementById('progressBar')) {
       const wrap = document.createElement('div');
       wrap.className = 'flex items-center gap-2 my-2';
@@ -62,6 +55,8 @@ if (!IS_EX_PAGE) {
       document.body.appendChild(nav);
     }
   })();
+
+  /* ⬇️⬇️⬇️ 여기부터 나머지 기존 로직 그대로 유지 (FN_BASE, S, Utils, ... ) ⬇️⬇️⬇️ */
 
   // ⬇️ (여기부터 기존 로직 계속)
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
