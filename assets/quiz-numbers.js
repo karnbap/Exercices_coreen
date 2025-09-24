@@ -56,12 +56,10 @@ if (!IS_EX_PAGE) {
     }
   })();
 
-  /* ⬇️⬇️⬇️ 여기부터 나머지 기존 로직 그대로 유지 (FN_BASE, S, Utils, ... ) ⬇️⬇️⬇️ */
+  // ⬇️⬇️⬇️ 여기부터는 기존 코드(FN_BASE, S, Utils, 렌더 등)를 그대로 이어가세요 ⬇️⬇️⬇️
 
-  // ⬇️ (여기부터 기존 로직 계속)
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
-  ...
-})();
+
 
 (function ensureScaffold(){
   // 진행바
