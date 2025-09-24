@@ -193,39 +193,7 @@
     </div>
   </div>
 
-  <!-- (2) 속도 선택 -->
-  <div id="mode-picker" class="quiz-container hidden">
-    <h3 class="text-2xl font-extrabold text-center mb-1">Choisis ta vitesse / 연습 속도 고르기</h3>
-
-    <div class="info-card mx-auto row-tight mb-5">
-      <h4 class="font-bold text-lg mb-1">Méthode 5×5 🗣️</h4>
-      <p class="text-sm text-slate-600 mb-2"><b>Explication / 설명</b></p>
-      <p class="mb-2">📌 <b>FR</b> — Apprendre les nombres coréens en <b>groupes de 5</b>, comme une petite chanson… 🎵</p>
-      <p class="mb-3"><b>KO</b> — 한국어 숫자는 <b>5개씩 묶어서</b> <b>노래처럼</b> 반복하면 훨씬 잘 외워져요 🎶</p>
-
-      <div class="grid md:grid-cols-2 gap-3 text-sm">
-        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Natifs 1–5</div><div>하나 · 둘 · 셋 · 넷 · 다섯</div></div>
-        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Natifs 6–10</div><div>여섯 · 일곱 · 여덟 · 아홉 · 열</div></div>
-        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Hanja 1–5</div><div>일 · 이 · 삼 · 사 · 오</div></div>
-        <div class="p-3 rounded border border-slate-200 bg-white"><div class="font-semibold mb-1">Hanja 6–10</div><div>육 · 칠 · 팔 · 구 · 십</div></div>
-      </div>
-
-      <p class="mt-3 text-slate-700">🔁 <b>Répétitions</b> : <b>2× par défaut</b> (recommandé 3×) / <b>기본 2회</b>(권장 3회)</p>
-    </div>
-
-    <p class="text-center text-sm text-slate-600 mb-4">Tu peux recommencer ensuite à n'importe quelle vitesse.</p>
-    <div class="segmented">
-      <button class="seg-btn slow"   onclick="WU_go('slow')">
-        <div class="text-lg"><i class="fa-solid fa-turtle"></i> 초보 / Débutant</div><div class="sub">0.7×</div>
-      </button>
-      <button class="seg-btn normal" onclick="WU_go('normal')">
-        <div class="text-lg"><i class="fa-regular fa-face-smile"></i> 보통 / Normal</div><div class="sub">1.0×</div>
-      </button>
-      <button class="seg-btn fast"   onclick="WU_go('fast')">
-        <div class="text-lg"><i class="fa-solid fa-person-running"></i> 잘 읽음 / Rapide</div><div class="sub">1.5×</div>
-      </button>
-    </div>
-  </div>
+ 
 
   <!-- (3) 워밍업 화면 -->
   <div id="warmup-screen" class="quiz-container hidden">
@@ -234,13 +202,9 @@
       <span class="listen-tip"><i class="fa-solid fa-bullhorn"></i> Étapes: <b>Écouter / 듣기</b> → <b>S’enregistrer / 녹음</b> → <b>Évaluer / 평가</b> </span>
     </div>
 
-    <!-- 반복 설정: 기본 2회 / 1·2·3회 토글 -->
-    <div class="flex items-center justify-center gap-2 mb-2">
-      <button id="btn-repeat-1" class="btn btn-outline">1×</button>
-      <button id="btn-repeat-2" class="btn btn-secondary">2×</button>
-      <button id="btn-repeat-3" class="btn btn-outline">3×</button>
-    </div>
-    <p class="text-slate-600 text-sm mt-1 text-center">Par défaut: <b>×2</b> répétitions / 기본: <b>2회</b> 반복</p>
+<p class="text-slate-700 text-sm mb-2 text-center">
+  <b>Répétitions: ×2 (fixe)</b> · <b>Vitesse: 1.0× (fixe)</b>
+</p>
 
     <!-- 실시간 인식/비교 레전드 -->
     <div class="flex justify-between items-center text-xs text-slate-500 mb-2 mx-auto row-tight">
@@ -414,53 +378,29 @@
       const exp = document.getElementById('explanation-screen');
       const pick = document.getElementById('mode-picker');
       const wu   = document.getElementById('warmup-screen');
-
-      // 반복 버튼 (1×/2×/3×) — 전역 바인딩
-      const rpt1 = document.getElementById('btn-repeat-1');
-      const rpt2 = document.getElementById('btn-repeat-2');
-      const rpt3 = document.getElementById('btn-repeat-3');
-
-      const paintRepeat = (n)=>{
-        const setOn = (btn, on)=>{
-          if (!btn) return;
-          btn.classList.toggle('btn-secondary', on);
-          btn.classList.toggle('btn-outline', !on);
-        };
-        setOn(rpt1, n===1);
-        setOn(rpt2, n===2);
-        setOn(rpt3, n===3);
-        if (window.WarmupPlayer) WarmupPlayer.setRepeat(n);
-      };
-
-      rpt1?.addEventListener('click', ()=>paintRepeat(1));
-      rpt2?.addEventListener('click', ()=>paintRepeat(2));
-      rpt3?.addEventListener('click', ()=>paintRepeat(3));
-      paintRepeat(window.WARMUP_REPEAT || 2); // 초기값(2×)
+  
+  // 반복은 ×2로 고정 (UI 없음)
+  if (window.WarmupPlayer) WarmupPlayer.setRepeat(2);
 
       // 이름 → 모드 선택
       const goBtn = document.getElementById('explanation-next-btn');
       goBtn?.setAttribute('type','button');
-      goBtn?.addEventListener('click', ()=>{
-        const nameEl = document.getElementById('student-name');
-        const name = (nameEl?.value || '').trim();
-        if(!name){ alert("이름을 먼저 입력해 주세요 / Entre d'abord ton nom."); nameEl?.focus(); return; }
-        try{ localStorage.setItem('korean.studentName', name); }catch{}
-        exp.classList.add('hidden'); pick.classList.remove('hidden'); wu.classList.add('hidden');
-        window.scrollTo({ top: pick.offsetTop - 8, behavior:'smooth' });
-      });
+     goBtn?.addEventListener('click', ()=>{
+  const nameEl = document.getElementById('student-name');
+  const name = (nameEl?.value || '').trim();
+  if(!name){ alert("이름을 먼저 입력해 주세요 / Entre d'abord ton nom."); nameEl?.focus(); return; }
+  try{ localStorage.setItem('korean.studentName', name); }catch{}
+  exp.classList.add('hidden'); pick.classList.add('hidden'); wu.classList.remove('hidden');
+  if (typeof window.WU_go === 'function') { WU_go('normal'); } // 1.0× 고정
+  window.scrollTo({ top: wu.offsetTop - 8, behavior:'smooth' });
+});
 
-      // URL ?mode=slow|normal|fast 로 바로 진입
-      const m = new URLSearchParams(location.search).get('mode');
-      if (m) {
-        exp.classList.add('hidden');
-        pick.classList.add('hidden');
-        wu.classList.remove('hidden');
-        if (typeof window.WU_go === 'function') { WU_go(m); }
-      } else {
-        exp.classList.remove('hidden');
-        pick.classList.add('hidden');
-        wu.classList.add('hidden');
-      }
+
+ // 항상 설명 → 워밍업 순서 (속도는 1.0× 고정)
+exp.classList.remove('hidden');
+pick.classList.add('hidden');
+wu.classList.add('hidden');
+
 
       // 모드 선택 화면에서 카드 클릭 시 워밍업 진입 (세이프티넷)
       pick.addEventListener('click',(e)=>{
