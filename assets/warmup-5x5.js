@@ -76,22 +76,11 @@
     if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
   }
 
-  function setSpeed(rate){
-    state.speed = Number(rate) || 1.0;
-    // 현재 재생 중 오디오 즉시 갱신
-    if (window.__WU_currentAudio) applyPlaybackRate(window.__WU_currentAudio, state.speed);
-    // 대기 큐(있다면)도 갱신
-    document.querySelectorAll('audio.__5x5_queue').forEach(a=>applyPlaybackRate(a, state.speed));
-    // UI 버튼 활성화 업데이트
-    document.querySelectorAll('[data-speed]').forEach(b=>{
-      const v = Number(b.getAttribute('data-speed') ?? (b.textContent||'').replace(/[^\d.]/g,''));
-      b.classList.toggle('is-active', Math.abs(v - state.speed) < 0.001);
-      b.classList.toggle('btn-primary', Math.abs(v - state.speed) < 0.001);
-      b.classList.toggle('btn-outline', Math.abs(v - state.speed) >= 0.001);
-    });
-    // 카드 상단 표시 갱신 위해 리렌더
-    renderAll();
-  }
+function setSpeed(){
+  // 1.0× 고정
+  state.speed = 1.0;
+}
+
 
   // ---------- TTS ----------
   function base64ToBlob(base64, mime='audio/mpeg'){
@@ -283,32 +272,14 @@
     return out;
   }
 
-  // ---------- 속도 툴바 ----------
-  function renderSpeedToolbar(){
-    const wu = $('#warmup-screen'); if(!wu) return;
-    let bar = $('#speed-toolbar', wu);
-    if(!bar){
-      bar = document.createElement('div');
-      bar.id = 'speed-toolbar';
-      bar.className = 'mb-4 flex flex-wrap gap-2 justify-center';
-      wu.prepend(bar);
-    }
-    bar.innerHTML = `
-      <div class="p-2 rounded-xl bg-white border flex flex-wrap items-center gap-2">
-        <div class="text-sm text-slate-600 mr-1">Vitesse / 속도</div>
-        ${SPEEDS.map(s=>`
-          <button class="btn ${state.speed===s.val?'btn-primary is-active':'btn-outline'} btn-sm" data-speed="${s.val}">${s.label}</button>
-        `).join('')}
-        <div class="text-xs text-slate-500 ml-2">Étapes: <b>Écouter</b> → <b>Répéter</b> → Évaluer</div>
-      </div>
-    `;
-    bar.querySelectorAll('[data-speed]').forEach(b=>{
-      b.addEventListener('click', e=>{
-        const v = parseFloat(e.currentTarget.getAttribute('data-speed'));
-        if(!isNaN(v)) setSpeed(v);
-      });
-    });
-  }
+function renderSpeedToolbar(){
+  // 속도는 1.0× 고정, 툴바 표시 안 함
+  const bar = document.getElementById('speed-toolbar');
+  if (bar) bar.remove();
+  state.speed = 1.0;
+}
+
+
 
   // ---------- 렌더 ----------
   function renderAll(){
@@ -341,12 +312,10 @@
     card.innerHTML = `
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <div class="text-sm text-slate-500">
-            Vitesse ${state.speed}× · Répétitions:
-            <button type="button" class="rep-chip rep-2 ${state.repeats===2?'text-indigo-700 font-bold':''}" data-repeats="2">×2</button>
-            <span class="mx-1">/</span>
-            <button type="button" class="rep-chip rep-3 ${state.repeats===3?'text-indigo-700 font-bold':''}" data-repeats="3">×3</button>
-          </div>
+<div class="text-sm text-slate-500">
+  Vitesse 1.0× (fixe) · Répétitions ×2 (fixe)
+</div>
+
           <div class="text-lg font-semibold">${bundle.label} <span class="text-slate-500">· ${refDisplay}</span></div>
           <div class="text-xs text-slate-500">1) Écouter  2) Répéter  3) Évaluer</div>
         </div>
@@ -376,17 +345,9 @@
       </div>
     `;
 
-    // 반복 선택 (카드 내)
-    card.querySelectorAll('[data-repeats]').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        const v = parseInt(b.getAttribute('data-repeats'),10);
-        if (v===2 || v===3){
-          state.repeats=v;
-          card.querySelectorAll('.rep-chip').forEach(x=>x.classList.remove('text-indigo-700','font-bold'));
-          b.classList.add('text-indigo-700','font-bold');
-        }
-      });
-    });
+// 반복은 ×2로 고정 (UI 없음)
+state.repeats = 2;
+
 
     // 듣기
     const btnPlay = card.querySelector('.btn-play');
@@ -589,30 +550,20 @@
       : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
 
     box.innerHTML = `
-      <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
-        <div class="text-lg font-extrabold">🎉 Warming up</div>
-        <div class="text-slate-600 mt-1">${subtitle}</div>
-      </div>
-      <div class="flex flex-wrap gap-2 justify-center">
-        <button id="btn-finish-send" class="btn btn-primary btn-lg">
-          <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
-        </button>
+  <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
+    <div class="text-lg font-extrabold">🎉 Warming up</div>
+    <div class="text-slate-600 mt-1">Terminé. Passe aux exercices / 끝! 다음 연습으로 이동하세요.</div>
+  </div>
+  <div class="flex flex-wrap gap-2 justify-center">
+    <button id="btn-finish-send" class="btn btn-primary btn-lg">
+      <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
+    </button>
+    <a id="btn-go-ex" href="numbers-exercises.html" class="btn btn-secondary btn-lg">
+      <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
+    </a>
+  </div>
+`;
 
-        ${
-          next
-            ? `<button id="btn-next-speed" class="btn btn-secondary btn-lg">
-                 ${nextLabel} → Vitesse suivante / 다음 속도
-               </button>`
-            : `<button id="btn-next-speed" class="btn btn-secondary btn-lg" disabled
-                 style="opacity:.5;pointer-events:none">— → Vitesse suivante / 다음 속도</button>`
-        }
-
-        <a id="btn-go-ex" href="numbers-exercises.html"
-           class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
-          <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
-        </a>
-      </div>
-    `;
     box.classList.remove('hidden');
     updateNextAvailability();
 
@@ -677,7 +628,7 @@
       startTime: state.startISO || new Date().toISOString(),
       endTime: new Date().toISOString(),
       totalTimeSeconds: Math.max(0, Math.round((Date.now() - (state.startMs||Date.now()))/1000)),
-      assignmentTitle: `Warm-up – Nombres (vitesse ${state.speed}×, ×${state.repeats})`,
+      assignmentTitle: `Warm-up – Nombres (vitesse 1.0×, ×2 fixe)`,
       assignmentSummary: [
         '4 groupes: Natifs(1–5,6–10) + Hanja(1–5,6–10)',
         'Paquet de 5 → répétitions (×2 par défaut, ×3 possible)',
@@ -821,49 +772,18 @@
   }
   window.WU_go = WU_go;
 
-  // === 전역 클릭 위임: 반복(×2/×3) & 속도(0.7/1.0/1.5) ===
-  document.addEventListener('click', (e)=>{
-    const t = e.target.closest('[data-repeats],[data-repeat],[data-speed]');
-    if(!t) return;
+// 반복/속도 전역 위임 비활성 (고정값 사용)
+document.addEventListener('click', ()=>{ /* no-op */ });
+state.repeats = 2;
+state.speed = 1.0;
 
-    if (t.hasAttribute('data-repeats') || t.hasAttribute('data-repeat')) {
-      const raw = t.getAttribute('data-repeats') ?? t.getAttribute('data-repeat') ?? (t.textContent||'').replace(/[^\d]/g,'');
-      const rep = parseInt(raw,10);
-      if (rep===2 || rep===3) {
-        state.repeats = rep;
-        // 모든 반복 버튼 활성화 토글
-        document.querySelectorAll('[data-repeats],[data-repeat]').forEach(b=>{
-          const v = parseInt(b.getAttribute('data-repeats') ?? b.getAttribute('data-repeat') ?? (b.textContent||'').replace(/[^\d]/g,''),10);
-          b.classList.toggle('text-indigo-700', v===rep);
-          b.classList.toggle('font-bold', v===rep);
-        });
-      }
-      return;
-    }
-
-    if (t.hasAttribute('data-speed')) {
-      const sp = Number(t.getAttribute('data-speed') ?? (t.textContent||'').replace(/[^\d.]/g,''));
-      if (Number.isFinite(sp) && sp>0) setSpeed(sp);
-    }
-  });
 
   // 초기 진입
   document.addEventListener('DOMContentLoaded', ()=>{
     tryResendPending();
     updateNextAvailability();
 
-    const speedBtn = document.querySelector('#btnNextSpeed,#btn-next-speed');
-    const exBtn    = document.querySelector('#btnNextExercise,#btn-go-ex');
+// 다음 속도/가드 리스너 없음 (1.0× 고정)
 
-    speedBtn?.addEventListener('click', ()=>{
-      const next = getNextSpeed(state.speed);
-      if(next){ setSpeed(next); window.scrollTo({top:0,behavior:'smooth'}); }
-    });
-
-    exBtn?.addEventListener('click', (e)=>{
-      const href = exBtn.getAttribute('href') || '/assignments/numbers-exercises.html';
-      e.preventDefault();
-      location.href = href;
-    });
   });
 })();
