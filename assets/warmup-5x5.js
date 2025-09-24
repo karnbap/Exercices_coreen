@@ -557,10 +557,10 @@ box.innerHTML = `
         <button id="btn-refaire" class="btn btn-secondary btn-lg">
           Refaire (1.0× · ×2)
         </button>
-        <a id="btn-go-ex" href="numbers-exercises.html"
-           class="btn btn-outline btn-lg pointer-events-none opacity-50" aria-disabled="true">
-          <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
-        </a>
+<a id="btn-go-ex" href="numbers-exercises.html" class="btn btn-primary btn-lg">
+  <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
+</a>
+
       </div>
     `;
 
