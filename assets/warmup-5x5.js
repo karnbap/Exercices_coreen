@@ -533,78 +533,58 @@ state.repeats = 2;
       .forEach((d,idx)=> d.classList.toggle('on', idx < doneCount));
   }
 
-  function checkFinish(){
-    const keys = BUNDLES.map(b=>b.key);
-    const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
-    updateProgress(doneCount);
+function checkFinish(){
+  const keys = BUNDLES.map(b=>b.key);
+  const doneCount = keys.filter(k=> state.progress[k]?.done ).length;
+  updateProgress(doneCount);
 
-    const box = document.getElementById('finish-wrap');
-    if(!box) return;
+  const box = document.getElementById('finish-wrap');
+  if(!box) return;
 
-    const next = getNextSpeed(state.speed);
-    const nextLabel = next ? `${next.toFixed(1)}×` : '';
+  const subtitle = (doneCount === keys.length)
+    ? 'Passe aux exercices / 다음 연습문제로 이동해요.'
+    : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
 
-    const subtitle = (doneCount === keys.length)
-      ? (next ? 'Passe à la vitesse suivante / 다음 속도로 넘어가요.'
-              : 'Passe aux exercices / 다음 연습문제로 이동해요.')
-      : `Progression: ${doneCount}/${keys.length} · Tu peux déjà envoyer ou continuer. / 진행도 ${doneCount}/${keys.length} · 먼저 전송해도 되고 계속해도 돼요.`;
+  box.innerHTML = `
+    <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
+      <div class="text-lg font-extrabold">🎉 Warming up</div>
+      <div class="text-slate-600 mt-1">${subtitle}</div>
+    </div>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <button id="btn-finish-send" class="btn btn-primary btn-lg">
+        <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
+      </button>
+      <a id="btn-go-ex" href="numbers-exercises.html" class="btn btn-secondary btn-lg">
+        <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
+      </a>
+    </div>
+  `;
+  box.classList.remove('hidden');
 
-    box.innerHTML = `
-  <div class="p-5 bg-white rounded-lg border mb-4 max-w-xl mx-auto text-center">
-    <div class="text-lg font-extrabold">🎉 Warming up</div>
-    <div class="text-slate-600 mt-1">Terminé. Passe aux exercices / 끝! 다음 연습으로 이동하세요.</div>
-  </div>
-  <div class="flex flex-wrap gap-2 justify-center">
-    <button id="btn-finish-send" class="btn btn-primary btn-lg">
-      <i class="fa-solid fa-paper-plane"></i> Finir · Envoyer
-    </button>
-    <a id="btn-go-ex" href="numbers-exercises.html" class="btn btn-secondary btn-lg">
-      <i class="fa-solid fa-list-check"></i> Exercice suivant · 다음 연습문제로 가기
-    </a>
-  </div>
-`;
+  document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute('href') || '/assignments/numbers-exercises.html';
+    location.href = href;
+  });
 
-    box.classList.remove('hidden');
-    updateNextAvailability();
-
-    document.getElementById('btn-go-ex')?.addEventListener('click', (e)=>{
-      e.preventDefault();
-      const href = e.currentTarget.getAttribute('href') || '/assignments/numbers-exercises.html';
-      location.href = href;
-    });
-
-    document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
-      const btn = e.currentTarget;
-      const orig = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
-      try{
-        const ok = await sendResults();
-        if (ok) alert('✅ Résultats envoyés. / 결과 전송 완료');
-        else    alert('⚠️ Réseau occupé. Résultats sauvegardés localement. / 네트워크 문제: 임시 저장');
-      }catch(_){
-        alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
-      }finally{
-        const goEx = document.getElementById('btn-go-ex');
-        if (goEx){
-          goEx.classList.remove('pointer-events-none','opacity-50','btn-outline');
-          goEx.classList.add('btn-primary');
-          goEx.removeAttribute('aria-disabled');
-        }
-        btn.disabled = false;
-        btn.innerHTML = orig;
-      }
-    }, { once:true });
-
-    const ns = document.getElementById('btn-next-speed');
-    if (ns && next) {
-      ns.addEventListener('click', ()=>{
-        setSpeed(next); // 속도 변경 + 리렌더
-        state.startISO = new Date().toISOString(); state.startMs = Date.now();
-        window.scrollTo({ top: document.getElementById('warmup-screen').offsetTop - 8, behavior:'smooth' });
-      }, { once:true });
+  document.getElementById('btn-finish-send')?.addEventListener('click', async (e)=>{
+    const btn = e.currentTarget;
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...';
+    try{
+      const ok = await sendResults();
+      if (ok) alert('✅ Résultats envoyés. / 결과 전송 완료');
+      else    alert('⚠️ Réseau occupé. Résultats sauvegardés localement. / 네트워크 문제: 임시 저장');
+    }catch(_){
+      alert('⚠️ Envoi échoué — réessaie. / 전송 실패 — 다시 시도');
+    }finally{
+      btn.disabled = false;
+      btn.innerHTML = orig;
     }
-  }
+  }, { once:true });
+}
+
 
   // --- 결과 전송(타임아웃 + 로컬 저장 폴백 포함) ---
   async function sendResults(){
