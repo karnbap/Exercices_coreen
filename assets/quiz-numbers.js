@@ -58,43 +58,7 @@ if (!IS_EX_PAGE) {
 
   // ⬇️⬇️⬇️ 여기부터는 기존 코드(FN_BASE, S, Utils, 렌더 등)를 그대로 이어가세요 ⬇️⬇️⬇️
 
-  const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
-
-(function ensureScaffold(){
-  // 진행바
-  if (!document.getElementById('sticky55')) {
-    const dv = document.createElement('div');
-    dv.id = 'sticky55'; dv.className = 'hidden';
-    document.body.prepend(dv);
-  }
-  if (!document.getElementById('progressText') || !document.getElementById('progressBar')) {
-    const wrap = document.createElement('div');
-    wrap.className = 'flex items-center gap-2 my-2';
-    wrap.innerHTML = `
-      <div id="progressText" class="text-sm text-slate-600">Question 0 / 0</div>
-      <div class="w-40 h-2 bg-slate-200 rounded overflow-hidden">
-        <div id="progressBar" class="h-2 bg-indigo-500" style="width:0%"></div>
-      </div>`;
-    document.body.appendChild(wrap);
-  }
-  // 문제 영역
-  if (!document.getElementById('qArea')) {
-    const q = document.createElement('div');
-    q.id = 'qArea';
-    document.body.appendChild(q);
-  }
-  // 네비게이션
-  if (!document.getElementById('btnPrev') || !document.getElementById('btnNext') || !document.getElementById('btnFinish')) {
-    const nav = document.createElement('div');
-    nav.className = 'mt-3 flex gap-2';
-    nav.innerHTML = `
-      <button id="btnPrev"   class="btn">← Précédent</button>
-      <button id="btnNext"   class="btn btn-primary">Suivant →</button>
-      <button id="btnFinish" class="btn btn-secondary hidden">Terminer</button>`;
-    document.body.appendChild(nav);
-  }
-})();
 
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
 
