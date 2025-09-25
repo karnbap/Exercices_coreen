@@ -269,29 +269,31 @@ const handleText = (rawText, isFinal=false)=>{
 partHandler  = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, false); };
 finalHandler = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, true); };
 
-['livestt:partial','live-stt-partial'].forEach(evt=>{
-  el.addEventListener(evt, partHandler);
-  document.addEventListener(evt, partHandler);
-});
-['livestt:final','live-stt-final'].forEach(evt=>{
-  el.addEventListener(evt, finalHandler);
-  document.addEventListener(evt, finalHandler);
-});
+
 
 setTimeout(()=>{
   if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…';
 }, 1500);
       }
 
-      async function onStop(){
-         ['livestt:partial','live-stt-partial'].forEach(evt=>{
-  el.removeEventListener(evt, onPart); document.removeEventListener(evt, onPart);
-});
-['livestt:final','live-stt-final'].forEach(evt=>{
-  el.removeEventListener(evt, onFinal); document.removeEventListener(evt, onFinal);
-});
+async function onStop(){
+  // STT 이벤트 핸들러 해제(스코프 밖 레퍼런스 사용)
+  if (partHandler){
+    ['livestt:partial','live-stt-partial'].forEach(evt=>{
+      el.removeEventListener(evt, partHandler);
+      document.removeEventListener(evt, partHandler);
+    });
+    partHandler = null;
+  }
+  if (finalHandler){
+    ['livestt:final','live-stt-final'].forEach(evt=>{
+      el.removeEventListener(evt, finalHandler);
+      document.removeEventListener(evt, finalHandler);
+    });
+    finalHandler = null;
+  }
 
-        stopVu();
+  stopVu();
            // STT 이벤트 핸들러 해제(스코프 밖 레퍼런스 사용)
   if (partHandler){
     ['livestt:partial','live-stt-partial'].forEach(evt=>{
