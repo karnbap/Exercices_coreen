@@ -197,8 +197,8 @@
   }
 
   // ===== 녹음 내부 =====
-  function makeRecorder(drawCanvas){
-    let mediaRecorder=null, chunksLocal=[], raf=0, ac=null, analyser=null, stream=null, mime='audio/webm';
+function makeRecorder(drawCanvas){
+    let mediaRecorder=null, chunksLocal=[], raf=0, ac=null, analyser=null, stream=null, mime='audio/webm', tStart=0;
 
     function clearCanvas(){
       if (!drawCanvas) return;
@@ -210,6 +210,8 @@
       stream = await navigator.mediaDevices.getUserMedia({ audio:true });
       mime = pickMime();
       mediaRecorder = mime ? new MediaRecorder(stream, { mimeType:mime }) : new MediaRecorder(stream);
+      tStart = performance.now();
+
       chunksLocal = [];
       mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunksLocal.push(e.data); };
 
@@ -258,11 +260,13 @@
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       return await new Promise((resolve)=>{
-        audio.addEventListener('loadedmetadata', ()=>{
-          const dur = Number(audio.duration||0);
-          URL.revokeObjectURL(url);
-          resolve({ blob, duration: dur });
-        }, { once:true });
+audio.addEventListener('loadedmetadata', ()=>{
+  const dur = Number(audio.duration||0);
+  const approx = Math.max(0,(performance.now()-tStart)/1000);
+  URL.revokeObjectURL(url);
+  resolve({ blob, duration: dur, approx });
+}, { once:true });
+
       });
     }
 
@@ -412,10 +416,12 @@
             ui.btnStop.disabled = true;
             const out = await session.stop();
             // 실제 길이로 duration 산출
-            const { blob, duration } = await R.finalizeToBlobDuration(out.chunks, out.mime);
-            chunks = out.chunks.slice(); // 원시 청크 유지
-            lastDur = Math.min(CFG.maxSec, Math.max(0, duration));
-            mime = out.mime || 'audio/webm';
+const { blob, duration, approx } = await R.finalizeToBlobDuration(out.chunks, out.mime);
+chunks = out.chunks.slice();
+const durClean = (!isFinite(duration) || duration<=0 || duration>CFG.maxSec-0.05) ? approx : duration;
+lastDur = Math.min(CFG.maxSec, Math.max(0, durClean));
+mime = out.mime || 'audio/webm';
+
 
             // 항상 Start 복구
             ui.btnStart.disabled = false;
