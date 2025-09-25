@@ -387,7 +387,8 @@ extra.textContent =
   const listenIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>`;
 
   // --- Render Functions ---
- function renderStep1(){
+ // === Étape 1: STT 박스 제거(발음 칸 내부만 사용) ===
+function renderStep1(){
   const host = document.getElementById('step1');
   if (!host) return;
   host.innerHTML = '';
@@ -407,14 +408,14 @@ extra.textContent =
     const voice = VOICES[idx % VOICES.length];
     btn.addEventListener('click', ()=> tts(q.ko, btn, voice));
 
-    // 2) KO 입력 (활성)
+    // 2) KO 입력 (활성) + 타이핑 미러만 (STT 아님)
     const inpKo = h('input', {
       class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
       placeholder:'받아쓰기: 한국어로 적기'
     });
     const echoKo = mountLiveInputEcho(inpKo, { label:'✍️ En direct (KO) / 실시간' });
 
-    // 3) FR 입력 (활성)
+    // 3) FR 입력 (활성) + 타이핑 미러만 (STT 아님)
     const inpFr = h('input', {
       class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
       placeholder:'Sens (FR): 의미(불어)'
@@ -424,26 +425,18 @@ extra.textContent =
     // 4) 힌트
     const [hintRow, hintBox] = mkHintRow({ ko: q.ko, fr: q.fr });
 
-    // 5) 발음
+    // 5) 발음(Pronun) — STT는 이 위젯 내부에서만 표시
     const pbox = h('div', {class:'mt-2'});
     mountPronun(pbox, ()=> q.ko);
 
-    // 6) 실시간 STT 자막
-    const echoLive = h('div', {class:'input-live mt-2'});
-    echoLive.innerHTML = `
-      <div class="label">🎙️ En direct (KO) / 실시간</div>
-      <div class="body pronun-live">—</div>
-      <div class="meta text-xs text-slate-500">STT 자동 표시</div>
-    `;
+    // ⛔️ 별도의 .pronun-live(STT 박스) 추가하지 않음
 
     const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
-      head,            // 설명
-      btn,             // 듣기
-      inpKo, echoKo,   // KO 입력 + 미러
-      inpFr, echoFr,   // FR 입력 + 미러
-      hintRow, hintBox,// 힌트
-      pbox,            // 발음
-      echoLive         // 실시간 자막
+      head, btn,
+      inpKo, echoKo,
+      inpFr, echoFr,
+      hintRow, hintBox,
+      pbox
     );
     host.appendChild(card);
   });
@@ -451,7 +444,9 @@ extra.textContent =
 
 
 
-  function renderStep2() {
+
+  // === Étape 2: 입력칸 비활성 + STT는 발음 영역 아래 전용 박스 1개만 ===
+function renderStep2() {
   const host = document.getElementById('step2-content');
   if (!host) return;
   host.innerHTML = '';
@@ -487,11 +482,11 @@ extra.textContent =
     // 4) 힌트
     const [hintRow, hintWrap] = mkHintRow({ ko: q.ko, fr: '' });
 
-    // 5) 발음
+    // 5) 발음(Pronun)
     const pbox = h('div', {class:'mt-2'});
     mountPronun(pbox, () => q.ko);
 
-    // 6) 실시간 STT 자막
+    // 6) STT 전용 박스(이 카드에서 단 1개)
     const echoLive = h('div', {class:'input-live mt-2'});
     echoLive.innerHTML = `
       <div class="label">🎙️ En direct (KO) / 실시간</div>
@@ -500,20 +495,20 @@ extra.textContent =
     `;
 
     const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
-      head,      // 설명
-      btn,       // 듣기
-      inpKo,     // KO 입력칸(비활성)
-      inpFr,     // FR 입력칸(비활성)
-      hintRow, hintWrap, // 힌트
-      pbox,      // 발음
-      echoLive   // 실시간 자막
+      head, btn,
+      inpKo, inpFr,
+      hintRow, hintWrap,
+      pbox,
+      echoLive
     );
     host.appendChild(card);
   });
 }
 
 
-   function renderStep3() {
+
+  // === Étape 3: 입력칸 비활성 + STT는 발음 영역 아래 전용 박스 1개만 ===
+function renderStep3() {
   const host = document.getElementById('step3-content');
   if (!host) return;
   host.innerHTML = '';
@@ -548,11 +543,11 @@ extra.textContent =
   // 4) 힌트
   const [hintRow, hintWrap] = mkHintRow({ ko: STEP3_TEXT, fr: '' });
 
-  // 5) 발음
+  // 5) 발음(Pronun)
   const pbox = h('div', {class:'mt-2'});
   mountPronun(pbox, () => STEP3_TEXT);
 
-  // 6) 실시간 STT 자막
+  // 6) STT 전용 박스(이 카드에서 단 1개)
   const echoLive = h('div', {class:'input-live mt-2'});
   echoLive.innerHTML = `
     <div class="label">🎙️ En direct (KO) / 실시간</div>
@@ -561,13 +556,11 @@ extra.textContent =
   `;
 
   const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
-    head,      // 설명
-    btn,       // 듣기
-    inpKo,     // KO 입력칸(비활성)
-    inpFr,     // FR 입력칸(비활성)
-    hintRow, hintWrap, // 힌트
-    pbox,      // 발음
-    echoLive   // 실시간 자막
+    head, btn,
+    inpKo, inpFr,
+    hintRow, hintWrap,
+    pbox,
+    echoLive
   );
   host.appendChild(card);
 }
