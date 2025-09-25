@@ -149,26 +149,32 @@
       };
     });
 
-    const avgPron = rows.length? Math.round(rows.reduce((a,r)=>a+r.pron,0)/rows.length) : 0;
-    const avgKO   = rows.length? Math.round(rows.reduce((a,r)=>a+r.koS ,0)/rows.length) : 0;
-    const avgFR   = rows.length? Math.round(rows.reduce((a,r)=>a+r.frS ,0)/rows.length) : 0;
-    const final10 = rows.length? Math.round(rows.reduce((a,r)=>a+r.on10,0)/rows.length) : 0;
+   const avgPron = rows.length? Math.round(rows.reduce((a,r)=>a+r.pron,0)/rows.length) : 0;
+const avgKO   = rows.length? Math.round(rows.reduce((a,r)=>a+r.koS ,0)/rows.length) : 0;
+const avgFR   = rows.length? Math.round(rows.reduce((a,r)=>a+r.frS ,0)/rows.length) : 0;
+
+// 총점 체계: KO(200), FR(100), Pron(300) → 총 600
+const totKO   = Math.round(avgKO   * 2);   // 0..200
+const totFR   = Math.round(avgFR   * 1);   // 0..100
+const totPron = Math.round(avgPron * 3);   // 0..300
+const grand600 = totKO + totFR + totPron;  // 0..600
+
 
     // Etape2/3 권장
     const recos = buildRecommendations(Q);
 
     app.innerHTML = `
       <section class="bg-white rounded-xl p-6 shadow">
-        <h1 class="text-2xl font-bold">유창성 결과 / <span class="text-amber-600">Résultats</span></h1>
+<h1 class="text-2xl font-bold">유창성 훈련 결과 / <span class="text-amber-600">Résultats d’entraînement</span></h1>
         <p class="mt-1">이름 / Nom : <b>${name}</b></p>
         <p class="mt-1">총 시간 / Temps total : <b>${fmtHMS(tsec)}</b></p>
-        <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="sum-box"><div class="sum-title">발음(100)</div><div class="sum-val">${avgPron}</div></div>
-          <div class="sum-box"><div class="sum-title">한글(100)</div><div class="sum-val">${avgKO}</div></div>
-          <div class="sum-box"><div class="sum-title">불어(100)</div><div class="sum-val">${avgFR}</div></div>
-          <div class="sum-box"><div class="sum-title">최종(10점)</div><div class="sum-val">${final10}/10</div></div>
-        </div>
-        <p class="mt-2 text-sm text-slate-500">가중치: 발음 5, 한글 3, 불어 2 (총 10점).</p>
+<div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+  <div class="sum-box"><div class="sum-title">한글로 바꾸기 점수 / (FR: vers le coréen)</div><div class="sum-val">${totKO}/200</div></div>
+  <div class="sum-box"><div class="sum-title">불어로 바꾸기 점수 / (FR: vers le français)</div><div class="sum-val">${totFR}/100</div></div>
+  <div class="sum-box"><div class="sum-title">발음 점수 / (FR: Prononciation)</div><div class="sum-val">${totPron}/300</div></div>
+  <div class="sum-box"><div class="sum-title">총점 / (FR: Total)</div><div class="sum-val">${grand600}/600</div></div>
+</div>
+
       </section>
 
       <section class="card mt-4">
@@ -202,10 +208,7 @@
             </tbody>
           </table>
         </div>
-        <p class="mt-2 text-xs text-slate-500">
-          KO: 띄어쓰기만 다른 경우는 가볍게 감점. 의미가 달라지는 큰 오차는 더 감점.<br/>
-          FR: 완전한 단어가 아니어도 전체 의미가 맞으면 높은 점수(부분 어근 일치 허용).
-        </p>
+
       </section>
 
       <section class="card mt-4">
