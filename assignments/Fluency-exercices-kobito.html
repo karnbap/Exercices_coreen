@@ -31,6 +31,8 @@
     .pd-time{font-variant-numeric:tabular-nums;font-weight:800;color:#0f172a}
     .pd-time-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .5rem;border-radius:.5rem;background:#eef2ff;color:#3730a3}
   </style>
+  <link rel="icon" href="/assets/favicon.ico">
+
 </head>
 
 <body class="bg-slate-100 text-slate-800 antialiased">
@@ -171,8 +173,23 @@ const STEP1_INSTRUCTION_KO = "각 부분을 듣고, 한국어로 받아쓰고, �
      const a = new Audio(src);
 a.addEventListener('loadedmetadata', ()=>{
   const d = Number(a.duration || 0);
-window.AUDIO_DUR.set(text, d > 0 ? d : Number(j.durationEstimateSec || 0));
+  const dur = d > 0 ? d : Number(j.durationEstimateSec || 0);
+
+  window.AUDIO_DUR.set(text, dur);
+
+  // ⬇️ 콘솔 출력
+  console.log(`[TTS] "${text}" 오디오 길이 = ${dur.toFixed(2)} s`);
+
+  // ⬇️ 화면에도 출력 (듣기 버튼 바로 아래)
+  let info = btn.nextElementSibling;
+  if (!info || !info.classList.contains('audio-length-info')) {
+    info = document.createElement('div');
+    info.className = 'audio-length-info text-sm text-slate-500 mt-1';
+    btn.insertAdjacentElement('afterend', info);
+  }
+  info.textContent = `⏱ 길이: ${dur.toFixed(2)}초`;
 }, { once:true });
+
 a.addEventListener('ended', ()=> URL.revokeObjectURL(src), {once:true});
 await a.play();
 
