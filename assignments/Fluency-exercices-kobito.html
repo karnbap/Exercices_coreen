@@ -225,40 +225,58 @@ function mountPronun(box, getRef){
    Pronun.mount(holder, {
   ui: 'classic',
   getReferenceText: ()=> String(getRef()||''),
-  onResult: (res)=> {
-    try{
- const ref = String(getRef() || '');
-const refDur = Number((window.AUDIO_DUR && window.AUDIO_DUR.get(ref)) || 0);
+ onResult: (res)=> {
+  try{
+    const ref = String(getRef() || '');
 
-      const recDur = Number(holder.dataset.lastRecSec || 0);
-      const hyp    = String(res?.text || res?.hyp || '');
+    // ① 기준 오디오 길이(초) — 없으면 0
+    const refDur = Number((window.AUDIO_DUR && window.AUDIO_DUR.get(ref)) || 0);
 
-      if (ref && hyp) {
-        const g = Scoring.gradeKO(ref, hyp, {
-          tempo: { mode:'normal', refDurationSec: refDur, userDurationSec: recDur }
-        });
-        // 점수/사유를 DOM dataset으로 노출(결과 수집/메일용)
-        holder.dataset.lastScore = String(g.score);
-        holder.dataset.tempoPenalty = String(g.tempoPenalty || 0);
-        holder.dataset.tempoReason  = g.tempoReason || '';
+    // ② 사용자 녹음 길이(초) — res.durationSec 우선, 없으면 타이머 값
+    let recDur = 0;
+    const cand = [
+      Number(res?.durationSec || 0),
+      Number(holder.dataset.lastRecSec || 0)
+    ].filter(n => Number.isFinite(n) && n > 0);
+    if (cand.length) recDur = cand[0];
 
-        // (선택) 작은 배지로 즉시 피드백
-        const badge = holder.querySelector('.pd-time-badge');
-        if (badge && g.tempoReason){
-          const extra = document.createElement('div');
-          extra.className = 'mt-1 text-xs text-slate-600';
-          extra.textContent = `Tempo: -${g.tempoPenalty||0} / ${g.tempoReason}`;
+    const hyp = String(res?.text || res?.hyp || '');
+
+    // 디버그 로그
+    console.log('[TempoDBG]', { ref, refDur, recDur, hyp });
+
+    if (ref && hyp) {
+      const g = Scoring.gradeKO(ref, hyp, {
+        tempo: { mode:'normal', refDurationSec: refDur, userDurationSec: recDur }
+      });
+
+      holder.dataset.lastScore    = String(g.score);
+      holder.dataset.tempoPenalty = String(g.tempoPenalty || 0);
+      holder.dataset.tempoReason  = g.tempoReason || '';
+
+      // 화면 표시(항상 보이게). 기존 설명 줄이 여러 개 생기지 않도록 재사용
+      const badge = holder.querySelector('.pd-time-badge');
+      if (badge){
+        let extra = badge.nextElementSibling;
+        const wantClass = 'pd-tempo-extra';
+        if (!extra || !extra.classList || !extra.classList.contains(wantClass)) {
+          extra = document.createElement('div');
+          extra.className = `mt-1 text-xs text-slate-600 ${wantClass}`;
           badge.after(extra);
         }
-
-        // 페이지 레벨 집계가 필요하면 커스텀 이벤트로 쏘기
-        holder.dispatchEvent(new CustomEvent('kobito:graded', {
-          bubbles:true,
-          detail:{score:g.score, base:g.baseScore, tempoPenalty:g.tempoPenalty, refDur, recDur, ref, hyp}
-        }));
+        const p = g.tempoPenalty || 0;
+        const reason = g.tempoReason || '—';
+        extra.textContent = `Tempo ▶ ref ${refDur.toFixed(2)} s / vous ${recDur.toFixed(2)} s → -${p} (${reason})`;
       }
-    }catch(e){ console.warn('gradeKO(tempo) failed', e); }
-  }
+
+      holder.dispatchEvent(new CustomEvent('kobito:graded', {
+        bubbles:true,
+        detail:{score:g.score, base:g.baseScore, tempoPenalty:g.tempoPenalty, refDur, recDur, ref, hyp}
+      }));
+    }
+  }catch(e){ console.warn('gradeKO(tempo) failed', e); }
+}
+
 });
 
 
@@ -317,7 +335,13 @@ function stopTimer(){
 
     if (bStart){ bStart.addEventListener('click', ()=>{ ripple(bStart); startTimer(); }); }
     if (bStop ){ bStop .addEventListener('click', ()=>{ ripple(bStop ); stopTimer(); }); }
-    if (bEval ){ bEval .addEventListener('click', ()=> ripple(bEval)); }
+if (bEval ){
+  bEval.addEventListener('click', ()=>{
+    ripple(bEval);
+    // 평가 직전에 타이머 값 확정(혹시 Stop을 안 눌렀더라도)
+    try { if (typeof stopTimer === 'function') stopTimer(); } catch(_){}
+  });
+}
   }
 }
 
