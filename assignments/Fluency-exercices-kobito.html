@@ -388,6 +388,7 @@ extra.textContent =
 
   // --- Render Functions ---
  // === Étape 1: STT 박스 제거(발음 칸 내부만 사용) ===
+// === Étape 1: KO/FR 타이핑 미러만, 별도 STT 박스 없음 ===
 function renderStep1(){
   const host = document.getElementById('step1');
   if (!host) return;
@@ -402,34 +403,26 @@ function renderStep1(){
       )
     );
 
-    // 1) 듣기
+    // 듣기
     const btn = h('button', {class:'btn btn-primary w-full flex items-center justify-center gap-2 font-semibold rounded-lg px-4 py-2.5 text-base transition-colors'});
     btn.innerHTML = `${listenIcon} <span>Écouter / 듣기</span>`;
     const voice = VOICES[idx % VOICES.length];
     btn.addEventListener('click', ()=> tts(q.ko, btn, voice));
 
-    // 2) KO 입력 (활성) + 타이핑 미러만 (STT 아님)
-    const inpKo = h('input', {
-      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
-      placeholder:'받아쓰기: 한국어로 적기'
-    });
+    // KO 입력 + 타이핑 미러
+    const inpKo  = h('input', {class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition', placeholder:'받아쓰기: 한국어로 적기'});
     const echoKo = mountLiveInputEcho(inpKo, { label:'✍️ En direct (KO) / 실시간' });
 
-    // 3) FR 입력 (활성) + 타이핑 미러만 (STT 아님)
-    const inpFr = h('input', {
-      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
-      placeholder:'Sens (FR): 의미(불어)'
-    });
+    // FR 입력 + 타이핑 미러
+    const inpFr  = h('input', {class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition', placeholder:'Sens (FR): 의미(불어)'});
     const echoFr = mountLiveInputEcho(inpFr, { label:'✍️ En direct (FR) / en direct' });
 
-    // 4) 힌트
+    // 힌트
     const [hintRow, hintBox] = mkHintRow({ ko: q.ko, fr: q.fr });
 
-    // 5) 발음(Pronun) — STT는 이 위젯 내부에서만 표시
+    // 발음(Pronun) — STT는 이 위젯 내부에서만 표시
     const pbox = h('div', {class:'mt-2'});
     mountPronun(pbox, ()=> q.ko);
-
-    // ⛔️ 별도의 .pronun-live(STT 박스) 추가하지 않음
 
     const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
       head, btn,
@@ -443,9 +436,7 @@ function renderStep1(){
 }
 
 
-
-
-  // === Étape 2: 입력칸 비활성 + STT는 발음 영역 아래 전용 박스 1개만 ===
+// === Étape 2: 비활성 입력칸 제거, STT 전용 박스 1개만 유지 ===
 function renderStep2() {
   const host = document.getElementById('step2-content');
   if (!host) return;
@@ -455,38 +446,23 @@ function renderStep2() {
     const head = h('div', {class:'space-y-1'},
       h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'},
         `Écoutez chaque segment puis enregistrez-vous. Essayez de parler à une vitesse similaire à celle de l'audio.`),
-      h('p', {class:'text-sm text-slate-600'},
-        '각 부분을 듣고 바로 따라 읽으며 녹음하세요. 원본과 비슷한 속도로 말해요.')
+      h('p', {class:'text-sm text-slate-600'}, '각 부분을 듣고 바로 따라 읽으며 녹음하세요. 원본과 비슷한 속도로 말해요.')
     );
 
-    // 1) 듣기
+    // 듣기
     const btn = h('button', {class:'btn btn-primary w-full flex items-center justify-center gap-2 font-semibold rounded-lg px-4 py-2.5 text-base transition-colors'});
     btn.innerHTML = `${listenIcon} <span>Écouter / 듣기 (Partie ${idx+1})</span>`;
     const voice = VOICES[(idx+1) % VOICES.length];
     btn.addEventListener('click', () => tts(q.ko, btn, voice));
 
-    // 2) KO 입력 (비활성)
-    const inpKo = h('input', {
-      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base bg-slate-100 text-slate-400 cursor-not-allowed',
-      placeholder:'📌 이 단계는 입력 없음 / Pas de dictée ici',
-      disabled:true
-    });
-
-    // 3) FR 입력 (비활성)
-    const inpFr = h('input', {
-      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base bg-slate-100 text-slate-400 cursor-not-allowed',
-      placeholder:'📌 이 단계는 입력 없음 / Pas de dictée ici',
-      disabled:true
-    });
-
-    // 4) 힌트
+    // 힌트
     const [hintRow, hintWrap] = mkHintRow({ ko: q.ko, fr: '' });
 
-    // 5) 발음(Pronun)
+    // 발음
     const pbox = h('div', {class:'mt-2'});
     mountPronun(pbox, () => q.ko);
 
-    // 6) STT 전용 박스(이 카드에서 단 1개)
+    // STT 전용 박스(한 카드당 1개)
     const echoLive = h('div', {class:'input-live mt-2'});
     echoLive.innerHTML = `
       <div class="label">🎙️ En direct (KO) / 실시간</div>
@@ -496,7 +472,6 @@ function renderStep2() {
 
     const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
       head, btn,
-      inpKo, inpFr,
       hintRow, hintWrap,
       pbox,
       echoLive
@@ -506,48 +481,31 @@ function renderStep2() {
 }
 
 
-
-  // === Étape 3: 입력칸 비활성 + STT는 발음 영역 아래 전용 박스 1개만 ===
+// === Étape 3: 비활성 입력칸 제거, STT 전용 박스 1개만 유지 ===
 function renderStep3() {
   const host = document.getElementById('step3-content');
   if (!host) return;
   host.innerHTML = '';
 
   const head = h('div', {class:'space-y-1'},
-    h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'},
-      'Maintenant, écoutez et répétez la phrase complète.'),
-    h('p', {class:'text-sm text-slate-600'},
-      '이제 전체 문장을 듣고 바로 따라 읽으면서 녹음하세요.')
+    h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'}, 'Maintenant, écoutez et répétez la phrase complète.'),
+    h('p', {class:'text-sm text-slate-600'}, '이제 전체 문장을 듣고 바로 따라 읽으면서 녹음하세요.')
   );
 
-  // 1) 듣기
+  // 듣기
   const btn = h('button', {class:'btn btn-primary w-full flex items-center justify-center gap-2 font-semibold rounded-lg px-4 py-2.5 text-base transition-colors'});
   btn.innerHTML = `${listenIcon} <span>Écouter la phrase complète / 전체 문장 듣기</span>`;
   const voice = VOICES[2];
   btn.addEventListener('click', () => tts(STEP3_TEXT, btn, voice));
 
-  // 2) KO 입력 (비활성)
-  const inpKo = h('input', {
-    class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base bg-slate-100 text-slate-400 cursor-not-allowed',
-    placeholder:'📌 이 단계는 입력 없음 / Pas de dictée ici',
-    disabled:true
-  });
-
-  // 3) FR 입력 (비활성)
-  const inpFr = h('input', {
-    class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base bg-slate-100 text-slate-400 cursor-not-allowed',
-    placeholder:'📌 이 단계는 입력 없음 / Pas de dictée ici',
-    disabled:true
-  });
-
-  // 4) 힌트
+  // 힌트
   const [hintRow, hintWrap] = mkHintRow({ ko: STEP3_TEXT, fr: '' });
 
-  // 5) 발음(Pronun)
+  // 발음
   const pbox = h('div', {class:'mt-2'});
   mountPronun(pbox, () => STEP3_TEXT);
 
-  // 6) STT 전용 박스(이 카드에서 단 1개)
+  // STT 전용 박스
   const echoLive = h('div', {class:'input-live mt-2'});
   echoLive.innerHTML = `
     <div class="label">🎙️ En direct (KO) / 실시간</div>
@@ -557,7 +515,6 @@ function renderStep3() {
 
   const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
     head, btn,
-    inpKo, inpFr,
     hintRow, hintWrap,
     pbox,
     echoLive
