@@ -250,35 +250,25 @@ function tempoOnlyPenalty(refSec, recSec){
     // ② 사용자 녹음 길이(초) — res.durationSec 우선, 없으면 타이머 값
     let recDur = 0;
     const cand = [
-      Number(res?.durationSec || 0),
-      Number(holder.dataset.lastRecSec || 0)
-    ].filter(n => Number.isFinite(n) && n > 0);
-    if (cand.length) recDur = cand[0];
+const cand = [
+  Number(holder.dataset.lastRecSec || 0),
+  Number(res?.durationSec || 0)
+].filter(n => Number.isFinite(n) && n > 0);
+
 
     const hyp = String(res?.text || res?.hyp || '');
 
     // 디버그 로그
     console.log('[TempoDBG]', { ref, refDur, recDur, hyp });
-      // ⬇⬇⬇⬇⬇ 여기가 추가되는 분기: 텍스트 인식 실패해도 템포 페널티는 적용
-    if (ref && !hyp && refDur > 0 && recDur > 0){
-      const t = tempoOnlyPenalty(refDur, recDur);
-      holder.dataset.tempoPenalty = String(t.pen);
-      holder.dataset.tempoReason  = t.reason;
-      // 화면 표시(배지 밑에 1개만)
-      const badge = holder.querySelector('.pd-time-badge');
-      if (badge){
-        let extra = badge.nextElementSibling;
-        if (!extra || !extra.classList || !extra.classList.contains('pd-tempo-extra')) {
-          extra = document.createElement('div');
-          extra.className = 'mt-1 text-xs text-slate-600 pd-tempo-extra';
-          badge.after(extra);
-        }
-        extra.textContent = `Tempo ▶ ref ${refDur.toFixed(2)} s / vous ${recDur.toFixed(2)} s → -${t.pen} (${t.reason})`;
-      }
-      // 점수 합산이 필요하면 여기서 holder.dataset.lastScore 갱신(예: 100 - t.pen)
-      holder.dataset.lastScore = String(Math.max(0, 100 - t.pen));
-      return; // ⬅ 텍스트 채점 생략하고 종료
-    }
+if (ref && !hyp && refDur > 0 && recDur > 0){
+  const t = tempoOnlyPenalty(refDur, recDur);
+  holder.dataset.tempoPenalty = String(t.pen);
+  holder.dataset.tempoReason  = t.reason;
+  // 화면 출력은 생략(보이지 않게). 점수만 내부에 보존.
+  holder.dataset.lastScore = String(Math.max(0, 100 - t.pen));
+  return;
+}
+
 
     if (ref && hyp) {
       const g = Scoring.gradeKO(ref, hyp, {
