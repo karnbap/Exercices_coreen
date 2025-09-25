@@ -10,6 +10,10 @@
 <body class="bg-slate-50 text-slate-800">
   <main id="app" class="p-4"></main>
   <script defer src="/assets/results-viewer.js"></script>
-  <script>ResultsViewer.mount('app');</script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      ResultsViewer.mount('#app', { skipIfSame: true });
+    });
+  </script>
 </body>
 </html>
