@@ -33,7 +33,6 @@
     .pd-time{font-variant-numeric:tabular-nums;font-weight:800;color:#0f172a}
     .pd-time-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .5rem;border-radius:.5rem;background:#eef2ff;color:#3730a3}
   </style>
-  <link rel="icon" href="/assets/favicon.ico">
 
 </head>
 
@@ -549,34 +548,92 @@ if (finishBtn) {
   });
 
 finishBtn.addEventListener('click', async () => {
-  // 1) 입력 스냅샷
+  // 1) 입력 스냅샷(Étape 1 KO/FR 입력 저장)
   snapshotInputs();
 
-  // 2) 페이로드
+  // 2) 기본 시간 정보
+  const startISO = window._startTime || new Date(document.visibilityState ? performance.timing?.navigationStart : Date.now()).toISOString();
+  const endISO   = new Date().toISOString();
+  const totalSec = Math.max(0, Math.round(((Date.now() - (window._startMs || Date.now())) / 1000)));
+
+  // 3) 학생 이름
+  const studentName = (window.StudentGate?.getName?.() || document.getElementById('student-name')?.value || '').trim();
+
+  // 4) 질문 배열 구성
+  //    - Étape1: STEP1_DATA 기준, KO/FR 입력/듣기/힌트/발음스코어 수집
+  //    - Étape2: STEP2_DATA
+  //    - Étape3: STEP3_TEXT
+  const Q = [];
+
+  function pushOne(refText, frText, numberBase) {
+    const key = String(refText || '');
+    const inp = (window._kobito?.inputs?.get(key)) || { ko:'', fr:'' };
+    const ev  = (window._kobito?.evals ?.get(key)) || { score:0, duration:0, transcript:'' };
+
+    const listenCount = Number(window._kobito?.listen?.get(key) || 0);
+    const hint1Count  = Number(window._kobito?.hint1 ?.get(key) || 0);
+    const hint2Count  = Number(window._kobito?.hint2 ?.get(key) || 0);
+
+    // 간단 KO/FR 채점(결과 페이지에서도 다시 계산하지만, 전송용으로 포함)
+    const koRef = String(refText||'');
+    const frRef = String(frText||'');
+    // scoring.js가 이미 로드되어 있으니 사용(없으면 0 처리)
+    let koScore = 0, frScore = 0;
+    try { koScore = Scoring?.gradeText?.(koRef, inp.ko)?.score ?? 0; } catch(_){}
+    try { frScore = Scoring?.gradeFR  ?. (frRef, inp.fr)?.score ?? 0; } catch(_){}
+
+    Q.push({
+      number: numberBase,
+      ko: koRef,
+      fr: frRef,
+      userAnswer: { ko: String(inp.ko||''), fr: String(inp.fr||'') },
+      isCorrect: (koScore >= 85),          // KO 기준 대략치
+      listenCount,
+      hint1Count,
+      hint2Count,
+      pronunScore: Math.round(Number(ev.score||0)),
+      asrTranscript: String(ev.transcript||''),
+      recording: {
+        base64: "",                        // 클라에선 저장 안 함(용량↑) — 서버에서 음성 처리됨
+        filename: "recording.webm",
+        mimeType: "audio/webm",
+        duration: Number(ev.duration||0)
+      }
+    });
+  }
+
+  // Étape 1
+  STEP1_DATA.forEach((item, idx) => pushOne(item.ko, item.fr, idx+1));
+  // Étape 2
+  STEP2_DATA.forEach((item, idx) => pushOne(item.ko, '', STEP1_DATA.length + idx + 1));
+  // Étape 3
+  pushOne(STEP3_TEXT, '', STEP1_DATA.length + STEP2_DATA.length + 1);
+
+  // 5) 최종 payload
   const payload = {
     studentName,
-    startTime,
-    endTime,
-    totalTimeSeconds,
-    questions
+    startTime: startISO,
+    endTime  : endISO,
+    totalTimeSeconds: totalSec,
+    questions: Q
   };
 
-  // 3) 전송 (실패하든 성공하든 결과 페이지는 열리게)
+  // 6) 세션/로컬 저장(새 결과 페이지가 읽어감)
+  try {
+    sessionStorage.setItem('pongdang_results', JSON.stringify(payload));
+    sessionStorage.setItem('pondant_results', JSON.stringify(payload));
+    localStorage.setItem('pongdang:lastResults', JSON.stringify(payload));
+    window.PONGDANG_RESULTS = payload;
+  } catch(_){}
+
+  // 7) 결과 전송(메일) 시도 — 실패해도 결과 페이지는 열기
   try { await window.sendResults(payload); } catch (_) {}
 
-  // 4) 존재하는 결과 페이지로 이동 시도(HEAD 체크)
-  async function goToResults() {
-    const candidates = ['/results.html', '/assets/results.html', '/assets/results/index.html'];
-    for (const p of candidates) {
-      try {
-        const r = await fetch(p, { method: 'HEAD', cache: 'no-store' });
-        if (r.ok) { location.href = p; return; }
-      } catch (_) {}
-    }
-    alert('결과 페이지를 찾지 못했어요. 화면을 캡처해서 Lapeace29@gmail.com 으로 보내주세요.');
-  }
-  await goToResults();
+  // 8) 유창성 전용 결과 페이지로 직행
+  location.href = '/assignments/fluency-results.html';
 });
+
+
 
 
 
