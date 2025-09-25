@@ -97,7 +97,6 @@
           <p class="text-lg">결과가 없습니다. / Aucun résultat.</p>
           <div class="mt-3 flex gap-2">
             <a href="/assignments/fluency-exercices-kobito.html" class="px-4 py-2 rounded border">이전으로 / Retour</a>
-            <a href="/index.html" class="px-4 py-2 rounded bg-blue-700 text-white">처음으로 / Accueil</a>
           </div>
         </section>`;
       return;
