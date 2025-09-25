@@ -356,7 +356,9 @@ async function onStop(){
             return;
           }
 
-          const acc=Math.max(0,Math.min(1,Number(j.accuracy||0))); const pct=Math.round(acc*100);
+let acc = Math.max(0, Math.min(1, Number(j.accuracy||0)));
+if (window.PronunUtils?.Text?.equalsLoose && PronunUtils.Text.equalsLoose(q.ko, j.transcript||'')) acc = 1;
+const pct = Math.round(acc*100);
 st[i].acc = acc;
 let tr = String(j.transcript||'').trim();
 if (window.PronunUtils?.NumNormalizer?.refAwareNormalize) {
