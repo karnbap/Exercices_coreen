@@ -277,30 +277,75 @@ window.toggleHint = function(box, html){
 };
 
 window.mkHintRow = function({ko, fr}){
+  // ---- 보조 유틸 (없으면 정의) ----
+  if (!window.choseongInitials) {
+    window.choseongInitials = function(str){
+      const S=0xAC00, L=0x1100, V=21, T=28, Lc=19, Nc=V*T, Sc=Lc*Nc;
+      const Ls=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+      let out=''; for (const ch of str){
+        const c=ch.codePointAt(0);
+        if(c>=S && c<S+Sc){ const i=c-S; out+=Ls[Math.floor(i/Nc)]; }
+        else out+=(/\s/.test(ch)?' ':ch);
+      } return out.replace(/\s+/g,' ').trim();
+    };
+  }
+  // 아주 작은 한-불 사전(없으면 ‘—’) — 필요시 페이지에서 window.KO_FR_LEXICON으로 확장
+  const KO_FR_LEXICON = Object.assign({
+    '시간이':'le temps','없어서':'par manque de','회의를':'la réunion','준비하든지':'préparer (au choix)',
+    '숙제를':'les devoirs','하든지':'faire (au choix)','한':'un(e)','가지만':'seulement une chose',
+    '골라야':'devoir choisir','했어요.':'(au passé)','어쩔':'quoi que','수':'le moyen','없었어요.':'je n’avais pas le choix'
+  }, window.KO_FR_LEXICON||{});
+
+  function splitKoWords(s){
+    return String(s).replace(/[.?!]/g,' ').split(/\s+/).filter(Boolean);
+  }
+  function frenchListFromKo(s){
+    const ws = splitKoWords(s);
+    return ws.map(w=>{
+      const fr = KO_FR_LEXICON[w] || KO_FR_LEXICON[w.replace(/[을를은는이가]$/,'')] || '—';
+      return {ko:w, fr};
+    });
+  }
+  function frHalf(frText, koText){
+    const base = (frText && frText.trim())
+      ? frText.trim()
+      : frenchListFromKo(koText).map(p=>p.fr).filter(x=>x!=='—').join(' ');
+    const arr = base.split(/\s+/); const half = Math.max(1, Math.ceil(arr.length/2));
+    return arr.slice(0, half).join(' ');
+  }
+
+  // ---- UI ----
   const row = document.createElement('div');
   row.className = 'flex flex-wrap gap-2 pt-1';
 
   const btn1 = document.createElement('button');
-  btn1.className = 'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50';
-  btn1.textContent = '🙏 Aidez-moi / 도와줘';
+  btn1.className = 'btn btn-hint1';
+  btn1.textContent = '🙏 도와주세요';
 
   const btn2 = document.createElement('button');
-  btn2.className = 'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50';
-  btn2.textContent = '🦺 Au secours / 살려줘';
+  btn2.className = 'btn btn-hint2';
+  btn2.textContent = '🦺 살려주세요';
 
   const wrap = document.createElement('div');
   wrap.className = 'mt-2 space-y-2 text-sm text-slate-700';
   const box1 = document.createElement('div');
-  box1.className = 'hidden p-3 rounded-lg bg-indigo-50 border border-indigo-200';
+  box1.className = 'hint-box';
   const box2 = document.createElement('div');
-  box2.className = 'hidden p-3 rounded-lg bg-amber-50 border border-amber-200';
+  box2.className = 'hint-box';
 
+  // 도와주세요 → 초성 + “초성(initiales)” 설명 + 불어 문장 일부(절반)
   btn1.addEventListener('click', ()=>{
-    const html = `<strong>초성</strong>: ${window.choseongInitials?.(ko)||''}${fr?`<br/><strong>FR</strong>: ${fr}`:''}`;
+    const html = `
+      <div><b>초성</b> (<i>initiales</i>) : ${window.choseongInitials(ko)}</div>
+      <div><b>FR (moitié de phrase)</b> : ${frHalf(fr, ko)}</div>`;
     window.toggleHint(box1, html);
   });
+
+  // 살려주세요 → 문장에 나온 모든 단어(한/불) 리스트업
   btn2.addEventListener('click', ()=>{
-    const html = `<strong>KO(부분)</strong>: ${window.partialKo?.(ko)||''}${fr?`<br/><strong>FR mots-clés</strong>: ${window.keyFrWords?.(fr)||'(—)'}`:''}`;
+    const pairs = frenchListFromKo(ko);
+    const list = pairs.map(p=>`<li><b>${p.ko}</b> — ${p.fr}</li>`).join('');
+    const html = `<div class="text-slate-800 font-semibold mb-1">📚 Vocabulaire (KO → FR)</div><ul class="list-disc list-inside">${list}</ul>`;
     window.toggleHint(box2, html);
   });
 
@@ -308,4 +353,5 @@ window.mkHintRow = function({ko, fr}){
   wrap.appendChild(box1); wrap.appendChild(box2);
   return [row, wrap];
 };
+
 
