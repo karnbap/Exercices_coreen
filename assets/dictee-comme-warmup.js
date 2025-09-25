@@ -208,7 +208,7 @@
         ac=new (window.AudioContext||window.webkitAudioContext)();
         src=ac.createMediaStreamSource(stream);
         gainNode = ac.createGain();
-        gainNode.gain.value = 3.2;                 // 저음량 보정
+        gainNode.gain.value = 1.6;                 // 저음량 보정
         src.connect(gainNode);
         an=ac.createAnalyser();
         an.fftSize = 2048;
