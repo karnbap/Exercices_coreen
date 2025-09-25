@@ -340,40 +340,14 @@ extra.textContent =
     if (bStop ){ bStop .classList.add('pd-pill','pd-stop' ); bStop .textContent='■ Stop · 멈춤'; }
     if (bEval ){ bEval .classList.add('pd-pill','pd-eval' ); bEval .textContent='✓ Évaluer · 평가'; }
 
-    // 시간 뱃지
-    const timeBadge = document.createElement('div');
-    timeBadge.className='pd-time-badge mt-2';
-    timeBadge.innerHTML = '⏱ <span class="pd-time">0.0 s</span>';
-    root.appendChild(timeBadge);
-    const timeSpan = timeBadge.querySelector('.pd-time');
-
-    // 경과 타이머 (시작~정지)
-    let t0=0, ticker=0;
-    function startTimer(){ stopTimer(); t0=performance.now();
-      ticker=setInterval(()=>{
-        const sec=(performance.now()-t0)/1000;
-        timeSpan.textContent = sec.toFixed(1)+' s';
-      },100);
-    }
-function stopTimer(){
-  if (ticker){ clearInterval(ticker); ticker = 0; }
-  const sec = (performance.now() - t0) / 1000;
-  timeSpan.textContent = sec.toFixed(1) + ' s';
-  root.dataset.lastRecSec = String(sec); // ⬅️ 사용자 녹음 길이 저장
-}
+ 
 
     // 클릭 이펙트
     function ripple(el){ el.classList.remove('pd-ripple'); void el.offsetWidth; el.classList.add('pd-ripple'); }
-
-    if (bStart){ bStart.addEventListener('click', ()=>{ ripple(bStart); startTimer(); }); }
-    if (bStop ){ bStop .addEventListener('click', ()=>{ ripple(bStop ); stopTimer(); }); }
-if (bEval ){
-  bEval.addEventListener('click', ()=>{
-    ripple(bEval);
-    // 평가 직전에 타이머 값 확정(혹시 Stop을 안 눌렀더라도)
-    try { if (typeof stopTimer === 'function') stopTimer(); } catch(_){}
-  });
-}
+      if (bStart){ bStart.addEventListener('click', ()=>{ ripple(bStart); }); }
+  if (bStop ){ bStop .addEventListener('click', ()=>{ ripple(bStop ); }); }
+  if (bEval ){ bEval .addEventListener('click', ()=>{ ripple(bEval ); }); }
+ 
   }
 }
 
