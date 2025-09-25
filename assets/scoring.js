@@ -56,20 +56,56 @@ function tempoPenalty(tempo) {
   const ref = num(refDurationSec), usr = num(userDurationSec);
   if (!ref || !usr) return { penalty: 0, reason: '', praise: '', bucketScore: null, bonus: 0 };
 
-  const r = usr / ref;                       // 비율(1.00=동일, 1.20=20% 느림)
-  const pct = Math.round((r - 1) * 100);     // +20 = 20% 느림
+  const r = usr / ref;                    // 1.00=동일, 1.20=20% 느림
+  const pct = Math.round((r - 1) * 100);
   if (mode === 'slow') return { penalty: 0, reason: '', praise: '', bucketScore: null, bonus: 0 };
 
-  // 과속(빠른 속도): 발음이 정확하면 감점 없음(속도만으로는 페널티 미부여)
+  // 빠른 속도: 발음만 정확하면 감점 없음
   if (r < 0.85) {
     return {
       penalty: 0,
       reason: `⚡ 빠른 편(무페널티) / Rapide (pas de pénalité)`,
       praise: '속도는 빠르지만 발음이 또박또박하면 아주 좋아요! / Rapide mais clair, excellent 🙂',
-      bucketScore: 100,  // 속도만으로 감점/가점 없음 → 기준 100으로 표시
+      bucketScore: 100,
       bonus: 0
     };
   }
+
+  let penalty = 0, reason = '', praise = '', bucketScore = null, bonus = 0;
+
+  if (r <= 1.10) {           // 완벽: 100점 + 보너스 20
+    penalty = 0;  bucketScore = 120; bonus = 20;
+    reason = '✅ 속도 적절 / Vitesse parfaite (≤10%)';
+    praise = '완벽해요! / Parfait ! 🎉 (보너스 +20)';
+  } else if (r <= 1.40) {    // 아주 잘했음: 100
+    penalty = 0;  bucketScore = 100;
+    reason = `👍 약간 느림(+${pct}%) / Légèrement plus lent`;
+    praise = '아주 잘했어요! / Très bien ! 🙂';
+  } else if (r <= 2.00) {    // 괜찮음: 80
+    penalty = 5;  bucketScore = 80;
+    reason = `⏱️ +${pct}% 느림 / Plus lent`;
+    praise = '괜찮아요. 한 번만 더 이어서 말해요! / Correct, encore une fois !';
+  } else if (r <= 3.00) {    // 70
+    penalty = 10; bucketScore = 70;
+    reason = `🐌 많이 느림(+${pct}%) / Assez lent`;
+    praise = '약간 느리지만 이해돼요. 호흡만 조금 더! / Compréhensible, colle un peu le débit 😉';
+  } else if (r <= 4.00) {    // 60
+    penalty = 20; bucketScore = 60;
+    reason = `🐢 매우 느림(+${pct}%) / Très lent`;
+    praise = '조금만 더 하면 더 잘할 것 같아요!! / Tu y es presque !! 💪';
+  } else if (r <= 5.00) {    // 50
+    penalty = 30; bucketScore = 50;
+    reason = `🐢 너무 느림(+${pct}%) / Trop lent`;
+    praise = '너무 느리면 대화가 어려워요. 3번만 반복하면 1단계 ↑ / Répète 3 fois, tu montes ! 🚀';
+  } else {                   // 45
+    penalty = 35; bucketScore = 45;
+    reason = `🐢 극도로 느림(+${pct}%) / Extrêmement lent`;
+    praise = '짧게 끊지 말고 두 문장을 붙여보자! / Essaie de lier sans coupure 😉';
+  }
+
+  return { penalty, reason, praise, bucketScore, bonus };
+}
+
 
 
   let penalty = 0, reason = '', praise = '', bucketScore = null, bonus = 0;
@@ -109,56 +145,7 @@ function tempoPenalty(tempo) {
 }
 
 
-    // ====== 칭찬/조언 단계 (비율 기준) ======
-    // ≤1.10× : 완벽
-    // 1.10×~1.40× : 아주 잘했음
-    // 1.50×~2.00× : 괜찮음
-    // 2.00×~3.00× : 약간 느리지만 이해 가능
-    // 3.00×~4.00× : 조금만 더 하면 더 잘할 것 같아요!!
-    // 4.00×~5.00× : 너무 느려서 대화가 어려워요. 3번만 반복하면 1단계 올라가요!
-    if (ratio <= 1.10) {
-      penalty = 0;
-      reason  = '✅ 속도 적절 / Vitesse parfaite (≤10%)';
-      praise  = '완벽해요! / Parfait ! 🎉';
-    } else if (ratio <= 1.40) {
-      penalty = 3;
-      reason  = `👍 약간 느림(+${pct}%) / Légèrement plus lent`;
-      praise  = '아주 잘했어요! / Très bien ! 🙂';
-    } else if (ratio <= 2.00) {
-      penalty = 8;
-      reason  = `⏱️ +${pct}% 느림 / Plus lent`;
-      praise  = '괜찮아요. 한 번만 더 이어서 말하면 좋아져요! / Correct, encore une fois !';
-    } else if (ratio <= 3.00) {
-      penalty = 15;
-      reason  = `🐌 많이 느림(+${pct}%) / Assez lent`;
-      praise  = '약간 느리지만 이해돼요. 호흡만 조금 더 붙이면 완벽! / Compréhensible, colle un peu le débit 😉';
-    } else if (ratio <= 4.00) {
-      penalty = 25;
-      reason  = `🐢 매우 느림(+${pct}%) / Très lent`;
-      praise  = '조금만 더 하면 더 잘할 것 같아요!! / Tu y es presque, courage !! 💪';
-    } else if (ratio <= 5.00) {
-      penalty = 35;
-      reason  = `🐢 너무 느림(+${pct}%) / Trop lent`;
-      praise  = '너무 느려서 대화가 어려울 수 있어요. 3번만 반복하면 1단계 올라가요! / Répète 3 fois, tu montes d’un palier ! 🚀';
-    } else {
-      penalty = 40;
-      reason  = `🐢 극도로 느림(+${pct}%) / Extrêmement lent`;
-      praise  = '짧게 끊지 말고 두 문장을 붙여보자! / Essaie de lier sans coupure 😉';
-    }
-
-return {
-  score: finalScore,
-  baseScore: base,
-  tempoPenalty: penalty,
-  tempoReason: reason,
-  tempoPraise: praise,
-  tempoBucketScore: bucketScore,
-  tempoBonus: bonus,
-  similarity: sim,
-  ref: refText,
-  hyp: hypText
-};
-
+  
 
 
   function clamp01(x) { return Math.min(1, Math.max(0, x)); }
@@ -187,15 +174,20 @@ return {
         finalScore = Math.max(finalScore, 95);
       }
 
-      return {
-        score: finalScore,
-        baseScore: base,
-        tempoPenalty: penalty,
-        tempoReason: reason,
-        similarity: sim,
-        ref: refText,
-        hyp: hypText
-      };
+    return {
+  score: finalScore,
+  baseScore: base,
+  tempoPenalty: penalty,
+  tempoReason: reason,
+  tempoPraise: praise,           // ⬅ 추가
+  tempoBucketScore: bucketScore, // ⬅ 추가
+  tempoBonus: bonus,             // ⬅ 추가
+  similarity: sim,
+  ref: refText,
+  hyp: hypText
+};
+
+
     }
   };
 
