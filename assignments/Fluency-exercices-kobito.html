@@ -409,35 +409,39 @@ function renderStep1(){
     const voice = VOICES[idx % VOICES.length];
     btn.addEventListener('click', ()=> tts(q.ko, btn, voice));
 
-    // KO/FR 입력칸 (미러 박스는 제거)
-    const inpKo = h('input', {
-      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
-      placeholder:'받아쓰기: 한국어로 적기'
-    });
-    const inpFr = h('input', {
-      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
-      placeholder:'Sens (FR): 의미(불어)'
-    });
-
     // 힌트
     const [hintRow, hintBox] = mkHintRow({ ko: q.ko, fr: q.fr });
 
-    // 발음 위젯
+    // 발음 녹음 박스
     const pbox = h('div', {class:'mt-2'});
-    mountPronun(pbox, ()=> q.ko);
+    mountPronun(pbox, () => q.ko);
 
-    // ✅ card 생성
+    // 🎙️ 실시간 STT 표시(Étape 1에도 추가)
+    const echoLive = h('div', {class:'input-live mt-2'});
+    echoLive.innerHTML = `
+      <div class="label">🎙️ En direct (KO) / 실시간</div>
+      <div class="body pronun-live">—</div>
+      <div class="meta text-xs text-slate-500">STT 자동 표시</div>
+    `;
+
+    // 카드 구성 (※ 이전 오류: card 미정의 → 여기서 정의)
     const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
       head, btn,
-      inpKo,
-      inpFr,
       hintRow, hintBox,
-      pbox
+      pbox,
+      echoLive
     );
+
+    // 발음 평가 완료 시 STT 텍스트 갱신
+    pbox.addEventListener('kobito:graded', (e)=>{
+      const hyp = String(e?.detail?.hyp || '');
+      if (hyp) { const live = card.querySelector('.pronun-live'); if (live) live.textContent = hyp; }
+    });
 
     host.appendChild(card);
   });
 }
+
 
 
 // === Étape 2: 비활성 입력칸 제거, STT 전용 박스 1개만 유지 ===
