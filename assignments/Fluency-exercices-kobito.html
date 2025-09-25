@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="/assets/favicon.ico">
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
@@ -547,63 +549,35 @@ if (finishBtn) {
   });
 
 finishBtn.addEventListener('click', async () => {
-  try {
-    // ① Étape 1 입력 스냅샷 반영
-    snapshotInputs();
+  // 1) 입력 스냅샷
+  snapshotInputs();
 
-    // ② 결과 페이로드 구성(요구된 스키마)
-    const studentName = (window.StudentGate?.getName?.() || document.getElementById('student-name')?.value || '').trim();
-    const startTime   = window._startTime || new Date().toISOString();
-    const endTime     = new Date().toISOString();
-    const totalTimeSeconds = Math.max(1, Math.round((Date.now() - (window._startMs || Date.now())) / 1000));
+  // 2) 페이로드
+  const payload = {
+    studentName,
+    startTime,
+    endTime,
+    totalTimeSeconds,
+    questions
+  };
 
-    // KO 문장 키 목록(1→2→3)
-    const keys = [
-      ...STEP1_DATA.map(x => x.ko),
-      ...STEP2_DATA.map(x => x.ko),
-      STEP3_TEXT
-    ].filter(Boolean);
+  // 3) 전송 (실패하든 성공하든 결과 페이지는 열리게)
+  try { await window.sendResults(payload); } catch (_) {}
 
-    // Étape 1의 불어 뜻 매핑
-    const frMap = Object.fromEntries(STEP1_DATA.map(x => [x.ko, x.fr || '']));
-
-    const questions = keys.map((k, i) => {
-      const inp = window._kobito?.inputs?.get(k) || { ko: '', fr: '' };
-      const ev  = window._kobito?.evals?.get(k)  || { score: 0, duration: 0, transcript: '' };
-      return {
-        number: i + 1,
-        ko: k,
-        fr: frMap[k] || '',
-        userAnswer: String(inp.ko || ''),
-        isCorrect: Number(ev.score || 0) >= 60,
-        listenCount: Number(window._kobito?.listen?.get(k) || 0),
-        hint1Count:  Number(window._kobito?.hint1?.get(k)  || 0),
-        hint2Count:  Number(window._kobito?.hint2?.get(k)  || 0),
-        recording: {
-          base64: "",
-          filename: "rec.webm",
-          mimeType: "audio/webm",
-          duration: Number(ev.duration || 0)
-        },
-        asrTranscript: String(ev.transcript || ''),
-        pronunScore: Number(ev.score || 0)
-      };
-    });
-
-    const payload = {
-      studentName, startTime, endTime, totalTimeSeconds, questions
-    };
-
-    // ③ 전송 (로컬 폴백은 results-compat.js가 처리)
-await window.sendResults(payload);
-window.location.href = '/results.html';
-
-  } catch (e) {
-    console.warn('sendResults failed, opening results viewer via stash', e);
-// ④ 결과 페이지로 이동 (results.html이 assets 폴더에 있을 때)
-window.location.href = '/assets/results.html';
+  // 4) 존재하는 결과 페이지로 이동 시도(HEAD 체크)
+  async function goToResults() {
+    const candidates = ['/results.html', '/assets/results.html', '/assets/results/index.html'];
+    for (const p of candidates) {
+      try {
+        const r = await fetch(p, { method: 'HEAD', cache: 'no-store' });
+        if (r.ok) { location.href = p; return; }
+      } catch (_) {}
+    }
+    alert('결과 페이지를 찾지 못했어요. 화면을 캡처해서 Lapeace29@gmail.com 으로 보내주세요.');
   }
+  await goToResults();
 });
+
 
 
 } // ← if (finishBtn) 블록 닫힘
