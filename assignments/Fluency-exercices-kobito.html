@@ -1,4 +1,4 @@
-// 한글 초성 추출 (힌트1)
+<!-- 한글 초성 추출 (힌트1) -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -112,6 +112,7 @@
 <script defer src="/assets/student-gate.js?v=1.1"></script>
 <script defer src="/assets/pronun-client.js?v=4.8"></script>
 <script defer src="/assets/scoring.js?v=1.0"></script>
+<script defer src="/assets/results-compat.js?v=1.1"></script>
 
 
   <script>
@@ -213,6 +214,8 @@ await a.play();
 function mountPronun(box, getRef){
   const holder = h('div');
   box.appendChild(holder);
+  holder.dataset.refText = String((getRef && getRef()) || '');
+
 
   // 미리보기/샌드박스 대비 플레이스홀더
   const placeholder = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-slate-200 text-slate-600 font-semibold rounded-lg px-4 py-2.5 text-base cursor-not-allowed'}, '🎙 녹음 (미리보기에서는 비활성)');
@@ -296,9 +299,13 @@ function tempoOnlyPenalty(refSec, recSec){
           extra.className = `mt-1 text-xs text-slate-600 ${wantClass}`;
           badge.after(extra);
         }
-        const p = g.tempoPenalty || 0;
-        const reason = g.tempoReason || '—';
-        extra.textContent = `Tempo ▶ ref ${refDur.toFixed(2)} s / vous ${recDur.toFixed(2)} s → -${p} (${reason})`;
+       const p = g.tempoPenalty || 0;
+const reason = g.tempoReason || '—';
+const bonus  = Number(g.tempoBonus || 0);
+const bucket = g.tempoBucketScore;
+const praise = g.tempoPraise || '';
+extra.textContent = `Tempo ▶ ref ${refDur.toFixed(2)} s / vous ${recDur.toFixed(2)} s → -${p} (${reason})${bucket ? ` · 🏅 ${bucket}${bonus ? `(+${bonus})` : ''}` : ''}${praise ? ` · ${praise}` : ''}`;
+
       }
 
       holder.dispatchEvent(new CustomEvent('kobito:graded', {
@@ -568,76 +575,68 @@ if (finishBtn) {
     });
   });
 
-  finishBtn.addEventListener('click', async ()=>{
-    try{
-      snapshotInputs();
+finishBtn.addEventListener('click', async ()=>{
+  try{
+    // 1) 입력값 스냅샷 최신화
+    snapshotInputs();
 
-      const endTime = new Date().toISOString();
-      const startMs = window._startMs || Date.now();
-      const totalTimeSeconds = Math.max(1, Math.round((Date.now() - startMs)/1000));
+    const studentName = document.getElementById('student-name')?.value?.trim() || 'Anonyme';
+    const startISO = window._kobito?.startTime || new Date().toISOString();
+    const end = new Date();
+    const endISO = end.toISOString();
+    const totalTimeSeconds = Math.max(1, Math.round((end - new Date(startISO))/1000));
 
-      const studentName = (document.getElementById('student-name')?.value || window.StudentGate?.getName?.() || '').trim();
+    // 보낼 항목 모으기(모든 문장 집합)
+    const keys = new Set([
+      ...STEP1_DATA.map(x=>x.ko),
+      ...STEP2_DATA.map(x=>x.ko),
+      STEP3_TEXT
+    ]);
 
-      // 모든 문항(Étape1+2+3) 키 합치기
-      const keys = [
-        ...STEP1_DATA.map(x=>x.ko),
-        ...STEP2_DATA.map(x=>x.ko),
-        STEP3_TEXT
-      ];
+    const questions = [];
+    let n = 1;
+    keys.forEach(ko=>{
+      const fr     = (STEP1_DATA.find(x=>x.ko===ko)?.fr) || '';
+      const ev     = window._kobito?.evals?.get(ko) || {};
+      const listens= window._kobito?.listen?.get(ko) || 0;
+      const h1     = window._kobito?.hint1?.get(ko) || 0;
+      const h2     = window._kobito?.hint2?.get(ko) || 0;
+      const inp    = window._kobito?.inputs?.get(ko) || { ko:'', fr:'' };
 
-      const questions = keys.map((k, i)=>{
-        const inp   = Track.inputs.get(k) || { ko:'', fr:'' };
-        const evalR = Track.evals.get(k)  || { score:0, duration:0, transcript:'' };
-        return {
-          number: i+1,
-          ko: k,
-          fr: (STEP1_DATA.find(x=>x.ko===k)?.fr)||'',
-          userAnswer: inp.ko || '',
-          isCorrect: !!(evalR.score >= 60),
-          listenCount: Number(Track.listen.get(k)||0),
-          hint1Count: Number(Track.hint1.get(k)||0),
-          hint2Count: Number(Track.hint2.get(k)||0),
-          // 녹음 원본은 pronun-client 공개 API에서 접근 불가 → duration만 전송
-          recording: {
-            base64: '',
-            filename: 'rec.webm',
-            mimeType: 'audio/webm',
-            duration: Number(evalR.duration||0)
-          },
-          // 참고 필드(교사용): 인식 텍스트/점수
-          asrTranscript: evalR.transcript || '',
-          pronunScore: Number(evalR.score||0)
-        };
+      questions.push({
+        number: n++,
+        ko,
+        fr,
+        userAnswer: inp.ko || '',
+        isCorrect: Number(ev.score||0) >= 75,
+        listenCount: listens,
+        hint1Count: h1,
+        hint2Count: h2,
+        recording: { base64:'', filename:'', mimeType:'audio/webm', duration: Number(ev.duration||0) }
       });
+    });
 
-      const payload = {
-        studentName,
-        startTime: window._startTime || new Date(startMs).toISOString(),
-        endTime,
-        totalTimeSeconds,
-        questions
-      };
+    const payload = {
+      studentName,
+      startTime: startISO,
+      endTime: endISO,
+      totalTimeSeconds,
+      questions
+    };
 
-      // 서버 함수로 전송 (경로 고정)
-      const resp = await fetch('/.netlify/functions/send-results', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(payload)
-      });
+    // 2) 전송
+    await window.sendResults(payload);
 
-      const data = await resp.json().catch(()=>null);
-      if (!resp.ok || (data && data.ok===false)) {
-        throw new Error((data&&data.error)||'send-results failed');
-      }
+    // 3) 결과 페이지로 이동
+    window.location.href = '/results.html';
+  }catch(e){
+    console.warn('sendResults failed, opening results viewer via stash', e);
+    window.location.href = '/results.html';
+  }
+});
 
-      alert('✅ 전송 완료! / Résultats envoyés.');
-    }catch(err){
-      console.error('send-results error:', err);
-      alert('⚠️ 전송에 실패했어요. 잠시 후 다시 시도해주세요.');
-      // 서버 로그 함수는 student-gate에서 이미 래핑되어 있습니다. :contentReference[oaicite:1]{index=1}
-    }
-  });
-}
+} // ← if (finishBtn) 블록 닫힘
+
 
       } catch(e){
         console.warn('[init-wait]', e);
