@@ -198,7 +198,7 @@ function applyGenericCounterVariants(s){
 
 
 // 학생 입력은 자동 변환하지 않도록 유지(필요 시 직접 호출해서 사용)
-function forceHangulNumbersNoOp(s){
+function forceHangulNumbers(s){
   return String(s || '');
 }
 
