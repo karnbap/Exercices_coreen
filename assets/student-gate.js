@@ -3,7 +3,8 @@
 // - 이름 게이트: opt-in(data-requires-name)만 차단 → 다른 연습문제 영향 최소화
 // - finish 버튼 자동 비활성/활성
 // - 전역 오류/전송 로깅 (중복 래핑 방지, 안전 파싱)
-// - 전역 Hint 토글(카드 범위 data-target 우선 → 폴백, CSS 없어도 인라인 display 토글)
+// - Hint: FR/KO 라벨, 도와주세요/살려주세요 규칙, 자동 불어 보강(없으면 소사전 추정)
+// - 전역 Hint 토글(카드 범위 data-target 우선, 폴백 안전)
 // - 자동 초기화: 페이지에 #student-name / [data-requires-name] 있을 때만 동작
 
 ;(function () {
@@ -21,8 +22,8 @@
   // ===== messages =====
   const MSG = {
     needName : '이름을 먼저 입력해주세요 / Entrez votre nom d’abord.'
-    // (발음 관련 메시지/가드 완전 제거)
   };
+  window.MSG = Object.assign({}, window.MSG||{}, MSG);
 
   function getName(){
     try { return localStorage.getItem(KEY) || ''; } catch { return ''; }
@@ -228,18 +229,111 @@
   });
 })();
 
-// ===== Global Hint Toggle =====
-// - data-target 우선 (예: data-target=".hint1-box"), 없으면 버튼 다음 형제 .hint-box
-// - 카드(.card / [data-card] / .dictation-card / .quiz-card) 범위에서만 탐색
-// - CSS 없어도 보이게 inline display까지 토글
+/* =========================
+   Hint Utilities (FR/KO)
+   ========================= */
+
+// 안전 토글(전역)
+window.toggleHint = window.toggleHint || function(box, html){
+  if (!box) return;
+  const hidden = box.classList.contains('hidden');
+  if (hidden) {
+    if (html != null) box.innerHTML = html;
+    box.classList.remove('hidden');
+    box.style.display = 'block';
+  } else {
+    box.classList.add('hidden');
+    box.style.display = 'none';
+  }
+};
+
+// 작은 한-불 사전(페이지에서 window.KO_FR_LEXICON로 확장 가능)
+const __BASE_LEXICON = {
+  '시간이':'le temps','없어서':'faute de','회의를':'la réunion','준비하든지':'préparer (au choix)',
+  '숙제를':'les devoirs','하든지':'faire (au choix)','한':'un(e)','가지만':'seulement une',
+  '골라야':'devoir choisir','했어요.':'(passé)','어쩔':'aucun','수':'moyen','없었어요.':'pas le choix'
+};
+
+function __choseong(str){
+  const S=0xAC00, V=21, T=28, Lc=19, Nc=V*T, Sc=Lc*Nc;
+  const Ls=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  let out=''; for (const ch of String(str)){
+    const c=ch.codePointAt(0);
+    if (c>=S && c<S+Sc){ out += Ls[Math.floor((c-S)/Nc)]; }
+    else out += /\s/.test(ch) ? ' ' : ch;
+  } return out.replace(/\s+/g,' ').trim();
+}
+function __splitKo(s){ return String(s).replace(/[“”"‘’'.,!?;:~()]/g,' ').split(/\s+/).filter(Boolean); }
+function __pairsFromKo(ko){
+  const lex = Object.assign({}, __BASE_LEXICON, window.KO_FR_LEXICON||{});
+  return __splitKo(ko).map(w=>{
+    const key = w.replace(/[을를은는이가]$/,'');
+    return { ko:w, fr: (lex[w] || lex[key] || '—') };
+  });
+}
+function __frHalf(fr, ko){
+  const base = fr && fr.trim()
+    ? fr.trim()
+    : __pairsFromKo(ko).map(p=>p.fr).filter(x=>x!=='—').join(' ');
+  const arr = base.split(/\s+/).filter(Boolean);
+  const half = Math.max(1, Math.ceil(arr.length/2));
+  return arr.slice(0, half).join(' ') + (arr.length>half ? ' …' : '');
+}
+
+// 공용 힌트 UI (FR/KO 라벨 + 규칙)
+window.mkHintRow = function({ ko = '', fr = '' } = {}){
+  const row  = document.createElement('div'); row.className  = 'flex flex-wrap gap-2 pt-1';
+  const wrap = document.createElement('div'); wrap.className = 'mt-2 space-y-2 text-sm text-slate-700';
+
+  const b1 = document.createElement('button');
+  b1.className = 'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 btn-hint1';
+  b1.textContent = '🙏 Aidez-moi / 도와주세요';
+
+  const b2 = document.createElement('button');
+  b2.className = 'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 btn-hint2';
+  b2.textContent = '🦺 Au secours / 살려주세요';
+
+  const box1 = document.createElement('div');
+  box1.className = 'hidden p-3 rounded-lg bg-indigo-50 border border-indigo-200 hint-box hint1-box';
+  box1.dataset.managed = 'toggleHint';
+
+  const box2 = document.createElement('div');
+  box2.className = 'hidden p-3 rounded-lg bg-amber-50 border border-amber-200 hint-box hint2-box';
+  box2.dataset.managed = 'toggleHint';
+
+  // 도와주세요 → 초성 + “초성(initiales)” + 불어 절반 문장(불어 없으면 자동 보강)
+  b1.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    const html = `
+      <div><strong>초성</strong> (<em>initiales</em>) : ${__choseong(ko)}</div>
+      <div class="mt-1"><strong>FR (moitié)</strong> : ${__frHalf(fr, ko) || '(—)'}</div>`;
+    window.toggleHint(box1, html);
+  });
+
+  // 살려주세요 → 문장 내 모든 단어 KO/FR 목록 (FR 없으면 자동 추정)
+  b2.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    const pairs = __pairsFromKo(ko);
+    const list  = pairs.map(p=>`<li><b>${p.ko}</b> — ${p.fr}</li>`).join('');
+    const html  = `<div class="font-semibold mb-1">📚 Vocabulaire (KO → FR)</div><ul class="list-disc pl-5">${list}</ul>`;
+    window.toggleHint(box2, html);
+  });
+
+  row.appendChild(b1); row.appendChild(b2);
+  wrap.appendChild(box1); wrap.appendChild(box2);
+  return [row, wrap];
+};
+
+// 전역 위임 토글(폴백): data-target 우선 → 형제 .hint-box
+// mkHintRow가 관리하는 박스(dataset.managed='toggleHint')는 건드리지 않음
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('.btn-hint1, .btn-hint2, .btn-hint');
   if (!btn) return;
 
-  // 이름 필수면 data-requires-name을 버튼(또는 래퍼)에 붙여 활용 가능
+  // 이름 필수 가드
   if (!window.StudentGate?.getName?.() && btn.closest('[data-requires-name]') && !btn.closest('[data-allow-before-name]')){
     e.preventDefault(); e.stopPropagation();
-    alert((window.MSG&&MSG.needName) || '이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
+    alert((window.MSG&&window.MSG.needName) || '이름을 먼저 입력해주세요 / Entrez votre nom d’abord.');
     return;
   }
 
@@ -250,108 +344,16 @@ document.addEventListener('click', (e)=>{
     const next = btn.nextElementSibling;
     if (next && next.classList?.contains('hint-box')) box = next;
   }
-  if (!box) return;
+  if (!box || box.dataset.managed === 'toggleHint') return; // mkHintRow 관리 항목은 스킵
 
-  const show = !box.classList.contains('show');
-  box.classList.toggle('show', show);
+  const show = box.style.display === 'none' || !box.style.display;
   box.style.display = show ? 'block' : 'none';
+  box.classList.toggle('hidden', !show);
   btn.setAttribute('aria-pressed', show ? 'true' : 'false');
 
-  // 집계 이벤트(페이지 스크립트에서 수집 가능)
   try {
     const type = btn.classList.contains('btn-hint1') ? 'hint1' :
                  btn.classList.contains('btn-hint2') ? 'hint2' : 'hint';
-    btn.dispatchEvent(new CustomEvent('hint-used', {
-      bubbles:true, detail:{ type, shown:show }
-    }));
+    btn.dispatchEvent(new CustomEvent('hint-used', { bubbles:true, detail:{ type, shown:show }}));
   } catch {}
 });
-
-// (발음 가드 전역 바인딩 블록은 완전히 제거했습니다)
-
-// assets/student-gate.js 맨 아래쪽에 추가
-window.toggleHint = function(box, html){
-  const isHidden = box.classList.contains('hidden');
-  if (isHidden) { box.innerHTML = html; box.classList.remove('hidden'); }
-  else { box.classList.add('hidden'); }
-};
-
-window.mkHintRow = function({ko, fr}){
-  // ---- 보조 유틸 (없으면 정의) ----
-  if (!window.choseongInitials) {
-    window.choseongInitials = function(str){
-      const S=0xAC00, L=0x1100, V=21, T=28, Lc=19, Nc=V*T, Sc=Lc*Nc;
-      const Ls=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-      let out=''; for (const ch of str){
-        const c=ch.codePointAt(0);
-        if(c>=S && c<S+Sc){ const i=c-S; out+=Ls[Math.floor(i/Nc)]; }
-        else out+=(/\s/.test(ch)?' ':ch);
-      } return out.replace(/\s+/g,' ').trim();
-    };
-  }
-  // 아주 작은 한-불 사전(없으면 ‘—’) — 필요시 페이지에서 window.KO_FR_LEXICON으로 확장
-  const KO_FR_LEXICON = Object.assign({
-    '시간이':'le temps','없어서':'par manque de','회의를':'la réunion','준비하든지':'préparer (au choix)',
-    '숙제를':'les devoirs','하든지':'faire (au choix)','한':'un(e)','가지만':'seulement une chose',
-    '골라야':'devoir choisir','했어요.':'(au passé)','어쩔':'quoi que','수':'le moyen','없었어요.':'je n’avais pas le choix'
-  }, window.KO_FR_LEXICON||{});
-
-  function splitKoWords(s){
-    return String(s).replace(/[.?!]/g,' ').split(/\s+/).filter(Boolean);
-  }
-  function frenchListFromKo(s){
-    const ws = splitKoWords(s);
-    return ws.map(w=>{
-      const fr = KO_FR_LEXICON[w] || KO_FR_LEXICON[w.replace(/[을를은는이가]$/,'')] || '—';
-      return {ko:w, fr};
-    });
-  }
-  function frHalf(frText, koText){
-    const base = (frText && frText.trim())
-      ? frText.trim()
-      : frenchListFromKo(koText).map(p=>p.fr).filter(x=>x!=='—').join(' ');
-    const arr = base.split(/\s+/); const half = Math.max(1, Math.ceil(arr.length/2));
-    return arr.slice(0, half).join(' ');
-  }
-
-  // ---- UI ----
-  const row = document.createElement('div');
-  row.className = 'flex flex-wrap gap-2 pt-1';
-
-  const btn1 = document.createElement('button');
-  btn1.className = 'btn btn-hint1';
-  btn1.textContent = '🙏 도와주세요';
-
-  const btn2 = document.createElement('button');
-  btn2.className = 'btn btn-hint2';
-  btn2.textContent = '🦺 살려주세요';
-
-  const wrap = document.createElement('div');
-  wrap.className = 'mt-2 space-y-2 text-sm text-slate-700';
-  const box1 = document.createElement('div');
-  box1.className = 'hint-box';
-  const box2 = document.createElement('div');
-  box2.className = 'hint-box';
-
-  // 도와주세요 → 초성 + “초성(initiales)” 설명 + 불어 문장 일부(절반)
-  btn1.addEventListener('click', ()=>{
-    const html = `
-      <div><b>초성</b> (<i>initiales</i>) : ${window.choseongInitials(ko)}</div>
-      <div><b>FR (moitié de phrase)</b> : ${frHalf(fr, ko)}</div>`;
-    window.toggleHint(box1, html);
-  });
-
-  // 살려주세요 → 문장에 나온 모든 단어(한/불) 리스트업
-  btn2.addEventListener('click', ()=>{
-    const pairs = frenchListFromKo(ko);
-    const list = pairs.map(p=>`<li><b>${p.ko}</b> — ${p.fr}</li>`).join('');
-    const html = `<div class="text-slate-800 font-semibold mb-1">📚 Vocabulaire (KO → FR)</div><ul class="list-disc list-inside">${list}</ul>`;
-    window.toggleHint(box2, html);
-  });
-
-  row.appendChild(btn1); row.appendChild(btn2);
-  wrap.appendChild(box1); wrap.appendChild(box2);
-  return [row, wrap];
-};
-
-
