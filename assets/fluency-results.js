@@ -42,17 +42,22 @@
   }
 
   // === KO 채점(“의미 바뀌는 띄어쓰기” 제외 관대) ===
-  function scoreKO(ref, hyp){
-    const r0=koOnly(ref), h0=koOnly(hyp);
-    const r1=koTight(ref), h1=koTight(hyp);
-    const sim0=similarity(r0,h0), sim1=similarity(r1,h1);
+function scoreKO(ref, hyp){
+  const r0=koOnly(ref), h0=koOnly(hyp);
+  const r1=koTight(ref), h1=koTight(hyp);
+  const sim0=similarity(r0,h0), sim1=similarity(r1,h1);
 
-    const strongErr = (r1.length>=4 && sim1<0.65);
+  // 유사도 10% 미만 → 최대 10점만 (스쳐지나간 수준 보상)
+  if (sim1 < 0.10) return Math.round(sim1 * 10); // 0..10
 
-    let base = Math.round(sim1*100);
-    if (!strongErr && sim1>=0.90 && sim0<0.88) base = Math.max(90, Math.round((sim0*100)+5)); // 띄어쓰기만 틀림 보정
-    return Math.max(0, Math.min(100, base));
-  }
+  const strongErr = (r1.length>=4 && sim1<0.65);
+
+  let base = Math.round(sim1*100);
+  if (!strongErr && sim1>=0.90 && sim0<0.88) base = Math.max(90, Math.round((sim0*100)+5)); // 띄어쓰기만 틀림 보정
+  return Math.max(0, Math.min(100, base));
+}
+
+
 
   // === FR 채점(단어 부분/동의계열 허용: 토큰 교집합 + 부분일치) ===
   function scoreFR(ref, hyp){
@@ -68,8 +73,13 @@
     }
     const cov = Math.min(1, hit / R.length);
     const sim = Math.max(cov, similarity(R.join(' '), H.join(' ')));
+
+    // 의미/토큰 커버리지 10% 미만 → 최대 10점(스쳐지나간 수준)
+    if (cov < 0.10) return Math.round(sim * 10); // 0..10
+
     return Math.round(sim*100);
   }
+
 
   // === Etape2/3 권장: 낮은 발음 점수 문항을 Etape1 번호로 매핑하여 2~3회 반복 권장 ===
   function buildRecommendations(questions){
@@ -195,7 +205,6 @@
           <div class="sum-box"><div class="sum-title">총점 / (FR: Total)</div><div class="sum-val">${grand600}/600</div></div>
         </div>
       </section>
-
       <section class="card mt-4">
         <h2 class="text-lg font-semibold mb-2">Étape 1 — KO/FR 세부 채점</h2>
         <div class="overflow-auto">
@@ -229,20 +238,57 @@
         </div>
       </section>
 
-      <section class="card mt-4">
+        <section class="card mt-4">
         <h2 class="text-lg font-semibold mb-2">Étapes 2 & 3 — 다시 하기 권장</h2>
-        ${recos.length ? `
-          <ul class="space-y-2">
-            ${recos.map(x=>`
-              <li class="p-3 rounded bg-amber-50 border border-amber-200">
-                <div class="font-semibold">Q${x.num} · ${esc(x.ko)}</div>
-                <div class="text-sm text-slate-600">Précision prononciation: ${x.sc}% — ${esc(x.tip)}</div>
-              </li>`).join('')}
-          </ul>
-        ` : `<div class="text-emerald-700">아주 좋아요! / Très bien ! 🙂</div>`}
+        ${(() => {
+          const hasPronData = Array.isArray(Q) && Q.some(q => Number(q.pronunScore||q.score||0) > 0);
+          const hasRec = Array.isArray(recos) && recos.length > 0;
+
+          if (hasRec) {
+            return `
+              <ul class="space-y-2">
+                ${recos.map(x=>`
+                  <li class="p-3 rounded bg-amber-50 border border-amber-200">
+                    <div class="font-semibold">Q${x.num} · ${esc(x.ko)}</div>
+                    <div class="text-sm text-slate-600">Précision prononciation: ${x.sc}% — ${esc(x.tip)}</div>
+                  </li>`).join('')}
+              </ul>`;
+          }
+          return hasPronData
+            ? `<div class="text-emerald-700">아주 좋아요! / Très bien ! 🙂</div>`
+            : `<div class="text-slate-700">Étapes 2 & 3 녹음 내역이 없어요. 이어 말하기를 녹음해 주세요. 🙂</div>`;
+        })()}
         <p class="mt-2 text-xs text-slate-500">낮은 발음 점수 문장을 Étape 1 번호 기준으로 2–3회 더 이어서 말하기.</p>
       </section>
-    `;
+
+
+if (Array.isArray(recos) && recos.length) {
+  recosHtml = `
+    <ul class="space-y-2">
+      ${recos.map(x=>`
+        <li class="p-3 rounded bg-amber-50 border border-amber-200">
+          <div class="font-semibold">Q${x.num} · ${esc(x.ko)}</div>
+          <div class="text-sm text-slate-600">Précision prononciation: ${x.sc}% — ${esc(x.tip)}</div>
+        </li>`).join('')}
+    </ul>`;
+} else if (hasPronData) {
+  recosHtml = `<div class="text-emerald-700">아주 좋아요! / Très bien ! 🙂</div>`;
+} else {
+  recosHtml = `<div class="text-slate-700">Étapes 2 & 3 녹음 내역이 없어요. 이어 말하기를 녹음해 주세요. 🙂</div>`;
+}
+
+const hasRec = Array.isArray(recos) && recos.length > 0;
+const hasPronData = Array.isArray(Q) && Q.some(q => Number(q.pronunScore||q.score||0) > 0);
+...
+${hasRec ? `
+  <ul class="space-y-2">
+    ${recos.map(x=>`
+      <li class="p-3 rounded bg-amber-50 border border-amber-200">
+        <div class="font-semibold">Q${x.num} · ${esc(x.ko)}</div>
+        <div class="text-sm text-slate-600">Précision prononciation: ${x.sc}% — ${esc(x.tip)}</div>
+      </li>`).join('')}
+  </ul>
+` : (hasPronData ? `<div class="text-emerald-700">아주 좋아요! / Très bien ! 🙂</div>`
 
     $('#btnPrint')?.addEventListener('click', ()=>window.print());
   }
