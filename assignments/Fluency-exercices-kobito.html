@@ -225,7 +225,8 @@ function mountPronun(box, getRef){
    Pronun.mount(holder, {
   ui: 'classic',
   getReferenceText: ()=> String(getRef()||''),
-     // ⬇⬇ 추가: 템포만으로 패널티 계산(텍스트 인식 실패 시 사용)
+ onResult: (res)=> {
+   // ⬇⬇ 추가: 템포만으로 패널티 계산(텍스트 인식 실패 시 사용)
 function tempoOnlyPenalty(refSec, recSec){
   if (!refSec || !recSec) return { pen:0, reason:'—' };
   const r = recSec / refSec;
@@ -238,7 +239,6 @@ function tempoOnlyPenalty(refSec, recSec){
   return { pen, reason };
 }
 
- onResult: (res)=> {
   try{
     const ref = String(getRef() || '');
 
@@ -257,7 +257,7 @@ function tempoOnlyPenalty(refSec, recSec){
 
     // 디버그 로그
     console.log('[TempoDBG]', { ref, refDur, recDur, hyp });
-   // ⬇⬇⬇⬇⬇ 여기가 추가되는 분기: 텍스트 인식 실패해도 템포 페널티는 적용
+      // ⬇⬇⬇⬇⬇ 여기가 추가되는 분기: 텍스트 인식 실패해도 템포 페널티는 적용
     if (ref && !hyp && refDur > 0 && recDur > 0){
       const t = tempoOnlyPenalty(refDur, recDur);
       holder.dataset.tempoPenalty = String(t.pen);
@@ -277,7 +277,7 @@ function tempoOnlyPenalty(refSec, recSec){
       holder.dataset.lastScore = String(Math.max(0, 100 - t.pen));
       return; // ⬅ 텍스트 채점 생략하고 종료
     }
-    // ⬆⬆⬆⬆⬆ 여기까지 추가
+
     if (ref && hyp) {
       const g = Scoring.gradeKO(ref, hyp, {
         tempo: { mode:'normal', refDurationSec: refDur, userDurationSec: recDur }
