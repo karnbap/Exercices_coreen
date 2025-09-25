@@ -1,5 +1,6 @@
-// assets/fluency-results.js (v1.0)
-// 유창성 전용 결과 뷰어: 가중 합산(발음5, 한글3, 불어2) + Etape2/3 재권장
+// assets/fluency-results.js (v1.2)
+// 유창성 전용 결과 뷰어: 총점 600 (Etape1=200, Etape2=200, Etape3=200)
+// Etape1 내부: 문제당 균등 배분 후 KO:FR:Pron = 2:1:3 가중 / Etape2·3는 발음만 반영
 (function () {
   'use strict';
 
@@ -41,14 +42,11 @@
   }
 
   // === KO 채점(“의미 바뀌는 띄어쓰기” 제외 관대) ===
-  // 규칙: (1) 자모/문장부호 제거 후 유사도 sim0 (2) 공백 제거 유사도 sim1
-  //      (3) sim1이 높고 sim0만 약간 낮으면 띄어쓰기 오차로 간주 → 가벼운 감점
   function scoreKO(ref, hyp){
     const r0=koOnly(ref), h0=koOnly(hyp);
     const r1=koTight(ref), h1=koTight(hyp);
     const sim0=similarity(r0,h0), sim1=similarity(r1,h1);
 
-    // 의미 왜곡 후보(큰 형태소 누락/치환) → 낮게
     const strongErr = (r1.length>=4 && sim1<0.65);
 
     let base = Math.round(sim1*100);
@@ -66,27 +64,15 @@
     let hit = 0;
     for (const w of H){
       if (setR.has(w)) { hit++; continue; }
-      // 부분 어근 매칭(3자 이상)
       if (w.length>=4 && R.some(r=>r.length>=4 && (r.includes(w)||w.includes(r)))) hit+=0.6;
     }
     const cov = Math.min(1, hit / R.length);
-    // 문장 전체 의미 근사: 토큰 커버리지 70%↑를 상으로 가중
     const sim = Math.max(cov, similarity(R.join(' '), H.join(' ')));
     return Math.round(sim*100);
   }
 
-  // === 가중 합산(발음5/KO3/FR2 → 10점 환산) ===
-  function weighted10(pron, ko, fr){
-    const P = Number.isFinite(pron)?pron:0;
-    const K = Number.isFinite(ko)?ko:0;
-    const F = Number.isFinite(fr)?fr:0;
-    const total100 = (P*0.5) + (K*0.3) + (F*0.2);
-    return Math.round(total100/10); // 0..10
-  }
-
   // === Etape2/3 권장: 낮은 발음 점수 문항을 Etape1 번호로 매핑하여 2~3회 반복 권장 ===
   function buildRecommendations(questions){
-    // pronunScore < 75 우선, 없으면 < 85
     const low = questions
       .map((q,i)=>({i, num:q.number||i+1, ko:q.ko||'', sc:Number(q.pronunScore||q.score||0), asr:String(q.asrTranscript||'')}))
       .filter(x=>x.sc>0)
@@ -121,7 +107,7 @@
     const tsec = Number(payload.totalTimeSeconds||payload.totalSeconds||0);
     const Q = Array.isArray(payload.questions)?payload.questions:[];
 
-    // Etape1 후보(ko 참조, userAnswer에 한/불 구분이 있거나, 두 입력이 모두 존재)
+    // Étape1 후보(ko 참조, userAnswer에 한/불 구분이 있거나, 두 입력이 모두 존재)
     const step1 = Q.filter(q=>{
       const ua = q.userAnswer;
       const koAns = (typeof ua==='object'? ua.ko : ua)||'';
@@ -129,7 +115,7 @@
       return (q.ko && (koAns || frAns));
     });
 
-    // 한글/불어 점수 산출
+    // 한글/불어/발음(Etape1용) 점수 산출(표용)
     const rows = step1.map((q,idx)=>{
       const ua = q.userAnswer;
       const koAns = (typeof ua==='object'? ua.ko : ua)||'';
@@ -137,44 +123,78 @@
 
       const koS = scoreKO(q.ko||'', koAns||'');
       const frS = scoreFR(q.fr||'', frAns||'');
-
       const pron = Math.round(Number(q.pronunScore||q.score||0)); // 0..100
-      const on10 = weighted10(pron, koS, frS);
 
       return {
         num: q.number || (idx+1),
         koRef: q.ko||'',
         frRef: q.fr||'',
-        koAns, frAns, pron, koS, frS, on10
+        koAns, frAns, pron, koS, frS,
+        on10: Math.round(((pron*0.5)+(koS*0.3)+(frS*0.2))/10) // 표의 기존 합계(10) 유지용
       };
     });
 
-   const avgPron = rows.length? Math.round(rows.reduce((a,r)=>a+r.pron,0)/rows.length) : 0;
-const avgKO   = rows.length? Math.round(rows.reduce((a,r)=>a+r.koS ,0)/rows.length) : 0;
-const avgFR   = rows.length? Math.round(rows.reduce((a,r)=>a+r.frS ,0)/rows.length) : 0;
+    // === Étape 분리 ===
+    const allQ   = Array.isArray(payload.questions) ? payload.questions : [];
+    const step1Q = allQ.filter(q => (q.fr && String(q.fr).trim().length));
+    const others = allQ.filter(q => !(q.fr && String(q.fr).trim().length));
+    const step3Q = others.slice(-1);
+    const step2Q = others.slice(0, -1);
 
-// 총점 체계: KO(200), FR(100), Pron(300) → 총 600
-const totKO   = Math.round(avgKO   * 2);   // 0..200
-const totFR   = Math.round(avgFR   * 1);   // 0..100
-const totPron = Math.round(avgPron * 3);   // 0..300
-const grand600 = totKO + totFR + totPron;  // 0..600
+    // === 섹션별 점수(총 600) ===
+    // Étape 1: 총 200점 → 문제 수로 균등 분배, 문제 내부 가중 2:1:3 (KO:FR:Pron)
+    let s1 = 0;
+    if (step1Q.length) {
+      const per = 200 / step1Q.length;
+      step1Q.forEach(q => {
+        const ua = q.userAnswer || {};
+        const koS = scoreKO(q.ko || '', String(ua.ko||''));
+        const frS = scoreFR(q.fr || '', String(ua.fr||''));
+        const prn = Math.round(Number(q.pronunScore||q.score||0));
+        const w   = (2*koS + 1*frS + 3*prn) / 6; // 0..100
+        s1 += per * (w/100);
+      });
+    }
+    s1 = Math.round(s1);
 
+    // Étape 2: 총 200점 → 문제 수로 균등 분배, 발음만 반영
+    let s2 = 0;
+    if (step2Q.length) {
+      const per = 200 / step2Q.length;
+      step2Q.forEach(q => {
+        const prn = Math.round(Number(q.pronunScore||q.score||0));
+        s2 += per * (prn/100);
+      });
+    }
+    s2 = Math.round(s2);
+
+    // Étape 3: 총 200점 → 문제 수(보통 1)로 균등 분배, 발음만 반영
+    let s3 = 0;
+    if (step3Q.length) {
+      const per = 200 / step3Q.length;
+      step3Q.forEach(q => {
+        const prn = Math.round(Number(q.pronunScore||q.score||0));
+        s3 += per * (prn/100);
+      });
+    }
+    s3 = Math.round(s3);
+
+    const grand600 = s1 + s2 + s3;
 
     // Etape2/3 권장
     const recos = buildRecommendations(Q);
 
     app.innerHTML = `
       <section class="bg-white rounded-xl p-6 shadow">
-<h1 class="text-2xl font-bold">유창성 훈련 결과 / <span class="text-amber-600">Résultats d’entraînement</span></h1>
+        <h1 class="text-2xl font-bold">유창성 훈련 결과 / <span class="text-amber-600">Résultats d’entraînement</span></h1>
         <p class="mt-1">이름 / Nom : <b>${name}</b></p>
         <p class="mt-1">총 시간 / Temps total : <b>${fmtHMS(tsec)}</b></p>
-<div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-  <div class="sum-box"><div class="sum-title">한글로 바꾸기 점수 / (FR: vers le coréen)</div><div class="sum-val">${totKO}/200</div></div>
-  <div class="sum-box"><div class="sum-title">불어로 바꾸기 점수 / (FR: vers le français)</div><div class="sum-val">${totFR}/100</div></div>
-  <div class="sum-box"><div class="sum-title">발음 점수 / (FR: Prononciation)</div><div class="sum-val">${totPron}/300</div></div>
-  <div class="sum-box"><div class="sum-title">총점 / (FR: Total)</div><div class="sum-val">${grand600}/600</div></div>
-</div>
-
+        <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="sum-box"><div class="sum-title">Étape 1 (KO/FR/Pron 2:1:3)</div><div class="sum-val">${s1}/200</div></div>
+          <div class="sum-box"><div class="sum-title">Étape 2 (Prononciation)</div><div class="sum-val">${s2}/200</div></div>
+          <div class="sum-box"><div class="sum-title">Étape 3 (Prononciation)</div><div class="sum-val">${s3}/200</div></div>
+          <div class="sum-box"><div class="sum-title">총점 / (FR: Total)</div><div class="sum-val">${grand600}/600</div></div>
+        </div>
       </section>
 
       <section class="card mt-4">
@@ -208,7 +228,6 @@ const grand600 = totKO + totFR + totPron;  // 0..600
             </tbody>
           </table>
         </div>
-
       </section>
 
       <section class="card mt-4">
