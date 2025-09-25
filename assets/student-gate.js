@@ -268,3 +268,44 @@ document.addEventListener('click', (e)=>{
 });
 
 // (발음 가드 전역 바인딩 블록은 완전히 제거했습니다)
+
+// assets/student-gate.js 맨 아래쪽에 추가
+window.toggleHint = function(box, html){
+  const isHidden = box.classList.contains('hidden');
+  if (isHidden) { box.innerHTML = html; box.classList.remove('hidden'); }
+  else { box.classList.add('hidden'); }
+};
+
+window.mkHintRow = function({ko, fr}){
+  const row = document.createElement('div');
+  row.className = 'flex flex-wrap gap-2 pt-1';
+
+  const btn1 = document.createElement('button');
+  btn1.className = 'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50';
+  btn1.textContent = '🙏 Aidez-moi / 도와줘';
+
+  const btn2 = document.createElement('button');
+  btn2.className = 'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50';
+  btn2.textContent = '🦺 Au secours / 살려줘';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'mt-2 space-y-2 text-sm text-slate-700';
+  const box1 = document.createElement('div');
+  box1.className = 'hidden p-3 rounded-lg bg-indigo-50 border border-indigo-200';
+  const box2 = document.createElement('div');
+  box2.className = 'hidden p-3 rounded-lg bg-amber-50 border border-amber-200';
+
+  btn1.addEventListener('click', ()=>{
+    const html = `<strong>초성</strong>: ${window.choseongInitials?.(ko)||''}${fr?`<br/><strong>FR</strong>: ${fr}`:''}`;
+    window.toggleHint(box1, html);
+  });
+  btn2.addEventListener('click', ()=>{
+    const html = `<strong>KO(부분)</strong>: ${window.partialKo?.(ko)||''}${fr?`<br/><strong>FR mots-clés</strong>: ${window.keyFrWords?.(fr)||'(—)'}`:''}`;
+    window.toggleHint(box2, html);
+  });
+
+  row.appendChild(btn1); row.appendChild(btn2);
+  wrap.appendChild(box1); wrap.appendChild(box2);
+  return [row, wrap];
+};
+
