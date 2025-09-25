@@ -592,11 +592,10 @@ finishBtn.addEventListener('click', async () => {
     // ③ 전송 (로컬 폴백은 results-compat.js가 처리)
     await window.sendResults(payload);
 
-    // ④ 결과 페이지로 이동
-    window.location.href = '/results.html';
   } catch (e) {
     console.warn('sendResults failed, opening results viewer via stash', e);
-    window.location.href = '/results.html';
+// ④ 결과 페이지로 이동 (results.html이 assets 폴더에 있을 때)
+window.location.href = '/assets/results.html';
   }
 });
 
