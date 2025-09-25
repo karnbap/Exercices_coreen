@@ -107,8 +107,9 @@
   </main>
 
   <!-- Scripts -->
-  <script src="/assets/student-gate.js"></script>
-  <script src="/assets/pronun-client.js"></script>
+<script defer src="/assets/student-gate.js?v=1.1"></script>
+<script defer src="/assets/pronun-client.js?v=4.8"></script>
+
 
   <script>
   const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
@@ -133,30 +134,6 @@ const STEP1_INSTRUCTION_FR = "Écoutez chaque segment, écrivez la dictée en co
 const STEP1_INSTRUCTION_KO = "각 부분을 듣고, 한국어로 받아쓰고, 불어로 뜻을 쓴 뒤, 발음을 녹음하세요.";
 
 // 한글 초성 추출 (힌트1)
-function choseongInitials(str){
-  const SBase=0xAC00, LBase=0x1100, VCount=21, TCount=28, LCount=19, NCount=VCount*TCount, SCount=LCount*NCount;
-  const Ls=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-  let out='';
-  for (const ch of str){
-    const code=ch.codePointAt(0);
-    if (code>=SBase && code<SBase+SCount){
-      const SIndex=code-SBase;
-      const LIndex=Math.floor(SIndex/NCount);
-      out += Ls[LIndex];
-    } else {
-      out += /\s/.test(ch) ? ' ' : ch;
-    }
-  }
-  return out.replace(/\s+/g,' ').trim();
-}
-
-// KO 일부 가리기(힌트2) + FR 키워드 뽑기(긴 단어 위주)
-function partialKo(str){ 
-  return Array.from(str).map((ch,i)=> (/\s/.test(ch)?' ': (i%2? '◻︎' : ch))).join(''); 
-}
-function keyFrWords(fr){
-  return fr.split(/\s+/).filter(w=>w.replace(/[^\p{L}]/gu,'').length>=6).slice(0,3).join(', ');
-}
 
   // --- Helper Functions ---
   function h(tag, attrs={}, ...kids){
@@ -306,28 +283,9 @@ function mountPronun(box, getRef){
     const inpKo = h('input', {class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition', placeholder:'받아쓰기: 한국어로 적기'});
     const inpFr = h('input', {class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition', placeholder:'Sens (FR): 의미(불어)'});
 
-    // 힌트(도움말) — Aidez-moi / Au secours
-    const hintRow = h('div', {class:'flex flex-wrap gap-2 pt-1'});
-    const hint1Btn = h('button', {class:'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50'}, '🙏 Aidez-moi / 도와줘');
-    const hint2Btn = h('button', {class:'btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50'}, '🦺 Au secours / 살려줘');
+    // 힌트(도움말) — Aidez-moi / Au secours (공용 유틸 사용: 토글)
+    const [hintRow, hintBox] = mkHintRow({ ko: q.ko, fr: q.fr });
 
-    const hintBox = h('div', {class:'mt-2 space-y-2 text-sm text-slate-700'});
-    const hint1Box = h('div', {class:'hidden p-3 rounded-lg bg-indigo-50 border border-indigo-200'});
-    const hint2Box = h('div', {class:'hidden p-3 rounded-lg bg-amber-50 border border-amber-200'});
-
-    hint1Btn.addEventListener('click', ()=>{
-      hint1Box.innerHTML = `<strong>초성</strong>: ${choseongInitials(q.ko)}<br/><strong>FR</strong>: ${q.fr}`;
-      hint1Box.classList.remove('hidden');
-    });
-    hint2Btn.addEventListener('click', ()=>{
-      hint2Box.innerHTML = `<strong>KO(부분)</strong>: ${partialKo(q.ko)}<br/><strong>FR mots-clés</strong>: ${keyFrWords(q.fr) || '(—)'}`;
-      hint2Box.classList.remove('hidden');
-    });
-
-    hintRow.appendChild(hint1Btn);
-    hintRow.appendChild(hint2Btn);
-    hintBox.appendChild(hint1Box);
-    hintBox.appendChild(hint2Box);
 
     // 발음 위젯
     const pbox = h('div', {class:'mt-2'});
@@ -346,47 +304,102 @@ function mountPronun(box, getRef){
     host.innerHTML = '';
 
     STEP2_DATA.forEach((q, idx) => {
-      const head = h('p', {class:'text-base font-semibold text-slate-800 text-center py-2'}, q.ko);
+      // ⬇️ 한국어 원문은 헤더에 표시하지 않음(감춤)
+      const head = h('div', {class:'space-y-1'},
+        h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'},
+          'Écoutez chaque segment puis enregistrez-vous. Essayez de parler à une vitesse similaire à celle de l\\'audio.'),
+        h('p', {class:'text-sm text-slate-600'},
+          '각 부분을 듣고 바로 따라 읽으며 녹음하세요. 원본과 비슷한 속도로 말해요.')
+      );
+
       const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
       btn.innerHTML = `${listenIcon} <span>Écouter / 듣기 (Partie ${idx+1})</span>`;
       const voice = VOICES[(idx+1) % VOICES.length];
       btn.addEventListener('click', () => tts(q.ko, btn, voice));
+
+      // ⬇️ 힌트(Aidez-moi / Au secours) — 토글
+      const [hintRow, hintWrap] = mkHintRow({ ko: q.ko, fr: '' });
+
+      // ⬇️ 발음 녹음 위젯 (문장 텍스트는 내부 ref로만 사용)
       const pbox = h('div', {class:'mt-2'});
       mountPronun(pbox, () => q.ko);
-      const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'}, head, btn, pbox);
+
+      const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
+        head, btn, hintRow, hintWrap, pbox
+      );
       host.appendChild(card);
     });
   }
 
-  function renderStep3() {
+
+   function renderStep3() {
     const host = document.getElementById('step3-content');
     if (!host) return;
     host.innerHTML = '';
-    
-    const head = h('p', {class:'text-base font-semibold text-slate-800 text-center py-2 leading-relaxed'}, STEP3_TEXT);
+
+    const head = h('div', {class:'space-y-1'},
+      h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'},
+        'Maintenant, écoutez et répétez la phrase complète.'),
+      h('p', {class:'text-sm text-slate-600'},
+        '이제 전체 문장을 듣고 바로 따라 읽으면서 녹음하세요.')
+    );
+
     const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
     btn.innerHTML = `${listenIcon} <span>Écouter la phrase complète / 전체 문장 듣기</span>`;
     const voice = VOICES[2];
     btn.addEventListener('click', () => tts(STEP3_TEXT, btn, voice));
+
+    // ⬇️ 힌트(Aidez-moi / Au secours) — 토글
+    const [hintRow, hintWrap] = mkHintRow({ ko: STEP3_TEXT, fr: '' });
+
     const pbox = h('div', {class:'mt-2'});
     mountPronun(pbox, () => STEP3_TEXT);
-    const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'}, head, btn, pbox);
+
+    const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
+      head, btn, hintRow, hintWrap, pbox
+    );
     host.appendChild(card);
   }
 
-  // --- DOM Ready ---
+
+    // --- DOM Ready ---
   document.addEventListener('DOMContentLoaded', ()=>{
-    window.StudentGate?.init?.();
-    renderStep1();
-    renderStep2();
-    renderStep3();
-    
-    const finishBtn = document.getElementById('finish-btn');
-    if (finishBtn) {
-        document.addEventListener('student-ready', ()=>{ finishBtn.disabled = false; });
-        finishBtn.addEventListener('click', ()=> alert('초안: 결과 전송은 전체본에서 연결됩니다.'));
-    }
+    // 공용 유틸/위젯 로드 대기
+    const waitFor = (key, ms=5000) => new Promise((resolve, reject)=>{
+      const t0 = performance.now();
+      const iv = setInterval(()=>{
+        if (window[key]) { clearInterval(iv); resolve(true); }
+        if (performance.now()-t0 > ms) { clearInterval(iv); reject(new Error(key+' timeout')); }
+      }, 100);
+    });
+
+    (async () => {
+      try {
+        // StudentGate( mkHintRow / choseongInitials / partialKo / keyFrWords ) 대기
+        await waitFor('mkHintRow');
+        // Pronun 위젯 대기 (버튼 레이블/타이머 꾸미기 위해)
+        await waitFor('Pronun');
+
+        window.StudentGate?.init?.();
+        renderStep1();
+        renderStep2();
+        renderStep3();
+
+        const finishBtn = document.getElementById('finish-btn');
+        if (finishBtn) {
+          document.addEventListener('student-ready', ()=>{ finishBtn.disabled = false; });
+          finishBtn.addEventListener('click', ()=> alert('초안: 결과 전송은 전체본에서 연결됩니다.'));
+        }
+      } catch(e){
+        console.warn('[init-wait]', e);
+        // 그래도 학생이 페이지를 쓸 수 있게 최소 렌더 시도
+        renderStep1();
+        renderStep2();
+        renderStep3();
+      }
+    })();
   });
+
   </script>
 </body>
 </html>
