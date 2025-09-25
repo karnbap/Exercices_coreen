@@ -425,12 +425,16 @@ function renderStep1(){
     `;
 
     // 카드 구성 (※ 이전 오류: card 미정의 → 여기서 정의)
-    const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
-      head, btn,
-      hintRow, hintBox,
-      pbox,
-      echoLive
-    );
+const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
+  head, btn,
+  echoLive,
+  hintRow, hintWrap,
+  pbox
+);
+
+
+
+
 
     // 발음 평가 완료 시 STT 텍스트 갱신
     pbox.addEventListener('kobito:graded', (e)=>{
@@ -520,13 +524,15 @@ function renderStep3() {
     <div class="body pronun-live">—</div>
     <div class="meta text-xs text-slate-500">STT 자동 표시</div>
   `;
+  
+const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
+  head, btn,
+  echoLive,
+  hintRow, hintWrap,
+  pbox
+);
 
-  const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
-    head, btn,
-    hintRow, hintWrap,
-    pbox,
-    echoLive
-  );
+
   host.appendChild(card);
 }
 
@@ -552,6 +558,14 @@ function renderStep3() {
         renderStep1();
         renderStep2();
         renderStep3();
+// [ADD] 평가 직후 STT 텍스트를 카드의 "실시간" 박스에 반영
+document.addEventListener('kobito:graded', (e)=>{
+  const card = e.target.closest('.p-4');
+  if (!card) return;
+  const live = card.querySelector('.pronun-live');
+  const hyp  = String(e.detail?.hyp || e.detail?.text || e.detail?.transcript || '');
+  if (live && hyp) live.textContent = hyp;
+}, true);
 
 const finishBtn = document.getElementById('finish-btn');
 if (finishBtn) {
