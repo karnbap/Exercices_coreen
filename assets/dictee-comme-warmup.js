@@ -259,11 +259,20 @@ if (window.LiveSTT) {
 const handleText = (rawText, isFinal=false)=>{
   const raw = String(rawText||'').trim();
   const ref = q.ko || '';
-  const norm = (window.PronunUtils?.NumNormalizer?.refAwareNormalize)
-    ? window.PronunUtils.NumNormalizer.refAwareNormalize(ref, raw)
-    : (window.NumHangul?.forceHangulNumbers ? window.NumHangul.forceHangulNumbers(raw) : raw);
+  const looksNumeric = /\d/.test(raw);
+  const refHasCounter = /(분|초|살|시|시간|개|명|개월|권|잔|대|번|호|층)/.test(ref);
+
+  let norm = raw;
+  if (looksNumeric || refHasCounter) {
+    if (window.PronunUtils?.NumNormalizer?.refAwareNormalize) {
+      norm = window.PronunUtils.NumNormalizer.refAwareNormalize(ref, raw);
+    } else if (window.NumHangul?.forceHangulNumbers) {
+      norm = window.NumHangul.forceHangulNumbers(raw);
+    }
+  }
   live.textContent = isFinal ? ('En direct / 실시간 (final): ' + norm) : norm;
 };
+
 
 // 이벤트 네이밍 호환(콜론/하이픈 모두 수신)
 partHandler  = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, false); };
