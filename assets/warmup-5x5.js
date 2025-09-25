@@ -58,10 +58,19 @@
   }
 
   // --- 숫자→한글 보정 유틸: NumHangul.forceHangulNumbers 우선 사용 ---
-  function normalizeKo_Numberish(s){
-    if (window.NumHangul?.forceHangulNumbers) return window.NumHangul.forceHangulNumbers(s);
-    return s;
+ function normalizeKo_Numberish(s){
+  let x = String(s || '');
+  // ① "10, 11, 123" 같은 연속 숫자 → 한자어 수사("십, 십일, 백이십삼")
+  if (window.NumHangul?.digitsToSinoInText) {
+    x = window.NumHangul.digitsToSinoInText(x);
   }
+  // ② 한 자리 숫자 토큰(0~9) → 영/일/이/삼… (잔여 케이스 마무리)
+  if (window.NumHangul?.forceHangulNumbers) {
+    x = window.NumHangul.forceHangulNumbers(x);
+  }
+  return x;
+}
+
   function bestSimAgainstRef(refCollapsed, hypRaw){
     const normed = normalizeKo_Numberish(hypRaw);
     return similarity(refCollapsed, collapse(normed));
