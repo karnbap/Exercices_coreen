@@ -47,58 +47,80 @@
 
   // === (신규) 템포 페널티 ===
   // - slow(0.7×): 페널티 없음 (학습 안정)
-  // - normal(1.0×), fast(1.5×): 기준 오디오보다 "느리면" 감점
+  // - normal/fast: 기준 오디오보다 "느리면" 감점 + 칭찬/조언 문구(praise) 제공
   //   ratio = userDuration / refDuration
-  //   정상 범위(±10%) 이내 0점, 이탈 정도에 따라 구간 감점
   function tempoPenalty(tempo) {
-    if (!tempo) return { penalty: 0, reason: '' };
+    if (!tempo) return { penalty: 0, reason: '', praise: '' };
     const { mode, refDurationSec, userDurationSec } = tempo;
     const safeNum = (x) => (isFinite(x) && x > 0 ? x : 0);
     const ref = safeNum(refDurationSec);
     const usr = safeNum(userDurationSec);
-    if (!ref || !usr) return { penalty: 0, reason: '' };
+    if (!ref || !usr) return { penalty: 0, reason: '', praise: '' };
 
-    // 느린 정도를 비율로 계산
-    const ratio = usr / ref; // 1.00 = 동일, 1.20 = 20% 더 느림
-    const pct = Math.round((ratio - 1) * 100); // +20 → 20% 느림, -10 → 10% 빠름
-
-    // slow 모드(0.7×)는 페널티 없음
-    if (mode === 'slow') return { penalty: 0, reason: '' };
+    const ratio = usr / ref;                // 1.00 동일, 1.20 = 20% 느림
+    const pct = Math.round((ratio - 1) * 100);
+    if (mode === 'slow') return { penalty: 0, reason: '', praise: '' };
 
     let penalty = 0;
-    let reason = '';
+    let reason  = '';
+    let praise  = '';
 
-    // 과도하게 빠른 경우(=과속)도 소폭 감점(발음 뭉개짐 방지)
+    // 너무 빠름(과속) 방지
     if (ratio < 0.85) {
       penalty = mode === 'fast' ? 8 : 5;
-      reason = `⚠️ 너무 빠름(${Math.abs(pct)}% 빠름) → -${penalty}점 / Trop rapide (${Math.abs(pct)}%)`;
-      return { penalty, reason };
+      reason  = `⚠️ 너무 빠름(${Math.abs(pct)}% 빠름) / Trop rapide (${Math.abs(pct)}%)`;
+      praise  = `리듬은 좋아요. 다음엔 또박또박만 유지해봐요! / Bon rythme, garde une diction nette 🙂`;
+      return { penalty, reason, praise };
     }
 
-    // 기준 ±10% 이내 → 0점
+    // ====== 칭찬/조언 단계 (비율 기준) ======
+    // ≤1.10× : 완벽
+    // 1.10×~1.40× : 아주 잘했음
+    // 1.50×~2.00× : 괜찮음
+    // 2.00×~3.00× : 약간 느리지만 이해 가능
+    // 3.00×~4.00× : 조금만 더 하면 더 잘할 것 같아요!!
+    // 4.00×~5.00× : 너무 느려서 대화가 어려워요. 3번만 반복하면 1단계 올라가요!
     if (ratio <= 1.10) {
-      return { penalty: 0, reason: '✅ 속도 적절 / Vitesse correcte (±10%)' };
+      penalty = 0;
+      reason  = '✅ 속도 적절 / Vitesse parfaite (≤10%)';
+      praise  = '완벽해요! / Parfait ! 🎉';
+    } else if (ratio <= 1.40) {
+      penalty = 3;
+      reason  = `👍 약간 느림(+${pct}%) / Légèrement plus lent`;
+      praise  = '아주 잘했어요! / Très bien ! 🙂';
+    } else if (ratio <= 2.00) {
+      penalty = 8;
+      reason  = `⏱️ +${pct}% 느림 / Plus lent`;
+      praise  = '괜찮아요. 한 번만 더 이어서 말하면 좋아져요! / Correct, encore une fois !';
+    } else if (ratio <= 3.00) {
+      penalty = 15;
+      reason  = `🐌 많이 느림(+${pct}%) / Assez lent`;
+      praise  = '약간 느리지만 이해돼요. 호흡만 조금 더 붙이면 완벽! / Compréhensible, colle un peu le débit 😉';
+    } else if (ratio <= 4.00) {
+      penalty = 25;
+      reason  = `🐢 매우 느림(+${pct}%) / Très lent`;
+      praise  = '조금만 더 하면 더 잘할 것 같아요!! / Tu y es presque, courage !! 💪';
+    } else if (ratio <= 5.00) {
+      penalty = 35;
+      reason  = `🐢 너무 느림(+${pct}%) / Trop lent`;
+      praise  = '너무 느려서 대화가 어려울 수 있어요. 3번만 반복하면 1단계 올라가요! / Répète 3 fois, tu montes d’un palier ! 🚀';
+    } else {
+      penalty = 40;
+      reason  = `🐢 극도로 느림(+${pct}%) / Extrêmement lent`;
+      praise  = '짧게 끊지 말고 두 문장을 붙여보자! / Essaie de lier sans coupure 😉';
     }
 
-    // 느림에 대한 구간 페널티
-    if (mode === 'normal') {
-      if (ratio <= 1.25) { penalty = 5;  reason = `🎯 기준(1.0×)보다 ${pct}% 느림 → -5점`; }
-      else if (ratio <= 1.50) { penalty = 10; reason = `⏱️ ${pct}% 느림 → -10점`; }
-      else if (ratio <= 2.00) { penalty = 20; reason = `🐌 ${pct}% 느림 → -20점`; }
-      else { penalty = 30; reason = `🐢 매우 느림(${pct}% 느림) → -30점`; }
-    } else if (mode === 'fast') {
-      if (ratio <= 1.25) { penalty = 10; reason = `🎯 기준(1.5×)보다 ${pct}% 느림 → -10점`; }
-      else if (ratio <= 1.50) { penalty = 20; reason = `⏱️ ${pct}% 느림 → -20점`; }
-      else { penalty = 35; reason = `🐢 매우 느림(${pct}% 느림) → -35점`; }
-    }
+         return {
+        score: finalScore,
+        baseScore: base,
+        tempoPenalty: penalty,
+        tempoReason: reason,
+        tempoPraise: (tempo && tempo.praise) ? tempo.praise : (reason ? '' : ''),
+        similarity: sim,
+        ref: refText,
+        hyp: hypText
+      };
 
-    // 이중 표기(FR/KO)
-    if (reason) {
-      const fr = reason.replace('느림', 'plus lente').replace('매우', 'très');
-      reason += ` / ${fr}`;
-    }
-    return { penalty, reason };
-  }
 
   function clamp01(x) { return Math.min(1, Math.max(0, x)); }
 
