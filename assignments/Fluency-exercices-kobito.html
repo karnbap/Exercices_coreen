@@ -409,10 +409,31 @@ function renderStep1(){
     const voice = VOICES[idx % VOICES.length];
     btn.addEventListener('click', ()=> tts(q.ko, btn, voice));
 
+    // KO/FR 입력칸 (미러 박스는 제거)
+    const inpKo = h('input', {
+      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
+      placeholder:'받아쓰기: 한국어로 적기'
+    });
+    const inpFr = h('input', {
+      class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition',
+      placeholder:'Sens (FR): 의미(불어)'
+    });
 
     // 힌트
     const [hintRow, hintBox] = mkHintRow({ ko: q.ko, fr: q.fr });
 
+    // 발음 위젯
+    const pbox = h('div', {class:'mt-2'});
+    mountPronun(pbox, ()=> q.ko);
+
+    // ✅ card 생성
+    const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'},
+      head, btn,
+      inpKo,
+      inpFr,
+      hintRow, hintBox,
+      pbox
+    );
 
     host.appendChild(card);
   });
