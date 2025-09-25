@@ -71,40 +71,7 @@ function tempoPenalty(tempo) {
     };
   }
 
-  let penalty = 0, reason = '', praise = '', bucketScore = null, bonus = 0;
-
-  if (r <= 1.10) {           // 완벽: 100점 + 보너스 20
-    penalty = 0;  bucketScore = 120; bonus = 20;
-    reason = '✅ 속도 적절 / Vitesse parfaite (≤10%)';
-    praise = '완벽해요! / Parfait ! 🎉 (보너스 +20)';
-  } else if (r <= 1.40) {    // 아주 잘했음: 100
-    penalty = 0;  bucketScore = 100;
-    reason = `👍 약간 느림(+${pct}%) / Légèrement plus lent`;
-    praise = '아주 잘했어요! / Très bien ! 🙂';
-  } else if (r <= 2.00) {    // 괜찮음: 80
-    penalty = 5;  bucketScore = 80;
-    reason = `⏱️ +${pct}% 느림 / Plus lent`;
-    praise = '괜찮아요. 한 번만 더 이어서 말해요! / Correct, encore une fois !';
-  } else if (r <= 3.00) {    // 70
-    penalty = 10; bucketScore = 70;
-    reason = `🐌 많이 느림(+${pct}%) / Assez lent`;
-    praise = '약간 느리지만 이해돼요. 호흡만 조금 더! / Compréhensible, colle un peu le débit 😉';
-  } else if (r <= 4.00) {    // 60
-    penalty = 20; bucketScore = 60;
-    reason = `🐢 매우 느림(+${pct}%) / Très lent`;
-    praise = '조금만 더 하면 더 잘할 것 같아요!! / Tu y es presque !! 💪';
-  } else if (r <= 5.00) {    // 50
-    penalty = 30; bucketScore = 50;
-    reason = `🐢 너무 느림(+${pct}%) / Trop lent`;
-    praise = '너무 느리면 대화가 어려워요. 3번만 반복하면 1단계 ↑ / Répète 3 fois, tu montes ! 🚀';
-  } else {                   // 45
-    penalty = 35; bucketScore = 45;
-    reason = `🐢 극도로 느림(+${pct}%) / Extrêmement lent`;
-    praise = '짧게 끊지 말고 두 문장을 붙여보자! / Essaie de lier sans coupure 😉';
-  }
-
-  return { penalty, reason, praise, bucketScore, bonus };
-}
+  
 
 
 
