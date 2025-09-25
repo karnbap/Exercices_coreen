@@ -245,20 +245,36 @@
         btnRec.disabled=true; btnStop.disabled=false; btnEval.disabled=true;
         live.textContent='En direct / 실시간… (préparation)';
 
-        // Live STT(있으면) 연결
-        if(window.LiveSTT){
-          const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
-          if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
-        }
-        const onPart = (e)=>{ if(e?.detail?.text!=null) live.textContent = e.detail.text; };
-        const onFinal= (e)=>{ if(e?.detail?.text!=null) live.textContent = 'En direct / 실시간 (final): ' + e.detail.text; };
-        el.addEventListener('live-stt-partial', onPart);
-        el.addEventListener('live-stt-final',   onFinal);
-        document.addEventListener('live-stt-partial', onPart);
-        document.addEventListener('live-stt-final',   onFinal);
+// Live STT(있으면) 연결
+if(window.LiveSTT){
+  const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
+  if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
+}
 
-        setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…'; }, 1500);
-      }
+const handleText = (rawText, isFinal=false)=>{
+  const raw = String(rawText||'').trim();
+  const ref = q.ko || '';
+  const norm = (window.PronunUtils?.NumNormalizer?.refAwareNormalize)
+    ? window.PronunUtils.NumNormalizer.refAwareNormalize(ref, raw)
+    : (window.NumHangul?.forceHangulNumbers ? window.NumHangul.forceHangulNumbers(raw) : raw);
+  live.textContent = isFinal ? ('En direct / 실시간 (final): ' + norm) : norm;
+};
+
+// 이벤트 네이밍 호환(콜론/하이픈 모두 수신)
+const onPart  = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, false); };
+const onFinal = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, true); };
+
+['livestt:partial','live-stt-partial'].forEach(evt=>{
+  el.addEventListener(evt, onPart);
+  document.addEventListener(evt, onPart);
+});
+['livestt:final','live-stt-final'].forEach(evt=>{
+  el.addEventListener(evt, onFinal);
+  document.addEventListener(evt, onFinal);
+});
+
+setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…'; }, 1500);
+
 
       async function onStop(){
         stopVu();
@@ -285,7 +301,12 @@
           out.innerHTML='<div class="text-sm text-slate-500">⏳ 평가 중…</div>';
           const base64 = await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onerror=rej; fr.onload=()=>res(String(fr.result||'').split(',')[1]||''); fr.readAsDataURL(blob); });
           const ref = q.ko.replace(/\s+/g,'');
-          const r=await fetch('/.netlify/functions/analyze-pronunciation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({referenceText:ref,audio:{base64,mimeType:'audio/webm',filename:'rec.webm',duration:Math.round(dur*100)/100}})});
+          const r=await fetch('/.netlify/functions/analyze-pronunciation',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({
+  referenceText: ref,
+  hints: q.ko.split(/\s+/).slice(0,12),
+  audio: { base64, mimeType:'audio/webm', filename:'rec.webm', duration: Math.round(dur*100)/100 }
+})
+});
           const j=await r.json().catch(()=>({}));
           if(!r.ok || j.ok===false){
             const frMsg = j.messageFr || "Échec de l'analyse. Réessayez.";
@@ -295,7 +316,16 @@
           }
 
           const acc=Math.max(0,Math.min(1,Number(j.accuracy||0))); const pct=Math.round(acc*100);
-          st[i].acc=acc; st[i].trans=String(j.transcript||'').trim(); st[i].recBase64=base64; st[i].recDur=dur;
+st[i].acc = acc;
+let tr = String(j.transcript||'').trim();
+if (window.PronunUtils?.NumNormalizer?.refAwareNormalize) {
+  tr = window.PronunUtils.NumNormalizer.refAwareNormalize(q.ko, tr);
+} else if (window.NumHangul?.forceHangulNumbers) {
+  tr = window.NumHangul.forceHangulNumbers(tr);
+}
+st[i].trans = tr;
+st[i].recBase64 = base64;
+st[i].recDur = dur;
 
           const tips = Array.isArray(j.confusionTags)&&j.confusionTags.length
             ? `• 발음 유의 / À noter: ${j.confusionTags.join(', ')}`
