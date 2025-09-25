@@ -110,6 +110,7 @@
   <!-- Scripts -->
 <script defer src="/assets/student-gate.js?v=1.1"></script>
 <script defer src="/assets/pronun-client.js?v=4.8"></script>
+<script defer src="/assets/scoring.js?v=1.0"></script>
 
 
   <script>
@@ -150,6 +151,8 @@ const STEP1_INSTRUCTION_KO = "각 부분을 듣고, 한국어로 받아쓰고, �
   }
 
   async function tts(text, btn, voice='alloy'){
+    const AUDIO_DUR = new Map(); // key: 문장, val: 재생초(실계측 또는 서버 추정)
+
     btn.disabled = true;
     const originalContent = btn.innerHTML;
     btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Traitement...</span>`;
@@ -163,9 +166,14 @@ const STEP1_INSTRUCTION_KO = "각 부분을 듣고, 한국어로 받아쓰고, �
       const b64 = j.audioBase64 || j.audioContent;
       if(!b64) throw new Error('No audio data received');
       const src = URL.createObjectURL(base64ToBlob(b64, j.mimeType||'audio/mpeg'));
-      const a = new Audio(src);
-      a.addEventListener('ended', ()=> URL.revokeObjectURL(src), {once:true});
-      await a.play();
+     const a = new Audio(src);
+a.addEventListener('loadedmetadata', ()=>{
+  const d = Number(a.duration || 0);
+  AUDIO_DUR.set(text, d > 0 ? d : Number(j.durationEstimateSec || 0));
+}, { once:true });
+a.addEventListener('ended', ()=> URL.revokeObjectURL(src), {once:true});
+await a.play();
+
     }catch(err){ 
         console.error('TTS Error:', err);
         alert('Audio indisponible. Veuillez réessayer.'); 
@@ -195,11 +203,44 @@ function mountPronun(box, getRef){
   const mountReal = ()=>{
     try{
       placeholder.remove();
-      Pronun.mount(holder, {
-        ui: 'classic',
-        getReferenceText: ()=> String(getRef()||''),
-        onResult: (res)=> { /* 필요시 결과 사용 */ }
-      });
+   Pronun.mount(holder, {
+  ui: 'classic',
+  getReferenceText: ()=> String(getRef()||''),
+  onResult: (res)=> {
+    try{
+      const ref = String(getRef() || '');
+      const refDur = Number(AUDIO_DUR.get(ref) || 0);
+      const recDur = Number(holder.dataset.lastRecSec || 0);
+      const hyp    = String(res?.text || res?.hyp || '');
+
+      if (ref && hyp) {
+        const g = Scoring.gradeKO(ref, hyp, {
+          tempo: { mode:'normal', refDurationSec: refDur, userDurationSec: recDur }
+        });
+        // 점수/사유를 DOM dataset으로 노출(결과 수집/메일용)
+        holder.dataset.lastScore = String(g.score);
+        holder.dataset.tempoPenalty = String(g.tempoPenalty || 0);
+        holder.dataset.tempoReason  = g.tempoReason || '';
+
+        // (선택) 작은 배지로 즉시 피드백
+        const badge = holder.querySelector('.pd-time-badge');
+        if (badge && g.tempoReason){
+          const extra = document.createElement('div');
+          extra.className = 'mt-1 text-xs text-slate-600';
+          extra.textContent = `Tempo: -${g.tempoPenalty||0} / ${g.tempoReason}`;
+          badge.after(extra);
+        }
+
+        // 페이지 레벨 집계가 필요하면 커스텀 이벤트로 쏘기
+        holder.dispatchEvent(new CustomEvent('kobito:graded', {
+          bubbles:true,
+          detail:{score:g.score, base:g.baseScore, tempoPenalty:g.tempoPenalty, refDur, recDur, ref, hyp}
+        }));
+      }
+    }catch(e){ console.warn('gradeKO(tempo) failed', e); }
+  }
+});
+
 
       // === 페이지 레벨 꾸미기: 라벨/이펙트/시간 표시 ===
       decoratePronunBox(holder);
@@ -244,7 +285,12 @@ function mountPronun(box, getRef){
         timeSpan.textContent = sec.toFixed(1)+' s';
       },100);
     }
-    function stopTimer(){ if(ticker){ clearInterval(ticker); ticker=0; } }
+function stopTimer(){
+  if (ticker){ clearInterval(ticker); ticker = 0; }
+  const sec = (performance.now() - t0) / 1000;
+  timeSpan.textContent = sec.toFixed(1) + ' s';
+  root.dataset.lastRecSec = String(sec); // ⬅️ 사용자 녹음 길이 저장
+}
 
     // 클릭 이펙트
     function ripple(el){ el.classList.remove('pd-ripple'); void el.offsetWidth; el.classList.add('pd-ripple'); }
