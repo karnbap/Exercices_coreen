@@ -223,4 +223,11 @@ body{
 .badge-note{ margin-top:.4rem; }
 
 .hint-metrics { display: none; }  /* 학생 화면 숨김 (메일 전송엔 영향 없음) */
+/* Primary button (항상 파란색) */
+.btn-primary{
+  background:#4f46e5 !important;
+  border-color:#4f46e5 !important;
+  color:#fff !important;
+}
+.btn-primary:hover{ background:#4338ca !important; }
 
