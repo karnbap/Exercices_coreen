@@ -73,6 +73,7 @@ exports.handler = async (event) => {
     const hyp = koCanon(transcriptKo);
     const ref = koCanon(refKo);
     let acc   = similarity(ref, hyp); // 0..1
+if (ref && hyp && ref === hyp) acc = 1; // 완전 일치면 100% 고정
 
     // 부분 포함 가점(짧은 과제에서 과도한 감점 방지)
     if (hyp && ref && hyp.includes(ref)) acc = Math.max(acc, 0.9);
