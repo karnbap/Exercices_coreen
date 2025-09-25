@@ -107,7 +107,12 @@
       const r = await fetch('/.netlify/functions/transcribe-whisper', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ base64: recBase64, mimeType:'audio/webm', filename:'rec.webm' })
+        body: JSON.stringify({ base64: recBase64, mimeType:'audio/webm', filename:'rec.webm',    // 👇 추가
+    options: {
+      language: 'ko',
+      prompt: '모든 수사는 한글로 표기하세요. 숫자(0-9)는 사용하지 마세요.',
+      temperature: 0
+    } })
       });
       const j = await r.json().catch(()=>({}));
       const text = j && j.text ? j.text : '';
