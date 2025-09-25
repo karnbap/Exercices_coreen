@@ -64,42 +64,8 @@ function estimateDurationSec({ text='', ssml='', speed=1.0, repeats=1 } = {}){
   const rep = Math.max(1, Number(repeats)||1);
   return Math.max(0.2, totalOne * rep);
 }
-function stripSSML(s=''){
-  return String(s).replace(/<break[^>]*time="(\d+)ms"[^>]*>/gi, '[$BR:$1]')
-                  .replace(/<[^>]+>/g, '');
-}
-function countBreakMs(ssml=''){
-  const ms = Array.from(String(ssml).matchAll(/<break[^>]*time="(\d+)ms"[^>]*>/gi))
-                  .map(m => parseInt(m[1]||'0',10)).filter(Number.isFinite);
-  return ms.length ? ms.reduce((a,b)=>a+b,0) : 0;
-}
-function countHangulSyllables(s=''){
-  return (String(s).match(/[\uAC00-\uD7A3]/g) || []).length;
-}
-function estimateDurationSec({ text='', ssml='', speed=1.0, repeats=1 } = {}){
-  const hasSSML = !!ssml;
-  const clean = hasSSML ? stripSSML(ssml) : String(text||'');
-  const brMs  = hasSSML ? countBreakMs(ssml) : 0;
 
-  let syllables = countHangulSyllables(clean);
-  if (syllables === 0) {
-    const wc = (clean.trim().split(/\s+/).filter(Boolean).length || 0);
-    const cc = clean.replace(/\s+/g,'').length;
-    syllables = Math.max(1, Math.round(Math.max(wc*2, cc/3)));
-  }
 
-  const BASE_SPS = 4.2;
-  const NUM_SLOW = 0.9;
-  const looksNumeric = /[0-9]|[일이삼사오육칠팔구십백천만억]/.test(clean);
-  const sps = (looksNumeric ? BASE_SPS*NUM_SLOW : BASE_SPS) * (Number(speed)||1);
-
-  const speechSec = syllables / Math.max(0.1, sps);
-  const brSec     = brMs / 1000;
-  const totalOne  = speechSec + brSec;
-
-  const rep = Math.max(1, Number(repeats)||1);
-  return Math.max(0.2, totalOne * rep);
-}
 
 exports.handler = async (event) => {
   // Preflight
@@ -116,13 +82,12 @@ exports.handler = async (event) => {
     
     const reqText    = String(body.text || '');
 const reqSSML    = String(body.ssml || '');
-const reqSpeed   = Number(body.speed || 1.0);
-const reqVoice   = String(body.voice || '');
-const reqProv    = String(body.provider || 'openai');
 const reqRepeats = Number(body.repeats || (
+  
   // 콤마로 반복 텍스트를 합쳐 보낸 형태면 대략 반복 수 유추
   reqText.split(',').length > 1 ? reqText.split(',').length : 1
 ));
+const safeRepeats = Math.max(1, Math.min(10, reqRepeats));
 
     const providerReq = String(body.provider || '').toLowerCase();
     const provider = providerReq === 'google' ? 'google' : 'openai'; // 명시하면 존중
@@ -166,17 +131,19 @@ return json(200, {
   mimeType: 'audio/wav',
   durationEstimateSec: estimateDurationSec({
     text: reqText,
-    ssml: reqSSML,
-    speed: reqSpeed,
-    repeats: reqRepeats
+    ssml: reqSSML,   // OpenAI는 SSML 미지원이므로 클린 텍스트 기준 추정 + 클라가 보낸 SSML은 참조만
+    speed: speed,
+    repeats: safeRepeats
   }),
   meta: {
     provider: 'openai',
     voice,
-    speed: reqSpeed,
-    repeats: reqRepeats
+    speed: speed,
+    repeats: safeRepeats
   }
 });
+
+
         } else {
           // 실패 상세 로그(서버 콘솔)
           const detail = await r.text().catch(()=> '');
@@ -221,18 +188,19 @@ return json(200, {
   audioData: gj.audioContent,
   audioBase64: gj.audioContent,
   mimeType: 'audio/ogg',
-  durationEstimateSec: estimateDurationSec({
+durationEstimateSec: estimateDurationSec({
     text: reqText,
     ssml: ssml,
-    speed: reqSpeed,
-    repeats: reqRepeats
+    speed: speed,
+    repeats: safeRepeats
   }),
   meta: {
     provider: 'google',
     voice,
-    speed: reqSpeed,
-    repeats: reqRepeats
+    speed: speed,
+    repeats: safeRepeats
   }
+
 });
 
   } catch (err) {
@@ -267,5 +235,6 @@ function koPronunNormalize(s) {
     // 추가: '몇 분'은 유지(혼동 방지)
     ;
 }
+
 
 
