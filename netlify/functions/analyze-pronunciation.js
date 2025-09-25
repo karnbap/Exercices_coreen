@@ -187,9 +187,10 @@ function applyCounterVariants(s){
   return x;
 }
 function forceHangulNumbers(s){
-  const base = digitsToSinoInText(String(s||'').replace(/[A-Za-z]+/g,''));
-  return applyCounterVariants(base);
+  // 서버도 자동 변환하지 않고 그대로 사용
+  return String(s || '');
 }
+
 
 // 간단 팁: 길이 차이/특정 자음 힌트 (캐논 문자열 기준)
 function deriveTips(refC, hypC){
