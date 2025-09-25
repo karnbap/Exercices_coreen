@@ -281,7 +281,7 @@ finalHandler = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, true);
 setTimeout(()=>{
   if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…';
 }, 1500);
-
+      }
 
       async function onStop(){
          ['livestt:partial','live-stt-partial'].forEach(evt=>{
