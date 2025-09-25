@@ -156,38 +156,47 @@
     return String(s||'').replace(/\d+/g, (m)=> numToSino(m));
   }
 function applyGenericCounterVariants(s){
-  let x = String(s||'');
+  let x = String(s || '');
 
-  // 단위(카운터) 앞에서만 고유어 축약 허용
+  // 카운터(단위) 화이트리스트: 단위 앞에서만 고유어 축약 허용
   const COUNTER = '(개|명|분|초|시|시간|살|개월|달|주|주일|권|잔|병|대|마리|그릇|장|줄|켤레|송이|판|통|곳|층|호|번|회|쪽|킬로|리터|미터|센티|킬로미터|킬로그램|그램|배|모금|마디)';
   const AHEAD = new RegExp(`\\s*${COUNTER}`);
 
-  x = x
-    .replace(new RegExp(`십일(?=${AHEAD.source})`,'g'),'열한')
-    .replace(new RegExp(`십이(?=${AHEAD.source})`,'g'),'열두')
-    .replace(new RegExp(`십삼(?=${AHEAD.source})`,'g'),'열세')
-    .replace(new RegExp(`십사(?=${AHEAD.source})`,'g'),'열네')
-    .replace(new RegExp(`이십일(?=${AHEAD.source})`,'g'),'스물한')
-    .replace(new RegExp(`이십이(?=${AHEAD.source})`,'g'),'스물두')
-    .replace(new RegExp(`이십삼(?=${AHEAD.source})`,'g'),'스물세')
-    .replace(new RegExp(`이십사(?=${AHEAD.source})`,'g'),'스물네')
-    .replace(new RegExp(`이십(?=${AHEAD.source})`,'g`),'스무');
+  // 안전 경계: 앞에 한글이 없거나(시작/공백/비한글) → "숫자 단어"가 "단위" 바로 앞일 때만
+  const BOUND = '(^|[^가-힣])';
+  const CAP2  = '(\\s*' + COUNTER + ')';
 
+  // 10~14, 20대 특수형
   x = x
-    .replace(new RegExp(`\\b일(?=${AHEAD.source})`,'g'),'한')
-    .replace(new RegExp(`\\b이(?=${AHEAD.source})`,'g'),'두')
-    .replace(new RegExp(`\\b삼(?=${AHEAD.source})`,'g'),'세')
-    .replace(new RegExp(`\\b사(?=${AHEAD.source})`,'g'),'네');
+    .replace(new RegExp(BOUND + '십일(?=' + AHEAD.source + ')','g'), '$1열한')
+    .replace(new RegExp(BOUND + '십이(?='  + AHEAD.source + ')','g'), '$1열두')
+    .replace(new RegExp(BOUND + '십삼(?=' + AHEAD.source + ')','g'), '$1열세')
+    .replace(new RegExp(BOUND + '십사(?=' + AHEAD.source + ')','g'), '$1열네')
+    .replace(new RegExp(BOUND + '이십일(?='+ AHEAD.source + ')','g'), '$1스물한')
+    .replace(new RegExp(BOUND + '이십이(?=' + AHEAD.source + ')','g'), '$1스물두')
+    .replace(new RegExp(BOUND + '이십삼(?='+ AHEAD.source + ')','g'), '$1스물세')
+    .replace(new RegExp(BOUND + '이십사(?='+ AHEAD.source + ')','g'), '$1스물네')
+    .replace(new RegExp(BOUND + '이십(?='  + AHEAD.source + ')','g'), '$1스무');
 
+  // 1/2/3/4 → 한/두/세/네 : "단위 앞"에서만. 단어 내부(예: 천사, 삼성, 일이/이다) 금지.
+  x = x
+    .replace(new RegExp(BOUND + '일(?=' + AHEAD.source + ')','g'), '$1한')
+    .replace(new RegExp(BOUND + '이(?='  + AHEAD.source + ')','g'), '$1두')
+    .replace(new RegExp(BOUND + '삼(?=' + AHEAD.source + ')','g'), '$1세')
+    .replace(new RegExp(BOUND + '사(?=' + AHEAD.source + ')','g'), '$1네');
+
+  // 흔한 보정(단위 포함 케이스)
   x = x.replace(/셋(?=살)/g,'세').replace(/넷(?=살)/g,'네');
+
   return x;
 }
 
-  // 화면/채점 모두에서 사용하는 “한글 수사 강제”
-  function forceHangulNumbers(s){
-    const base = digitsToSinoInText(String(s||'').replace(/[A-Za-z]+/g,''));
-    return applyGenericCounterVariants(base);
-  }
+
+function forceHangulNumbers(s){
+  // 더 이상 자동 변환하지 않음: 학생 입력 그대로 반환
+  return String(s || '');
+}
+
 
 function koCanonSimple(s){
   // 공백 전부 제거 + 대표 구두점 제거 + 영문 소문자화
