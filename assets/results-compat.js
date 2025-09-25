@@ -32,10 +32,13 @@
   }
 
   // ---- 로컬/세션 저장(결과 페이지용 폴백) ----
-  function stash(payload) {
-    try { sessionStorage.setItem(KEY_SESSION, JSON.stringify(payload)); } catch(_){}
-    try { localStorage.setItem(KEY_LOCAL, JSON.stringify(payload)); } catch(_){}
-  }
+function stash(payload) {
+  const json = JSON.stringify(payload);
+  try { sessionStorage.setItem(KEY_SESSION, json); } catch(_){}
+  try { sessionStorage.setItem('pongdang_results', json); } catch(_){}
+  try { localStorage.setItem(KEY_LOCAL, json); } catch(_){}
+}
+
 
   // ---- 실제 전송 함수 ----
   async function sendResults(payload) {
