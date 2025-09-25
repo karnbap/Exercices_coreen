@@ -277,6 +277,13 @@ setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textConten
 
 
       async function onStop(){
+         ['livestt:partial','live-stt-partial'].forEach(evt=>{
+  el.removeEventListener(evt, onPart); document.removeEventListener(evt, onPart);
+});
+['livestt:final','live-stt-final'].forEach(evt=>{
+  el.removeEventListener(evt, onFinal); document.removeEventListener(evt, onFinal);
+});
+
         stopVu();
         const dur=(Date.now()-started)/1000;
         const blob=new Blob(chunks,{type:'audio/webm'}); chunks=[];
