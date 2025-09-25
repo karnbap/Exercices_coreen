@@ -100,8 +100,7 @@
     <!-- Navigation Buttons -->
     <div class="flex items-center justify-between pt-4">
       <a href="/assignments/numbers-warmup.html" class="btn bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg px-5 py-3 text-base hover:bg-slate-50 transition-colors">← Précédent / 이전 연습</a>
-      <button id="finish-btn" class="btn bg-indigo-600 text-white font-semibold rounded-lg px-5 py-3 text-base hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Terminer / 끝내기</button>
-    </div>
+<button id="finish-btn" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled>Terminer / 끝내기</button>    </div>
 
     <!-- Footer -->
     <footer class="text-center text-sm text-slate-500 pt-8">
@@ -509,11 +508,137 @@ const btn = h('button', {class:'btn btn-primary w-full flex items-center justify
         renderStep2();
         renderStep3();
 
-        const finishBtn = document.getElementById('finish-btn');
-        if (finishBtn) {
-          document.addEventListener('student-ready', ()=>{ finishBtn.disabled = false; });
-          finishBtn.addEventListener('click', ()=> alert('초안: 결과 전송은 전체본에서 연결됩니다.'));
-        }
+const finishBtn = document.getElementById('finish-btn');
+if (finishBtn) {
+  document.addEventListener('student-ready', ()=>{ finishBtn.disabled = false; });
+
+  // === 집계 상태 ===
+  // 질문별 클릭/힌트/평가 결과 누적
+  const Track = (window._kobito ||= {
+    startTime: window._startTime || new Date().toISOString(),
+    listen: new Map(),   // text -> count
+    hint1:  new Map(),   // text -> count
+    hint2:  new Map(),   // text -> count
+    evals:  new Map(),   // text -> {score, duration, transcript}
+    inputs: new Map()    // text -> {ko, fr}
+  });
+
+  // 듣기 버튼 카운트: tts() 내부에서 호출 지점 추가
+  const _origTTS = tts;
+  window.tts = async (text, btn, voice) => {
+    const k = String(text||'');
+    Track.listen.set(k, (Track.listen.get(k)||0)+1);
+    return _origTTS(text, btn, voice);
+  };
+
+  // 힌트 사용 카운트: student-gate 전역 토글 이벤트 활용
+  // (버튼에 따라 detail.type === 'hint1' | 'hint2')
+  document.addEventListener('hint-used', (e)=>{
+    const card = e.target.closest('.p-4');
+    const ref  = card?.querySelector('.pd-time-badge') ? (card.querySelector('.pd-time-badge').closest('[data-ref-text]')?.dataset.refText || '') : '';
+    // ref 추출 실패 시, 버튼 위 텍스트 영역에서 KO 문장을 찾는 간단 폴백
+    const btn = e.target.closest('.btn');
+    const guess = btn?.nextElementSibling?.textContent || '';
+    const key = ref || guess || '';
+    if (!key) return;
+    if (e.detail?.type === 'hint1') Track.hint1.set(key, (Track.hint1.get(key)||0)+1);
+    if (e.detail?.type === 'hint2') Track.hint2.set(key, (Track.hint2.get(key)||0)+1);
+  }, true);
+
+  // 입력 값 스냅샷(Étape 1)
+  function snapshotInputs(){
+    document.querySelectorAll('#step1 .p-4').forEach(card=>{
+      const btn = card.querySelector('.btn.btn-primary');
+      const ko  = card.querySelector('input[placeholder^="받아쓰기"]')?.value||'';
+      const fr  = card.querySelector('input[placeholder^="Sens"]')?.value||'';
+      const key = btn ? btn.textContent.includes('Écouter') ? (STEP1_DATA[Array.from(card.parentNode.children).indexOf(card)]?.ko||'') : '' : '';
+      if (key) Track.inputs.set(key, { ko, fr });
+    });
+  }
+
+  // Pronun 결과 수집: mountPronun에서 onResult로 전달됨
+  // (이미 페이지 상단 mountPronun에서 holder.dispatchEvent('kobito:graded', detail) 발생)
+  document.addEventListener('kobito:graded', (e)=>{
+    const { ref, hyp, score, refDur, recDur } = e.detail||{};
+    if (!ref) return;
+    Track.evals.set(ref, {
+      score: Number(score||0),
+      duration: Number(recDur||0),
+      transcript: String(hyp||'')
+    });
+  });
+
+  finishBtn.addEventListener('click', async ()=>{
+    try{
+      snapshotInputs();
+
+      const endTime = new Date().toISOString();
+      const startMs = window._startMs || Date.now();
+      const totalTimeSeconds = Math.max(1, Math.round((Date.now() - startMs)/1000));
+
+      const studentName = (document.getElementById('student-name')?.value || window.StudentGate?.getName?.() || '').trim();
+
+      // 모든 문항(Étape1+2+3) 키 합치기
+      const keys = [
+        ...STEP1_DATA.map(x=>x.ko),
+        ...STEP2_DATA.map(x=>x.ko),
+        STEP3_TEXT
+      ];
+
+      const questions = keys.map((k, i)=>{
+        const inp   = Track.inputs.get(k) || { ko:'', fr:'' };
+        const evalR = Track.evals.get(k)  || { score:0, duration:0, transcript:'' };
+        return {
+          number: i+1,
+          ko: k,
+          fr: (STEP1_DATA.find(x=>x.ko===k)?.fr)||'',
+          userAnswer: inp.ko || '',
+          isCorrect: !!(evalR.score >= 60),
+          listenCount: Number(Track.listen.get(k)||0),
+          hint1Count: Number(Track.hint1.get(k)||0),
+          hint2Count: Number(Track.hint2.get(k)||0),
+          // 녹음 원본은 pronun-client 공개 API에서 접근 불가 → duration만 전송
+          recording: {
+            base64: '',
+            filename: 'rec.webm',
+            mimeType: 'audio/webm',
+            duration: Number(evalR.duration||0)
+          },
+          // 참고 필드(교사용): 인식 텍스트/점수
+          asrTranscript: evalR.transcript || '',
+          pronunScore: Number(evalR.score||0)
+        };
+      });
+
+      const payload = {
+        studentName,
+        startTime: window._startTime || new Date(startMs).toISOString(),
+        endTime,
+        totalTimeSeconds,
+        questions
+      };
+
+      // 서버 함수로 전송 (경로 고정)
+      const resp = await fetch('/.netlify/functions/send-results', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await resp.json().catch(()=>null);
+      if (!resp.ok || (data && data.ok===false)) {
+        throw new Error((data&&data.error)||'send-results failed');
+      }
+
+      alert('✅ 전송 완료! / Résultats envoyés.');
+    }catch(err){
+      console.error('send-results error:', err);
+      alert('⚠️ 전송에 실패했어요. 잠시 후 다시 시도해주세요.');
+      // 서버 로그 함수는 student-gate에서 이미 래핑되어 있습니다. :contentReference[oaicite:1]{index=1}
+    }
+  });
+}
+
       } catch(e){
         console.warn('[init-wait]', e);
         // 그래도 학생이 페이지를 쓸 수 있게 최소 렌더 시도
