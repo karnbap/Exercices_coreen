@@ -274,7 +274,7 @@ function mountPronun(box, getRef){
     );
 
     // 듣기 버튼
-    const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
+const btn = h('button', {class:'btn btn-primary w-full flex items-center justify-center gap-2 font-semibold rounded-lg px-4 py-2.5 text-base transition-colors'});
     btn.innerHTML = `${listenIcon} <span>Écouter / 듣기</span>`;
     const voice = VOICES[idx % VOICES.length];
     btn.addEventListener('click', ()=> tts(q.ko, btn, voice));
@@ -313,7 +313,7 @@ function mountPronun(box, getRef){
     );
 
 
-      const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
+const btn = h('button', {class:'btn btn-primary w-full flex items-center justify-center gap-2 font-semibold rounded-lg px-4 py-2.5 text-base transition-colors'});
       btn.innerHTML = `${listenIcon} <span>Écouter / 듣기 (Partie ${idx+1})</span>`;
       const voice = VOICES[(idx+1) % VOICES.length];
       btn.addEventListener('click', () => tts(q.ko, btn, voice));
@@ -345,7 +345,7 @@ function mountPronun(box, getRef){
         '이제 전체 문장을 듣고 바로 따라 읽으면서 녹음하세요.')
     );
 
-    const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
+const btn = h('button', {class:'btn btn-primary w-full flex items-center justify-center gap-2 font-semibold rounded-lg px-4 py-2.5 text-base transition-colors'});
     btn.innerHTML = `${listenIcon} <span>Écouter la phrase complète / 전체 문장 듣기</span>`;
     const voice = VOICES[2];
     btn.addEventListener('click', () => tts(STEP3_TEXT, btn, voice));
