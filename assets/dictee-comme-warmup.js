@@ -160,6 +160,9 @@
       // ===== 녹음/정지/평가 (+민감도 향상 VU, 실시간 자막) =====
       let media=null, mr=null, chunks=[], started=0, lastBlob=null, lastDur=0;
       const vuCanvas=$('.vu',el), live=$('.live',el), btnRec=$('.rec',el), btnStop=$('.stop',el), btnEval=$('.eval',el);
+      // STT 핸들러 레퍼런스(스코프 밖에 보관)
+      let partHandler = null;
+      let finalHandler = null;
 
       function ensureCanvasSize(cv){
         const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
@@ -246,9 +249,11 @@
         live.textContent='En direct / 실시간… (préparation)';
 
 // Live STT(있으면) 연결
-if(window.LiveSTT){
-  const api=window.LiveSTT, opts={root:el,startSel:'.rec',stopSel:'.stop',outSel:'.live',lang:'ko-KR'};
-  if(typeof api.mount==='function') api.mount(opts); else if(typeof api.attach==='function') api.attach(opts);
+if (window.LiveSTT) {
+  const api = window.LiveSTT;
+  const opts = { root: el, startSel: '.rec', stopSel: '.stop', outSel: '.live', lang: 'ko-KR' };
+  if (typeof api.mount === 'function') api.mount(opts);
+  else if (typeof api.attach === 'function') api.attach(opts);
 }
 
 const handleText = (rawText, isFinal=false)=>{
@@ -261,20 +266,22 @@ const handleText = (rawText, isFinal=false)=>{
 };
 
 // 이벤트 네이밍 호환(콜론/하이픈 모두 수신)
-const onPart  = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, false); };
-const onFinal = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, true); };
+partHandler  = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, false); };
+finalHandler = (e)=>{ if(e?.detail?.text!=null) handleText(e.detail.text, true); };
 
 ['livestt:partial','live-stt-partial'].forEach(evt=>{
-  el.addEventListener(evt, onPart);
-  document.addEventListener(evt, onPart);
+  el.addEventListener(evt, partHandler);
+  document.addEventListener(evt, partHandler);
 });
 ['livestt:final','live-stt-final'].forEach(evt=>{
-  el.addEventListener(evt, onFinal);
-  document.addEventListener(evt, onFinal);
+  el.addEventListener(evt, finalHandler);
+  document.addEventListener(evt, finalHandler);
 });
 
-setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…'; }, 1500);
-      }
+setTimeout(()=>{
+  if(live.textContent.includes('(préparation)')) live.textContent='En direct / 실시간…';
+}, 1500);
+
 
       async function onStop(){
          ['livestt:partial','live-stt-partial'].forEach(evt=>{
@@ -285,6 +292,22 @@ setTimeout(()=>{ if(live.textContent.includes('(préparation)')) live.textConten
 });
 
         stopVu();
+           // STT 이벤트 핸들러 해제(스코프 밖 레퍼런스 사용)
+  if (partHandler){
+    ['livestt:partial','live-stt-partial'].forEach(evt=>{
+      el.removeEventListener(evt, partHandler);
+      document.removeEventListener(evt, partHandler);
+    });
+    partHandler = null;
+  }
+  if (finalHandler){
+    ['livestt:final','live-stt-final'].forEach(evt=>{
+      el.removeEventListener(evt, finalHandler);
+      document.removeEventListener(evt, finalHandler);
+    });
+    finalHandler = null;
+  }
+
         const dur=(Date.now()-started)/1000;
         const blob=new Blob(chunks,{type:'audio/webm'}); chunks=[];
         btnRec.disabled=false; btnStop.disabled=true; btnEval.disabled=false;
