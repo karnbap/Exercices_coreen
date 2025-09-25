@@ -1,6 +1,15 @@
 // netlify/functions/transcribe-whisper.js
 // 필요 env: OPENAI_API_KEY (Node 18+, undici 내장 fetch/FormData/Blob 사용)
 exports.handler = async (event) => {
+  function blockArabicDigits(s){
+  return String(s||'')
+    .replace(/\b0\b/g,'영').replace(/\b1\b/g,'일')
+    .replace(/\b2\b/g,'이').replace(/\b3\b/g,'삼')
+    .replace(/\b4\b/g,'사').replace(/\b5\b/g,'오')
+    .replace(/\b6\b/g,'육').replace(/\b7\b/g,'칠')
+    .replace(/\b8\b/g,'팔').replace(/\b9\b/g,'구');
+}
+
   // CORS (선택)
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: cors(), body: '' };
@@ -51,12 +60,15 @@ exports.handler = async (event) => {
       return { statusCode: 502, headers: cors(), body: JSON.stringify({ message: 'whisper error', detail: t }) };
     }
 
-    const data = await res.json(); // { text: "..." }
-    return {
-      statusCode: 200,
-      headers: { ...cors(), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({ text: data.text || '' })
-    };
+ const data = await res.json(); // { text: "..." }
+const textRaw = data.text || '';
+const text    = blockArabicDigits(textRaw); // 숫자만 한글 수사로
+return {
+  statusCode: 200,
+  headers: { ...cors(), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  body: JSON.stringify({ text })
+};
+
   } catch (e) {
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ message: String(e) }) };
   }
