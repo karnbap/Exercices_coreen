@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Écoute & Parole | Exercice Détaillé</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Simple focus states for accessibility */
+    .btn:focus-visible, .input:focus-visible {
+        outline: 2px solid #4f46e5;
+        outline-offset: 2px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased">
+  <!-- Header -->
+  <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-lg shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>made by 성일, Pongdang</span>
+          <a class="underline hover:text-indigo-600" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
+        </div>
+        <button class="btn flex items-center gap-2 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg px-4 py-2 text-sm hover:bg-slate-50 transition-colors" onclick="window.print()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Imprimer / 인쇄
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
+    <!-- Student Name Card -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <label for="student-name" class="block text-base font-medium mb-2 text-slate-700">Nom de l’élève / 학생 이름</label>
+      <input id="student-name" type="text" class="input w-full block border border-slate-300 rounded-lg py-2.5 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Ex. Camille, Lucas, Zoé"/>
+      <p class="text-sm text-slate-500 mt-2">Tu as écrit ton nom ? / 이름 썼나요?</p>
+    </section>
+
+    <!-- Step 1 Card -->
+    <section class="bg-white p-6 rounded-xl shadow-md space-y-4">
+      <div class="space-y-1">
+        <h2 class="text-xl font-bold text-slate-900">Étape 1 — Préparation / 준비운동</h2>
+        <p class="text-base text-slate-600">
+          Écoutez chaque segment, écrivez la dictée en coréen, traduisez en français, et enfin enregistrez votre voix.
+          <br/>각 부분을 듣고, 한국어로 받아쓰고, 불어로 뜻을 쓴 뒤, 발음을 녹음하세요.
+        </p>
+      </div>
+      <div id="step1" class="space-y-4 pt-2"></div>
+    </section>
+
+    <!-- Step 2 Card -->
+    <section class="bg-white p-6 rounded-xl shadow-md space-y-4">
+      <div class="space-y-1">
+        <h2 class="text-xl font-bold text-slate-900">Étape 2 — Lire en segments / 부분 이어 읽기</h2>
+        <p class="text-base text-slate-600">
+          Écoutez chaque segment puis enregistrez-vous. Essayez de parler à une vitesse similaire à celle de l'audio.
+          <br/>각 부분을 듣고 따라 읽으며 녹음하세요. 원본 오디오와 비슷한 속도로 말하는 것을 목표로 하세요.
+        </p>
+      </div>
+       <div id="step2-content" class="space-y-4 pt-2"></div>
+    </section>
+
+    <!-- Step 3 Card -->
+    <section class="bg-white p-6 rounded-xl shadow-md space-y-4">
+       <div class="space-y-1">
+        <h2 class="text-xl font-bold text-slate-900">Étape 3 — Phrase complète / 전체 문장</h2>
+        <p class="text-base text-slate-600">
+            Maintenant, écoutez et répétez la phrase complète.
+            <br/>이제 전체 문장을 듣고 따라 읽어보세요.
+        </p>
+      </div>
+      <div id="step3-content" class="space-y-4 pt-2"></div>
+    </section>
+
+    <!-- Navigation Buttons -->
+    <div class="flex items-center justify-between pt-4">
+      <a href="/assignments/numbers-warmup.html" class="btn bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg px-5 py-3 text-base hover:bg-slate-50 transition-colors">← Précédent / 이전 연습</a>
+      <button id="finish-btn" class="btn bg-indigo-600 text-white font-semibold rounded-lg px-5 py-3 text-base hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Terminer / 끝내기</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-sm text-slate-500 pt-8">
+      made by 성일, Pongdang · <a class="underline hover:text-indigo-600" href="mailto:Lapeace29@gmail.com">Lapeace29@gmail.com</a>
+    </footer>
+  </main>
+
+  <!-- Scripts -->
+  <script src="/assets/student-gate.js"></script>
+  <script src="/assets/pronun-client.js"></script>
+
+  <script>
+  const FN_BASE = (window.PONGDANG_FN_BASE || '/.netlify/functions');
+  const VOICES = ['alloy','verse','nova','shimmer']; // 남/여 섞어서 자연스럽게
+
+  // --- Data for Exercises ---
+  const STEP1_DATA = [
+    { ko:"시간이 없어서", fr:"Comme je n’avais pas de temps" },
+    { ko:"회의를 준비하든지 숙제를 하든지", fr:"soit préparer la réunion, soit faire mes devoirs" },
+    { ko:"한 가지만 골라야 했어요.", fr:"je devais choisir une seule chose" },
+    { ko:"어쩔 수 없었어요.", fr:"je n’avais pas le choix" }
+  ];
+
+  const STEP2_DATA = [
+    { ko: "시간이 없어서 회의를 준비하든지 숙제를 하든지" },
+    { ko: "한 가지만 골라야 했어요. 어쩔 수 없었어요." }
+  ];
+
+  const STEP3_TEXT = "시간이 없어서 회의를 준비하든지 숙제를 하든지 한 가지만 골라야 했어요. 어쩔 수 없었어요.";
+
+  // --- Helper Functions ---
+  function h(tag, attrs={}, ...kids){
+    const el = document.createElement(tag);
+    for(const k in attrs){
+      if (k === 'class') el.className = attrs[k];
+      else el.setAttribute(k, attrs[k]);
+    }
+    kids.forEach(c => {
+        if (typeof c === 'string' || typeof c === 'number') el.appendChild(document.createTextNode(c));
+        else if (c) el.appendChild(c);
+    });
+    return el;
+  }
+
+  async function tts(text, btn, voice='alloy'){
+    btn.disabled = true;
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Traitement...</span>`;
+    
+    try{
+      const r = await fetch(FN_BASE + '/generate-audio', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text, voice, speed:1.0 })
+      });
+      const j = await r.json();
+      const b64 = j.audioBase64 || j.audioContent;
+      if(!b64) throw new Error('No audio data received');
+      const src = URL.createObjectURL(base64ToBlob(b64, j.mimeType||'audio/mpeg'));
+      const a = new Audio(src);
+      a.addEventListener('ended', ()=> URL.revokeObjectURL(src), {once:true});
+      await a.play();
+    }catch(err){ 
+        console.error('TTS Error:', err);
+        alert('Audio indisponible. Veuillez réessayer.'); 
+    }
+    finally{ 
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
+  }
+
+  function base64ToBlob(base64, mime){
+    const clean = base64.includes(',')? base64.split(',')[1] : base64;
+    const bin = atob(clean);
+    const arr = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    return new Blob([arr],{type:mime||'audio/mpeg'});
+  }
+
+  function mountPronun(box, getRef){
+    const holder = h('div'); box.appendChild(holder);
+    if (!window.Pronun){
+      const iv = setInterval(()=>{
+        if(window.Pronun){ clearInterval(iv); doMount(); }
+      }, 200); setTimeout(()=>clearInterval(iv), 5000);
+    } else { doMount(); }
+    
+    function doMount(){
+      try{
+        Pronun.mount(holder, {
+          ui: 'classic',
+          getReferenceText: ()=> String(getRef()||''),
+          onResult: (res)=> { /* pronun result hook */ }
+        });
+      }catch(e){ console.warn('Pronun component failed to mount:', e); }
+    }
+  }
+  
+  const listenIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>`;
+
+  // --- Render Functions ---
+  function renderStep1(){
+    const host = document.getElementById('step1');
+    if (!host) return;
+    host.innerHTML = '';
+    
+    STEP1_DATA.forEach((q, idx)=>{
+      const head = h('div', {class:'flex items-center gap-3'},
+        h('div', {class:'flex-shrink-0 bg-slate-100 text-indigo-600 font-bold w-8 h-8 rounded-full flex items-center justify-center'}, `Q${idx+1}`),
+        h('p', {class:'text-base font-semibold text-slate-800'}, q.ko)
+      );
+      const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
+      btn.innerHTML = `${listenIcon} <span>Écouter / 듣기</span>`;
+      const voice = VOICES[idx % VOICES.length];
+      btn.addEventListener('click', ()=> tts(q.ko, btn, voice));
+      const inpKo = h('input', {class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition', placeholder:'받아쓰기: 한국어로 적기'});
+      const inpFr = h('input', {class:'input w-full block border border-slate-300 rounded-lg py-2 px-3 text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition', placeholder:'Sens (FR): 의미(불어)'});
+      const pbox = h('div', {class:'mt-2'});
+      mountPronun(pbox, ()=> q.ko);
+      const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'}, head, btn, inpKo, inpFr, pbox);
+      host.appendChild(card);
+    });
+  }
+
+  function renderStep2() {
+    const host = document.getElementById('step2-content');
+    if (!host) return;
+    host.innerHTML = '';
+
+    STEP2_DATA.forEach((q, idx) => {
+      const head = h('p', {class:'text-base font-semibold text-slate-800 text-center py-2'}, q.ko);
+      const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
+      btn.innerHTML = `${listenIcon} <span>Écouter / 듣기 (Partie ${idx+1})</span>`;
+      const voice = VOICES[(idx+1) % VOICES.length];
+      btn.addEventListener('click', () => tts(q.ko, btn, voice));
+      const pbox = h('div', {class:'mt-2'});
+      mountPronun(pbox, () => q.ko);
+      const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'}, head, btn, pbox);
+      host.appendChild(card);
+    });
+  }
+
+  function renderStep3() {
+    const host = document.getElementById('step3-content');
+    if (!host) return;
+    host.innerHTML = '';
+    
+    const head = h('p', {class:'text-base font-semibold text-slate-800 text-center py-2 leading-relaxed'}, STEP3_TEXT);
+    const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
+    btn.innerHTML = `${listenIcon} <span>Écouter la phrase complète / 전체 문장 듣기</span>`;
+    const voice = VOICES[2];
+    btn.addEventListener('click', () => tts(STEP3_TEXT, btn, voice));
+    const pbox = h('div', {class:'mt-2'});
+    mountPronun(pbox, () => STEP3_TEXT);
+    const card = h('div', {class:'p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3'}, head, btn, pbox);
+    host.appendChild(card);
+  }
+
+  // --- DOM Ready ---
+  document.addEventListener('DOMContentLoaded', ()=>{
+    window.StudentGate?.init?.();
+    renderStep1();
+    renderStep2();
+    renderStep3();
+    
+    const finishBtn = document.getElementById('finish-btn');
+    if (finishBtn) {
+        document.addEventListener('student-ready', ()=>{ finishBtn.disabled = false; });
+        finishBtn.addEventListener('click', ()=> alert('초안: 결과 전송은 전체본에서 연결됩니다.'));
+    }
+  });
+  </script>
+</body>
+</html>
