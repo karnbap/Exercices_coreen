@@ -214,6 +214,42 @@
     return Math.max(0, 1 - lev(A,B)/L);
   }
 
+ const NumNormalizer = {
+    forceHangulNumbers: function(s){
+      return String(s||'')
+        .replace(/\b0\b/g,'영').replace(/\b1\b/g,'일')
+        .replace(/\b2\b/g,'이').replace(/\b3\b/g,'삼')
+        .replace(/\b4\b/g,'사').replace(/\b5\b/g,'오')
+        .replace(/\b6\b/g,'육').replace(/\b7\b/g,'칠')
+        .replace(/\b8\b/g,'팔').replace(/\b9\b/g,'구');
+    },
+    refAwareNormalize: function(refRaw, hypRaw){
+let ref = String(refRaw||'').trim();
+let hyp = String(hypRaw||'').trim();
+hyp = forceHangulNumbers(hyp); // ← 고급 강제 함수로 통일
+
+ const KB = '[가-힣]';                        // 한글 경계용
+const WB = new RegExp; /* dummy to keep search simple */
+
+const PAIRS = [
+  { ref:new RegExp(`(?<!${KB})이(?!${KB})`),  conf:new RegExp(`(?<!${KB})(둘|두)(?!${KB})`), to:'이'  },
+  { ref:new RegExp(`(?<!${KB})사(?!${KB})`),  conf:new RegExp(`(?<!${KB})(넷|네)(?!${KB})`), to:'사'  },
+  { ref:new RegExp(`(?<!${KB})삼(?!${KB})`),  conf:new RegExp(`(?<!${KB})(셋|세)(?!${KB})`), to:'삼'  },
+  { ref:new RegExp(`(?<!${KB})일(?!${KB})`),  conf:new RegExp(`(?<!${KB})(한|하나)(?!${KB})`), to:'일' },
+  { ref:new RegExp(`(?<!${KB})십(?!${KB})`),  conf:new RegExp(`(?<!${KB})열(?!${KB})`), to:'십' }
+];
+
+      for(const r of PAIRS){
+        if(r.ref.test(ref) && r.conf.test(hyp)){
+          hyp = hyp.replace(r.conf, r.to);
+        }
+      }
+      return hyp;
+    }
+  };
+
+  global.PronunUtils = Object.assign(global.PronunUtils||{}, { NumNormalizer });
+  
   // ====== ③ 글로벌 네임스페이스에 추가/병합 ======
   // (1) 새 숫자 유틸은 NumHangul로 노출
   global.NumHangul = Object.assign({}, global.NumHangul || {}, {
