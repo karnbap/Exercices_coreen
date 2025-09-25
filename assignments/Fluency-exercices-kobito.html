@@ -248,9 +248,8 @@ function tempoOnlyPenalty(refSec, recSec){
     const refDur = Number((window.AUDIO_DUR && window.AUDIO_DUR.get(ref)) || 0);
 
     // ② 사용자 녹음 길이(초) — res.durationSec 우선, 없으면 타이머 값
-    let recDur = 0;
+    let recDur = Math.max(...cand, 0);
     const cand = [
-const cand = [
   Number(holder.dataset.lastRecSec || 0),
   Number(res?.durationSec || 0)
 ].filter(n => Number.isFinite(n) && n > 0);
