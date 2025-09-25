@@ -35,6 +35,32 @@
   if (Number.isFinite(global.PRONUN_MAX_SEC)) {
     CFG.maxSec = Math.max(CFG.minSec + 1, Number(global.PRONUN_MAX_SEC));
   }
+  // ---- AudioContext singleton & safe closer ----
+let __pdAudioCtx = null;
+
+function pdGetAudioCtx() {
+  if (__pdAudioCtx && __pdAudioCtx.state !== 'closed') return __pdAudioCtx;
+    __pdAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return __pdAudioCtx;
+}
+
+async function pdSafeCloseCtx() {
+  if (!__pdAudioCtx) return;
+  try {
+    // 이미 closed면 아무 것도 안 함
+    if (__pdAudioCtx.state === 'closed') { __pdAudioCtx = null; return; }
+    // 수업 도중에는 suspend까지만 (재개 가능)
+    await __pdAudioCtx.suspend();
+  } catch (_) {}
+}
+
+// 탭/페이지 떠날 때만 실제 close
+window.addEventListener('pagehide', async () => {
+  if (__pdAudioCtx && __pdAudioCtx.state !== 'closed') {
+    try { await __pdAudioCtx.close(); } catch (_) {}
+    __pdAudioCtx = null;
+  }
+});
 
   // ===== Utils =====
   const $ = (s, r=document)=>r.querySelector(s);
@@ -215,9 +241,9 @@ function makeRecorder(drawCanvas){
       chunksLocal = [];
       mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunksLocal.push(e.data); };
 
-      const AC = window.AudioContext||window.webkitAudioContext;
-      ac = new AC();
-      const source = ac.createMediaStreamSource(stream);
+      ac = pdGetAudioCtx(); // 전역 싱글턴 AudioContext
+    const source = ac.createMediaStreamSource(stream);
+
       analyser = ac.createAnalyser(); analyser.fftSize = 512;
       source.connect(analyser);
 
@@ -248,7 +274,7 @@ function makeRecorder(drawCanvas){
     function stop(){
       try { if (mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); } catch(_){}
       try { stream?.getTracks().forEach(t => t.stop()); } catch(_){}
-      try { ac?.close(); } catch(_){}
+    try { await pdSafeCloseCtx(); } catch(_){}
       stream=null; mediaRecorder=null; analyser=null;
       if (raf) cancelAnimationFrame(raf); raf=0;
       clearCanvas();
