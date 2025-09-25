@@ -197,10 +197,11 @@ function applyGenericCounterVariants(s){
 }
 
 
-function forceHangulNumbers(s){
-  // 더 이상 자동 변환하지 않음: 학생 입력 그대로 반환
+// 학생 입력은 자동 변환하지 않도록 유지(필요 시 직접 호출해서 사용)
+function forceHangulNumbersNoOp(s){
   return String(s || '');
 }
+
 
 
 function koCanonSimple(s){
