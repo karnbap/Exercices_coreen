@@ -305,12 +305,13 @@ function mountPronun(box, getRef){
 
     STEP2_DATA.forEach((q, idx) => {
       // ⬇️ 한국어 원문은 헤더에 표시하지 않음(감춤)
-      const head = h('div', {class:'space-y-1'},
-        h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'},
-          'Écoutez chaque segment puis enregistrez-vous. Essayez de parler à une vitesse similaire à celle de l\\'audio.'),
-        h('p', {class:'text-sm text-slate-600'},
-          '각 부분을 듣고 바로 따라 읽으며 녹음하세요. 원본과 비슷한 속도로 말해요.')
-      );
+    const head = h('div', {class:'space-y-1'},
+      h('p', {class:'text-sm sm:text-base text-slate-800 font-semibold'},
+        `Écoutez chaque segment puis enregistrez-vous. Essayez de parler à une vitesse similaire à celle de l'audio.`),
+      h('p', {class:'text-sm text-slate-600'},
+        '각 부분을 듣고 바로 따라 읽으며 녹음하세요. 원본과 비슷한 속도로 말해요.')
+    );
+
 
       const btn = h('button', {class:'btn w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2.5 text-base hover:bg-indigo-700 transition-colors'});
       btn.innerHTML = `${listenIcon} <span>Écouter / 듣기 (Partie ${idx+1})</span>`;
