@@ -248,34 +248,19 @@ function tempoOnlyPenalty(refSec, recSec){
     const refDur = Number((window.AUDIO_DUR && window.AUDIO_DUR.get(ref)) || 0);
 
 let recDur = 0;
-
-// 녹음 길이 추정: (마지막 측정 vs 엔진이 넘긴 길이) 중 큰 값
 const cand = [
   Number(holder.dataset.lastRecSec || 0),
-  Number(res?.duration || res?.durationSec || 0) // pronun-client v4.8은 duration(또는 durationSec)을 전달
+  Number(res?.duration || res?.durationSec || 0)
 ].filter(n => Number.isFinite(n) && n > 0);
-
 recDur = cand.length ? Math.max(...cand) : 0;
+
 
 // 인식 텍스트 정규화
 const hyp = String(res?.text || res?.hyp || '');
 
-// 기준 오디오 길이(refDur) — 듣기 버튼에서 채운 값 사용(없으면 0)
-const refDur =
-  Number(holder.dataset.audioDur || 0) ||
-  Number(window?.AUDIO_DUR?.[holder.dataset.qid || ''] || 0) || 0;
-
-// 점수 계산(템포 포함)
-const r = Scoring.gradeKO(holder.dataset.ref || '', hyp, {
-  tempo: {
-    mode: 'normal',
-    refDurationSec: refDur,
-    userDurationSec: recDur
-  }
-});
 
 
-    const hyp = String(res?.text || res?.hyp || '');
+
 
     // 디버그 로그
     console.log('[TempoDBG]', { ref, refDur, recDur, hyp });
