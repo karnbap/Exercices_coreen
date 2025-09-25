@@ -271,14 +271,15 @@ function makeRecorder(drawCanvas){
       })};
     }
 
-    function stop(){
-      try { if (mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); } catch(_){}
-      try { stream?.getTracks().forEach(t => t.stop()); } catch(_){}
-    try { await pdSafeCloseCtx(); } catch(_){}
-      stream=null; mediaRecorder=null; analyser=null;
-      if (raf) cancelAnimationFrame(raf); raf=0;
-      clearCanvas();
-    }
+async function stop(){
+  try { if (mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); } catch(_){}
+  try { stream?.getTracks().forEach(t => t.stop()); } catch(_){}
+  try { await pdSafeCloseCtx(); } catch(_){}
+  stream=null; mediaRecorder=null; analyser=null;
+  if (raf) cancelAnimationFrame(raf); raf=0;
+  clearCanvas();
+}
+
 
     async function finalizeToBlobDuration(chunks, mimeType){
       const blob = new Blob(chunks, { type:(mimeType.split(';')[0]||'audio/webm') });
