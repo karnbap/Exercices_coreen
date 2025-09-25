@@ -379,7 +379,7 @@ audio.addEventListener('loadedmetadata', ()=>{
     const ok = score >= need;
 
     const out = { status:'ok', transcript, accuracy:score, score, ok, passed:ok, needsRetry, duration:lastDur };
-    ui.msg.textContent = ok ? `✅ ${lastDur.toFixed(1)} s · Bon travail ! / 좋아요!` : `ℹ️ ${lastDur.toFixed(1)} s · 한 번 더 또박또박!`;
+ui.msg.textContent = `⏱️ ${lastDur.toFixed(1)} s · 점수/속도 피드백은 아래에서 확인! / Consulte le badge ci-dessous.`;
     try { onResult?.(out); } catch(_){}
     evalBusy = false;
 
