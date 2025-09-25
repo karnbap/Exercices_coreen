@@ -150,8 +150,10 @@ const STEP1_INSTRUCTION_KO = "각 부분을 듣고, 한국어로 받아쓰고, �
     return el;
   }
 
+  // 전역: 재생 길이 캐시(문장별)
+  window.AUDIO_DUR = window.AUDIO_DUR || new Map();
   async function tts(text, btn, voice='alloy'){
-    const AUDIO_DUR = new Map(); // key: 문장, val: 재생초(실계측 또는 서버 추정)
+
 
     btn.disabled = true;
     const originalContent = btn.innerHTML;
@@ -169,7 +171,7 @@ const STEP1_INSTRUCTION_KO = "각 부분을 듣고, 한국어로 받아쓰고, �
      const a = new Audio(src);
 a.addEventListener('loadedmetadata', ()=>{
   const d = Number(a.duration || 0);
-  AUDIO_DUR.set(text, d > 0 ? d : Number(j.durationEstimateSec || 0));
+window.AUDIO_DUR.set(text, d > 0 ? d : Number(j.durationEstimateSec || 0));
 }, { once:true });
 a.addEventListener('ended', ()=> URL.revokeObjectURL(src), {once:true});
 await a.play();
@@ -208,8 +210,9 @@ function mountPronun(box, getRef){
   getReferenceText: ()=> String(getRef()||''),
   onResult: (res)=> {
     try{
-      const ref = String(getRef() || '');
-      const refDur = Number(AUDIO_DUR.get(ref) || 0);
+ const ref = String(getRef() || '');
+const refDur = Number((window.AUDIO_DUR && window.AUDIO_DUR.get(ref)) || 0);
+
       const recDur = Number(holder.dataset.lastRecSec || 0);
       const hyp    = String(res?.text || res?.hyp || '');
 
