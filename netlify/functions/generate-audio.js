@@ -64,6 +64,42 @@ function estimateDurationSec({ text='', ssml='', speed=1.0, repeats=1 } = {}){
   const rep = Math.max(1, Number(repeats)||1);
   return Math.max(0.2, totalOne * rep);
 }
+function stripSSML(s=''){
+  return String(s).replace(/<break[^>]*time="(\d+)ms"[^>]*>/gi, '[$BR:$1]')
+                  .replace(/<[^>]+>/g, '');
+}
+function countBreakMs(ssml=''){
+  const ms = Array.from(String(ssml).matchAll(/<break[^>]*time="(\d+)ms"[^>]*>/gi))
+                  .map(m => parseInt(m[1]||'0',10)).filter(Number.isFinite);
+  return ms.length ? ms.reduce((a,b)=>a+b,0) : 0;
+}
+function countHangulSyllables(s=''){
+  return (String(s).match(/[\uAC00-\uD7A3]/g) || []).length;
+}
+function estimateDurationSec({ text='', ssml='', speed=1.0, repeats=1 } = {}){
+  const hasSSML = !!ssml;
+  const clean = hasSSML ? stripSSML(ssml) : String(text||'');
+  const brMs  = hasSSML ? countBreakMs(ssml) : 0;
+
+  let syllables = countHangulSyllables(clean);
+  if (syllables === 0) {
+    const wc = (clean.trim().split(/\s+/).filter(Boolean).length || 0);
+    const cc = clean.replace(/\s+/g,'').length;
+    syllables = Math.max(1, Math.round(Math.max(wc*2, cc/3)));
+  }
+
+  const BASE_SPS = 4.2;
+  const NUM_SLOW = 0.9;
+  const looksNumeric = /[0-9]|[일이삼사오육칠팔구십백천만억]/.test(clean);
+  const sps = (looksNumeric ? BASE_SPS*NUM_SLOW : BASE_SPS) * (Number(speed)||1);
+
+  const speechSec = syllables / Math.max(0.1, sps);
+  const brSec     = brMs / 1000;
+  const totalOne  = speechSec + brSec;
+
+  const rep = Math.max(1, Number(repeats)||1);
+  return Math.max(0.2, totalOne * rep);
+}
 
 exports.handler = async (event) => {
   // Preflight
@@ -77,6 +113,7 @@ exports.handler = async (event) => {
   try {
     // ---- 입력 파싱 ----
     const body = JSON.parse(event.body || '{}');
+    
     const reqText    = String(body.text || '');
 const reqSSML    = String(body.ssml || '');
 const reqSpeed   = Number(body.speed || 1.0);
@@ -230,4 +267,5 @@ function koPronunNormalize(s) {
     // 추가: '몇 분'은 유지(혼동 방지)
     ;
 }
+
 
