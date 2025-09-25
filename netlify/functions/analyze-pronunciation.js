@@ -66,8 +66,11 @@ exports.handler = async (event) => {
     }
 
     // === 숫자 → 한글 수사 강제(표시/채점 공통) ===
-    const transcriptKo = forceHangulNumbers(transcriptRaw);
-    const refKo        = forceHangulNumbers(referenceText || '');
+ // === 숫자만 한글 수사로 치환(그 외 자동 변환은 없음) ===
+const safeTranscript = blockArabicDigits(transcriptRaw);
+const transcriptKo   = forceHangulNumbers(safeTranscript); // 현재 no-op, 향후 확장 대비
+const refKo          = forceHangulNumbers(referenceText || '');
+
 
     // === 유사도(캐논) ===
     const hyp = koCanon(transcriptKo);
@@ -107,6 +110,14 @@ if (ref && hyp && ref === hyp) acc = 1; // 완전 일치면 100% 고정
     });
   }
 };
+function blockArabicDigits(s){
+  return String(s||'')
+    .replace(/\b0\b/g,'영').replace(/\b1\b/g,'일')
+    .replace(/\b2\b/g,'이').replace(/\b3\b/g,'삼')
+    .replace(/\b4\b/g,'사').replace(/\b5\b/g,'오')
+    .replace(/\b6\b/g,'육').replace(/\b7\b/g,'칠')
+    .replace(/\b8\b/g,'팔').replace(/\b9\b/g,'구');
+}
 
 // ===== helpers =====
 function json(code, obj){
