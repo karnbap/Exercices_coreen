@@ -99,15 +99,40 @@ function makeCard(idx, sent){
   const scoreBox= wrap.querySelector('[data-score]');
   const getRef  = ()=> sent.ko;
 
-  // 🔸 내 발음 박스를 녹음 위젯(host) 바로 아래로 이동
-  if (liveBox) {
-    const liveCardOld = liveBox.closest('.pronun-card'); // 기존 우측 카드
-    const liveWrap = document.createElement('div');
-    liveWrap.className = 'mt-3';
-    liveWrap.appendChild(liveBox);
-    host.insertAdjacentElement('afterend', liveWrap);
-    if (liveCardOld) liveCardOld.remove(); // 기존 오른쪽 카드 제거
-  }
+   // 🔸 녹음 위젯(host) 바로 아래: [원문] 위 / [실시간] 아래로 한 묶음 배치
+  (function placeRefAndLive(){
+    const refBox = wrap.querySelector('[data-ref]');
+    const refCardOld = refBox?.closest('.pronun-card');
+    const liveCardOld = liveBox?.closest('.pronun-card');
+
+    const wrapBox = document.createElement('div');
+    wrapBox.className = 'mt-3 space-y-2';
+
+    if (refBox) {
+      const refLabel = document.createElement('div');
+      refLabel.className = 'pronun-title';
+      refLabel.textContent = '원문 / Référence (KO)';
+      const refHolder = document.createElement('div');
+      refHolder.className = 'p-2 border rounded bg-white text-lg';
+      refHolder.appendChild(refBox); // 실제 노드 이동
+      wrapBox.appendChild(refLabel);
+      wrapBox.appendChild(refHolder);
+    }
+
+    if (liveBox) {
+      const liveLabel = document.createElement('div');
+      liveLabel.className = 'pronun-title';
+      liveLabel.textContent = '내 발음 (실시간) / En direct';
+      wrapBox.appendChild(liveLabel);
+      wrapBox.appendChild(liveBox);
+    }
+
+    host.insertAdjacentElement('afterend', wrapBox);
+
+    if (refCardOld) refCardOld.remove();
+    if (liveCardOld) liveCardOld.remove();
+  })();
+
 
 
   // (옵션) 실시간 STT가 있으면 녹음 시작~정지 사이에 부분 텍스트 표시
@@ -180,10 +205,13 @@ function makeCard(idx, sent){
 
   // 2) 보조: 위젯 내부 상태 변화를 감지(문구 변화 외에도 아이콘 변화 등)
   const obs = new MutationObserver(()=>{
+    
     const text = host.textContent || '';
     const on = /(녹음 중|recording|en cours d'enregistrement)/i.test(text);
     if (on && !sttStop){ sttStop = startLiveSTT(); liveBox.textContent='…'; }
     if (!on && sttStop){ try{ sttStop(); }catch(_){} sttStop=null; }
+      mergeStopAndEvaluate(); // ← 버튼 DOM 바뀔 때마다 정지=평가 병합 재시도
+
   });
   obs.observe(host, { childList:true, subtree:true });
     mergeStopAndEvaluate();
@@ -192,8 +220,6 @@ function makeCard(idx, sent){
 function mergeStopAndEvaluate(){
   const allBtns = Array.from(host.querySelectorAll('button'));
   const normTxt = s => (s||'').replace(/\s+/g,' ').trim().toLowerCase();
-
-  // 부분 포함 매칭(아이콘/공백/다국어 대응)
   const findInc = (...needles) => allBtns.find(b => {
     const t = normTxt(b.textContent);
     return needles.some(n => t.includes(n));
@@ -207,16 +233,24 @@ function mergeStopAndEvaluate(){
     // 평가 버튼 숨김
     evalBtn.style.display = 'none';
 
-    // 라벨 교체(요청하신 문구)
+    // 라벨/크기/스타일
     stopBtn.textContent = '멈추고 평가 / Arrêter & Évaluer';
+    stopBtn.classList.add('pd-bigbtn'); // 스타일 주입용 클래스
     stopBtn.dataset.merged = '1';
 
-    // 클릭 시: 원래 Stop → 짧게 대기 → 평가 버튼 강제 클릭
+    // 클릭: 원래 Stop 동작 + 평가 강제 실행(여러 번 재시도)
     stopBtn.addEventListener('click', () => {
-      setTimeout(() => { try { evalBtn.click(); } catch(_) {} }, 60);
+      const tryEval = (attempt=0)=>{
+        try { evalBtn.click(); } catch(_) {}
+        // onResult가 안 뜨면 100ms 간격으로 최대 8번 재시도
+        if (attempt < 8) setTimeout(()=>tryEval(attempt+1), 100);
+      };
+      // Stop 핸들러가 끝날 시간을 주고 시작
+      setTimeout(()=>tryEval(0), 120);
     }, { once:false });
   }
 }
+
 
 
     mergeStopAndEvaluate();
@@ -226,18 +260,45 @@ function mergeStopAndEvaluate(){
 // ===== 페이지 전용 스타일 주입(그래프 제거 + 텍스트 크게) =====
 (function injectPronunStyles(){
   const css = `
-  /* 파형/그래프 계열 통째로 숨김 (여러 위젯 버전 대응) */
-  .pronun-card canvas,
-  .pronun-graph,
-  .pronun-visualizer,
-  .pd-wave,
-  .wave,
-  .waveform { display:none !important; height:0 !important; }
-  /* 실시간 텍스트 크게 + 여백 */
-  
-  .pronun-live { display:block; font-size:1.6rem; line-height:1.9rem; padding:14px 16px; min-height:80px; }
-  @media (min-width:768px){ .pronun-live{ font-size:2rem; line-height:2.4rem; min-height:100px; } }
-  `;
+/* 파형/그래프 제거 */
+.pronun-card canvas,
+.pronun-graph,
+.pronun-visualizer,
+.pd-wave,
+.wave,
+.waveform { display:none !important; height:0 !important; }
+
+/* 내 발음(실시간) 박스 강화 */
+.pronun-live {
+  display:block;
+  font-size:1.8rem;
+  line-height:2.2rem;
+  padding:16px 18px;
+  min-height:96px;
+  background:#fff;
+  border:2px solid #e2e8f0;
+  border-radius:14px;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+}
+@media (min-width:768px){
+  .pronun-live{ font-size:2.1rem; line-height:2.6rem; min-height:110px; }
+}
+
+/* 녹음 시작/정지/평가 버튼 크게 & 꾸미기 */
+[data-pronun] button,
+.pd-bigbtn {
+  font-size:1.05rem !important;
+  padding:12px 18px !important;
+  border-radius:12px !important;
+}
+.pd-bigbtn{
+  background:#0ea5e9 !important; /* sky-500 */
+  color:#fff !important;
+  border:none !important;
+  box-shadow:0 6px 14px rgba(14,165,233,.22);
+}
+.pd-bigbtn:hover{ filter:brightness(1.05); }
+`;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');
   tag.textContent = css;
