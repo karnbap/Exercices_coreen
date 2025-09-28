@@ -46,18 +46,44 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
 }
 
 // ===== 간단 정규화 & 빨간색 Diff 출력 =====
-const norm = s => String(s||'').trim().replace(/\s+/g,'');
-function htmlDiffOnlyWrong(ref, hyp){
-  const a = [...norm(ref)], b = [...norm(hyp)];
-  const L = Math.max(a.length, b.length);
-  let html = "";
-  for (let i=0;i<L;i++){
-    const r=a[i]||"", h=b[i]||"";
-    if (r===h) html += `<span>${r}</span>`;
-    else html += `<span style="color:#dc2626">${r||"∅"}</span>`;
+function htmlDiffOnlyWrong(refRaw, hypRaw){
+  const ref = [...norm(refRaw)], hyp = [...norm(hypRaw)];
+  const m = ref.length, n = hyp.length;
+  // LCS 테이블
+  const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for (let i=1;i<=m;i++){
+    for (let j=1;j<=n;j++){
+      dp[i][j] = ref[i-1]===hyp[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+    }
   }
-  return html || ref;
+  // LCS 역추적 → ref 기준으로 일치/불일치 마킹
+  let i=m, j=n, keep = new Array(m).fill(false);
+  while (i>0 && j>0){
+    if (ref[i-1]===hyp[j-1]){ keep[i-1]=true; i--; j--; }
+    else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
+  }
+  // 원문 출력 시, 빨간색은 refRaw의 원문 글자 단위로(공백/문장부호 포함) 맞춰줌
+  // refRaw를 NFC로 토큰화하여 매핑
+  const tokens = [...refRaw.normalize('NFC')];
+  // ref와 tokens의 글자수 차이가 있을 수 있어 보수적으로 진행
+  let k = 0;
+  let html = '';
+  for (let t=0; t<tokens.length; t++){
+    const ch = tokens[t];
+    // 한글/영문/숫자만 카운트 대상
+    const isCore = /\p{Letter}|\p{Number}|\p{Script=Hangul}/u.test(ch);
+    if (isCore){
+      const ok = keep[k]===true;
+      html += ok ? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
+      k++;
+    } else {
+      // 문장부호/공백은 비교 대상 아님: 그대로 정상 색상
+      html += `<span>${ch}</span>`;
+    }
+  }
+  return html;
 }
+
 
 // ===== 카드 렌더 =====
 function makeCard(idx, sent){
@@ -114,13 +140,32 @@ function makeCard(idx, sent){
   // (옵션) 실시간 STT가 있으면 녹음 시작~정지 사이에 부분 텍스트 표시
   let sttStop = null;
   function startLiveSTT(){
-    if (!window.LiveSTT || typeof LiveSTT.start!=='function') return null;
-    const { stop } = LiveSTT.start({
-      lang:'ko-KR',
-      onPartial(txt){ liveBox.textContent = (txt||'').trim() || '…'; }
-    });
-    return stop;
+    // 1) 커스텀 LiveSTT 우선
+    if (window.LiveSTT && typeof LiveSTT.start==='function'){
+      const { stop } = LiveSTT.start({
+        lang:'ko-KR',
+        onPartial(txt){ liveBox.textContent = (txt||'').trim() || '…'; }
+      });
+      return stop;
+    }
+    // 2) 폴백: Web Speech API(Chrome 기반)
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    const rec = new SR();
+    rec.lang = 'ko-KR';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.onresult = (ev)=>{
+      let partial = '';
+      for (let i=ev.resultIndex; i<ev.results.length; i++){
+        partial += ev.results[i][0].transcript || '';
+      }
+      liveBox.textContent = (partial||'').trim() || '…';
+    };
+    try { rec.start(); } catch(_) {}
+    return ()=>{ try{rec.stop();}catch(_){} };
   }
+
 
   Pronun.mount(host, {
     getReferenceText: getRef,
@@ -135,18 +180,34 @@ function makeCard(idx, sent){
       const html = htmlDiffOnlyWrong(ref, transcript);
       diffBox.innerHTML = html;
 
-      const pct = Math.round((typeof accuracy==='number' ? (accuracy>1?accuracy:accuracy*100) : 0));
+      const acc = (typeof accuracy==='number' ? accuracy : 0); const pct = Math.round((acc > 1 ? acc : acc * 100));
       scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
     }
   });
 
   // 녹음 버튼 훅: 공용 위젯의 버튼을 관찰해 실시간 STT 시작/종료
+  // 1) 버튼 라벨 직접 감지(Démarrer/Start/녹음)로 STT on/off
+  host.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const label = (btn.textContent || '').toLowerCase();
+    if (/(démarrer|start|녹음|시작)/i.test(label)) {
+      if (!sttStop){ sttStop = startLiveSTT(); liveBox.textContent='…'; }
+    }
+    if (/(stop|arrêter|멈추기|정지)/i.test(label)) {
+      if (sttStop){ try{ sttStop(); }catch(_){} sttStop=null; }
+    }
+  });
+
+  // 2) 보조: 위젯 내부 상태 변화를 감지(문구 변화 외에도 아이콘 변화 등)
   const obs = new MutationObserver(()=>{
-    const recOn = host.querySelector('.pronun-classic, .pronun-warmup')?.textContent?.includes('녹음 중…');
-    if (recOn && !sttStop){ sttStop = startLiveSTT(); liveBox.textContent='…'; }
-    if (!recOn && sttStop){ try{ sttStop(); }catch(_){} sttStop=null; }
+    const text = host.textContent || '';
+    const on = /(녹음 중|recording|en cours d'enregistrement)/i.test(text);
+    if (on && !sttStop){ sttStop = startLiveSTT(); liveBox.textContent='…'; }
+    if (!on && sttStop){ try{ sttStop(); }catch(_){} sttStop=null; }
   });
   obs.observe(host, { childList:true, subtree:true });
+
 
   return wrap;
 }
