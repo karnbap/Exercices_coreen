@@ -138,6 +138,14 @@ function makeCard(idx, sent){
 
   // 녹음 위젯 장착 (공용) — stop 후 “평가” 클릭 가능
   const host = wrap.querySelector('[data-pronun]');
+    // 🔸 내 발음 박스를 녹음 위젯(host) 바로 아래로 이동
+  const liveCardOld = liveBox.closest('.pronun-card'); // 기존 우측 카드
+  const liveWrap = document.createElement('div');
+  liveWrap.className = 'mt-3';
+  liveWrap.appendChild(liveBox);
+  host.insertAdjacentElement('afterend', liveWrap);
+  if (liveCardOld) liveCardOld.remove(); // 기존 오른쪽 카드 제거
+
   const liveBox = wrap.querySelector('[data-live]');
   const diffBox = wrap.querySelector('[data-diff]');
   const scoreBox= wrap.querySelector('[data-score]');
@@ -216,27 +224,35 @@ function makeCard(idx, sent){
     mergeStopAndEvaluate();
   setTimeout(mergeStopAndEvaluate, 200);
 
-    // Stop + 평가 버튼 합치기
-  function mergeStopAndEvaluate(){
-    const allBtns = Array.from(host.querySelectorAll('button'));
-    const findByText = (re) => allBtns.find(b => re.test((b.textContent||'').trim().toLowerCase()));
-    const stopBtn = findByText(/^(stop|arrêter|멈추기|정지)$/i);
-    const evalBtn = findByText(/^(évaluer|평가|evaluate)$/i);
-    if (!stopBtn || !evalBtn) return;
+function mergeStopAndEvaluate(){
+  const allBtns = Array.from(host.querySelectorAll('button'));
+  const normTxt = s => (s||'').replace(/\s+/g,' ').trim().toLowerCase();
 
-    if (!stopBtn.dataset.merged) {
-      // 평가 버튼 숨김
-      evalBtn.style.display = 'none';
-      // Stop 버튼 라벨 교체
-      stopBtn.textContent = '멈추고 평가 / Arrêter & Évaluer';
-      stopBtn.dataset.merged = '1';
+  // 부분 포함 매칭(아이콘/공백/다국어 대응)
+  const findInc = (...needles) => allBtns.find(b => {
+    const t = normTxt(b.textContent);
+    return needles.some(n => t.includes(n));
+  });
 
-      // 클릭 시: 원래 Stop 동작 → 아주 짧은 대기 → 평가 버튼 강제 클릭
-      stopBtn.addEventListener('click', () => {
-        setTimeout(() => { try { evalBtn.click(); } catch(_) {} }, 60);
-      }, { once:false });
-    }
+  const stopBtn = findInc('stop','arrêter','멈추기','정지');
+  const evalBtn = findInc('évaluer','평가','evaluate');
+  if (!stopBtn || !evalBtn) return;
+
+  if (!stopBtn.dataset.merged) {
+    // 평가 버튼 숨김
+    evalBtn.style.display = 'none';
+
+    // 라벨 교체(요청하신 문구)
+    stopBtn.textContent = '멈추고 평가 / Arrêter & Évaluer';
+    stopBtn.dataset.merged = '1';
+
+    // 클릭 시: 원래 Stop → 짧게 대기 → 평가 버튼 강제 클릭
+    stopBtn.addEventListener('click', () => {
+      setTimeout(() => { try { evalBtn.click(); } catch(_) {} }, 60);
+    }, { once:false });
   }
+}
+
 
     mergeStopAndEvaluate();
 
@@ -253,6 +269,7 @@ function makeCard(idx, sent){
   .wave,
   .waveform { display:none !important; height:0 !important; }
   /* 실시간 텍스트 크게 + 여백 */
+  
   .pronun-live { font-size:1.6rem; line-height:1.9rem; padding:14px 16px; min-height:80px; }
   @media (min-width:768px){ .pronun-live{ font-size:2rem; line-height:2.4rem; min-height:100px; } }
   `;
