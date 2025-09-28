@@ -13,29 +13,8 @@ const CORS = {
   'Content-Type': 'application/json; charset=utf-8'
 };
 
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: CORS, body: '' };
-  }
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
-  }
-
-  if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
-    return { statusCode: 500, body: JSON.stringify({ message: 'Azure Speech credentials are not configured.' }) };
-  }
-
-  try {
-    const body = JSON.parse(event.body || '{}');
-    const { referenceText = '', audio = {} } = body;
-    const { base64, mimeType = 'audio/wav' } = audio;
-
-    if (!base64) {
-      return { statusCode: 400, body: JSON.stringify({ message: 'Audio data is required.' }) };
-    }
-
-    const audioBuffer = Buffer.from(base64.split(',').pop(), 'base64');
-
+const PROVIDERS = {
+  azure: async ({ referenceText, audioBuffer }) => {
     const speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_SPEECH_KEY, AZURE_SPEECH_REGION);
     speechConfig.speechRecognitionLanguage = "ko-KR";
 
@@ -62,43 +41,71 @@ exports.handler = async (event) => {
 
     if (result.reason === sdk.ResultReason.RecognizedSpeech) {
       const pronunciationResult = sdk.PronunciationAssessmentResult.fromResult(result);
-      const accuracy = pronunciationResult.accuracyScore;
-      const transcript = result.text;
-      
       return {
-        statusCode: 200,
-        headers: CORS,
-        body: JSON.stringify({
-          ok: true,
-          accuracy: accuracy / 100, // 0..1 범위로
-          transcript: transcript,
-          pronunciationResult: {
-              accuracyScore: pronunciationResult.accuracyScore,
-              pronunciationScore: pronunciationResult.pronunciationScore,
-              completenessScore: pronunciationResult.completenessScore,
-              fluencyScore: pronunciationResult.fluencyScore,
-          },
-          words: result.detail.Words?.map(word => ({
-              word: word.Word,
-              accuracy: word.PronunciationAssessment.AccuracyScore,
-              errorType: word.PronunciationAssessment.ErrorType,
-          }))
-        })
+        ok: true,
+        accuracy: pronunciationResult.accuracyScore / 100,
+        transcript: result.text,
+        pronunciationResult: {
+          accuracyScore: pronunciationResult.accuracyScore,
+          pronunciationScore: pronunciationResult.pronunciationScore,
+          completenessScore: pronunciationResult.completenessScore,
+          fluencyScore: pronunciationResult.fluencyScore,
+        },
+        words: result.detail.Words?.map(word => ({
+          word: word.Word,
+          accuracy: word.PronunciationAssessment.AccuracyScore,
+          errorType: word.PronunciationAssessment.ErrorType,
+        }))
       };
     } else {
-      return {
-        statusCode: 400,
-        headers: CORS,
-        body: JSON.stringify({ ok: false, message: `Speech could not be recognized: ${result.errorDetails}` })
-      };
+      throw new Error(`Speech could not be recognized: ${result.errorDetails}`);
     }
+  },
+  openai: async ({ referenceText, audioBuffer }) => {
+    // OpenAI STT 로직 추가
+    return { message: 'OpenAI STT not implemented yet.' };
+  },
+  gemini: async ({ referenceText, audioBuffer }) => {
+    // Gemini AI STT 로직 추가
+    return { message: 'Gemini AI STT not implemented yet.' };
+  }
+};
 
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers: CORS, body: '' };
+  }
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
+  }
+
+  const body = JSON.parse(event.body || '{}');
+  const provider = body.provider || 'azure';
+  const { referenceText = '', audio = {} } = body;
+  const { base64, mimeType = 'audio/wav' } = audio;
+
+  if (!base64) {
+    return { statusCode: 400, body: JSON.stringify({ message: 'Audio data is required.' }) };
+  }
+
+  if (!PROVIDERS[provider]) {
+    return { statusCode: 400, body: JSON.stringify({ message: `Provider '${provider}' is not supported.` }) };
+  }
+
+  try {
+    const audioBuffer = Buffer.from(base64.split(',').pop(), 'base64');
+    const result = await PROVIDERS[provider]({ referenceText, audioBuffer });
+    return {
+      statusCode: 200,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+      body: JSON.stringify(result)
+    };
   } catch (error) {
-    console.error('Error in Azure STT:', error);
+    console.error(`Error in ${provider} STT:`, error);
     return {
       statusCode: 500,
       headers: CORS,
-      body: JSON.stringify({ message: 'Failed to analyze pronunciation with Azure.', error: error.message })
+      body: JSON.stringify({ message: `Failed to analyze pronunciation with ${provider}.`, error: error.message })
     };
   }
 };

@@ -23,41 +23,20 @@ function estimateDurationSec({ text = '', ssml = '', speed = 1.0 } = {}) {
   return Math.max(0.5, syllables / sps);
 }
 
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: CORS, body: '' };
-  }
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
-  }
-
-  if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
-    return { statusCode: 500, body: JSON.stringify({ message: 'Azure Speech credentials are not configured.' }) };
-  }
-
-  try {
-    const body = JSON.parse(event.body || '{}');
-    const text = body.text;
-    const speed = body.speed || 1.0;
-    const voice = body.voice || 'ko-KR-SunHiNeural';
-
-    if (!text) {
-      return { statusCode: 400, body: JSON.stringify({ message: 'Text is required.' }) };
-    }
-
+const PROVIDERS = {
+  azure: async ({ text, speed, voice }) => {
     const speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_SPEECH_KEY, AZURE_SPEECH_REGION);
     speechConfig.speechSynthesisVoiceName = voice;
-    
     const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
 
     const ssml = `
-        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ko-KR">
-            <voice name="${voice}">
-                <prosody rate="${speed}">
-                    ${text}
-                </prosody>
-            </voice>
-        </speak>`;
+      <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ko-KR">
+        <voice name="${voice}">
+          <prosody rate="${speed}">
+            ${text}
+          </prosody>
+        </voice>
+      </speak>`;
 
     const result = await new Promise((resolve, reject) => {
       synthesizer.speakSsmlAsync(
@@ -78,26 +57,58 @@ exports.handler = async (event) => {
     });
 
     const audioBuffer = Buffer.from(result.audioData);
-    const audioBase64 = audioBuffer.toString('base64');
+    return {
+      audioBase64: audioBuffer.toString('base64'),
+      mimeType: 'audio/wav',
+      durationEstimateSec: estimateDurationSec({ text, speed }),
+      meta: { provider: 'azure', voice, speed }
+    };
+  },
+  openai: async ({ text }) => {
+    // OpenAI TTS 로직 추가
+    return { message: 'OpenAI TTS not implemented yet.' };
+  },
+  gemini: async ({ text }) => {
+    // Gemini AI TTS 로직 추가
+    return { message: 'Gemini AI TTS not implemented yet.' };
+  }
+};
 
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers: CORS, body: '' };
+  }
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
+  }
+
+  const body = JSON.parse(event.body || '{}');
+  const provider = body.provider || 'azure';
+  const text = body.text;
+  const speed = body.speed || 1.0;
+  const voice = body.voice || 'ko-KR-SunHiNeural';
+
+  if (!text) {
+    return { statusCode: 400, body: JSON.stringify({ message: 'Text is required.' }) };
+  }
+
+  if (!PROVIDERS[provider]) {
+    return { statusCode: 400, body: JSON.stringify({ message: `Provider '${provider}' is not supported.` }) };
+  }
+
+  try {
+    const result = await PROVIDERS[provider]({ text, speed, voice });
     return {
       statusCode: 200,
       headers: { ...CORS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        audioData: audioBase64,
-        audioBase64: audioBase64,
-        mimeType: 'audio/wav',
-        durationEstimateSec: estimateDurationSec({ text, speed }),
-        meta: { provider: 'azure', voice, speed }
-      })
+      body: JSON.stringify(result)
     };
-
   } catch (error) {
-    console.error('Error in Azure TTS:', error);
+    console.error(`Error in ${provider} TTS:`, error);
     return {
       statusCode: 500,
       headers: CORS,
-      body: JSON.stringify({ message: 'Failed to generate audio with Azure.', error: error.message })
+      body: JSON.stringify({ message: `Failed to generate audio with ${provider}.`, error: error.message })
     };
   }
 };
