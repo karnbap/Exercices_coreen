@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>발음 테스트 (미니) | Prononciation — Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/style.css"/>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- 상단: 인쇄 버튼 -->
+  <div class="topbar p-3 flex items-center justify-between bg-white border-b">
+    <div class="text-sm text-slate-500">made by 성일,Pongdang · Lapeace29@gmail.com</div>
+    <button class="btn btn-outline" onclick="window.print()">인쇄 / Imprimer</button>
+  </div>
+
+  <main class="container">
+    <!-- 0) 이름 -->
+    <section class="card mb-4">
+      <label for="student-name" class="block text-sm font-semibold mb-2">이름 / Nom</label>
+      <input id="student-name" class="input" placeholder="Ex. Camille, Lucas, Zoé …"/>
+      <p class="badge-note mt-2">연습 시작 전에 꼭 이름을 입력해주세요.</p>
+    </section>
+
+    <!-- 1) 문장 카드 3개 -->
+    <div id="cards" class="space-y-6"></div>
+
+    <!-- 2) 끝내기 -->
+    <section class="mt-8 text-center">
+      <button id="finish-btn" class="btn btn-primary" disabled>끝내기 / Terminer</button>
+      <div class="mt-3 text-sm text-slate-500">
+        <a href="/index.html" class="underline">이전 연습문제로 / Exercice précédent</a>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-center text-sm text-slate-500">
+      made by 성일,Pongdang · Lapeace29@gmail.com
+    </footer>
+  </main>
+
+  <!-- 공용 스크립트 -->
+  <script defer src="/assets/student-gate.js"></script>
+  <script defer src="/assets/pronun-client.js"></script>
+  <script defer src="/assets/live-stt.js"></script>
+
+  <!-- 이 페이지 전용 -->
+  <script defer src="/assets/pronun-mini-test.js"></script>
+</body>
+</html>
