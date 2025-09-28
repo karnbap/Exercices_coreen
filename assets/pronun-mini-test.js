@@ -45,11 +45,12 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
   return data.durationEstimateSec || null;
 }
 
-// ===== 간단 정규화 & 빨간색 Diff 출력 =====
 const norm = (s)=> String(s||'')
   .normalize('NFC')
-  .replace(/[^\p{Letter}\p{Number}\p{Script=Hangul}]/gu,'')
-  .toLowerCase();
+  .toLowerCase()
+  .replace(/\s+/g,'')
+  .replace(/[^0-9A-Za-z가-힣]/g,'');
+
 
 function htmlDiffOnlyWrong(refRaw, hypRaw){
   const ref = [...norm(refRaw)], hyp = [...norm(hypRaw)];
@@ -212,10 +213,54 @@ function makeCard(idx, sent){
     if (!on && sttStop){ try{ sttStop(); }catch(_){} sttStop=null; }
   });
   obs.observe(host, { childList:true, subtree:true });
+    mergeStopAndEvaluate();
+  setTimeout(mergeStopAndEvaluate, 200);
 
+    // Stop + 평가 버튼 합치기
+  function mergeStopAndEvaluate(){
+    const allBtns = Array.from(host.querySelectorAll('button'));
+    const findByText = (re) => allBtns.find(b => re.test((b.textContent||'').trim().toLowerCase()));
+    const stopBtn = findByText(/^(stop|arrêter|멈추기|정지)$/i);
+    const evalBtn = findByText(/^(évaluer|평가|evaluate)$/i);
+    if (!stopBtn || !evalBtn) return;
+
+    if (!stopBtn.dataset.merged) {
+      // 평가 버튼 숨김
+      evalBtn.style.display = 'none';
+      // Stop 버튼 라벨 교체
+      stopBtn.textContent = '멈추고 평가 / Arrêter & Évaluer';
+      stopBtn.dataset.merged = '1';
+
+      // 클릭 시: 원래 Stop 동작 → 아주 짧은 대기 → 평가 버튼 강제 클릭
+      stopBtn.addEventListener('click', () => {
+        setTimeout(() => { try { evalBtn.click(); } catch(_) {} }, 60);
+      }, { once:false });
+    }
+  }
+
+    mergeStopAndEvaluate();
 
   return wrap;
 }
+// ===== 페이지 전용 스타일 주입(그래프 제거 + 텍스트 크게) =====
+(function injectPronunStyles(){
+  const css = `
+  /* 파형/그래프 계열 통째로 숨김 (여러 위젯 버전 대응) */
+  .pronun-card canvas,
+  .pronun-graph,
+  .pronun-visualizer,
+  .pd-wave,
+  .wave,
+  .waveform { display:none !important; height:0 !important; }
+  /* 실시간 텍스트 크게 + 여백 */
+  .pronun-live { font-size:1.6rem; line-height:1.9rem; padding:14px 16px; min-height:80px; }
+  @media (min-width:768px){ .pronun-live{ font-size:2rem; line-height:2.4rem; min-height:100px; } }
+  `;
+  const tag = document.createElement('style');
+  tag.setAttribute('data-pronun-mini-style','1');
+  tag.textContent = css;
+  document.head.appendChild(tag);
+})();
 
 // ===== 초기화 =====
 document.addEventListener('DOMContentLoaded', ()=>{
