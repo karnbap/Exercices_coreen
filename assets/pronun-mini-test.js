@@ -182,7 +182,7 @@ function makeCard(idx, sent){
       }
       // 최종 비교(정지 후 평가)
       const ref = sent.ko;
-      coconst html = (()=>{    try { return htmlDiffOnlyWrong(ref, transcript); }    catch(e){ console.error('[diff]', e); return `<span>${ref}</span>`; }  })();
+      const html = (()=>{    try { return htmlDiffOnlyWrong(ref, transcript); }    catch(e){ console.error('[diff]', e); return `<span>${ref}</span>`; }  })();
       diffBox.innerHTML = html;
 
       const acc = (typeof accuracy==='number' ? accuracy : 0); const pct = Math.round((acc > 1 ? acc : acc * 100));
