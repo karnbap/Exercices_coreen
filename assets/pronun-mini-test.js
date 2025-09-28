@@ -45,50 +45,7 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
   return data.durationEstimateSec || null;
 }
 
-const norm = (s)=> String(s||'')
-  .normalize('NFC')
-  .toLowerCase()
-  .replace(/\s+/g,'')
-  .replace(/[^0-9A-Za-z가-힣]/g,'');
 
-
-function htmlDiffOnlyWrong(refRaw, hypRaw){
-  const ref = [...norm(refRaw)], hyp = [...norm(hypRaw)];
-  const m = ref.length, n = hyp.length;
-  // LCS 테이블
-  const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
-  for (let i=1;i<=m;i++){
-    for (let j=1;j<=n;j++){
-      dp[i][j] = ref[i-1]===hyp[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
-    }
-  }
-  // LCS 역추적 → ref 기준으로 일치/불일치 마킹
-  let i=m, j=n, keep = new Array(m).fill(false);
-  while (i>0 && j>0){
-    if (ref[i-1]===hyp[j-1]){ keep[i-1]=true; i--; j--; }
-    else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
-  }
-  // 원문 출력 시, 빨간색은 refRaw의 원문 글자 단위로(공백/문장부호 포함) 맞춰줌
-  // refRaw를 NFC로 토큰화하여 매핑
-  const tokens = [...refRaw.normalize('NFC')];
-  // ref와 tokens의 글자수 차이가 있을 수 있어 보수적으로 진행
-  let k = 0;
-  let html = '';
-  for (let t=0; t<tokens.length; t++){
-    const ch = tokens[t];
-    // 한글/영문/숫자만 카운트 대상
-    const isCore = /\p{Letter}|\p{Number}|\p{Script=Hangul}/u.test(ch);
-    if (isCore){
-      const ok = keep[k]===true;
-      html += ok ? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
-      k++;
-    } else {
-      // 문장부호/공백은 비교 대상 아님: 그대로 정상 색상
-      html += `<span>${ch}</span>`;
-    }
-  }
-  return html;
-}
 
 
 // ===== 카드 렌더 =====
@@ -136,18 +93,22 @@ function makeCard(idx, sent){
     try{ await ttsPlay(sent.ko); } finally { btn.disabled=false; }
   });
 
-  // 녹음 위젯 장착 (공용) — stop 후 “평가” 클릭 가능
   const host = wrap.querySelector('[data-pronun]');
-    // 🔸 내 발음 박스를 녹음 위젯(host) 바로 아래로 이동
-  const liveCardOld = liveBox.closest('.pronun-card'); // 기존 우측 카드
-  const liveWrap = document.createElement('div');
-  liveWrap.className = 'mt-3';
-  liveWrap.appendChild(liveBox);
-  host.insertAdjacentElement('afterend', liveWrap);
-  if (liveCardOld) liveCardOld.remove(); // 기존 오른쪽 카드 제거
-
   const liveBox = wrap.querySelector('[data-live]');
   const diffBox = wrap.querySelector('[data-diff]');
+  const scoreBox= wrap.querySelector('[data-score]');
+  const getRef  = ()=> sent.ko;
+
+  // 🔸 내 발음 박스를 녹음 위젯(host) 바로 아래로 이동
+  if (liveBox) {
+    const liveCardOld = liveBox.closest('.pronun-card'); // 기존 우측 카드
+    const liveWrap = document.createElement('div');
+    liveWrap.className = 'mt-3';
+    liveWrap.appendChild(liveBox);
+    host.insertAdjacentElement('afterend', liveWrap);
+    if (liveCardOld) liveCardOld.remove(); // 기존 오른쪽 카드 제거
+  }
+
   const scoreBox= wrap.querySelector('[data-score]');
   const getRef  = ()=> sent.ko;
 
@@ -190,12 +151,18 @@ function makeCard(idx, sent){
         return;
       }
       // 최종 비교(정지 후 평가)
+        // 발음 채점(공용 scoring.js: 자모 기반, 띄어쓰기/문장부호 무시)
       const ref = sent.ko;
-      const html = (()=>{    try { return htmlDiffOnlyWrong(ref, transcript); }    catch(e){ console.error('[diff]', e); return `<span>${ref}</span>`; }  })();
-      diffBox.innerHTML = html;
+      try {
+        const { pct, html } = Scoring.gradePronun(ref, transcript, 0.10); // tol=10%
+        diffBox.innerHTML = html;
+        scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
+      } catch (e) {
+        console.error('[pronun-mini-test] scoring error', e);
+        diffBox.textContent = ref;
+        scoreBox.textContent = '채점 오류';
+      }
 
-      const acc = (typeof accuracy==='number' ? accuracy : 0); const pct = Math.round((acc > 1 ? acc : acc * 100));
-      scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
     }
   });
 
@@ -270,7 +237,7 @@ function mergeStopAndEvaluate(){
   .waveform { display:none !important; height:0 !important; }
   /* 실시간 텍스트 크게 + 여백 */
   
-  .pronun-live { font-size:1.6rem; line-height:1.9rem; padding:14px 16px; min-height:80px; }
+  .pronun-live { display:block; font-size:1.6rem; line-height:1.9rem; padding:14px 16px; min-height:80px; }
   @media (min-width:768px){ .pronun-live{ font-size:2rem; line-height:2.4rem; min-height:100px; } }
   `;
   const tag = document.createElement('style');
