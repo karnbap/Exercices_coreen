@@ -109,8 +109,6 @@ function makeCard(idx, sent){
     if (liveCardOld) liveCardOld.remove(); // 기존 오른쪽 카드 제거
   }
 
-  const scoreBox= wrap.querySelector('[data-score]');
-  const getRef  = ()=> sent.ko;
 
   // (옵션) 실시간 STT가 있으면 녹음 시작~정지 사이에 부분 텍스트 표시
   let sttStop = null;
