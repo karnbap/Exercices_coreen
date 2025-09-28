@@ -64,15 +64,9 @@ function makeCard(idx, sent){
     </div>
 
     <!-- 실시간 비교 -->
-    <div class="grid md:grid-cols-2 gap-3">
-      <div class="pronun-card">
-        <div class="pronun-title">원문 / Référence (KO)</div>
-        <div class="p-2 border rounded bg-white text-lg" data-ref>${sent.ko}</div>
-      </div>
-      <div class="pronun-card">
-        <div class="pronun-title">내 발음 / En direct</div>
-        <div class="pronun-live" data-live>—</div>
-      </div>
+    <div class="pronun-card">
+      <div class="pronun-title">내 발음 / En direct</div>
+      <div class="pronun-live" data-live>—</div>
     </div>
 
     <!-- 녹음/평가 -->
@@ -82,7 +76,10 @@ function makeCard(idx, sent){
     <!-- 결과: 틀린 부분 마킹 -->
     <div class="mt-3 sum-box">
       <div class="sum-title">오류 하이라이트 / Parties non conformes</div>
-      <div class="sum-val text-base leading-7" data-diff>—</div>
+      <div data-diff>
+        <div class="diff-line" data-diff-ref>—</div>
+        <div class="diff-line" data-diff-hyp>—</div>
+      </div>
       <div class="sum-sub mt-1" data-score></div>
     </div>
   `;
@@ -92,48 +89,14 @@ function makeCard(idx, sent){
     const btn=e.currentTarget; btn.disabled=true;
     try{ await ttsPlay(sent.ko); } finally { btn.disabled=false; }
   });
+  wrap.querySelector('[data-action="listen"]').classList.add('btn-danger');
 
   const host = wrap.querySelector('[data-pronun]');
   const liveBox = wrap.querySelector('[data-live]');
-  const diffBox = wrap.querySelector('[data-diff]');
+  const diffRefBox = wrap.querySelector('[data-diff-ref]');
+  const diffHypBox = wrap.querySelector('[data-diff-hyp]');
   const scoreBox= wrap.querySelector('[data-score]');
   const getRef  = ()=> sent.ko;
-
-   // 🔸 녹음 위젯(host) 바로 아래: [원문] 위 / [실시간] 아래로 한 묶음 배치
-  (function placeRefAndLive(){
-    const refBox = wrap.querySelector('[data-ref]');
-    const refCardOld = refBox?.closest('.pronun-card');
-    const liveCardOld = liveBox?.closest('.pronun-card');
-
-    const wrapBox = document.createElement('div');
-    wrapBox.className = 'mt-3 space-y-2';
-
-    if (refBox) {
-      const refLabel = document.createElement('div');
-      refLabel.className = 'pronun-title';
-      refLabel.textContent = '원문 / Référence (KO)';
-      const refHolder = document.createElement('div');
-      refHolder.className = 'p-2 border rounded bg-white text-lg';
-      refHolder.appendChild(refBox); // 실제 노드 이동
-      wrapBox.appendChild(refLabel);
-      wrapBox.appendChild(refHolder);
-    }
-
-    if (liveBox) {
-      const liveLabel = document.createElement('div');
-      liveLabel.className = 'pronun-title';
-      liveLabel.textContent = '내 발음 (실시간) / En direct';
-      wrapBox.appendChild(liveLabel);
-      wrapBox.appendChild(liveBox);
-    }
-
-    host.insertAdjacentElement('afterend', wrapBox);
-
-    if (refCardOld) refCardOld.remove();
-    if (liveCardOld) liveCardOld.remove();
-  })();
-
-
 
   // (옵션) 실시간 STT가 있으면 녹음 시작~정지 사이에 부분 텍스트 표시
   let sttStop = null;
@@ -167,25 +130,36 @@ function makeCard(idx, sent){
 
   Pronun.mount(host, {
     getReferenceText: getRef,
-    onResult: ({ status, transcript, accuracy, duration })=>{
-      if (status==='retry' || !transcript){
-        diffBox.textContent = '—';
+    onResult: ({ status, transcript, accuracy, duration }) => {
+      if (status === 'retry' || !transcript) {
+        diffRefBox.textContent = '—';
+        diffHypBox.textContent = '—';
         scoreBox.textContent = '다시 한번 또박또박 말해볼까요?';
         return;
       }
-      // 최종 비교(정지 후 평가)
-        // 발음 채점(공용 scoring.js: 자모 기반, 띄어쓰기/문장부호 무시)
-      const ref = sent.ko;
-      try {
-        const { pct, html } = Scoring.gradePronun(ref, transcript, 0.10); // tol=10%
-        diffBox.innerHTML = html;
-        scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
-      } catch (e) {
-        console.error('[pronun-mini-test] scoring error', e);
-        diffBox.textContent = ref;
-        scoreBox.textContent = '채점 오류';
-      }
 
+      const ref = sent.ko;
+      const cleanText = (text) => text.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '');
+      const cleanedRef = cleanText(ref);
+      const cleanedTranscript = cleanText(transcript);
+
+      if (cleanedRef === cleanedTranscript) {
+        diffRefBox.innerHTML = `<b>원문</b>: ${ref}`;
+        diffHypBox.innerHTML = `<b>발음</b>: ${transcript}`;
+        scoreBox.textContent = '정답입니다!';
+      } else {
+        try {
+          const { pct, html_ref, html_hyp } = Scoring.gradePronun(ref, transcript, 0.10); // tol=10%
+          diffRefBox.innerHTML = `<b>원문</b>: ${html_ref}`;
+          diffHypBox.innerHTML = `<b>발음</b>: ${html_hyp}`;
+          scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1) || '?'}s`;
+        } catch (e) {
+          console.error('[pronun-mini-test] scoring error', e);
+          diffRefBox.textContent = ref;
+          diffHypBox.textContent = transcript;
+          scoreBox.textContent = '채점 오류';
+        }
+      }
     }
   });
 
@@ -271,17 +245,17 @@ function mergeStopAndEvaluate(){
 /* 내 발음(실시간) 박스 강화 */
 .pronun-live {
   display:block;
-  font-size:1.8rem;
-  line-height:2.2rem;
-  padding:16px 18px;
-  min-height:96px;
-  background:#fff;
-  border:2px solid #e2e8f0;
-  border-radius:14px;
+  font-size:1.25rem !important; /* 1.5rem -> 1.25rem */
+  line-height:1.8rem !important; /* 2.2rem -> 1.8rem */
+  padding:12px 16px !important; /* 16px 18px -> 12px 16px */
+  min-height:auto !important; /* 높이 자동 조절 */
+  background:#f8fafc !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:12px !important;
   box-shadow:0 1px 0 rgba(0,0,0,.02);
 }
 @media (min-width:768px){
-  .pronun-live{ font-size:2.1rem; line-height:2.6rem; min-height:110px; }
+  .pronun-live{ font-size:1.3rem !important; line-height:2rem !important; } /* 1.5rem -> 1.3rem */
 }
 
 /* 녹음 시작/정지/평가 버튼 크게 & 꾸미기 */

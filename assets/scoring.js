@@ -138,12 +138,42 @@
   function gradePronun(refRaw, hypRaw, tol=0.10){
     const refJ = toJamoSeq(refRaw), hypJ = toJamoSeq(hypRaw);
     const d = levJamo(refJ, hypJ);
-    const rate = refJ.length ? d/refJ.length : 0;
+    const rate = refJ.length > 0 ? d / refJ.length : (hypJ.length > 0 ? 1 : 0);
     const jamAcc = 1 - rate;
     const pct = Math.max(0, Math.round(jamAcc*100));
 
+    const createHtml = (text, jamoSeq, jamoLcs) => {
+      let html = '';
+      let jamoIndex = 0;
+      for (const char of [...text.normalize('NFC')]) {
+        if (!/[가-힣0-9A-Za-z]/.test(char)) {
+          html += `<span>${char}</span>`;
+          continue;
+        }
+        
+        let jamoCount = 1;
+        if (/[가-힣]/.test(char)) {
+          const code = char.codePointAt(0) - 0xAC00;
+          jamoCount = (code % 28) ? 3 : 2;
+        }
+        
+        let isCorrect = true;
+        for (let i = 0; i < jamoCount; i++) {
+          if (jamoIndex + i >= jamoSeq.length || !jamoLcs.has(jamoIndex + i)) {
+            isCorrect = false;
+            break;
+          }
+        }
+        
+        html += isCorrect ? `<span>${char}</span>` : `<span class="diff-incorrect">${char}</span>`;
+        jamoIndex += jamoCount;
+      }
+      return html;
+    };
+
     if (rate <= tol){
-      return { pct: 100, html: [...refRaw.normalize('NFC')].map(ch=>`<span>${ch}</span>`).join('') };
+      const html = [...refRaw.normalize('NFC')].map(ch=>`<span>${ch}</span>`).join('');
+      return { pct: 100, html, html_ref: html, html_hyp: [...hypRaw.normalize('NFC')].map(ch=>`<span>${ch}</span>`).join('') };
     }
 
     // LCS 기반 빨강 마킹
@@ -154,28 +184,25 @@
         dp[i][j] = refJ[i-1]===hypJ[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
       }
     }
-    let i=m, j=n; const keep = new Array(m).fill(false);
+
+    const lcsRefIndices = new Set();
+    let i=m, j=n;
     while (i>0 && j>0){
-      if (refJ[i-1]===hypJ[j-1]){ keep[i-1]=true; i--; j--; }
+      if (refJ[i-1]===hypJ[j-1]){ lcsRefIndices.add(i-1); i--; j--; }
       else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
     }
 
-    let ki=0, html='';
-    for (const ch of [...refRaw.normalize('NFC')]){
-      if (!/[가-힣0-9A-Za-z]/.test(ch)){
-        html += `<span>${ch}</span>`; continue;
-      }
-      let cnt=1;
-      if (/[가-힣]/.test(ch)){
-        const code = ch.codePointAt(0) - 0xAC00;
-        cnt = (code % 28) ? 3 : 2;
-      }
-      let ok=true;
-      for (let c=0;c<cnt;c++){ if (!keep[ki+c]) {ok=false;break;} }
-      html += ok? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
-      ki+=cnt;
+    const lcsHypIndices = new Set();
+    i=m, j=n;
+    while (i>0 && j>0){
+        if (refJ[i-1]===hypJ[j-1]){ lcsHypIndices.add(j-1); i--; j--; }
+        else if (dp[i-1][j] > dp[i][j-1]) i--; else j--;
     }
-    return { pct, html };
+
+    const html_ref = createHtml(refRaw, refJ, lcsRefIndices);
+    const html_hyp = createHtml(hypRaw, hypJ, lcsHypIndices);
+
+    return { pct, html: html_ref, html_ref, html_hyp };
   }
 
   // ===== Scoring 객체 =====

@@ -10,7 +10,9 @@
 }
 
 body{
-  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background-color:var(--bg-color);
   color:var(--text-color);
   margin:20px;
@@ -131,8 +133,8 @@ body{
 }
 .input:focus,
 .textarea:focus {
-  border-color: #94a3b8;
-  box-shadow: 0 0 0 3px rgba(148,163,184,.25);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 .input.error,
 .textarea.error {
@@ -164,9 +166,10 @@ body{
 
 .pronun-live {
   font-variant-numeric: tabular-nums;
-  background: #f1f5f9;
-  border: 1px dashed #cbd5e1;
-  border-radius: .5rem;
+  font-size: 1.5rem !important;
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
   padding: .5rem .75rem;
   min-height: 2.25rem;
   line-height: 1.4;
@@ -183,18 +186,23 @@ body{
 /* === 공용 카드/버튼 === */
 .card{
   background:#fff; border:1px solid var(--border-color);
-  border-radius:12px; padding:16px; box-shadow:0 4px 10px rgba(0,0,0,.04);
+  border-radius:16px !important; padding:16px; box-shadow:0 8px 16px rgba(0,0,0,.05);
 }
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
-  padding:.65rem 1rem; border-radius:.65rem; font-weight:700; cursor:pointer;
-  border:1px solid var(--border-color); background:#fff; transition:.18s;
+  padding:.65rem 1rem; border-radius:8px !important; font-weight:600 !important; cursor:pointer;
+  border:1px solid var(--border-color); background:#fff; transition:all 0.2s ease-in-out !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
 }
-.btn:hover{ transform:translateY(-1px); }
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
 .btn:disabled{ opacity:.5; cursor:not-allowed; }
-.btn-primary{ background:var(--royal-blue); color:#fff; border-color:transparent; }
-.btn-outline{ background:#fff; color:#111827; }
-.btn-secondary{ background:#f8fafc; }
+.btn-primary{ background: #4f46e5 !important; border-color: #4f46e5 !important; color: #fff !important; }
+.btn-primary:hover{ background:#4338ca !important; }
+.btn-secondary{ background: #f1f5f9 !important; color: #1e293b !important; border-color: #e2e8f0 !important; }
+.btn-secondary:hover { background: #e2e8f0 !important; }
 
 /* === 입력칸(quiz) 가독성: 클릭 안 해도 테두리 보이게 === */
 .input-field{
@@ -213,11 +221,11 @@ body{
 
 .sum-box{
   background:#fff; border:1px solid var(--border-color);
-  border-radius:.9rem; padding:14px; text-align:center;
+  border-radius:.9rem; padding:16px; text-align:left;
 }
-.sum-title{ font-size:.85rem; color:#64748b; font-weight:700; }
+.sum-title{ font-size:.85rem; color:#64748b; font-weight:600; }
 .sum-val{ font-size:1.75rem; font-weight:900; line-height:1.15; }
-.sum-sub{ font-size:.8rem; color:#64748b; }
+.sum-sub{ font-size:.9rem; color:#64748b; }
 
 /* === 다음버튼 가드 배지/흔들림 여백 === */
 .badge-note{ margin-top:.4rem; }
@@ -230,4 +238,25 @@ body{
   color:#fff !important;
 }
 .btn-primary:hover{ background:#4338ca !important; }
+
+/* === 발음 비교 결과 === */
+.diff-line {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.diff-line b {
+  font-weight: 800;
+  margin-right: 8px;
+  color: #4b5563;
+}
+.diff-incorrect {
+  color: #fff;
+  background-color: #ef4444;
+  border-radius: 3px;
+  padding: 1px 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 
