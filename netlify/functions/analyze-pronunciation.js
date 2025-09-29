@@ -99,6 +99,26 @@ exports.handler = async (event) => {
     const transcriptKo = refAwareNormalize(referenceText, transcriptRaw);
     const refKo = refAwareNormalize(referenceText, referenceText || '');
 
+    // Conditional capture for debugging: write transcript pairs to logs/file when enabled
+    try {
+      const CAP = String(process.env.CAPTURE_TRANSCRIPTS||'0');
+      if (CAP === '1') {
+        const capture = {
+          requestId: (event?.headers?.['x-request-id']||event?.headers?.['X-Request-Id']||Date.now()),
+          time: new Date().toISOString(),
+          reference: referenceText,
+          transcriptRaw: transcriptRaw,
+          transcript: transcriptKo
+        };
+        console.log('[TRANSCRIPT_CAPTURE]', JSON.stringify(capture));
+        try{
+          const fs = require('fs');
+          const p = '/tmp/pronun_transcript_capture.log';
+          fs.appendFileSync(p, JSON.stringify(capture) + '\n');
+        } catch(e) { /* ignore file write errors */ }
+      }
+    } catch(e) { /* ignore capture errors */ }
+
 
     // === 유사도(캐논) ===
     const hyp = koCanon(transcriptKo);
