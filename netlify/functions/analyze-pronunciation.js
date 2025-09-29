@@ -66,14 +66,16 @@ exports.handler = async (event) => {
     }
 
     // Ensure referenceText is properly initialized and validated
-    if (typeof referenceText === 'undefined' || referenceText === null) {
-      console.error('referenceText is missing or undefined');
+    if (typeof referenceText === 'undefined' || referenceText === null || referenceText.trim() === '') {
+      console.error('referenceText is missing, undefined, or empty:', referenceText);
       return json(400, {
         ok: false,
-        messageFr: "Texte de référence manquant.",
-        messageKo: "참조 텍스트가 누락되었습니다."
+        messageFr: "Texte de référence manquant ou vide.",
+        messageKo: "참조 텍스트가 누락되었거나 비어 있습니다."
       });
     }
+
+    console.log('Validated referenceText:', referenceText);
 
     // === 숫자 → 한글 수사 강제(표시/채점 공통) ===
  // === 숫자만 한글 수사로 치환(그 외 자동 변환은 없음) ===

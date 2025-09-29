@@ -326,12 +326,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 });
 
-// Removed 'Previous Exercise' button
-const prevExerciseButton = document.querySelector('.btn-prev-exercise');
-if (prevExerciseButton) {
-  prevExerciseButton.remove();
-}
-
 // Translate all instructions to Korean/French
 const instructions = document.querySelectorAll('.instruction');
 instructions.forEach(inst => {
@@ -359,15 +353,29 @@ if (recordButton) {
 }
 
 // Integrate result submission
-async function submitResults(results) {
-  const response = await fetch('/.netlify/functions/send-results', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(results)
+const finishButton = document.getElementById('finish-btn');
+if (finishButton) {
+  finishButton.addEventListener('click', async () => {
+    const results = collectResults(); // Assume this function gathers the necessary results
+    try {
+      // Send results to the server
+      const response = await fetch('/.netlify/functions/send-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results, teacherEmail: 'teacher@example.com' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send results');
+      }
+
+      // Show results page
+      window.location.href = '/results.html';
+    } catch (error) {
+      console.error('Error submitting results:', error);
+      alert('결과 전송에 실패했습니다. 다시 시도해주세요.');
+    }
   });
-  if (!response.ok) {
-    console.error('Failed to submit results:', response.statusText);
-  }
 }
 
 // Update listen button to toggle between play and pause
