@@ -341,6 +341,23 @@ instructions.forEach(inst => {
   `;
 });
 
+// Update instruction text to include Korean/French
+const evaluationInstruction = document.querySelector('.evaluation-instruction');
+if (evaluationInstruction) {
+  evaluationInstruction.innerHTML = `
+    <p>멈춘 뒤 <b>평가</b>를 누르면 <u>원문과 일치하지 않는 부분만</u> 빨간색으로 표시돼요.</p>
+    <p>Après avoir arrêté, cliquez sur <b>Évaluer</b> pour afficher en rouge les parties non conformes.</p>
+  `;
+}
+
+// Update record button text to include Korean/French
+const recordButton = document.querySelector('button[data-action="record"]');
+if (recordButton) {
+  recordButton.innerHTML = `
+    <span>녹음 시작 / Démarrer l'enregistrement</span>
+  `;
+}
+
 // Integrate result submission
 async function submitResults(results) {
   const response = await fetch('/.netlify/functions/send-results', {

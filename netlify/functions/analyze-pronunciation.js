@@ -65,6 +65,16 @@ exports.handler = async (event) => {
       return json(502, { ok:false, messageFr:"Service STT indisponible.", messageKo:"음성 인식 서비스에 연결할 수 없습니다." });
     }
 
+    // Ensure referenceText is properly validated
+    if (!referenceText) {
+      console.error('referenceText is missing or undefined');
+      return json(400, {
+        ok: false,
+        messageFr: "Texte de référence manquant.",
+        messageKo: "참조 텍스트가 누락되었습니다."
+      });
+    }
+
     // === 숫자 → 한글 수사 강제(표시/채점 공통) ===
  // === 숫자만 한글 수사로 치환(그 외 자동 변환은 없음) ===
 const safeTranscript = blockArabicDigits(transcriptRaw);
