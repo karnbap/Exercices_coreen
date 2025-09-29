@@ -476,12 +476,15 @@ function makeCard(a, b){
         // build visual bars inside durationBadge using local average (client-only)
         if (durationBadge) {
           const t = Number(ttsNum || 0); const r = Number(myRec || 0);
+          // Use local recordings to compute the average pronunciation speed
           const avgLocal = computeLocalAverageSeconds();
-          const avg = Number((avgLocal || t || 0));
-          const maxRange = Math.max(0.1, t, r, avg);
-          const tPct = t ? Math.round((t / maxRange) * 100) : 0;
-          const rPct = r ? Math.round((r / maxRange) * 100) : 0;
+          const avg = Number((avgLocal || 0));
+          // For the comparison bars, use local average vs user's current recording
+          const maxRange = Math.max(0.1, avg || 0, r || 0, t || 0);
           const aPct = avg ? Math.round((avg / maxRange) * 100) : 0;
+          const rPct = r ? Math.round((r / maxRange) * 100) : 0;
+          // keep tPct available if needed for tooltip, but we don't display a server avg
+          const tPct = t ? Math.round((t / maxRange) * 100) : 0;
           durationBadge.innerHTML = `
             <div class="dur-row"><div class="dur-label">평균 발음 속도 / Vitesse moyenne:</div>
               <div class="dur-bar-bg"><div class="dur-bar dur-bar-avg" style="width:${aPct}%">${avg? Number(avg).toFixed(1)+'s' : '?s'}</div></div>
@@ -575,7 +578,7 @@ function makeCard(a, b){
           }
         }catch(_){ }
         // if enough samples collected, query server for average and append to duration badge
-        try{ fetchEstimateSpeedAndUpdate(wrap); }catch(_){ }
+          // No server-side average: UI uses local average from recordings only.
         // persist durations & highlight HTML on the card element for send-results
         try{
           const cardEl = wrap;
