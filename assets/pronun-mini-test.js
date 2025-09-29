@@ -87,11 +87,10 @@ function makeCard(idx, sent){
         <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span class="ref-bubble" data-ref-display>—</span></div>
         <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span class="hyp-bubble" data-hyp-display>—</span></div>
         <div class="sum-stats mt-2" aria-live="polite">
-          <div class="accuracy" data-accuracy><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</div>
           <div class="len-compare" data-len-compare>
             <div class="len-labels" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <button class="badge accuracy-badge" data-accuracy><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</button>
-              <button class="badge duration-badge" data-durations>TTS: — · 녹음: —</button>
+              <button class="badge accuracy-badge" data-accuracy aria-live="polite"><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</button>
+                <button class="badge duration-badge" data-durations title="TTS / 녹음 길이">TTS: — · 녹음: —</button>
             </div>
             <div class="len-abs" aria-hidden="true">
               <div class="len-center" aria-hidden="true"></div>
@@ -449,7 +448,10 @@ function makeCard(idx, sent){
     // show accuracy prominently and durations (TTS vs my recording)
     const accuracyBadge = host.querySelector('.accuracy-badge');
     const durationBadge = host.querySelector('.duration-badge');
-  if (accuracyBadge) accuracyBadge.innerHTML = `<svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: ${pct}%`;
+            if (accuracyBadge) {
+              accuracyBadge.innerHTML = `<svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: ${pct}%`;
+              try{ accuracyBadge.setAttribute('aria-live','polite'); }catch(e){}
+            }
         // try to find tts duration from listen button _audio (stored when played)
         let ttsDur = null;
         try{
@@ -466,7 +468,11 @@ function makeCard(idx, sent){
           if (lenWrap){
             const t = Number(ttsDur || 0); const r = Number(duration || 0);
             // update badges
-            if (durationBadge) durationBadge.textContent = `TTS: ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 녹음: ${duration?duration.toFixed(1)+'s':'?s'}`;
+            if (durationBadge) {
+              const txt = `TTS: ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 녹음: ${duration?duration.toFixed(1)+'s':'?s'}`;
+              durationBadge.textContent = txt;
+              try{ durationBadge.setAttribute('title', txt); }catch(e){}
+            }
             // compute absolute difference bars from center: center is 50%
             const absDiff = Math.abs((t || 0) - (r || 0));
             const maxRange = Math.max(0.1, t, r, absDiff);
