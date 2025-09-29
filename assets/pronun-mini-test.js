@@ -89,16 +89,14 @@ function makeCard(idx, sent){
         <div class="sum-stats mt-2" aria-live="polite">
           <div class="accuracy" data-accuracy><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</div>
           <div class="len-compare" data-len-compare>
-            <div class="len-labels" style="font-size:0.9rem;color:#475569;margin-bottom:6px">
-              <span class="len-tts">TTS: —</span>
-              <span style="margin:0 8px;color:#94a3b8">·</span>
-              <span class="len-rec">내 녹음: —</span>
+            <div class="len-labels" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+              <button class="badge accuracy-badge" data-accuracy><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</button>
+              <button class="badge duration-badge" data-durations>TTS: — · 녹음: —</button>
             </div>
-            <div class="len-bars" aria-hidden="true">
-              <div class="len-bar-bg">
-                <div class="len-bar-tts" style="width:0%"></div>
-                <div class="len-bar-rec" style="width:0%"></div>
-              </div>
+            <div class="len-abs" aria-hidden="true">
+              <div class="len-center" aria-hidden="true"></div>
+              <div class="len-bar len-bar-tts" style="left:50%;width:0%" title="TTS: ?s"></div>
+              <div class="len-bar len-bar-rec" style="left:50%;width:0%" title="녹음: ?s"></div>
             </div>
           </div>
         </div>
@@ -446,10 +444,10 @@ function makeCard(idx, sent){
   // Update liveBox to show the final transcript used for scoring so
   // students see the same text in real-time and in results.
   try{ if (liveBox) liveBox.textContent = (finalHypRaw||'').trim() || '…'; }catch(_){ }
-        // show accuracy prominently and durations (TTS vs my recording)
-        const accuracyEl = host.querySelector('[data-accuracy]');
-        const durationsEl = host.querySelector('[data-durations]');
-  if (accuracyEl) accuracyEl.textContent = `정확도: ${pct}%`;
+    // show accuracy prominently and durations (TTS vs my recording)
+    const accuracyBadge = host.querySelector('.accuracy-badge');
+    const durationBadge = host.querySelector('.duration-badge');
+  if (accuracyBadge) accuracyBadge.innerHTML = `<svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: ${pct}%`;
         // try to find tts duration from listen button _audio (stored when played)
         let ttsDur = null;
         try{
@@ -464,19 +462,28 @@ function makeCard(idx, sent){
         try{
           const lenWrap = host.querySelector('[data-len-compare]');
           if (lenWrap){
-            const ttsLabel = lenWrap.querySelector('.len-tts');
-            const recLabel = lenWrap.querySelector('.len-rec');
-            const ttsBar = lenWrap.querySelector('.len-bar-tts');
-            const recBar = lenWrap.querySelector('.len-bar-rec');
-            if (ttsLabel) ttsLabel.textContent = `TTS: ${ttsStr}`;
-            if (recLabel) recLabel.textContent = `내 녹음: ${myRec}`;
-            // compute relative widths (avoid divide by zero)
             const t = Number(ttsDur || 0); const r = Number(duration || 0);
-            const max = Math.max(0.1, t, r);
-            const tPct = Math.round((t / max) * 100);
-            const rPct = Math.round((r / max) * 100);
-            if (ttsBar) ttsBar.style.width = `${tPct}%`;
-            if (recBar) recBar.style.width = `${rPct}%`;
+            // update badges
+            if (durationBadge) durationBadge.textContent = `TTS: ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 녹음: ${duration?duration.toFixed(1)+'s':'?s'}`;
+            // compute absolute difference bars from center: center is 50%
+            const absDiff = Math.abs((t || 0) - (r || 0));
+            const maxRange = Math.max(0.1, t, r, absDiff);
+            // lengths expressed as percentage of maxRange (cap to 48% each side)
+            const tPct = Math.min(48, Math.round(((t || 0) / maxRange) * 48));
+            const rPct = Math.min(48, Math.round(((r || 0) / maxRange) * 48));
+            const tBar = lenWrap.querySelector('.len-bar-tts');
+            const rBar = lenWrap.querySelector('.len-bar-rec');
+            if (tBar){
+              // if TTS shorter than rec, extend left; otherwise right
+              if (t <= r){ tBar.style.left = `${50 - tPct}%`; tBar.style.width = `${tPct}%`; }
+              else { tBar.style.left = '50%'; tBar.style.width = `${tPct}%`; }
+              tBar.title = `TTS: ${ttsDur?ttsDur.toFixed(2)+'s':'?s'}`;
+            }
+            if (rBar){
+              if (r <= t){ rBar.style.left = `${50 - rPct}%`; rBar.style.width = `${rPct}%`; }
+              else { rBar.style.left = '50%'; rBar.style.width = `${rPct}%`; }
+              rBar.title = `녹음: ${duration?duration.toFixed(2)+'s':'?s'}`;
+            }
           }
         }catch(_){ }
         // persist durations & highlight HTML on the card element for send-results
@@ -732,6 +739,24 @@ function mergeStopAndEvaluate(){
 .len-compare .len-bar-bg{ position:relative; height:12px; background:#eef2ff; border-radius:8px; overflow:hidden }
 .len-compare .len-bar-tts{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#e0f2fe,#bae6fd); }
 .len-compare .len-bar-rec{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#fde68a,#fca5a5); opacity:0.9; mix-blend-mode:normal }
+.len-compare .len-bar-rec{ background:linear-gradient(90deg,#fde68a,#fca5a5); z-index:2; }
+.len-bar[title]{ cursor:default; }
+
+/* Absolute-difference centered bars */
+.len-abs{ position:relative; height:18px; background:transparent; }
+.len-center{ position:absolute; left:50%; top:0; bottom:0; width:2px; background:#e2e8f0; transform:translateX(-50%); }
+.len-bar{ position:absolute; top:3px; height:12px; border-radius:6px; transform-origin:left center; }
+.len-bar-tts{ background:linear-gradient(90deg,#bfdbfe,#93c5fd); z-index:1; }
+.len-bar-rec{ background:linear-gradient(90deg,#fde68a,#fca5a5); z-index:2; }
+.len-bar[title]{ cursor:default; }
+
+/* Badges for accuracy/duration */
+.badge{ border:1px solid #e6eef6; background:#fff; padding:6px 10px; border-radius:999px; font-weight:600; color:#0f172a; box-shadow:0 4px 10px rgba(2,6,23,0.04); cursor:default; }
+.accuracy-badge svg{ vertical-align:middle; margin-right:6px; }
+.duration-badge{ font-size:0.95rem; color:#475569 }
+
+/* Tooltip: simple hover title fallback is used; add slight transition for width changes */
+.len-bar{ transition: width 220ms ease; }
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');

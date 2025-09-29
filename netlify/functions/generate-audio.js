@@ -125,21 +125,30 @@ const safeRepeats = Math.max(1, Math.min(10, reqRepeats));
         if (r.ok) {
           const buf = Buffer.from(await r.arrayBuffer());
           const b64 = buf.toString('base64');
+          // try to use any duration metadata from provider (rare). If not,
+          // fall back to syllable estimator; also try a byte-size heuristic.
+          let durationMethod = 'estimator';
+          let durationSec = estimateDurationSec({ text: reqText, ssml: reqSSML, speed: speed, repeats: safeRepeats });
+          // byte-size heuristic: assume WAV ~ 176400 bytes/sec (44.1kHz 16-bit stereo)
+          try{
+            const byteLen = buf.length;
+            const approxSec = Math.max(0.2, Math.round((byteLen / 176400) * 100) / 100);
+            // choose heuristic only if it's within reasonable range of estimator
+            if (approxSec > 0 && Math.abs(approxSec - durationSec) / Math.max(0.1,durationSec) < 0.6){
+              durationSec = approxSec; durationMethod = 'byte-heuristic';
+            }
+          }catch(_){ }
 return json(200, {
   audioData: b64,
   audioBase64: b64,
   mimeType: 'audio/wav',
-  durationEstimateSec: estimateDurationSec({
-    text: reqText,
-    ssml: reqSSML,   // OpenAI는 SSML 미지원이므로 클린 텍스트 기준 추정 + 클라가 보낸 SSML은 참조만
-    speed: speed,
-    repeats: safeRepeats
-  }),
+  durationEstimateSec: durationSec,
   meta: {
     provider: 'openai',
     voice,
     speed: speed,
-    repeats: safeRepeats
+    repeats: safeRepeats,
+    durationMethod
   }
 });
 
@@ -184,21 +193,26 @@ return json(200, {
     }
 
     const gj = await gr.json();
+          // For Google OGG responses, try byte heuristic with a different
+          // bytes/sec assumption for OGG (approx 48000 bytes/sec typical for opus)
+          const byteLen = Buffer.from(gj.audioContent, 'base64').length;
+          let durationSec = estimateDurationSec({ text: reqText, ssml: ssml, speed: speed, repeats: safeRepeats });
+          let durationMethod = 'estimator';
+          try{
+            const approxSec = Math.max(0.2, Math.round((byteLen / 48000) * 100) / 100);
+            if (Math.abs(approxSec - durationSec) / Math.max(0.1,durationSec) < 0.6){ durationSec = approxSec; durationMethod = 'byte-heuristic'; }
+          }catch(_){ }
 return json(200, {
   audioData: gj.audioContent,
   audioBase64: gj.audioContent,
   mimeType: 'audio/ogg',
-durationEstimateSec: estimateDurationSec({
-    text: reqText,
-    ssml: ssml,
-    speed: speed,
-    repeats: safeRepeats
-  }),
+  durationEstimateSec: durationSec,
   meta: {
     provider: 'google',
     voice,
     speed: speed,
-    repeats: safeRepeats
+    repeats: safeRepeats,
+    durationMethod
   }
 
 });
