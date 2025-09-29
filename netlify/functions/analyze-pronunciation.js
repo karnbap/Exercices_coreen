@@ -80,11 +80,24 @@ exports.handler = async (event) => {
 
     // === 숫자 → 한글 수사 강제(표시/채점 공통) ===
     // 서버 측에서도 아라비아 숫자·단위 표기를 한글 표기로 통일합니다.
-    // Convert ASCII digits (e.g. "10") into sino-Korean (십) before any further normalization
-    const transcriptDigitsConverted = digitsToSinoInText(transcriptRaw);
-    const refDigitsConverted = digitsToSinoInText(referenceText || '');
-    const transcriptKo = forceHangulNumbers(transcriptDigitsConverted);
-    const refKo = forceHangulNumbers(refDigitsConverted);
+    // Reference-aware normalization helper (서버측)
+    function refAwareNormalize(refText, txt){
+      let t = String(txt || '');
+      try {
+        // 숫자열을 한자/한자어형으로 변환 (e.g. "10" -> "십")
+        t = digitsToSinoInText(t);
+      } catch (e) { /* ignore */ }
+      try {
+        // 단위/고유어 앞 축약 등 흔한 케이스 보정
+        t = applyCounterVariants(t);
+      } catch (e) { /* ignore */ }
+      // 추후: refText를 참고해 더 정교한 대치(예: ordinal/단수·복수 등)를 적용할 수 있음
+      return String(t || '');
+    }
+
+    // Normalize both transcript and reference using ref-aware pipeline
+    const transcriptKo = refAwareNormalize(referenceText, transcriptRaw);
+    const refKo = refAwareNormalize(referenceText, referenceText || '');
 
 
     // === 유사도(캐논) ===
@@ -104,9 +117,12 @@ if (ref && hyp && ref === hyp) acc = 1; // 완전 일치면 100% 고정
     if (isShortRef && tooLongHyp && lowSim) {
       return json(200, {
         ok: true,
-        needsRetry: true,                // 클라이언트: 0점 대신 재시도 안내
+        needsRetry: true,
         accuracy: null,
+        // include both raw STT string and normalized form for clients
+        transcriptRaw: transcriptRaw,
         transcript: transcriptKo,
+        normalizedReference: refKo,
         messageFr: "Phrase courte mal reconnue. Réessaie calmement.",
         messageKo: "짧은 문장이 길게 인식됐어요. 또박또박 다시 한 번 읽어주세요."
       });
@@ -134,7 +150,9 @@ if (ref && hyp && ref === hyp) acc = 1; // 완전 일치면 100% 고정
       return json(200, {
         ok: true,
         accuracy: 1.0,
+        transcriptRaw: transcriptRaw,
         transcript: transcriptKo,
+        normalizedReference: refKo,
         messageFr: "Prononciation correcte.",
         messageKo: "정확한 발음입니다."
       });
@@ -142,7 +160,9 @@ if (ref && hyp && ref === hyp) acc = 1; // 완전 일치면 100% 고정
       return json(200, {
         ok: true,
         accuracy: acc,
+        transcriptRaw: transcriptRaw,
         transcript: transcriptKo,
+        normalizedReference: refKo,
         confusionTags: tags,
         messageFr: "Prononciation incorrecte.",
         messageKo: "발음이 정확하지 않습니다."

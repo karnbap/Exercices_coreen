@@ -39,10 +39,12 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
   const url = URL.createObjectURL(blob);
 
   const a = new Audio(url);
-  a.addEventListener('ended', ()=> URL.revokeObjectURL(url), { once:true });
-  await a.play().catch(()=>{ try{URL.revokeObjectURL(url);}catch(_){}});
-
-  return data.durationEstimateSec || null;
+  a.addEventListener('ended', ()=>{ try{ URL.revokeObjectURL(url); }catch(_){} }, { once:true });
+  // start playback and return the audio element immediately so callers can
+  // control pause/resume UI without awaiting the entire play duration.
+  a.play().catch(()=>{ try{ URL.revokeObjectURL(url); }catch(_){}});
+  a.durationEstimateSec = data.durationEstimateSec || null;
+  return a;
 }
 
 
@@ -55,6 +57,7 @@ function makeCard(idx, sent){
 
   wrap.innerHTML = `
     <div class="flex items-start justify-between gap-3">
+      <div class="q-badge">문제 ${idx+1} / Question ${idx+1}</div>
       <div>
         <div class="text-sm text-slate-500">Q${idx+1}</div>
         <div class="text-xl font-bold mb-1">${sent.ko}</div>
@@ -92,18 +95,30 @@ function makeCard(idx, sent){
   // 듣기: 재생 중에는 버튼을 일시정지로 바꿔 중복 클릭 방지
   wrap.querySelector('[data-action="listen"]').addEventListener('click', async (e)=>{
     const btn = e.currentTarget;
-    // 이미 재생 중이면 무시
-    if (btn.dataset.playing==='1') return;
-    btn.dataset.playing = '1';
-    const original = btn.innerHTML;
+    // If audio is already stored and not ended, toggle pause/resume
+    const existing = btn._audio;
+    if (existing && !existing.ended){
+      if (!existing.paused){
+        existing.pause();
+        btn.innerHTML = '▶ 듣기 / Écouter';
+        return;
+      } else {
+        existing.play().catch(()=>{});
+        btn.innerHTML = '⏸ 일시정지 / Pause';
+        return;
+      }
+    }
+
+    // Otherwise start new playback and store the audio element on the button
     btn.innerHTML = '⏸ 일시정지 / Pause';
     try{
-      await ttsPlay(sent.ko);
+      const audioEl = await ttsPlay(sent.ko);
+      btn._audio = audioEl;
+      // when playback ends, restore label
+      audioEl.addEventListener('ended', ()=>{ btn.innerHTML = '듣기 / Écouter'; btn._audio = null; }, { once:true });
     } catch(err) {
       console.error('TTS play error', err);
-    } finally {
-      delete btn.dataset.playing;
-      btn.innerHTML = original;
+      btn.innerHTML = '듣기 / Écouter';
     }
   });
 
@@ -167,44 +182,84 @@ function makeCard(idx, sent){
     // normalized jamo sequence. Then we consult the keepArr (which was
     // computed on the normalized jamo sequence) by mapping indices.
     function buildHtmlFromKeep(rawOriginal, keepArr, normSource){
-      // normSource is the normalized string used to compute keepArr
+      // Map normalized jamo positions (keepArr indices) back to original
+      // characters robustly. We align normalized characters to original
+      // characters with a greedy char-match lookahead, then expand char->jamo
+      // positions to know which jamo slots belong to which original char.
       const raw = String(rawOriginal).normalize('NFC');
-      const norm = String(normSource||raw).normalize('NFC');
+      const norm = String(normSource || raw).normalize('NFC');
+      const rawChars = [...raw];
+      const normChars = [...norm];
 
-      // Build array of jamo-counts for each character in norm (used when
-      // walking through the normalized string to align indices)
-      const normJamoCounts = [];
-      for (const ch of [...norm]){
+      function jamoCount(ch){
         if (/[가-힣]/.test(ch)){
           const code = ch.codePointAt(0) - 0xAC00;
-          normJamoCounts.push((code % 28) ? 3 : 2);
-        } else normJamoCounts.push(1);
-      }
-
-      // Similarly, compute jamo-counts for original raw string characters
-      const rawJamoCounts = [];
-      for (const ch of [...raw]){
-        if (/[가-힣]/.test(ch)){
-          const code = ch.codePointAt(0) - 0xAC00;
-          rawJamoCounts.push((code % 28) ? 3 : 2);
-        } else rawJamoCounts.push(1);
-      }
-
-      // Walk through normJamoCounts and assign each norm-jamo an incrementing
-      // index. Then, when iterating raw chars, consume the equivalent number
-      // of norm-jamo slots to decide if the original char should be marked ok.
-      let normIndex = 0;
-      const htmlParts = [];
-      for (let ri = 0; ri < rawJamoCounts.length; ri++){
-        const cnt = rawJamoCounts[ri];
-        let ok = true;
-        for (let k = 0; k < cnt; k++){
-          // If norm has fewer slots remaining, assume mismatch
-          if (typeof keepArr[normIndex] === 'undefined' || !keepArr[normIndex]) ok = false;
-          normIndex++;
+          return (code % 28) ? 3 : 2;
         }
-        const ch = raw[ri];
-        htmlParts.push(ok ? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`);
+        return 1;
+      }
+
+      // Greedy alignment: for each normChar, decide which rawChar it maps to.
+      const normCharToRaw = new Array(normChars.length).fill(0);
+      let iNorm = 0, iRaw = 0;
+      while (iNorm < normChars.length && iRaw < rawChars.length){
+        if (normChars[iNorm] === rawChars[iRaw]){
+          normCharToRaw[iNorm] = iRaw; iNorm++; iRaw++; continue;
+        }
+        // lookahead in raw for a match to current norm char
+        let found = -1;
+        for (let k=1;k<=4 && (iRaw+k)<rawChars.length;k++){
+          if (normChars[iNorm] === rawChars[iRaw+k]){ found = iRaw+k; break; }
+        }
+        if (found !== -1){
+          // map intermediate norm chars to current iRaw, then advance raw
+          normCharToRaw[iNorm] = found; iNorm++; iRaw = found+1; continue;
+        }
+        // lookahead in norm for match to current raw char
+        found = -1;
+        for (let k=1;k<=4 && (iNorm+k)<normChars.length;k++){
+          if (normChars[iNorm+k] === rawChars[iRaw]){ found = iNorm+k; break; }
+        }
+        if (found !== -1){
+          // map current normChar to current raw; advance norm
+          normCharToRaw[iNorm] = iRaw; iNorm++; continue;
+        }
+        // fallback: assign current norm char to current raw and advance norm
+        normCharToRaw[iNorm] = iRaw; iNorm++;
+      }
+      // remaining norm chars map to last raw index
+      while (iNorm < normChars.length){ normCharToRaw[iNorm] = Math.max(0, rawChars.length-1); iNorm++; }
+
+      // Build mapping from norm-jamo-index -> rawCharIndex
+      const normJamoToRawChar = [];
+      for (let ci=0, jPos=0; ci<normChars.length; ci++){
+        const cnt = jamoCount(normChars[ci]);
+        for (let k=0;k<cnt;k++){ normJamoToRawChar[jPos++] = normCharToRaw[ci]; }
+      }
+
+      // For each raw char, gather its corresponding norm-jamo positions
+      const rawCharToNormJamoPositions = Array.from({length: rawChars.length}, ()=>[]);
+      for (let j=0;j<normJamoToRawChar.length;j++){
+        const rawIdx = normJamoToRawChar[j];
+        if (typeof rawIdx === 'number' && rawIdx >=0 && rawIdx < rawChars.length){
+          rawCharToNormJamoPositions[rawIdx].push(j);
+        }
+      }
+
+      // Now decide OK per raw char: if it has no mapped norm-jamo positions,
+      // fall back to comparing the character directly to normalized equivalent.
+      const htmlParts = [];
+      for (let ri=0; ri<rawChars.length; ri++){
+        const ch = rawChars[ri];
+        const positions = rawCharToNormJamoPositions[ri];
+        let ok = true;
+        if (positions.length === 0){
+          // no mapping info: treat as ok if raw char also appears unchanged in norm
+          ok = normChars.includes(ch);
+        } else {
+          for (const p of positions){ if (!keepArr[p]){ ok = false; break; } }
+        }
+        htmlParts.push(ok ? `<span>${ch}</span>` : `<span style=\"color:#dc2626\">${ch}</span>`);
       }
       return htmlParts.join('');
     }
@@ -477,6 +532,35 @@ function mergeStopAndEvaluate(){
   color:#111827;
 }
 .sum-box .hyp-line span{ font-size:1.38rem; /* 사용자 문장은 더 강조 */ }
+
+/* Ensure the reference and hypothesis lines are on separate rows and align */
+.sum-box .ref-line, .sum-box .hyp-line{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:6px 0;
+}
+.sum-box .ref-line span, .sum-box .hyp-line span{ display:inline-block; max-width:calc(100% - 170px); word-break:keep-all; }
+
+/* Card border and question badge */
+.card{
+  border: 2px solid #0ea5e9; /* sky-500 */
+  box-shadow: 0 6px 20px rgba(14,165,233,0.08);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:18px;
+}
+.card .q-badge{
+  position:relative;
+  display:inline-block;
+  background:linear-gradient(90deg,#0ea5e9,#06b6d4);
+  color:#fff;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:10px;
+  margin-right:10px;
+  box-shadow:0 6px 14px rgba(14,165,233,.18);
+}
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');
@@ -489,10 +573,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const mount = document.getElementById('cards');
   SENTENCES.forEach((s, i)=> mount.appendChild(makeCard(i, s)));
 
-  // finish 버튼은 이름 입력되면 자동 활성 (student-gate가 제어)
-  document.getElementById('finish-btn')?.addEventListener('click', ()=>{
-    alert('연습 종료! (이 페이지는 결과 전송 없이 미니 테스트용입니다)');
-  });
+  // finish 버튼 동작은 파일 후반에서 통합적으로 설정합니다.
 
   // Remove any "Previous Exercise" buttons/links if present
   try {
@@ -707,22 +788,21 @@ if (finishButton) {
   });
 }
 
-// Update listen button to toggle between play and pause
-const listenButton = document.querySelector('button[data-action="listen"]');
-if (listenButton) {
-  let isPlaying = false;
-  listenButton.addEventListener('click', async () => {
-    if (isPlaying) {
-      console.warn('Audio is already playing. Preventing duplicate clicks.');
-      return;
+// For any top-level listen button present (outside cards), provide same
+// toggle behavior. This keeps behavior consistent if the template uses a
+// single global listen control.
+Array.from(document.querySelectorAll('button[data-action="listen"]')).forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const existing = btn._audio;
+    if (existing && !existing.ended){
+      if (!existing.paused){ existing.pause(); btn.textContent = '▶ 듣기 / Écouter'; return; }
+      existing.play().catch(()=>{}); btn.textContent = '⏸ 일시정지 / Pause'; return;
     }
-    isPlaying = true;
-    listenButton.textContent = '일시정지 / Pause';
-    try {
-      await ttsPlay(sent.ko);
-    } finally {
-      isPlaying = false;
-      listenButton.textContent = '듣기 / Écouter';
-    }
+    btn.textContent = '⏸ 일시정지 / Pause';
+    try{
+      const audioEl = await ttsPlay((window.currentListenText||'') || document.title || '');
+      btn._audio = audioEl;
+      audioEl.addEventListener('ended', ()=>{ btn.textContent = '듣기 / Écouter'; btn._audio = null; }, { once:true });
+    } catch(e){ console.error('TTS play error', e); btn.textContent = '듣기 / Écouter'; }
   });
-}
+});
