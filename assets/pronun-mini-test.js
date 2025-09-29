@@ -129,6 +129,8 @@ function makeCard(idx, sent){
       const speed = typeof sent.speed === 'number' ? sent.speed : 1.0;
       const audioEl = await ttsPlay(sent.ko, voice, speed);
       btn._audio = audioEl;
+  // mark this card as listened so Evaluate is allowed
+  try{ wrap.dataset.listened = '1'; }catch(_){ }
       // when playback ends, restore label
       audioEl.addEventListener('ended', ()=>{ btn.innerHTML = '듣기 / Écouter'; btn._audio = null; }, { once:true });
     } catch(err) {
@@ -459,11 +461,33 @@ function makeCard(idx, sent){
           const audioObj = listenBtn?listenBtn._audio:null;
           if (audioObj && typeof audioObj.durationEstimateSec === 'number') ttsDur = audioObj.durationEstimateSec;
         }catch(_){ ttsDur = null; }
-        const myRec = duration ? `${duration.toFixed(1)}s` : '?s';
-        const ttsStr = ttsDur ? `${ttsDur.toFixed(1)}s` : '?s';
-        if (durationsEl) {
-          durationsEl.innerHTML = `<div style="line-height:1.1">TTS (평균 말하는 속도): ${ttsStr}</div><div style="font-size:0.9rem;color:#334155;line-height:1.1">내 녹음 속도 / Ma vitesse: ${myRec}</div>`;
+  const myRec = duration ? Number(duration.toFixed(2)) : null;
+        const ttsNum = ttsDur ? Number(ttsDur.toFixed(2)) : null;
+        // build visual bars inside durationBadge
+        if (durationBadge) {
+          const t = Number(ttsNum || 0); const r = Number(myRec || 0);
+          const maxRange = Math.max(0.1, t, r);
+          const tPct = t ? Math.round((t / maxRange) * 100) : 0;
+          const rPct = r ? Math.round((r / maxRange) * 100) : 0;
+          durationBadge.innerHTML = `
+            <div class="dur-row"><div class="dur-label">TTS (평균 속도) / Vitesse moyenne:</div>
+              <div class="dur-bar-bg"><div class="dur-bar dur-bar-avg" style="width:${tPct}%">${t? t.toFixed(1)+'s':'?s'}</div></div>
+            </div>
+            <div class="dur-row"><div class="dur-label">내 발음 속도 / Ma vitesse:</div>
+              <div class="dur-bar-bg"><div class="dur-bar dur-bar-rec" style="width:${rPct}%">${r? r.toFixed(1)+'s':'?s'}</div></div>
+            </div>`;
         }
+        // --- store sample for server-side averaging ---
+        try{
+          const key = 'pronunSpeedSamples';
+          const existing = JSON.parse(localStorage.getItem(key) || '[]');
+          // Attempt to estimate syllable count (simple heuristic: Hangul syllables count)
+          const syCount = (transcriptRaw || '').split('').filter(ch => /[\uAC00-\uD7A3]/.test(ch)).length || null;
+          const sample = { duration: myRec || null, syllables: syCount };
+          existing.push(sample);
+          // keep only recent 50
+          localStorage.setItem(key, JSON.stringify(existing.slice(-50)));
+        }catch(_){ }
         // update len-compare area
         try{
           const lenWrap = wrap.querySelector('[data-len-compare]');
@@ -496,6 +520,8 @@ function makeCard(idx, sent){
             }
           }
         }catch(_){ }
+        // if enough samples collected, query server for average and append to duration badge
+        try{ fetchEstimateSpeedAndUpdate(wrap); }catch(_){ }
         // persist durations & highlight HTML on the card element for send-results
         try{
           const cardEl = wrap;
@@ -539,7 +565,7 @@ function makeCard(idx, sent){
     const help2Btn = hintWrap.querySelector('[data-hint="2"]');
   // hintDisplay element (single declaration)
   const hintDisplay = hintWrap.querySelector('[data-hint-display]');
-  if (help1Btn){
+    if (help1Btn){
       help1Btn.addEventListener('click', ()=>{
         const keyText = sent.hint1 || '';
         function toChosung(s){
@@ -552,7 +578,9 @@ function makeCard(idx, sent){
           }).join('');
         }
         const chos = toChosung(sent.ko || '');
-        const display = (chos ? chos + ' · ' : '') + keyText;
+        // insert spaces between displayed 초성 for readability, preserve original spaces
+        const spaced = Array.from(chos).map(ch => (/\s/.test(ch) ? ch : ch + ' ')).join('').trim();
+        const display = (spaced ? spaced + ' · ' : '') + keyText;
         hintDisplay.textContent = (hintDisplay.textContent === display) ? '' : display;
       });
     }
@@ -560,20 +588,43 @@ function makeCard(idx, sent){
     // 도움받기2: 전체 문장을 빈칸(▢)으로 보여준다 (토글)
     if (help2Btn){
       help2Btn.addEventListener('click', ()=>{
-        if (!sent.ko) { hintDisplay.textContent = ''; hintDisplay.dataset.fullBlank = '0'; return; }
-        if (hintDisplay.dataset.fullBlank === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.fullBlank = '0'; return; }
+        if (!sent.ko) { hintDisplay.textContent = ''; hintDisplay.dataset.hint2 = '0'; return; }
+        if (hintDisplay.dataset.hint2 === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.hint2 = '0'; return; }
         const src = String(sent.ko || '');
-        // Robust blanking: replace visible graphemes for Hangul syllables and alphanumerics with ▢, preserve spaces/punctuation
-        const blanked = Array.from(src).map(ch => {
-          if (/\s/.test(ch)) return ch;
-          if (/[0-9A-Za-z]/.test(ch)) return '▢';
-          if (/[,\.\!\?;:\-\u3001\u3002\u2014\u2013]/.test(ch)) return ch;
-          if (/^[가-힣]$/.test(ch)) return '▢';
-          // fallback: show box for other characters as well
-          return '▢';
-        }).join('');
-        hintDisplay.textContent = blanked;
-        hintDisplay.dataset.fullBlank = '1';
+        // derive keywords: prefer sent.hint2 (left side of mappings like '단어=tr'), fallback to sent.hint1
+        function extractKeywords(s){
+          if (!s) return [];
+          // split on common separators
+          const parts = s.split(/[\/|,·]/).map(p=>p.trim()).filter(Boolean);
+          const kws = [];
+          parts.forEach(p=>{
+            // if mapping like '단어=tr', take left side
+            const m = p.split('=')[0].trim();
+            if (m) kws.push(m);
+          });
+          return kws;
+        }
+        let keywords = extractKeywords(sent.hint2 || '');
+        if (!keywords.length) keywords = extractKeywords(sent.hint1 || '');
+        // if still empty, fallback to blank entire sentence
+        if (!keywords.length){
+          hintDisplay.textContent = src.replace(/[^\s]/g,'▢');
+          hintDisplay.dataset.hint2 = '1';
+          return;
+        }
+        // replace only occurrences of keywords with boxes of same visual length
+        // sort by length desc to avoid partial overlaps
+        keywords = Array.from(new Set(keywords)).sort((a,b)=>b.length - a.length);
+        let out = src;
+        function esc(s){ return s.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&'); }
+        keywords.forEach(kw=>{
+          const k = (kw||'').trim(); if (!k) return;
+          try{
+            out = out.replace(new RegExp(esc(k), 'g'), (m)=> m.split('').map(ch => (/\s/.test(ch) ? ch : '▢')).join(''));
+          }catch(_){ /* ignore regex errors */ }
+        });
+        hintDisplay.textContent = out;
+        hintDisplay.dataset.hint2 = '1';
       });
     }
   }catch(_){/*ignore*/}
@@ -646,6 +697,32 @@ function mergeStopAndEvaluate(){
       setTimeout(()=>tryEval(0), 120);
     }, { once:false });
   }
+}
+
+// Call serverless estimator if enough samples exist and update badges
+async function fetchEstimateSpeedAndUpdate(cardEl){
+  try{
+    const key = 'pronunSpeedSamples';
+    const samples = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!samples || samples.length < 3) return null; // wait for some data
+    // prepare payload: send samples with duration and syllables
+    const payload = { samples: samples.map(s=>({ duration: Number(s.duration||0), syllables: s.syllables })) };
+    const resp = await fetch('/.netlify/functions/estimate-speed', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    // update duration badge inside the card if present
+    if (cardEl){
+      const durationBadge = cardEl.querySelector('.duration-badge');
+      if (durationBadge){
+        const avg = json.avgSeconds ? Number(json.avgSeconds).toFixed(2) : null;
+        const sps = json.secPerSyll ? Number(json.secPerSyll).toFixed(3) : null;
+        // append server averages as small note
+        const note = `<div style="font-size:0.82rem;margin-top:6px;color:#334155">서버 평균: ${avg?avg+'s':'?s'} ${sps?('· '+sps+' s/음절'):''}</div>`;
+        durationBadge.insertAdjacentHTML('beforeend', note);
+      }
+    }
+    return json;
+  }catch(e){ console.error('estimate-speed failed', e); return null; }
 }
 
 
@@ -890,10 +967,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
     // Also try to remove anchors with matching text
     Array.from(document.querySelectorAll('a,button,span')).forEach(el=>{
-      const t = (el.textContent||'').trim().toLowerCase();
-      if (t.includes('previous exercise') || t.includes('이전 연습') || t.includes('exercice précédent')) {
-        try{ el.remove(); }catch(_){/*ignore*/}
+    evalBtn.addEventListener('click', (e)=>{
+      // require that the student listened at least once
+      if (!wrap.dataset.listened) {
+        // friendly bilingual alert
+        window.alert('먼저 듣기 버튼을 눌러주세요. / Veuillez d\u00E9couter d\u2019abord.');
+        return;
       }
+      // forward to Pronun evaluate
+      const hostEval = host.querySelector('[data-action="evaluate"]');
+      if (hostEval) hostEval.click();
+    });
     });
   } catch(_){/*ignore*/}
 
@@ -930,14 +1014,14 @@ if (recordButton) {
   if (document.getElementById('pronun-student-modal')) return;
   const modal = document.createElement('div');
   modal.id = 'pronun-student-modal';
-  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999';
+  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:9999;padding:18px';
   modal.innerHTML = `
-    <div style="background:#fff;padding:18px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 10px 30px rgba(2,6,23,.25)">
-      <div style="font-weight:700;margin-bottom:8px">학생 이름 / Nom de l'élève</div>
-      <input id="pronun-student-name" placeholder="이름을 입력하세요 / Entrez le nom" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:10px" />
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button id="pronun-student-cancel" style="padding:8px 12px;border-radius:8px">취소 / Annuler</button>
-        <button id="pronun-student-ok" style="background:#0ea5e9;color:#fff;padding:8px 12px;border-radius:8px">확인 / Confirmer</button>
+    <div style="background:#fff;padding:20px;border-radius:12px;max-width:720px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,.25);border:1px solid rgba(2,6,23,0.06)">
+      <div style="font-weight:800;margin-bottom:10px;font-size:1.05rem">학생 이름 / Nom de l'élève</div>
+      <input id="pronun-student-name" placeholder="이름을 입력하세요 / Entrez le nom" style="width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;font-size:1rem" />
+      <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
+        <button id="pronun-student-cancel" style="padding:10px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#0f172a">취소 / Annuler</button>
+        <button id="pronun-student-ok" style="background:#06b6d4;color:#fff;padding:10px 16px;border-radius:8px;border:none;font-weight:700">확인 / Confirmer</button>
       </div>
     </div>
   `;
