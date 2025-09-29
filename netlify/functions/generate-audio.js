@@ -65,6 +65,30 @@ function estimateDurationSec({ text='', ssml='', speed=1.0, repeats=1 } = {}){
   return Math.max(0.2, totalOne * rep);
 }
 
+// Try to parse WAV header (RIFF/WAVE) to get accurate duration if possible.
+function tryParseWavDuration(buf){
+  try{
+    if (!Buffer.isBuffer(buf) || buf.length < 44) return null;
+    // Check RIFF and WAVE
+    if (buf.toString('ascii',0,4) !== 'RIFF' || buf.toString('ascii',8,12) !== 'WAVE') return null;
+    // Search for "fmt " chunk to read byteRate at offset (chunk + 8 + 4 + ...)
+    // Standard WAV: byteRate is at offset 28 (little-endian uint32)
+    const byteRate = buf.readUInt32LE(28);
+    // Find 'data' chunk which contains size at offset chunkStart+4
+    let pos = 12;
+    let dataSize = null;
+    while(pos + 8 <= buf.length){
+      const id = buf.toString('ascii', pos, pos+4);
+      const size = buf.readUInt32LE(pos+4);
+      if (id === 'data') { dataSize = size; break; }
+      pos += 8 + size;
+    }
+    if (!dataSize || !byteRate || byteRate <= 0) return null;
+    const seconds = Math.max(0.01, Math.round((dataSize / byteRate) * 100) / 100);
+    return seconds;
+  }catch(e){ return null; }
+}
+
 
 
 exports.handler = async (event) => {
@@ -125,32 +149,35 @@ const safeRepeats = Math.max(1, Math.min(10, reqRepeats));
         if (r.ok) {
           const buf = Buffer.from(await r.arrayBuffer());
           const b64 = buf.toString('base64');
-          // try to use any duration metadata from provider (rare). If not,
-          // fall back to syllable estimator; also try a byte-size heuristic.
+          // try to use WAV header duration first, then fallback to estimator/heuristic
           let durationMethod = 'estimator';
           let durationSec = estimateDurationSec({ text: reqText, ssml: reqSSML, speed: speed, repeats: safeRepeats });
-          // byte-size heuristic: assume WAV ~ 176400 bytes/sec (44.1kHz 16-bit stereo)
           try{
-            const byteLen = buf.length;
-            const approxSec = Math.max(0.2, Math.round((byteLen / 176400) * 100) / 100);
-            // choose heuristic only if it's within reasonable range of estimator
-            if (approxSec > 0 && Math.abs(approxSec - durationSec) / Math.max(0.1,durationSec) < 0.6){
-              durationSec = approxSec; durationMethod = 'byte-heuristic';
+            const wavSec = tryParseWavDuration(buf);
+            if (wavSec && wavSec > 0){ durationSec = wavSec; durationMethod = 'wav-header'; }
+            else {
+              // byte-size heuristic: assume WAV ~ 176400 bytes/sec (44.1kHz 16-bit stereo)
+              const byteLen = buf.length;
+              const approxSec = Math.max(0.2, Math.round((byteLen / 176400) * 100) / 100);
+              if (approxSec > 0 && Math.abs(approxSec - durationSec) / Math.max(0.1,durationSec) < 0.6){
+                durationSec = approxSec; durationMethod = 'byte-heuristic';
+              }
             }
           }catch(_){ }
-return json(200, {
-  audioData: b64,
-  audioBase64: b64,
-  mimeType: 'audio/wav',
-  durationEstimateSec: durationSec,
-  meta: {
-    provider: 'openai',
-    voice,
-    speed: speed,
-    repeats: safeRepeats,
-    durationMethod
-  }
-});
+
+          return json(200, {
+            audioData: b64,
+            audioBase64: b64,
+            mimeType: 'audio/wav',
+            durationEstimateSec: durationSec,
+            meta: {
+              provider: 'openai',
+              voice,
+              speed: speed,
+              repeats: safeRepeats,
+              durationMethod
+            }
+          });
 
 
         } else {
@@ -193,29 +220,32 @@ return json(200, {
     }
 
     const gj = await gr.json();
-          // For Google OGG responses, try byte heuristic with a different
-          // bytes/sec assumption for OGG (approx 48000 bytes/sec typical for opus)
-          const byteLen = Buffer.from(gj.audioContent, 'base64').length;
-          let durationSec = estimateDurationSec({ text: reqText, ssml: ssml, speed: speed, repeats: safeRepeats });
-          let durationMethod = 'estimator';
-          try{
-            const approxSec = Math.max(0.2, Math.round((byteLen / 48000) * 100) / 100);
-            if (Math.abs(approxSec - durationSec) / Math.max(0.1,durationSec) < 0.6){ durationSec = approxSec; durationMethod = 'byte-heuristic'; }
-          }catch(_){ }
-return json(200, {
-  audioData: gj.audioContent,
-  audioBase64: gj.audioContent,
-  mimeType: 'audio/ogg',
-  durationEstimateSec: durationSec,
-  meta: {
-    provider: 'google',
-    voice,
-    speed: speed,
-    repeats: safeRepeats,
-    durationMethod
-  }
+    // For Google OGG/OPUS responses, try to use a byte-based heuristic; no WAV header
+    const audioBuf = Buffer.from(gj.audioContent || '', 'base64');
+    let durationSec = estimateDurationSec({ text: reqText, ssml: ssml, speed: speed, repeats: safeRepeats });
+    let durationMethod = 'estimator';
+    try{
+      // Try an OGG/Opus heuristic (typical bytes/sec varies; 48000 is a rough median)
+      const byteLen = audioBuf.length;
+      const approxSec = Math.max(0.2, Math.round((byteLen / 48000) * 100) / 100);
+      if (approxSec > 0 && Math.abs(approxSec - durationSec) / Math.max(0.1,durationSec) < 0.6){
+        durationSec = approxSec; durationMethod = 'byte-heuristic';
+      }
+    }catch(_){ }
 
-});
+    return json(200, {
+      audioData: gj.audioContent,
+      audioBase64: gj.audioContent,
+      mimeType: 'audio/ogg',
+      durationEstimateSec: durationSec,
+      meta: {
+        provider: 'google',
+        voice,
+        speed: speed,
+        repeats: safeRepeats,
+        durationMethod
+      }
+    });
 
   } catch (err) {
     console.error(err);

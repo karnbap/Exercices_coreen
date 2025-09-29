@@ -99,14 +99,46 @@ async function postResultsOnce(payload) {
   // 직접 POST
   try {
     const slim = toSlimPayload(payload);
-    await fetch('/.netlify/functions/send-results', {
+    // Ask server to return full HTML view when possible to avoid client-side mojibake.
+    const res = await fetch('/.netlify/functions/send-results?html=1', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Return-HTML': '1' },
       mode: 'cors',
       body: JSON.stringify(slim)
     });
-    payload._sent = true;
-    persistBack(payload);
+
+    // If server returned HTML, open it in a new tab as a UTF-8 blob so browser renders it reliably.
+    const ctype = (res.headers.get('Content-Type') || '').toLowerCase();
+    const txt = await res.text().catch(() => '');
+    if (res.ok && ctype.includes('text/html')) {
+      try {
+        const blob = new Blob([txt], { type: 'text/html; charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        // open in a new tab/window so the student sees the nicely formatted, UTF-8 page
+        try { window.open(url, '_blank'); } catch(_){ /* fallback */ }
+        payload._sent = true;
+        persistBack(payload);
+        return payload;
+      } catch (e) {
+        // if blob/open fails, fall through to treat as normal JSON/ok
+        reportError('open-html-failed', e, payload);
+      }
+    }
+
+    // Otherwise, if server returned JSON or a plain ok, mark as sent and persist.
+    try {
+      const j = JSON.parse(txt || '{}');
+      if (!res.ok || j?.ok === false) {
+        reportError('send-results-failed', new Error('server returned error'), payload);
+      }
+    } catch (_) {
+      // non-json response — still consider sent if HTTP ok
+    }
+
+    if (res.ok) {
+      payload._sent = true;
+      persistBack(payload);
+    }
   } catch (e) {
     reportError('direct-post-failed', e, payload);
   }

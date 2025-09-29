@@ -213,7 +213,8 @@ function buildHtml(payload){
 
   const durHMS = hhmmss(durationSec);
 
-  return `
+  // Wrap the content in a complete HTML document with explicit UTF-8 charset
+  const inner = `
   <div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Noto Sans','Apple SD Gothic Neo',sans-serif;color:#0f172a;background:#f8fafc;padding:20px">
     <div style="max-width:860px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 20px rgba(2,6,23,.06);overflow:hidden">
       <div style="padding:18px 20px;border-bottom:1px solid #e5e7eb;background:#f1f5f9">
@@ -248,6 +249,20 @@ function buildHtml(payload){
       </div>
     </div>
   </div>`;
+
+  return `<!doctype html>
+  <html lang="ko">
+    <head>
+      <meta charset="utf-8">
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Résultats de l'exercice</title>
+      <style>body{margin:0;padding:0}</style>
+    </head>
+    <body>
+      ${inner}
+    </body>
+  </html>`;
 }
 
 function buildText(payload){
@@ -320,7 +335,9 @@ exports.handler = async (event) => {
       to: RESULTS_RECEIVER,
       subject,
       text: buildText(payload),
-      html: buildHtml(payload)
+      // add alternatives and explicit charset to help mail clients interpret utf-8
+      html: buildHtml(payload),
+      alternatives: [{ contentType: 'text/html; charset=utf-8', content: buildHtml(payload) }]
     });
 
     // If client asked for HTML, return the HTML page directly

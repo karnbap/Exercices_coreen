@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-09-29T05:25:08.332Z",
+  "outerHTML": "<div data-len-compare=\"\">\n  <div class=\"len-labels\" style=\"display:flex;gap:8px;align-items:center;margin-bottom:8px\">\n    <button class=\"badge accuracy-badge\" data-accuracy=\"\">정확도: —</button>\n    <button class=\"badge duration-badge\" data-durations=\"\">TTS: 2.1s · 녹음: 3.4s</button>\n  </div>\n  <div class=\"len-abs\" aria-hidden=\"true\">\n    <div class=\"len-center\" aria-hidden=\"true\"></div>\n    <div class=\"len-bar len-bar-tts\" style=\"left: 20%; width: 30%;\" title=\"TTS: 2.10s\"></div>\n    <div class=\"len-bar len-bar-rec\" style=\"left: 50%; width: 48%;\" title=\"녹음: 3.40s\"></div>\n  </div>\n</div>",
+  "tBar": {
+    "left": "20%",
+    "width": "30%",
+    "title": "TTS: 2.10s"
+  },
+  "rBar": {
+    "left": "50%",
+    "width": "48%",
+    "title": "녹음: 3.40s"
+  },
+  "badges": {
+    "duration": "TTS: 2.1s · 녹음: 3.4s"
+  },
+  "cssSnips": {
+    ".len-abs": "adient(90deg,#fde68a,#fca5a5); z-index:2; }\n.len-bar[title]{ cursor:default; }\n\n/* Absolute-difference centered bars */\n.len-abs{ position:relative; height:18px; background:transparent; }\n.len-center{ position:absolute; left:50%; top:0; bottom:0; width:2px; background:#e2e8f0; transform:translateX(-50%); }\n.len-bar{ position:absolute; top:3px; height:12px; border-radius:6px; transform-origin:left center; }\n.len-bar-t",
+    ".len-center": "default; }\n\n/* Absolute-difference centered bars */\n.len-abs{ position:relative; height:18px; background:transparent; }\n.len-center{ position:absolute; left:50%; top:0; bottom:0; width:2px; background:#e2e8f0; transform:translateX(-50%); }\n.len-bar{ position:absolute; top:3px; height:12px; border-radius:6px; transform-origin:left center; }\n.len-bar-tts{ background:linear-gradient(90deg,#bfdbfe,#93c5fd); z-index:1; }\n",
+    ".len-bar": "e2e2; color:#7f1d1d }\n.stat-icon{ vertical-align:middle; margin-right:8px; }\n\n/* length comparison bars */\n.len-compare .len-bar-bg{ position:relative; height:12px; background:#eef2ff; border-radius:8px; overflow:hidden }\n.len-compare .len-bar-tts{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#e0f2fe,#bae6fd); }\n.len-compare .len-bar-rec{ position:absolute; left:0; top:0; bottom:0; bac",
+    ".len-bar-tts": "pare .len-bar-bg{ position:relative; height:12px; background:#eef2ff; border-radius:8px; overflow:hidden }\n.len-compare .len-bar-tts{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#e0f2fe,#bae6fd); }\n.len-compare .len-bar-rec{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#fde68a,#fca5a5); opacity:0.9; mix-blend-mode:normal }\n.len-compare .len-bar-rec{ bac",
+    ".len-bar-rec": "-bar-tts{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#e0f2fe,#bae6fd); }\n.len-compare .len-bar-rec{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#fde68a,#fca5a5); opacity:0.9; mix-blend-mode:normal }\n.len-compare .len-bar-rec{ background:linear-gradient(90deg,#fde68a,#fca5a5); z-index:2; }\n.len-bar[title]{ cursor:default; }\n\n/* Absolute-difference cent",
+    ".badge": "ar-gradient(90deg,#fde68a,#fca5a5); z-index:2; }\n.len-bar[title]{ cursor:default; }\n\n/* Badges for accuracy/duration */\n.badge{ border:1px solid #e6eef6; background:#fff; padding:6px 10px; border-radius:999px; font-weight:600; color:#0f172a; box-shadow:0 4px 10px rgba(2,6,23,0.04); cursor:default; }\n.accuracy-badge svg{ vertical-align:middle; margin-right:6px; }\n.duration-badge{ font-size:0.95rem; color:#475569 }\n\n/*",
+    ".accuracy-badge": "x 10px; border-radius:999px; font-weight:600; color:#0f172a; box-shadow:0 4px 10px rgba(2,6,23,0.04); cursor:default; }\n.accuracy-badge svg{ vertical-align:middle; margin-right:6px; }\n.duration-badge{ font-size:0.95rem; color:#475569 }\n\n/* Tooltip: simple hover title fallback is used; add slight transition for width changes */\n.len-bar{ transition: width 220ms ease; }\n",
+    ".duration-badge": "-shadow:0 4px 10px rgba(2,6,23,0.04); cursor:default; }\n.accuracy-badge svg{ vertical-align:middle; margin-right:6px; }\n.duration-badge{ font-size:0.95rem; color:#475569 }\n\n/* Tooltip: simple hover title fallback is used; add slight transition for width changes */\n.len-bar{ transition: width 220ms ease; }\n"
+  }
+}
