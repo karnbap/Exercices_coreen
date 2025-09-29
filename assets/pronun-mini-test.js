@@ -84,11 +84,11 @@ function makeCard(idx, sent){
     <div class="mt-3 sum-box">
       <div class="sum-title">틀린 부분 / Parties non conformes</div>
       <div class="sum-val text-base leading-7">
-        <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span data-ref-display>—</span></div>
-        <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span data-hyp-display>—</span></div>
+        <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span class="ref-bubble" data-ref-display>—</span></div>
+        <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span class="hyp-bubble" data-hyp-display>—</span></div>
         <div class="sum-stats mt-2" aria-live="polite">
-          <div class="accuracy" data-accuracy style="font-size:1.55rem;font-weight:800;color:#0f172a">정확도: —</div>
-          <div class="durations text-sm text-slate-600" data-durations>길이: — / —</div>
+          <div class="accuracy" data-accuracy><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</div>
+          <div class="durations text-sm text-slate-600" data-durations><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="#334155" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="12" width="3" height="6" rx="0.5" fill="#334155"/><rect x="11" y="8" width="3" height="10" rx="0.5" fill="#334155"/><rect x="16" y="4" width="3" height="14" rx="0.5" fill="#334155"/></svg> 길이: — / —</div>
         </div>
       </div>
       <div class="sum-sub mt-1" data-score></div>
@@ -179,11 +179,11 @@ function makeCard(idx, sent){
       else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
     }
 
-    // helper: map keep flags (computed on normalized jamo arrays) back to
-    // the original raw string for display. We walk the original string and
-    // compute how many jamo units each visible char corresponds to in the
-    // normalized jamo sequence. Then we consult the keepArr (which was
-    // computed on the normalized jamo sequence) by mapping indices.
+  // helper: map keep flags (computed on normalized jamo arrays) back to
+  // the original raw string for display. We walk the original string and
+  // compute how many jamo units each visible char corresponds to in the
+  // normalized jamo sequence. Then we consult the keepArr (which was
+  // computed on the normalized jamo sequence) by mapping indices.
     function buildHtmlFromKeep(rawOriginal, keepArr, normSource){
       // Map normalized jamo positions (keepArr indices) back to original
       // characters robustly. We align normalized characters to original
@@ -195,43 +195,55 @@ function makeCard(idx, sent){
       const normChars = [...norm];
 
       function jamoCount(ch){
+        // More conservative: treat Hangul syllable with jongseong as 3 jamo,
+        // without jongseong as 2. Non-Hangul as 1. Ensure undefineds are handled.
+        if (!ch) return 1;
         if (/[가-힣]/.test(ch)){
-          const code = ch.codePointAt(0) - 0xAC00;
-          return (code % 28) ? 3 : 2;
+          const code = ch.codePointAt(0);
+          const base = code - 0xAC00;
+          if (base < 0 || base > (0xD7A3 - 0xAC00)) return 1;
+          const jong = base % 28;
+          return jong === 0 ? 2 : 3;
         }
         return 1;
       }
 
-      // Greedy alignment: for each normChar, decide which rawChar it maps to.
-      const normCharToRaw = new Array(normChars.length).fill(0);
+      // Greedy alignment with safeguards: try to align sequences but avoid
+      // mapping many norm chars to the last raw char (which caused trailing
+      // characters to be marked wrong). We'll distribute leftover norm chars
+      // across remaining raw chars proportionally.
+      const normCharToRaw = new Array(normChars.length).fill(-1);
       let iNorm = 0, iRaw = 0;
       while (iNorm < normChars.length && iRaw < rawChars.length){
         if (normChars[iNorm] === rawChars[iRaw]){
           normCharToRaw[iNorm] = iRaw; iNorm++; iRaw++; continue;
         }
-        // lookahead in raw for a match to current norm char
+        // lookahead in raw for a near match within small window
         let found = -1;
-        for (let k=1;k<=4 && (iRaw+k)<rawChars.length;k++){
+        for (let k=1;k<=2 && (iRaw+k)<rawChars.length;k++){
           if (normChars[iNorm] === rawChars[iRaw+k]){ found = iRaw+k; break; }
         }
-        if (found !== -1){
-          // map intermediate norm chars to current iRaw, then advance raw
-          normCharToRaw[iNorm] = found; iNorm++; iRaw = found+1; continue;
-        }
+        if (found !== -1){ normCharToRaw[iNorm] = found; iNorm++; iRaw = found+1; continue; }
         // lookahead in norm for match to current raw char
         found = -1;
-        for (let k=1;k<=4 && (iNorm+k)<normChars.length;k++){
+        for (let k=1;k<=2 && (iNorm+k)<normChars.length;k++){
           if (normChars[iNorm+k] === rawChars[iRaw]){ found = iNorm+k; break; }
         }
-        if (found !== -1){
-          // map current normChar to current raw; advance norm
-          normCharToRaw[iNorm] = iRaw; iNorm++; continue;
-        }
-        // fallback: assign current norm char to current raw and advance norm
+        if (found !== -1){ normCharToRaw[iNorm] = iRaw; iNorm++; continue; }
+        // fallback: map current norm char to current raw and advance norm
         normCharToRaw[iNorm] = iRaw; iNorm++;
       }
-      // remaining norm chars map to last raw index
-      while (iNorm < normChars.length){ normCharToRaw[iNorm] = Math.max(0, rawChars.length-1); iNorm++; }
+      // if some norm chars remain, distribute them over remaining raw chars
+      if (iNorm < normChars.length){
+        const remainingNorm = normChars.length - iNorm;
+        const remainingRaw = Math.max(1, rawChars.length - iRaw);
+        let rIndex = iRaw;
+        for (let k=0;k<remainingNorm;k++){
+          normCharToRaw[iNorm + k] = Math.min(rawChars.length-1, rIndex);
+          // advance rIndex occasionally to spread mapping
+          if (((k+1) * remainingRaw) / remainingNorm > (rIndex - iRaw + 1)) rIndex = Math.min(rawChars.length-1, rIndex+1);
+        }
+      }
 
       // Build mapping from norm-jamo-index -> rawCharIndex
       const normJamoToRawChar = [];
@@ -334,7 +346,8 @@ function makeCard(idx, sent){
     if (window.LiveSTT && typeof LiveSTT.start==='function'){
       const { stop } = LiveSTT.start({
         lang:'ko-KR',
-        onPartial(txt){ liveBox.textContent = (txt||'').trim() || '…'; }
+        // show raw interim text (don't apply normalization/auto-corrections here)
+        onPartial(txt){ liveBox.textContent = (txt===undefined || txt===null) ? '…' : String(txt).trim() || '…'; }
       });
       return stop;
     }
@@ -346,9 +359,11 @@ function makeCard(idx, sent){
     rec.interimResults = true;
     rec.continuous = true;
     rec.onresult = (ev)=>{
+      // prefer the raw interim transcript chunk to avoid Web Speech API normalizations
       let partial = '';
       for (let i=ev.resultIndex; i<ev.results.length; i++){
-        partial += ev.results[i][0].transcript || '';
+        // some browsers include alternatives; pick the raw transcript
+        partial += (ev.results[i][0].transcriptRaw || ev.results[i][0].transcript || '') || '';
       }
       liveBox.textContent = (partial||'').trim() || '…';
     };
@@ -359,7 +374,7 @@ function makeCard(idx, sent){
 
   Pronun.mount(host, {
     getReferenceText: getRef,
-    onResult: ({ status, transcript, accuracy, duration })=>{
+  onResult: ({ status, transcript, transcriptRaw, accuracy, duration })=>{
       if (status==='retry' || !transcript){
         if (refDisplay) refDisplay.textContent = '—';
         if (hypDisplay) hypDisplay.textContent = '—';
@@ -370,17 +385,19 @@ function makeCard(idx, sent){
         // 발음 채점(공용 scoring.js: 자모 기반, 띄어쓰기/문장부호 무시)
       const ref = sent.ko;
       try {
+        // Prefer raw transcript when available to avoid server/client auto-corrections
+        const finalHypRaw = (typeof transcriptRaw === 'string' && transcriptRaw.trim().length) ? transcriptRaw : transcript;
         // 이 테스트 모델 한정: 채점은 ref-aware 정규화된 복사본으로만 수행(원문 UI는 변경하지 않음)
         const normRef = normalizeForScoring(ref, ref);
-        const normHyp = normalizeForScoring(ref, transcript);
+        const normHyp = normalizeForScoring(ref, finalHypRaw);
         const { pct } = Scoring.gradePronun(normRef, normHyp, 0.10); // tol=10%
-        const { refHtml, hypHtml } = generateDualHtml(ref, transcript);
-        if (refDisplay) refDisplay.innerHTML = refHtml;
-        if (hypDisplay) hypDisplay.innerHTML = hypHtml;
+        const { refHtml, hypHtml } = generateDualHtml(ref, finalHypRaw);
+  if (refDisplay) refDisplay.innerHTML = refHtml;
+  if (hypDisplay) hypDisplay.innerHTML = hypHtml;
         // show accuracy prominently and durations (TTS vs my recording)
         const accuracyEl = host.querySelector('[data-accuracy]');
         const durationsEl = host.querySelector('[data-durations]');
-        if (accuracyEl) accuracyEl.textContent = `정확도: ${pct}%`;
+  if (accuracyEl) accuracyEl.textContent = `정확도: ${pct}%`;
         // try to find tts duration from listen button _audio (stored when played)
         let ttsDur = null;
         try{
@@ -390,7 +407,7 @@ function makeCard(idx, sent){
         }catch(_){ ttsDur = null; }
         const myRec = duration ? `${duration.toFixed(1)}s` : '?s';
         const ttsStr = ttsDur ? `${ttsDur.toFixed(1)}s` : 'TTS ?s';
-        if (durationsEl) durationsEl.textContent = `TTS: ${ttsStr} · 내 녹음: ${myRec}`;
+  if (durationsEl) durationsEl.textContent = `TTS: ${ttsStr} · 내 녹음: ${myRec}`;
         // persist durations & highlight HTML on the card element for send-results
         try{
           const cardEl = wrap;
@@ -398,9 +415,9 @@ function makeCard(idx, sent){
             if (typeof duration === 'number') cardEl.dataset.recDuration = String(Number(duration.toFixed(2)));
             if (typeof ttsDur === 'number') cardEl.dataset.ttsDuration = String(Number((ttsDur||0).toFixed(2)));
             // store generated highlight HTML (safe-ish: server sanitizes too)
-            const refHtmlNode = refDisplay; const hypHtmlNode = hypDisplay;
-            cardEl.dataset.refHtml = refHtmlNode ? refHtmlNode.innerHTML : '';
-            cardEl.dataset.hypHtml = hypHtmlNode ? hypHtmlNode.innerHTML : '';
+              const refHtmlNode = refDisplay; const hypHtmlNode = hypDisplay;
+              cardEl.dataset.refHtml = refHtmlNode ? refHtmlNode.innerHTML : '';
+              cardEl.dataset.hypHtml = hypHtmlNode ? hypHtmlNode.innerHTML : '';
           }
         }catch(_){ }
         // also update compact score box
@@ -579,7 +596,7 @@ function mergeStopAndEvaluate(){
   box-shadow: 0 6px 20px rgba(14,165,233,0.08);
   border-radius:12px;
   padding:18px;
-  padding-top:40px; /* extra space for absolute badge */
+  padding-top:56px; /* extra space for absolute badge; increased to avoid overlap */
   margin-bottom:18px;
 }
 .card .q-badge{
@@ -606,8 +623,22 @@ function mergeStopAndEvaluate(){
 .sum-box{ background: #ffffff; border: 1px solid #e6eef6; padding:12px; border-radius:10px; }
 .sum-box .sum-title{ font-weight:700; color:#0f172a; margin-bottom:8px; }
 .sum-box .ref-line strong, .sum-box .hyp-line strong{ width:180px; }
-.sum-box .accuracy{ color:#065f46; }
-.sum-box .durations{ color:#334155; }
+.sum-box .accuracy{ color:#065f46; font-size:1.02rem; font-weight:700; }
+.sum-box .durations{ color:#334155; font-size:1.02rem; }
+.sum-box .hyp-line span{ font-size:1.18rem; /* 사용자 문장은 약간 덜 강조 */ }
+/* ref/hyp bubbles (chip style) */
+.ref-bubble, .hyp-bubble{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:999px;
+  background:#f8fafc;
+  border:1px solid #e6eef6;
+  color:#0f172a;
+  font-size:1.05rem;
+}
+.ref-bubble{ background:linear-gradient(90deg,#ffffff,#f1f5f9); }
+.hyp-bubble{ background:linear-gradient(90deg,#fff7f7,#fff); border-color:#fee2e2; color:#7f1d1d }
+.stat-icon{ vertical-align:middle; margin-right:8px; }
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');
@@ -619,6 +650,45 @@ function mergeStopAndEvaluate(){
 document.addEventListener('DOMContentLoaded', ()=>{
   const mount = document.getElementById('cards');
   SENTENCES.forEach((s, i)=> mount.appendChild(makeCard(i, s)));
+
+  // Apply finish button class if available
+  const finishButton = document.getElementById('finish-btn');
+  if (finishButton) finishButton.classList.add('finish-gold');
+
+  // Top banner asking for name (KO/FR)
+  if (!document.getElementById('pronun-name-banner')){
+    const b = document.createElement('div');
+    b.id = 'pronun-name-banner';
+    b.style.cssText = 'background:linear-gradient(90deg,#f0f9ff,#eef2ff);padding:8px 14px;border-bottom:1px solid #e6eef6;text-align:center;font-weight:700;color:#0f172a';
+    b.innerHTML = '연습 시작 전에 꼭 이름을 입력해주세요. / Entrez votre nom avant de commencer.';
+    document.body.insertAdjacentElement('afterbegin', b);
+  }
+
+  // Helper to enable/disable controls that require a name
+  window.enableNameRequiredControls = function(){
+    const name = (localStorage.getItem('pronunStudentName')||'').trim();
+    Array.from(document.querySelectorAll('[data-requires-name]')).forEach(btn=>{
+      try{ btn.disabled = !name; }catch(_){/*ignore*/}
+    });
+    const b = document.getElementById('pronun-name-banner');
+    if (b) b.style.display = name ? 'none' : 'block';
+  };
+
+  // initial check
+  try{ enableNameRequiredControls(); }catch(_){/*ignore*/}
+
+  // Intercept clicks on controls requiring a name to show modal if missing
+  document.body.addEventListener('click', (e)=>{
+    const btn = e.target.closest && e.target.closest('[data-requires-name]');
+    if (!btn) return;
+    const name = (localStorage.getItem('pronunStudentName')||'').trim();
+    if (!name){
+      e.preventDefault();
+      const modal = document.getElementById('pronun-student-modal');
+      if (modal) modal.style.display='flex';
+      return false;
+    }
+  }, true);
 
   // finish 버튼 동작은 파일 후반에서 통합적으로 설정합니다.
 
@@ -682,7 +752,16 @@ if (recordButton) {
     </div>
   `;
   document.body.appendChild(modal);
+  const nameInput = modal.querySelector('#pronun-student-name');
   modal.querySelector('#pronun-student-cancel').addEventListener('click', ()=>{ modal.style.display='none'; });
+  modal.querySelector('#pronun-student-ok').addEventListener('click', ()=>{
+    const v = (nameInput.value||'').trim();
+    if (!v) { alert('이름을 입력하세요 / Entrez le nom'); return; }
+    try{ localStorage.setItem('pronunStudentName', v); }catch(_){}
+    modal.style.display='none';
+    // enable controls once name is set
+    try{ enableNameRequiredControls(); }catch(_){}
+  });
 });
 
 // Generic result modal / error modal used for success & retry UI
@@ -790,9 +869,20 @@ if (finishButton) {
     const studentName = await new Promise(resolve => {
       const ok = document.getElementById('pronun-student-ok');
       const cancel = document.getElementById('pronun-student-cancel');
-      const cleanup = () => { ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); };
-      const onOk = () => { cleanup(); modal.style.display='none'; resolve((nameInput.value||'').trim()); };
-      const onCancel = () => { cleanup(); modal.style.display='none'; resolve(null); };
+      // If modal/buttons are missing for any reason, fall back to prompt
+      if (!modal || !ok || !cancel || !nameInput) {
+        try{ if (modal) modal.style.display='none'; }catch(_){ }
+        const v = window.prompt('학생 이름을 입력하세요 / Entrez le nom de l\'élève', '');
+        resolve(v === null ? null : (String(v||'').trim()));
+        return;
+      }
+
+      const cleanup = () => {
+        try{ ok.removeEventListener('click', onOk); }catch(_){}
+        try{ cancel.removeEventListener('click', onCancel); }catch(_){}
+      };
+      const onOk = () => { cleanup(); try{ modal.style.display='none'; }catch(_){}; resolve((nameInput.value||'').trim()); };
+      const onCancel = () => { cleanup(); try{ modal.style.display='none'; }catch(_){}; resolve(null); };
       ok.addEventListener('click', onOk); cancel.addEventListener('click', onCancel);
     });
 

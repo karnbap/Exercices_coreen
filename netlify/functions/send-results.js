@@ -30,6 +30,58 @@ function esc(s){
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
 }
+
+// Simple highlight HTML sanitizer (no external deps)
+// Allows only a small set of tags and very limited inline styles (color/background-color/font-weight)
+function sanitizeHighlightHtml(raw){
+  if (!raw) return '';
+  let s = String(raw);
+  // remove script/style blocks
+  s = s.replace(/<(?:script|style)[\s\S]*?>[\s\S]*?<\/(?:script|style)>/gi, '');
+  // remove event handler attributes
+  s = s.replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+
+  const allowedTags = new Set(['span','ins','del','strong','em','b','i','u','br']);
+
+  // process tags: keep allowed tags, strip others
+  s = s.replace(/<([^>]+)>/gi, (m, inner) => {
+    // detect end tag
+    if (/^\/?\s*([a-z0-9]+)/i.test(inner)){
+      const isEnd = inner.trim().startsWith('/');
+      const tagName = inner.replace(/^\/?\s*([a-z0-9]+).*$/i,'$1').toLowerCase();
+      if (!allowedTags.has(tagName)) return ''; // drop tag
+      if (isEnd) return `</${tagName}>`;
+      // parse attributes (only style allowed)
+      const styleMatch = inner.match(/style\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      let cleanStyle = '';
+      if (styleMatch){
+        const rawStyle = styleMatch[2]||styleMatch[3]||styleMatch[4]||'';
+        // allow only color, background-color, font-weight
+        const allowed = [];
+        const re = /(?:color|background-color|font-weight)\s*:\s*([^;]+)\s*(?:;|$)/gi;
+        let m2;
+        while((m2=re.exec(rawStyle))){
+          const prop = RegExp.lastMatch.split(':')[0] || '';
+          const val = (m2[1]||'').trim();
+          // basic value whitelist: hex, rgb or word
+          if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(val) || /^rgb\(/i.test(val) || /^[a-z\-]+$/i.test(val)){
+            allowed.push(`${prop}:${val}`);
+          }
+        }
+        if (allowed.length) cleanStyle = ` style="${allowed.join(';')}"`;
+      }
+      return `<${tagName}${cleanStyle}>`;
+    }
+    return '';
+  });
+
+  // finally escape any stray angle brackets
+  s = s.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // but restore allowed tags (they were escaped) - simpler: unescape allowed tag patterns produced above
+  s = s.replace(/&lt;(\/?(span|ins|del|strong|em|b|i|u|br)(?:[^&]*)&gt;)/gi, '<$1>');
+  // note: this is conservative; if something odd remains it'll be escaped
+  return s;
+}
 function fmtDateISO(s){
   try { return new Date(s || Date.now()).toISOString(); } catch { return new Date().toISOString(); }
 }
@@ -132,8 +184,8 @@ function buildHtml(payload){
     const icon = ok ? '✅' : '❌';
     const ttsDur = (q?.pronunciation && Number.isFinite(q.pronunciation.ttsDuration)) ? `${Number(q.pronunciation.ttsDuration).toFixed(1)}s` : '–';
     const recDur = (q?.pronunciation && Number.isFinite(q.pronunciation.recDuration)) ? `${Number(q.pronunciation.recDuration).toFixed(1)}s` : '–';
-    const refH = q?.refHtml ? q.refHtml : esc(q?.ko||'');
-    const hypH = q?.hypHtml ? q.hypHtml : esc('');
+  const refH = q?.refHtml ? sanitizeHighlightHtml(q.refHtml) : esc(q?.ko||'');
+  const hypH = q?.hypHtml ? sanitizeHighlightHtml(q.hypHtml) : esc('');
     return `
       <tr>
         <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${n}</td>
@@ -151,8 +203,8 @@ function buildHtml(payload){
       <tr>
         <td colspan="11" style="padding:8px 12px;border-bottom:1px solid #e5e7eb;background:#fbfbfd">
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <div style="flex:1;min-width:240px"><strong>Référence / 원문</strong><div style="margin-top:6px;color:#0f172a">${refH}</div></div>
-            <div style="flex:1;min-width:240px"><strong>Prononciation / 내 발음</strong><div style="margin-top:6px;color:#0f172a">${hypH}</div></div>
+            <div style="flex:1;min-width:240px"><strong>Référence / 원문</strong><div style="margin-top:6px;color:#0f172a;padding:10px;border-radius:999px;background:#f8fafc;border:1px solid #e6eef6">${refH}</div></div>
+            <div style="flex:1;min-width:240px"><strong>Prononciation / 내 발음</strong><div style="margin-top:6px;color:#7f1d1d;padding:10px;border-radius:999px;background:linear-gradient(90deg,#fff7f7,#fff);border:1px solid #fee2e2">${hypH}</div></div>
             <div style="min-width:160px;color:#475569;font-size:13px;text-align:right">Durée TTS: ${ttsDur}<br/>Durée enregistrement: ${recDur}</div>
           </div>
         </td>
