@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git 되돌리기 가이드 / Guide Git pour revenir en arrière</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Gowun Batang', sans-serif;
+            background-color: #f1f1f1;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.03"/></svg>');
+        }
+        .korean-title {
+            font-family: 'Gowun Batang', serif;
+            font-weight: 700;
+        }
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .command {
+            color: #22d3ee;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
+        .info {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+        }
+        .success {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6">
+    <div class="max-w-4xl mx-auto bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-200/80">
+        
+        <!-- Header -->
+        <header class="p-8 text-center border-b border-slate-200">
+            <h1 class="text-4xl font-bold text-slate-800 korean-title mb-2">이전 코밋으로 되돌리기</h1>
+            <p class="text-2xl text-slate-600 mb-4">Comment revenir à un commit précédent</p>
+            <p class="text-slate-500">Git 버전 관리 되돌리기 완전 가이드 / Guide complet pour revenir en arrière avec Git</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="p-6 bg-slate-50 border-b border-slate-200">
+            <div class="flex flex-wrap gap-4 justify-center">
+                <a href="#reset" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition">git reset</a>
+                <a href="#revert" class="px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition">git revert</a>
+                <a href="#checkout" class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition">git checkout</a>
+                <a href="#scenarios" class="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition">시나리오 / Scénarios</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="p-8 space-y-8">
+            
+            <!-- Introduction -->
+            <section class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800 korean-title">소개 / Introduction</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-semibold text-slate-700">한국어 🇰🇷</h3>
+                        <p class="text-slate-600">
+                            Git에서 이전 상태로 되돌리는 방법에는 여러 가지가 있습니다. 각각의 방법은 다른 상황에서 사용되며, 
+                            작업 내용을 잃지 않고 안전하게 되돌리는 것이 중요합니다.
+                        </p>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-semibold text-slate-700">Français 🇫🇷</h3>
+                        <p class="text-slate-600">
+                            Il existe plusieurs façons de revenir en arrière avec Git. Chaque méthode est utilisée dans 
+                            différentes situations, et il est important de revenir en arrière en toute sécurité sans perdre votre travail.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Git Reset -->
+            <section id="reset" class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800 korean-title">git reset 사용법</h2>
+                
+                <div class="warning p-4 rounded-lg">
+                    <p class="font-semibold text-amber-800 mb-2">⚠️ 주의사항 / Attention</p>
+                    <div class="grid md:grid-cols-2 gap-4 text-amber-700">
+                        <div>
+                            <strong>한국어:</strong> git reset은 커밋 히스토리를 변경합니다. 
+                            이미 푸시한 커밋에는 사용하지 마세요!
+                        </div>
+                        <div>
+                            <strong>Français:</strong> git reset modifie l'historique des commits. 
+                            Ne l'utilisez pas sur des commits déjà poussés !
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">1. Soft Reset (작업 내용 보존 / Préserver le travail)</h3>
+                        <div class="code-block">
+                            <span class="command">git reset --soft HEAD~1</span><br>
+                            <span class="text-slate-400"># 마지막 커밋을 취소하지만 변경사항은 staging area에 보존</span><br>
+                            <span class="text-slate-400"># Annule le dernier commit mais préserve les changements dans le staging</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">2. Mixed Reset (기본값 / Par défaut)</h3>
+                        <div class="code-block">
+                            <span class="command">git reset HEAD~1</span><br>
+                            <span class="text-slate-400"># 커밋과 staging을 취소하지만 작업 디렉토리는 보존</span><br>
+                            <span class="text-slate-400"># Annule le commit et le staging mais préserve le répertoire de travail</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">3. Hard Reset (모든 것 삭제 / Tout supprimer)</h3>
+                        <div class="code-block">
+                            <span class="command">git reset --hard HEAD~1</span><br>
+                            <span class="text-slate-400"># 모든 변경사항을 완전히 삭제 (위험!)</span><br>
+                            <span class="text-slate-400"># Supprime complètement tous les changements (dangereux !)</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Git Revert -->
+            <section id="revert" class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800 korean-title">git revert 사용법</h2>
+                
+                <div class="success p-4 rounded-lg">
+                    <p class="font-semibold text-green-800 mb-2">✅ 안전한 방법 / Méthode sûre</p>
+                    <div class="grid md:grid-cols-2 gap-4 text-green-700">
+                        <div>
+                            <strong>한국어:</strong> git revert는 새로운 커밋을 만들어서 이전 변경사항을 되돌립니다. 
+                            히스토리를 보존하므로 협업시 안전합니다.
+                        </div>
+                        <div>
+                            <strong>Français:</strong> git revert crée un nouveau commit qui annule les changements précédents. 
+                            Il préserve l'historique, donc sûr pour la collaboration.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">특정 커밋 되돌리기 / Annuler un commit spécifique</h3>
+                        <div class="code-block">
+                            <span class="command">git revert &lt;commit-hash&gt;</span><br>
+                            <span class="text-slate-400"># 예시: git revert abc123</span><br>
+                            <span class="text-slate-400"># Exemple: git revert abc123</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">마지막 커밋 되돌리기 / Annuler le dernier commit</h3>
+                        <div class="code-block">
+                            <span class="command">git revert HEAD</span><br>
+                            <span class="text-slate-400"># 가장 최근 커밋을 되돌리는 새 커밋 생성</span><br>
+                            <span class="text-slate-400"># Crée un nouveau commit qui annule le commit le plus récent</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">여러 커밋 되돌리기 / Annuler plusieurs commits</h3>
+                        <div class="code-block">
+                            <span class="command">git revert HEAD~3..HEAD</span><br>
+                            <span class="text-slate-400"># 최근 3개 커밋을 각각 되돌리는 커밋들 생성</span><br>
+                            <span class="text-slate-400"># Crée des commits qui annulent les 3 derniers commits</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Git Checkout -->
+            <section id="checkout" class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800 korean-title">git checkout 사용법</h2>
+                
+                <div class="info p-4 rounded-lg">
+                    <p class="font-semibold text-blue-800 mb-2">ℹ️ 임시 확인 / Vérification temporaire</p>
+                    <div class="grid md:grid-cols-2 gap-4 text-blue-700">
+                        <div>
+                            <strong>한국어:</strong> git checkout은 이전 상태를 임시로 확인할 때 사용합니다. 
+                            영구적인 변경은 아닙니다.
+                        </div>
+                        <div>
+                            <strong>Français:</strong> git checkout est utilisé pour vérifier temporairement un état précédent. 
+                            Ce n'est pas un changement permanent.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">특정 커밋으로 이동 / Aller à un commit spécifique</h3>
+                        <div class="code-block">
+                            <span class="command">git checkout &lt;commit-hash&gt;</span><br>
+                            <span class="text-slate-400"># 특정 커밋의 상태로 임시 이동 (detached HEAD)</span><br>
+                            <span class="text-slate-400"># Se déplace temporairement vers un commit spécifique (detached HEAD)</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">특정 파일만 되돌리기 / Restaurer un fichier spécifique</h3>
+                        <div class="code-block">
+                            <span class="command">git checkout HEAD~1 -- filename.txt</span><br>
+                            <span class="text-slate-400"># 특정 파일만 이전 버전으로 복원</span><br>
+                            <span class="text-slate-400"># Restaure seulement un fichier spécifique à une version précédente</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3">현재 브랜치로 돌아가기 / Retourner à la branche actuelle</h3>
+                        <div class="code-block">
+                            <span class="command">git checkout main</span><br>
+                            <span class="text-slate-400"># 또는 git switch main (최신 Git 버전)</span><br>
+                            <span class="text-slate-400"># ou git switch main (versions Git récentes)</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scenarios -->
+            <section id="scenarios" class="space-y-6">
+                <h2 class="text-2xl font-bold text-slate-800 korean-title">상황별 가이드 / Guide par scénario</h2>
+                
+                <div class="grid gap-6">
+                    <!-- Scenario 1 -->
+                    <div class="border border-slate-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">🔄 시나리오 1: 방금 커밋한 내용을 수정하고 싶을 때</h3>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <strong>한국어:</strong> 커밋 메시지를 잘못 작성했거나 파일을 빼먹었을 때
+                            </div>
+                            <div>
+                                <strong>Français:</strong> Quand vous avez mal écrit le message de commit ou oublié un fichier
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <span class="command">git reset --soft HEAD~1</span><br>
+                            <span class="text-slate-400"># 변경사항 수정 후</span><br>
+                            <span class="command">git add .</span><br>
+                            <span class="command">git commit -m "올바른 커밋 메시지"</span>
+                        </div>
+                    </div>
+
+                    <!-- Scenario 2 -->
+                    <div class="border border-slate-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">🚫 시나리오 2: 이미 푸시한 커밋을 되돌리고 싶을 때</h3>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <strong>한국어:</strong> 다른 사람들과 공유한 커밋을 안전하게 되돌리기
+                            </div>
+                            <div>
+                                <strong>Français:</strong> Annuler en toute sécurité un commit partagé avec d'autres
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <span class="command">git revert &lt;commit-hash&gt;</span><br>
+                            <span class="command">git push origin main</span><br>
+                            <span class="text-slate-400"># 새로운 "되돌리기" 커밋이 생성됨</span>
+                        </div>
+                    </div>
+
+                    <!-- Scenario 3 -->
+                    <div class="border border-slate-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-4">🔍 시나리오 3: 이전 버전을 확인만 하고 싶을 때</h3>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <strong>한국어:</strong> 이전 상태를 보고 싶지만 변경하고 싶지는 않을 때
+                            </div>
+                            <div>
+                                <strong>Français:</strong> Quand vous voulez voir l'état précédent sans le modifier
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <span class="command">git log --oneline</span><br>
+                            <span class="text-slate-400"># 커밋 해시 확인 후</span><br>
+                            <span class="command">git checkout &lt;commit-hash&gt;</span><br>
+                            <span class="text-slate-400"># 확인 후 돌아가기</span><br>
+                            <span class="command">git checkout main</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Reference -->
+            <section class="bg-slate-50 p-6 rounded-lg">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 korean-title">빠른 참조 / Référence rapide</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold text-slate-700 mb-3">안전한 방법 / Méthodes sûres</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li>✅ <code class="bg-gray-200 px-2 py-1 rounded">git revert</code> - 협업시 사용 / Pour la collaboration</li>
+                            <li>✅ <code class="bg-gray-200 px-2 py-1 rounded">git checkout</code> - 임시 확인 / Vérification temporaire</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700 mb-3">주의가 필요한 방법 / Méthodes à utiliser avec précaution</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li>⚠️ <code class="bg-gray-200 px-2 py-1 rounded">git reset --soft</code> - 로컬에서만 / Local seulement</li>
+                            <li>⚠️ <code class="bg-gray-200 px-2 py-1 rounded">git reset --mixed</code> - 로컬에서만 / Local seulement</li>
+                            <li>🚨 <code class="bg-gray-200 px-2 py-1 rounded">git reset --hard</code> - 매우 위험 / Très dangereux</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="p-6 bg-slate-50 border-t border-slate-200 text-center">
+            <div class="mb-4">
+                <a href="index.html" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    ← 연습문제로 돌아가기 / Retour aux exercices
+                </a>
+            </div>
+            <p class="text-slate-500 text-sm">
+                made by <span class="font-semibold">성일, Pongdang</span> · 
+                <a href="mailto:Lapeace29@gmail.com" class="underline">Lapeace29@gmail.com</a>
+            </p>
+        </footer>
+
+    </div>
+</body>
+</html>
