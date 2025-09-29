@@ -54,15 +54,24 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
 function makeCard(idx, sent){
   const wrap = document.createElement('section');
   wrap.className = 'card';
-  // promptText: for problems 10+ (idx >= 9) blank a couple of initial hangul syllables
+  // 문제 10번부터: 랜덤 위치에 2개의 한글 음절을 ▢로 블랭킹
   let promptText = sent.ko;
   if (typeof idx === 'number' && idx >= 9 && sent.ko){
     const chars = Array.from(String(sent.ko));
-    let blanks = 0;
-    for (let i=0;i<chars.length && blanks<2;i++){
-      if (/\s/.test(chars[i])) continue;
-      if (/[가-힣]/.test(chars[i])){ chars[i] = '▢'; blanks++; }
+    // 한글 음절 인덱스만 추출
+    const hangulIdxs = chars.map((ch,i)=>/[가-힣]/.test(ch)?i:null).filter(i=>i!==null);
+    // 문장 길이에 따라 빈칸 개수 결정: 짧으면 3개, 길면 4개
+    const syllableCount = hangulIdxs.length;
+    const blanksWanted = syllableCount >= 12 ? 4 : 3;
+    // 랜덤으로 blanksWanted개 선택 (중복 없이)
+    const pool = hangulIdxs.slice();
+    const pick = [];
+    while (pick.length < blanksWanted && pool.length){
+      const r = Math.floor(Math.random()*pool.length);
+      pick.push(pool[r]);
+      pool.splice(r,1);
     }
+    pick.forEach(i=>{ chars[i]='▢'; });
     promptText = chars.join('');
   }
 
@@ -627,23 +636,9 @@ function makeCard(idx, sent){
       help2Btn.addEventListener('click', ()=>{
         if (!sent.ko) { hintDisplay.textContent = ''; hintDisplay.dataset.hint2 = '0'; return; }
         if (hintDisplay.dataset.hint2 === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.hint2 = '0'; return; }
-        const src = String(sent.ko || '');
-        // For problems 10+ (idx >= 9): show 주요 단어 한글/불어 list
-        if (typeof idx === 'number' && idx >= 9){
-          const kor = (sent.hint1 || '').trim();
-          const frParts = (sent.hint2 || '').split(/[,\/|·]/).map(p=>p.trim()).filter(Boolean).map(p=> p.split('=')[1] ? p.split('=')[1].trim() : '');
-          const fr = frParts.filter(Boolean).join(', ');
-          const display = kor ? (kor + (fr ? ' · ' + fr : '')) : (fr || '—');
-          hintDisplay.textContent = display; hintDisplay.dataset.hint2 = '1'; return;
-        }
-        // Otherwise blank only keywords
-        function extractKeywords(s){ if (!s) return []; return s.split(/[\/|,·]/).map(p=>p.trim()).filter(Boolean).map(p=>p.split('=')[0].trim()); }
-        let keywords = extractKeywords(sent.hint2 || ''); if (!keywords.length) keywords = extractKeywords(sent.hint1 || '');
-        if (!keywords.length){ hintDisplay.textContent = src.replace(/[^ -\u007F\s]/g,'▢'); hintDisplay.dataset.hint2 = '1'; return; }
-        keywords = Array.from(new Set(keywords)).sort((a,b)=>b.length - a.length);
-        let out = src; function esc(s){ return s.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&'); }
-        keywords.forEach(kw=>{ const k=(kw||'').trim(); if (!k) return; try{ out = out.replace(new RegExp(esc(k), 'g'), (m)=> m.split('').map(ch => (/\s/.test(ch) ? ch : '▢')).join('')); }catch(_){ } });
-        hintDisplay.textContent = out; hintDisplay.dataset.hint2 = '1';
+        // 전체 문장 보여주기 (빈칸 없이)
+        hintDisplay.textContent = sent.ko;
+        hintDisplay.dataset.hint2 = '1';
       });
     }
   }catch(_){/*ignore*/}
