@@ -250,3 +250,10 @@ function deriveTips(refC, hypC){
 
   return tips;
 }
+
+// Add debugging logs to analyze pronunciation
+console.log('Reference Text:', referenceText);
+console.log('Recorded Transcript:', transcriptKo);
+console.log('Normalized Reference:', koCanon(referenceText));
+console.log('Normalized Transcript:', koCanon(transcriptKo));
+console.log('Similarity Score:', similarity(koCanon(referenceText), koCanon(transcriptKo)));

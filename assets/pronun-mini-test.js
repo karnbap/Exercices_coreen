@@ -325,3 +325,30 @@ document.addEventListener('DOMContentLoaded', ()=>{
     alert('연습 종료! (이 페이지는 결과 전송 없이 미니 테스트용입니다)');
   });
 });
+
+// Removed 'Previous Exercise' button
+const prevExerciseButton = document.querySelector('.btn-prev-exercise');
+if (prevExerciseButton) {
+  prevExerciseButton.remove();
+}
+
+// Translate all instructions to Korean/French
+const instructions = document.querySelectorAll('.instruction');
+instructions.forEach(inst => {
+  inst.innerHTML = `
+    <p>지시사항: ${inst.dataset.instructionKo}</p>
+    <p>Instructions: ${inst.dataset.instructionFr}</p>
+  `;
+});
+
+// Integrate result submission
+async function submitResults(results) {
+  const response = await fetch('/.netlify/functions/send-results', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(results)
+  });
+  if (!response.ok) {
+    console.error('Failed to submit results:', response.statusText);
+  }
+}

@@ -172,6 +172,13 @@ body{
   line-height: 1.4;
   margin-top: .5rem;
   color: #0f172a;
+  font-size: 0.9rem; /* Reduced font size by 10% */
+  padding: 0.5rem; /* Adjust padding to match font size */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  width: auto; /* Adjust width dynamically based on content */
+  height: auto; /* Adjust height dynamically based on content */
 }
 
 /* Highlight incorrect parts in red */
@@ -281,14 +288,29 @@ button {
   padding: 0.5rem 1rem;
   border-radius: 5px;
   border: none;
-  background-color: #4CAF50;
-  color: white;
+  margin: 0.5rem;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
-button:hover {
-  background-color: #45a049;
+/* Listen button style */
+button[data-action="listen"] {
+  background-color: #007BFF;
+  color: white;
+}
+
+button[data-action="listen"]:hover {
+  background-color: #0056b3;
+}
+
+/* Record button style */
+button[data-action="record"] {
+  background-color: #FF5733;
+  color: white;
+}
+
+button[data-action="record"]:hover {
+  background-color: #C70039;
 }
 
 /* Improve font readability */
@@ -304,6 +326,8 @@ body {
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: #f9f9f9;
+  width: auto; /* Adjust width dynamically based on content */
+  height: auto; /* Adjust height dynamically based on content */
 }
 
 /* Add spacing between footer text and print button */
