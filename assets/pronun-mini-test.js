@@ -7,20 +7,20 @@
 // ===== 문장 세트: Etape1 (짧은 문장) + Etape2 (긴 문장, 자연스러운 TTS) =====
 const SENTENCES = [
   // Etape 1: 각 카드에서 문장을 숨기고 '듣고 따라하기' 안내를 표시합니다.
-  { ko: "오늘 아침 우리 가족끼리 마을을 산책했는데", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"오늘 아침 / 가족 / 산책", hint2:"ㅇㅇ ㅁㅊ / ㄱㅈ / ㅅㅊ" },
+  { ko: "오늘 아침 우리 가족끼리 동네를 산책했는데", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"오늘 아침 / 가족 / 산책", hint2:"" },
   { ko: "그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"딸 / 배고프냐고 / 물어봤어요", hint2:"ㄸㅏㄹ / ㅂㄱㅍㄴㅇ / ㅁㄹㅇㅂㅇ" },
   { ko: "제가 그렇다고 대답하고", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"그렇다 / 대답", hint2:"ㄱㄹㅎㄱㄷ / ㄷㄷ" },
   { ko: "딸한테 빵 좀 사 달라고 했더니", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"빵 / 사 달라고 / 딸한테", hint2:"ㅂㅂ / ㅅ ㄷㄹㄱ / ㄸㄹㅎㅌ" },
   { ko: "딸이 돈이 없다고 했어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"돈 / 없다고 / 했어요", hint2:"ㄷㄴ / ㅇㅂㄷㄱ / ㅎㅅㅇ" },
   { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"엄마 / 돈이 있냐고 / 딸에게", hint2:"ㅇㅁㅁ / ㄷㄴㅇ ㅇㅈㄱ / ㄸㄹㅇㄱ" },
   { ko: "물어보자고 했는데 다행히 아내가 돈이 있어서", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"물어보자고 / 다행히 / 아내", hint2:"ㅁㄹㅂㅈㄱ / ㄷㅎㅎ / ㅇㄴ" },
-  { ko: "아내가 저희한테 저한테 빵을 사줬어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"아내 / 빵을 사줬어요 / 저희한테", hint2:"ㅇㄴ / ㅂㅇ ㅅㅈㅇㅇ / ㅈㅎㅎㅌ" },
+  { ko: "아내가 저한테만 빵을 사줬어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"아내 / 빵을 사줬어요 / 저한테만", hint2:"" },
   { ko: "아내가 최고예요!", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"최고 / 예요", hint2:"ㅊㄱ / ㅇㅇ" },
 
   // Etape 2: 더 긴 문장들, 더 자연스러운 TTS(voice:'natural', 속도 약간 느리게)
-  { ko: "오늘 아침 우리 가족끼리 마을을 산책했는데 그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"오늘 아침 / 가족 / 배고프냐고", hint2:"오늘/아침 / 가족 / 배고프냐" },
-  { ko: "제가 그렇다고 대답하고 딸한테 빵 좀 사 달라고 했더니 딸이 돈이 없다고 했어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"대답하고 / 빵 좀 사 달라고 / 돈이 없다고", hint2:"대답 / 빵 / 돈" },
-  { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고 물어보자고 했는데 다행히 아내가 돈이 있어서 아내가 저희한테 저한테 빵을 사줬어요. 아내가 최고예요!", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"엄마한테 돈 / 아내가 빵 사줬어요 / 최고예요", hint2:"엄마/돈 / 아내/빵 / 최고" }
+  { ko: "오늘 아침 우리 가족끼리 동네를 산책했는데 그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"오늘 아침 / 가족 / 배고프냐고", hint2:"" },
+  { ko: "제가 그렇다고 대답하고 딸한테 빵 좀 사 달라고 했더니 딸이 돈이 없다고 했어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"대답하고 / 빵 좀 사 달라고 / 돈이 없다고", hint2:"" },
+  { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고 물어보자고 했는데 다행히 아내가 돈이 있어서 아내가 저한테만 빵을 사줬어요. 아내가 최고예요!", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"엄마한테 돈 / 아내가 빵 사줬어요 / 최고예요", hint2:"" }
 ];
 
 // ===== TTS 재생 (Base64 → Blob → ObjectURL) =====
@@ -524,7 +524,7 @@ function makeCard(idx, sent){
     const listenBtn = wrap.querySelector('[data-action="listen"]');
     const hintWrap = document.createElement('div');
     hintWrap.style.marginTop = '8px';
-    hintWrap.innerHTML = `<button class="btn btn-ghost btn-sm" data-hint="1">도움받기1</button> <button class="btn btn-ghost btn-sm" data-hint="2">도움받기2</button> <span data-hint-display style="margin-left:12px;color:#334155"></span>`;
+  hintWrap.innerHTML = `<button class="btn btn-ghost btn-sm hint-help1" data-hint="1">도와주세요 / Aidez-moi</button> <button class="btn btn-ghost btn-sm hint-help2" data-hint="2">살려주세요 / Sauvez-moi</button> <span data-hint-display style="margin-left:12px;color:#334155"></span>`;
     if (listenBtn && listenBtn.parentNode) {
       listenBtn.parentNode.insertBefore(hintWrap, listenBtn.nextSibling);
     } else {
@@ -532,51 +532,38 @@ function makeCard(idx, sent){
     }
     const hintDisplay = hintWrap.querySelector('[data-hint-display]');
 
-    // 도움받기1: 간단 힌트 텍스트 토글
+    // 도움받기1: 초성 + 주요단어 표시 (초성은 직접 생성, 주요단어는 sent.hint1이 제공되면 사용)
     hintWrap.querySelector('[data-hint="1"]').addEventListener('click', (e)=>{
-      if (!sent.hint1) { hintDisplay.textContent = ''; return; }
-      hintDisplay.textContent = (hintDisplay.textContent === sent.hint1) ? '' : sent.hint1;
+      const btn = e.currentTarget;
+      const keyText = sent.hint1 || '';
+      // generate chosung string for display from sent.ko
+      function toChosung(s){
+        if (!s) return '';
+        return [...s.normalize('NFC')].map(ch => {
+          const code = ch.codePointAt(0);
+          if (code >= 0xAC00 && code <= 0xD7A3){
+            const base = code - 0xAC00; const cho = Math.floor(base/588);
+            const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+            return CHO[Math.max(0, Math.min(CHO.length-1, cho))] || ch;
+          }
+          return ch;
+        }).join('');
+      }
+      const chos = toChosung(sent.ko || '');
+      const display = `${chos} · ${keyText}`.trim();
+      hintDisplay.textContent = (hintDisplay.textContent === display) ? '' : display;
     });
 
-    // 도움받기2: 문장에서 일부 단어를 빈칸으로 대체해 보여준다
+    // 도움받기2: 전체 문장을 빈칸(▢)으로 보여준다 (도움요청은 전체 문장 숨김 토글)
     hintWrap.querySelector('[data-hint="2"]').addEventListener('click', (e)=>{
-      if (!sent.hint2 && !sent.ko) { hintDisplay.textContent = ''; return; }
-      // If currently showing the blanked hint, clear it
-      if (hintDisplay.dataset.blankShown === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.blankShown = '0'; return; }
-      const src = sent.hint2 || sent.ko || '';
-      // split into words (prefer spaces, fallback to syllables)
-      const words = src.split(/(\s+)/).filter(Boolean);
-      if (words.length === 0) { hintDisplay.textContent = ''; hintDisplay.dataset.blankShown='0'; return; }
-      // choose up to 1-2 words to blank based on length
-      const candidateIdx = [];
-      for (let i=0;i<words.length;i++){
-        if (/\s+/.test(words[i])) continue; // skip pure whitespace
-        if (words[i].length >= 2) candidateIdx.push(i);
-      }
-      // if no good candidate, blank a middle character from last word
-      let blanked = words.slice();
-      if (candidateIdx.length === 0){
-        const widx = Math.max(0, words.length-1);
-        const w = words[widx];
-        const pos = Math.floor(w.length/2);
-        blanked[widx] = w.substring(0,pos) + '▢' + w.substring(pos+1);
-      } else {
-        // pick 1 or 2 random indices
-        const nBlank = candidateIdx.length >= 3 ? 2 : 1;
-        const shuffled = candidateIdx.sort(()=>0.5-Math.random());
-        const pick = shuffled.slice(0,nBlank);
-        pick.forEach(pi => {
-          const w = blanked[pi];
-          // replace middle portion with underscore boxes proportional to length
-          const Keep = Math.max(1, Math.floor(w.length/3));
-          const start = Math.floor((w.length - Keep)/2);
-          const end = start + Keep;
-          const blanks = '▢'.repeat(Math.max(1, end-start));
-          blanked[pi] = w.substring(0,start) + blanks + w.substring(end);
-        });
-      }
-      hintDisplay.textContent = blanked.join('');
-      hintDisplay.dataset.blankShown = '1';
+      const btn = e.currentTarget;
+      if (!sent.ko) { hintDisplay.textContent = ''; return; }
+      if (hintDisplay.dataset.fullBlank === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.fullBlank = '0'; return; }
+      const src = sent.ko || '';
+      // Create full-blank version: replace each non-space char with ▢ except punctuation
+      const blanked = [...src].map(ch => (/\s|[.,!?;:]/.test(ch) ? ch : '▢')).join('');
+      hintDisplay.textContent = blanked;
+      hintDisplay.dataset.fullBlank = '1';
     });
   }catch(_){/*ignore*/}
 
@@ -807,6 +794,10 @@ function mergeStopAndEvaluate(){
 .badge{ border:1px solid #e6eef6; background:#fff; padding:6px 10px; border-radius:999px; font-weight:600; color:#0f172a; box-shadow:0 4px 10px rgba(2,6,23,0.04); cursor:default; }
 .accuracy-badge svg{ vertical-align:middle; margin-right:6px; }
 .duration-badge{ font-size:0.95rem; color:#475569 }
+
+/* hint button colors */
+.hint-help1{ background:linear-gradient(90deg,#dcfce7,#bbf7d0); border:1px solid #bbf7d0; color:#065f46; }
+.hint-help2{ background:linear-gradient(90deg,#ffedd5,#ffd6a5); border:1px solid #fcd34d; color:#92400e; }
 
 /* Tooltip: simple hover title fallback is used; add slight transition for width changes */
 .len-bar{ transition: width 220ms ease; }
