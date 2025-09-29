@@ -369,3 +369,23 @@ async function submitResults(results) {
     console.error('Failed to submit results:', response.statusText);
   }
 }
+
+// Update listen button to toggle between play and pause
+const listenButton = document.querySelector('button[data-action="listen"]');
+if (listenButton) {
+  let isPlaying = false;
+  listenButton.addEventListener('click', async () => {
+    if (isPlaying) {
+      console.warn('Audio is already playing. Preventing duplicate clicks.');
+      return;
+    }
+    isPlaying = true;
+    listenButton.textContent = '일시정지 / Pause';
+    try {
+      await ttsPlay(sent.ko);
+    } finally {
+      isPlaying = false;
+      listenButton.textContent = '듣기 / Écouter';
+    }
+  });
+}

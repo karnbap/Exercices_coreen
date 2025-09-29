@@ -65,8 +65,8 @@ exports.handler = async (event) => {
       return json(502, { ok:false, messageFr:"Service STT indisponible.", messageKo:"음성 인식 서비스에 연결할 수 없습니다." });
     }
 
-    // Ensure referenceText is properly validated
-    if (!referenceText) {
+    // Ensure referenceText is properly initialized and validated
+    if (typeof referenceText === 'undefined' || referenceText === null) {
       console.error('referenceText is missing or undefined');
       return json(400, {
         ok: false,
