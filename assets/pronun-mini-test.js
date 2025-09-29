@@ -4,23 +4,23 @@
 // - 녹음/평가: 공용 Pronun.mount 사용 (서버 analyze-pronunciation)
 // - 실시간 STT: window.LiveSTT가 있으면 부분 자막 표시(옵션)
 
-// ===== 문장 세트 (자음/모음 함정 포함) =====
+// ===== 문장 세트: Etape1 (짧은 문장) + Etape2 (긴 문장, 자연스러운 TTS) =====
 const SENTENCES = [
-  {
-    ko: "신짬뽕이랑 찐빵, 어느 쪽이 더 매워?",
-    fr: "Shin-jjambbong ou jjin-ppang, lequel est plus piquant ?",
-    // ㅆ/ㅉ/ㅃ 된소리, 비음 동화, 비슷한 운율
-  },
-  {
-    ko: "밖에 비가 쏟아져서 우산 좀 빌려 줄래?",
-    fr: "Il pleut à verse dehors, tu peux me prêter un parapluie ?",
-    // ㅆ/ㅉ/받침 연음(밖에→바께), ㅈ/ㅉ 혼동
-  },
-  {
-    ko: "십유로짜리 초콜릿 세 개만 주세요.",
-    fr: "Donnez-moi seulement trois chocolats à dix euros.",
-    // 한자어 숫자(십), 단위 연음(유로짜리), 사이시옷
-  }
+  // Etape 1: 각 카드에서 문장을 숨기고 '듣고 따라하기' 안내를 표시합니다.
+  { ko: "오늘 아침 우리 가족끼리 마을을 산책했는데", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"오늘 아침 / 가족 / 산책", hint2:"ㅇㅇ ㅁㅊ / ㄱㅈ / ㅅㅊ" },
+  { ko: "그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"딸 / 배고프냐고 / 물어봤어요", hint2:"ㄸㅏㄹ / ㅂㄱㅍㄴㅇ / ㅁㄹㅇㅂㅇ" },
+  { ko: "제가 그렇다고 대답하고", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"그렇다 / 대답", hint2:"ㄱㄹㅎㄱㄷ / ㄷㄷ" },
+  { ko: "딸한테 빵 좀 사 달라고 했더니", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"빵 / 사 달라고 / 딸한테", hint2:"ㅂㅂ / ㅅ ㄷㄹㄱ / ㄸㄹㅎㅌ" },
+  { ko: "딸이 돈이 없다고 했어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"돈 / 없다고 / 했어요", hint2:"ㄷㄴ / ㅇㅂㄷㄱ / ㅎㅅㅇ" },
+  { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"엄마 / 돈이 있냐고 / 딸에게", hint2:"ㅇㅁㅁ / ㄷㄴㅇ ㅇㅈㄱ / ㄸㄹㅇㄱ" },
+  { ko: "물어보자고 했는데 다행히 아내가 돈이 있어서", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"물어보자고 / 다행히 / 아내", hint2:"ㅁㄹㅂㅈㄱ / ㄷㅎㅎ / ㅇㄴ" },
+  { ko: "아내가 저희한테 저한테 빵을 사줬어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"아내 / 빵을 사줬어요 / 저희한테", hint2:"ㅇㄴ / ㅂㅇ ㅅㅈㅇㅇ / ㅈㅎㅎㅌ" },
+  { ko: "아내가 최고예요!", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"최고 / 예요", hint2:"ㅊㄱ / ㅇㅇ" },
+
+  // Etape 2: 더 긴 문장들, 더 자연스러운 TTS(voice:'natural', 속도 약간 느리게)
+  { ko: "오늘 아침 우리 가족끼리 마을을 산책했는데 그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"오늘 아침 / 가족 / 배고프냐고", hint2:"오늘/아침 / 가족 / 배고프냐" },
+  { ko: "제가 그렇다고 대답하고 딸한테 빵 좀 사 달라고 했더니 딸이 돈이 없다고 했어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"대답하고 / 빵 좀 사 달라고 / 돈이 없다고", hint2:"대답 / 빵 / 돈" },
+  { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고 물어보자고 했는데 다행히 아내가 돈이 있어서 아내가 저희한테 저한테 빵을 사줬어요. 아내가 최고예요!", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"엄마한테 돈 / 아내가 빵 사줬어요 / 최고예요", hint2:"엄마/돈 / 아내/빵 / 최고" }
 ];
 
 // ===== TTS 재생 (Base64 → Blob → ObjectURL) =====
@@ -59,8 +59,8 @@ function makeCard(idx, sent){
     <div class="flex items-start justify-between gap-3">
       <div class="q-badge">문제 ${idx+1} / Question ${idx+1}</div>
       <div>
-        <div class="text-xl font-bold mb-1">${sent.ko}</div>
-        <div class="text-slate-600 text-sm mb-2">FR: ${sent.fr}</div>
+        <div class="text-xl font-bold mb-1">${sent.hideText ? '' : sent.ko}</div>
+        <div class="text-slate-600 text-sm mb-2">${sent.hideText ? '<em>잘 듣고 따라하세요 / Écoutez et répétez</em>' : 'FR: ' + sent.fr}</div>
       </div>
       <button class="btn btn-secondary btn-sm" data-action="listen" data-requires-name>▶ 듣기 / Écouter</button>
     </div>
@@ -88,14 +88,26 @@ function makeCard(idx, sent){
         <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span class="hyp-bubble" data-hyp-display>—</span></div>
         <div class="sum-stats mt-2" aria-live="polite">
           <div class="accuracy" data-accuracy><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</div>
-          <div class="durations text-sm text-slate-600" data-durations><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="#334155" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="12" width="3" height="6" rx="0.5" fill="#334155"/><rect x="11" y="8" width="3" height="10" rx="0.5" fill="#334155"/><rect x="16" y="4" width="3" height="14" rx="0.5" fill="#334155"/></svg> 길이: — / —</div>
+          <div class="len-compare" data-len-compare>
+            <div class="len-labels" style="font-size:0.9rem;color:#475569;margin-bottom:6px">
+              <span class="len-tts">TTS: —</span>
+              <span style="margin:0 8px;color:#94a3b8">·</span>
+              <span class="len-rec">내 녹음: —</span>
+            </div>
+            <div class="len-bars" aria-hidden="true">
+              <div class="len-bar-bg">
+                <div class="len-bar-tts" style="width:0%"></div>
+                <div class="len-bar-rec" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="sum-sub mt-1" data-score></div>
     </div>
   `;
 
-  // 듣기: 재생 중에는 버튼을 일시정지로 바꿔 중복 클릭 방지
+    // 듣기: 재생 중에는 버튼을 일시정지로 바꿔 중복 클릭 방지
   wrap.querySelector('[data-action="listen"]').addEventListener('click', async (e)=>{
     const btn = e.currentTarget;
     // If audio is already stored and not ended, toggle pause/resume
@@ -115,7 +127,10 @@ function makeCard(idx, sent){
     // Otherwise start new playback and store the audio element on the button
     btn.innerHTML = '⏸ 일시정지 / Pause';
     try{
-      const audioEl = await ttsPlay(sent.ko);
+      // honor sent.voice and sent.speed if provided
+      const voice = sent.voice || 'shimmer';
+      const speed = typeof sent.speed === 'number' ? sent.speed : 1.0;
+      const audioEl = await ttsPlay(sent.ko, voice, speed);
       btn._audio = audioEl;
       // when playback ends, restore label
       audioEl.addEventListener('ended', ()=>{ btn.innerHTML = '듣기 / Écouter'; btn._audio = null; }, { once:true });
@@ -359,13 +374,18 @@ function makeCard(idx, sent){
     rec.interimResults = true;
     rec.continuous = true;
     rec.onresult = (ev)=>{
-      // prefer the raw interim transcript chunk to avoid Web Speech API normalizations
-      let partial = '';
-      for (let i=ev.resultIndex; i<ev.results.length; i++){
-        // some browsers include alternatives; pick the raw transcript
-        partial += (ev.results[i][0].transcriptRaw || ev.results[i][0].transcript || '') || '';
-      }
-      liveBox.textContent = (partial||'').trim() || '…';
+      // Build the interim text from the newest result chunk(s).
+      // Use the transcript field provided by Web Speech API (transcriptRaw is non-standard).
+      try{
+        const parts = [];
+        for (let i = ev.resultIndex; i < ev.results.length; i++){
+          const res = ev.results[i];
+          if (!res || !res[0]) continue;
+          parts.push(res[0].transcript || '');
+        }
+        const partial = parts.join('');
+        liveBox.textContent = (partial||'').trim() || '…';
+      }catch(_){ liveBox.textContent = '…'; }
     };
     try { rec.start(); } catch(_) {}
     return ()=>{ try{rec.stop();}catch(_){} };
@@ -394,6 +414,9 @@ function makeCard(idx, sent){
         const { refHtml, hypHtml } = generateDualHtml(ref, finalHypRaw);
   if (refDisplay) refDisplay.innerHTML = refHtml;
   if (hypDisplay) hypDisplay.innerHTML = hypHtml;
+  // Update liveBox to show the final transcript used for scoring so
+  // students see the same text in real-time and in results.
+  try{ if (liveBox) liveBox.textContent = (finalHypRaw||'').trim() || '…'; }catch(_){ }
         // show accuracy prominently and durations (TTS vs my recording)
         const accuracyEl = host.querySelector('[data-accuracy]');
         const durationsEl = host.querySelector('[data-durations]');
@@ -407,7 +430,26 @@ function makeCard(idx, sent){
         }catch(_){ ttsDur = null; }
         const myRec = duration ? `${duration.toFixed(1)}s` : '?s';
         const ttsStr = ttsDur ? `${ttsDur.toFixed(1)}s` : 'TTS ?s';
-  if (durationsEl) durationsEl.textContent = `TTS: ${ttsStr} · 내 녹음: ${myRec}`;
+        if (durationsEl) durationsEl.textContent = `TTS: ${ttsStr} · 내 녹음: ${myRec}`;
+        // update len-compare area
+        try{
+          const lenWrap = host.querySelector('[data-len-compare]');
+          if (lenWrap){
+            const ttsLabel = lenWrap.querySelector('.len-tts');
+            const recLabel = lenWrap.querySelector('.len-rec');
+            const ttsBar = lenWrap.querySelector('.len-bar-tts');
+            const recBar = lenWrap.querySelector('.len-bar-rec');
+            if (ttsLabel) ttsLabel.textContent = `TTS: ${ttsStr}`;
+            if (recLabel) recLabel.textContent = `내 녹음: ${myRec}`;
+            // compute relative widths (avoid divide by zero)
+            const t = Number(ttsDur || 0); const r = Number(duration || 0);
+            const max = Math.max(0.1, t, r);
+            const tPct = Math.round((t / max) * 100);
+            const rPct = Math.round((r / max) * 100);
+            if (ttsBar) ttsBar.style.width = `${tPct}%`;
+            if (recBar) recBar.style.width = `${rPct}%`;
+          }
+        }catch(_){ }
         // persist durations & highlight HTML on the card element for send-results
         try{
           const cardEl = wrap;
@@ -431,6 +473,23 @@ function makeCard(idx, sent){
 
     }
   });
+
+  // Hint buttons: 도움받기1 / 도움받기2
+  try{
+    const hintWrap = document.createElement('div');
+    hintWrap.style.marginTop = '8px';
+    hintWrap.innerHTML = `<button class="btn btn-ghost btn-sm" data-hint="1">도움받기1</button> <button class="btn btn-ghost btn-sm" data-hint="2">도움받기2</button> <span data-hint-display style="margin-left:12px;color:#334155"></span>`;
+    wrap.appendChild(hintWrap);
+    const hintDisplay = hintWrap.querySelector('[data-hint-display]');
+    hintWrap.querySelector('[data-hint="1"]').addEventListener('click', (e)=>{
+      if (!sent.hint1) { hintDisplay.textContent = ''; return; }
+      if (hintDisplay.textContent === sent.hint1) hintDisplay.textContent = ''; else hintDisplay.textContent = sent.hint1;
+    });
+    hintWrap.querySelector('[data-hint="2"]').addEventListener('click', (e)=>{
+      if (!sent.hint2) { hintDisplay.textContent = ''; return; }
+      if (hintDisplay.textContent === sent.hint2) hintDisplay.textContent = ''; else hintDisplay.textContent = sent.hint2;
+    });
+  }catch(_){/*ignore*/}
 
   // After Pronun widget mounts, ensure its record button is bilingual
   try {
@@ -639,6 +698,11 @@ function mergeStopAndEvaluate(){
 .ref-bubble{ background:linear-gradient(90deg,#ffffff,#f1f5f9); }
 .hyp-bubble{ background:linear-gradient(90deg,#fff7f7,#fff); border-color:#fee2e2; color:#7f1d1d }
 .stat-icon{ vertical-align:middle; margin-right:8px; }
+
+/* length comparison bars */
+.len-compare .len-bar-bg{ position:relative; height:12px; background:#eef2ff; border-radius:8px; overflow:hidden }
+.len-compare .len-bar-tts{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#e0f2fe,#bae6fd); }
+.len-compare .len-bar-rec{ position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,#fde68a,#fca5a5); opacity:0.9; mix-blend-mode:normal }
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');
