@@ -100,7 +100,39 @@ if (ref && hyp && ref === hyp) acc = 1; // 완전 일치면 100% 고정
     // === 팁(간단) ===
     const tags = deriveTips(ref, hyp);
 
-    return json(200, { ok:true, accuracy: acc, transcript: transcriptKo, confusionTags: tags });
+    // Function to normalize text by removing spaces and special characters
+    function normalizeText(text) {
+      return text.replace(/\s+/g, '') // Remove all spaces
+                 .replace(/[.,!?;:~\-]/g, '') // Remove special characters
+                 .toLowerCase(); // Convert to lowercase for uniformity
+    }
+
+    // Compare the recorded sentence with the original text
+    function isCorrectPronunciation(recordedText, originalText) {
+      const normalizedRecorded = normalizeText(recordedText);
+      const normalizedOriginal = normalizeText(originalText);
+      return normalizedRecorded === normalizedOriginal;
+    }
+
+    const isCorrect = isCorrectPronunciation(transcriptKo, referenceText);
+    if (isCorrect) {
+      return json(200, {
+        ok: true,
+        accuracy: 1.0,
+        transcript: transcriptKo,
+        messageFr: "Prononciation correcte.",
+        messageKo: "정확한 발음입니다."
+      });
+    } else {
+      return json(200, {
+        ok: true,
+        accuracy: acc,
+        transcript: transcriptKo,
+        confusionTags: tags,
+        messageFr: "Prononciation incorrecte.",
+        messageKo: "발음이 정확하지 않습니다."
+      });
+    }
 
   } catch (e) {
     return json(500, {
