@@ -811,8 +811,21 @@ function mergeStopAndEvaluate(){
 .hint-help2{ background:linear-gradient(90deg,#ffedd5,#ffd6a5); border:1px solid #fcd34d; color:#92400e; }
 
 /* hint layout */
-.hint-wrap{ display:inline-flex; gap:10px; align-items:center; }
-.hint-display{ display:inline-block; margin-left:8px; color:#334155; background:#fff; padding:6px 10px; border-radius:8px; border:1px solid #eef2ff; min-width:120px; word-break:keep-all; }
+.hint-wrap{ display:inline-flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.hint-display{ display:inline-block; margin-left:8px; color:#334155; background:#fff; padding:8px 10px; border-radius:8px; border:1px solid #eef2ff; min-width:110px; word-break:break-word; max-width:60%; }
+/* responsive: smaller devices */
+@media (max-width:720px){
+  .sum-box .ref-line span, .sum-box .hyp-line span{ font-size:1.05rem; }
+  .sum-box .hyp-line span{ font-size:1.08rem; }
+  .ref-bubble, .hyp-bubble{ padding:6px 8px; font-size:0.98rem; }
+  .badge{ padding:5px 8px; font-size:0.92rem; }
+  .hint-display{ max-width:100%; min-width:0; padding:6px 8px; }
+  .hint-wrap{ gap:8px; }
+}
+@media (min-width:1024px){
+  .sum-box .ref-line span, .sum-box .hyp-line span{ font-size:1.35rem; }
+  .sum-box .hyp-line span{ font-size:1.5rem; }
+}
 
 /* Tooltip: simple hover title fallback is used; add slight transition for width changes */
 .len-bar{ transition: width 220ms ease; }
