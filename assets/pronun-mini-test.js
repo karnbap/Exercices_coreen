@@ -5,26 +5,58 @@
 // - 실시간 STT: window.LiveSTT가 있으면 부분 자막 표시(옵션)
 
 // ===== 문장 세트: Etape1 (짧은 문장) + Etape2 (긴 문장, 자연스러운 TTS) =====
-const SENTENCES = [
-  // Etape 1: 각 카드에서 문장을 숨기고 '듣고 따라하기' 안내를 표시합니다.
-  { ko: "오늘 아침 우리 가족끼리 동네를 산책했는데", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"오늘 아침 / 가족 / 산책", hint2:"" },
-  { ko: "그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"딸 / 배고프냐고 / 물어봤어요", hint2:"ㄸㅏㄹ / ㅂㄱㅍㄴㅇ / ㅁㄹㅇㅂㅇ" },
-  { ko: "제가 그렇다고 대답하고", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"그렇다 / 대답", hint2:"ㄱㄹㅎㄱㄷ / ㄷㄷ" },
-  { ko: "딸한테 빵 좀 사 달라고 했더니", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"빵 / 사 달라고 / 딸한테", hint2:"ㅂㅂ / ㅅ ㄷㄹㄱ / ㄸㄹㅎㅌ" },
-  { ko: "딸이 돈이 없다고 했어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"돈 / 없다고 / 했어요", hint2:"ㄷㄴ / ㅇㅂㄷㄱ / ㅎㅅㅇ" },
-  { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"엄마 / 돈이 있냐고 / 딸에게", hint2:"ㅇㅁㅁ / ㄷㄴㅇ ㅇㅈㄱ / ㄸㄹㅇㄱ" },
-  { ko: "물어보자고 했는데 다행히 아내가 돈이 있어서", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"물어보자고 / 다행히 / 아내", hint2:"ㅁㄹㅂㅈㄱ / ㄷㅎㅎ / ㅇㄴ" },
-  { ko: "아내가 저한테만 빵을 사줬어요.", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"아내 / 빵을 사줬어요 / 저한테만", hint2:"" },
-  { ko: "아내가 최고예요!", fr: "", hideText:true, voice:'shimmer', speed:1.05, hint1:"최고 / 예요", hint2:"ㅊㄱ / ㅇㅇ" },
-
-  // Etape 2: 더 긴 문장들, 더 자연스러운 TTS(voice:'natural', 속도 약간 느리게)
-  { ko: "오늘 아침 우리 가족끼리 동네를 산책했는데 그때 제 딸이 제가 배고프냐고 물어봤어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"오늘 아침 / 가족 / 배고프냐고", hint2:"" },
-  { ko: "제가 그렇다고 대답하고 딸한테 빵 좀 사 달라고 했더니 딸이 돈이 없다고 했어요.", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"대답하고 / 빵 좀 사 달라고 / 돈이 없다고", hint2:"" },
-  { ko: "그래서 제가 딸에게 엄마한테 돈이 있냐고 물어보자고 했는데 다행히 아내가 돈이 있어서 아내가 저한테만 빵을 사줬어요. 아내가 최고예요!", fr: "", hideText:false, voice:'natural', speed:0.98, hint1:"엄마한테 돈 / 아내가 빵 사줬어요 / 최고예요", hint2:"" }
-];
-
-// ===== TTS 재생 (Base64 → Blob → ObjectURL) =====
+// ===== TTS 재생 (정적 우선 검사, Cache API, 서버 폴백) =====
 async function ttsPlay(text, voice="shimmer", speed=1.0){
+  // Deterministic slug for caching: SHA-1 of text|voice|speed
+  async function sha1Hex(s){
+    if (window.crypto && crypto.subtle && crypto.subtle.digest){
+      const enc = new TextEncoder();
+      const buf = await crypto.subtle.digest('SHA-1', enc.encode(s));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+    // fallback non-crypto hash (FNV-1a-like)
+    let h=2166136261>>>0; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h,16777619)>>>0; }
+    return h.toString(16);
+  }
+
+  const slugBase = `${String(text||'')}|${voice}|${String(speed)}`;
+  const slug = await sha1Hex(slugBase);
+  const staticUrl = `/assets/audio/${slug}.mp3`;
+
+  // 1) Try Cache API
+  try{
+    if (window.caches){
+      const cache = await caches.open('pronun-tts-v1');
+      const match = await cache.match(staticUrl);
+      if (match){
+        const blob = await match.blob();
+        const url = URL.createObjectURL(blob);
+        const a = new Audio(url);
+        a.play().catch(()=>{});
+        a.durationEstimateSec = null;
+        return a;
+      }
+    }
+  }catch(_){ /* ignore cache errors */ }
+
+  // 2) Check for static file on the server
+  try{
+    const head = await fetch(staticUrl, { method:'HEAD' });
+    if (head.ok){
+      const full = await fetch(staticUrl);
+      if (full.ok){
+        const blob = await full.blob();
+        try{ if (window.caches){ const cache2 = await caches.open('pronun-tts-v1'); cache2.put(staticUrl, full.clone()); } }catch(_){ }
+        const url = URL.createObjectURL(blob);
+        const a = new Audio(url);
+        a.play().catch(()=>{});
+        a.durationEstimateSec = null;
+        return a;
+      }
+    }
+  }catch(_){ /* static absent or CORS */ }
+
+  // 3) Fallback to serverless function
   const res = await fetch('/.netlify/functions/generate-audio', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ text, voice, speed })
@@ -37,90 +69,48 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
   for (let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
   const blob = new Blob([buf], { type: data.mimeType || 'audio/wav' });
   const url = URL.createObjectURL(blob);
-
+  try{ if (window.caches){ const cache3 = await caches.open('pronun-tts-v1'); cache3.put(staticUrl, new Response(blob, { headers: { 'Content-Type': data.mimeType || 'audio/wav' } })); } }catch(_){ }
   const a = new Audio(url);
-  a.addEventListener('ended', ()=>{ try{ URL.revokeObjectURL(url); }catch(_){} }, { once:true });
-  // start playback and return the audio element immediately so callers can
-  // control pause/resume UI without awaiting the entire play duration.
-  a.play().catch(()=>{ try{ URL.revokeObjectURL(url); }catch(_){} });
+  a.addEventListener('ended', ()=>{ try{ /* ended */ }catch(_){} }, { once:true });
+  a.play().catch(()=>{});
   a.durationEstimateSec = data.durationEstimateSec || null;
   return a;
 }
-
-
-
-
-// ===== 카드 렌더 =====
-function makeCard(idx, sent){
-  const wrap = document.createElement('section');
-  wrap.className = 'card';
-  // 문제 10번부터: 랜덤 위치에 2개의 한글 음절을 ▢로 블랭킹
-  let promptText = sent.ko;
-  if (typeof idx === 'number' && idx >= 9 && sent.ko){
-    const chars = Array.from(String(sent.ko));
-    // 한글 음절 인덱스만 추출
-    const hangulIdxs = chars.map((ch,i)=>/[가-힣]/.test(ch)?i:null).filter(i=>i!==null);
-    // 문장 길이에 따라 빈칸 개수 결정: 짧으면 3개, 길면 4개
-    const syllableCount = hangulIdxs.length;
-    const blanksWanted = syllableCount >= 12 ? 4 : 3;
-    // 랜덤으로 blanksWanted개 선택 (중복 없이)
-    const pool = hangulIdxs.slice();
-    const pick = [];
-    while (pick.length < blanksWanted && pool.length){
-      const r = Math.floor(Math.random()*pool.length);
-      pick.push(pool[r]);
-      pool.splice(r,1);
-    }
-    pick.forEach(i=>{ chars[i]='▢'; });
-    promptText = chars.join('');
-  }
-
+// Create a card element for each sentence
+function makeCard(a, b){
+  // support both signatures: makeCard(idx, sent) and makeCard(sent, idx)
+  let idx, sent;
+  if (a && typeof a === 'object' && a.ko !== undefined){ sent = a; idx = b; }
+  else { idx = a; sent = b || {}; }
+  const wrap = document.createElement('div');
+  wrap.className = 'card pronun-card';
+  wrap.dataset.index = String(idx||0);
+  // minimal inner structure required by tests and downstream code
   wrap.innerHTML = `
-    <div class="flex items-start justify-between gap-3">
-      <div class="q-badge">문제 ${idx+1} / Question ${idx+1}</div>
-      <div>
-  <div class="text-xl font-bold mb-1">${sent.hideText ? '' : promptText}</div>
-        <div class="text-slate-600 text-sm mb-2">${sent.hideText ? '<em>잘 듣고 따라하세요 / Écoutez et répétez</em>' : 'FR: ' + sent.fr}</div>
-      </div>
-      <button class="btn btn-secondary btn-sm" data-action="listen" data-requires-name>▶ 듣기 / Écouter</button>
-    </div>
-
-    <!-- 실시간 비교 -->
-    <div class="grid md:grid-cols-2 gap-3">
-      <div class="pronun-card">
-        <div class="pronun-title">내 발음 / En direct</div>
-        <div class="pronun-live" data-live>—</div>
-      </div>
-    </div>
-
-    <!-- 녹음/평가 -->
-    <div class="mt-3" data-pronun></div>
-    <div class="text-sm mt-2 text-slate-600" data-card-eval-instruction>
-  <p>멈춘 다음에 <b>평가 / Évaluer</b> 버튼을 누르면, 틀린 부분만 빨간색으로 보여줘요.</p>
-  <p>Après avoir arrêté, cliquez sur <b>Évaluer</b> pour voir en rouge seulement les erreurs.</p>
-    </div>
-
-    <!-- 결과: 원문 + 사용자가 말한 문장(틀린 부분만 빨간색) -->
-    <div class="mt-3 sum-box">
-  <div class="sum-title">틀린 부분 / Erreurs</div>
-      <div class="sum-val text-base leading-7">
-        <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span class="ref-bubble" data-ref-display>—</span></div>
-        <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span class="hyp-bubble" data-hyp-display>—</span></div>
-        <div class="sum-stats mt-2" aria-live="polite">
-          <div class="len-compare" data-len-compare>
-            <div class="len-labels" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <button class="badge accuracy-badge" data-accuracy aria-live="polite"><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도 / Précision: —</button>
-                <button class="badge duration-badge" data-durations title="음성 합성(TTS) / 녹음 길이 / Durée">음성 합성(TTS): — · 내 녹음 / Mon enregistrement: —</button>
-            </div>
-            <div class="len-abs" aria-hidden="true">
-              <div class="len-center" aria-hidden="true"></div>
-              <div class="len-bar len-bar-tts" style="left:50%;width:0%" title="TTS: ?s"></div>
-              <div class="len-bar len-bar-rec" style="left:50%;width:0%" title="녹음: ?s"></div>
-            </div>
+    <div class="card-body">
+      <div class="card-row">
+        <button data-action="listen">듣기 / Écouter</button>
+        <div style="display:inline-block;margin-left:12px">
+          <div class="hint-wrap">
+            <button class="btn btn-ghost btn-sm hint-help1" data-hint="1">도와주세요 / Aidez‑moi</button>
+            <button class="btn btn-ghost btn-sm hint-help2" data-hint="2">살려주세요 / Sauvez‑moi</button>
+            <span class="hint-display" data-hint-display></span>
           </div>
         </div>
       </div>
-      <div class="sum-sub mt-1" data-score></div>
+      <div data-pronun></div>
+      <div class="mt-2">
+        <button class="badge duration-badge" data-durations>
+          <div class="dur-row"><div class="dur-label">평균 발음 속도 / Vitesse moyenne:</div>
+            <div class="dur-bar-bg"><div class="dur-bar dur-bar-avg" style="width:0%">—</div></div>
+          </div>
+          <div class="dur-row"><div class="dur-label">내 발음 속도 / Ma vitesse:</div>
+            <div class="dur-bar-bg"><div class="dur-bar dur-bar-rec" style="width:0%">—</div></div>
+          </div>
+        </button>
+      </div>
+      <div class="mt-2" data-live>—</div>
+      <div style="display:none" data-ref></div>
     </div>
   `;
 
@@ -519,8 +509,17 @@ function makeCard(idx, sent){
             // update badges
             if (durationBadge) {
               const txt = `음성 합성(TTS): ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 내 녹음 / Mon enregistrement: ${duration?duration.toFixed(1)+'s':'?s'}`;
-              durationBadge.textContent = txt;
               try{ durationBadge.setAttribute('title', txt); }catch(e){}
+              // If new dur-row layout exists, update bars and labels inside it
+              const avgBar = durationBadge.querySelector('.dur-bar-avg');
+              const recBar = durationBadge.querySelector('.dur-bar-rec');
+              if (avgBar || recBar) {
+                if (avgBar) { avgBar.style.width = aPct + '%'; avgBar.textContent = avg ? Number(avg).toFixed(1)+'s' : '?s'; }
+                if (recBar) { recBar.style.width = rPct + '%'; recBar.textContent = r ? r.toFixed(1)+'s' : '?s'; }
+              } else {
+                // fallback for old single-line badge
+                durationBadge.textContent = txt;
+              }
             }
             // compute absolute difference bars from center: center is 50%
             const absDiff = Math.abs((t || 0) - (r || 0));
@@ -931,6 +930,15 @@ function computeLocalAverageSeconds(){
 .accuracy-badge svg{ vertical-align:middle; margin-right:6px; }
 .duration-badge{ font-size:0.95rem; color:#475569 }
 
+/* duration badge: two-line layout with bars */
+.duration-badge .dur-row{ display:flex; align-items:center; gap:8px; margin:4px 0; }
+.duration-badge .dur-label{ min-width:150px; font-size:0.9rem; color:#334155 }
+.duration-badge .dur-bar-bg{ flex:1; height:18px; background:#f1f5f9; border-radius:10px; overflow:hidden; position:relative }
+.duration-badge .dur-bar{ height:100%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#082f2e; white-space:nowrap }
+.duration-badge .dur-bar-avg{ background:linear-gradient(90deg,#e0f2fe,#bae6fd); color:#044e8c }
+.duration-badge .dur-bar-rec{ background:linear-gradient(90deg,#fde68a,#fca5a5); color:#7f1d1d }
+.duration-badge .dur-bar[style]{ transition: width 260ms ease; }
+
 /* hint button colors */
 .hint-help1{ background:linear-gradient(90deg,#dcfce7,#bbf7d0); border:1px solid #bbf7d0; color:#065f46; }
 .hint-help2{ background:linear-gradient(90deg,#ffedd5,#ffd6a5); border:1px solid #fcd34d; color:#92400e; }
@@ -1075,11 +1083,12 @@ if (recordButton) {
   if (document.getElementById('pronun-student-modal')) return;
   const modal = document.createElement('div');
   modal.id = 'pronun-student-modal';
-  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:9999;padding:18px';
+  // ensure box-sizing and clipping so long text doesn't overflow the viewport
+  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:9999;padding:18px;box-sizing:border-box;overflow:auto';
   modal.innerHTML = `
-    <div class="pronun-modal-inner" style="background:#fff;padding:20px;border-radius:12px;max-width:720px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,.25);border:1px solid rgba(2,6,23,0.06)">
-      <div style="font-weight:800;margin-bottom:10px;font-size:1.05rem">학생 이름 / Nom de l'élève</div>
-      <input id="pronun-student-name" placeholder="이름을 입력하세요" style="width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;font-size:1rem" />
+    <div class="pronun-modal-inner" style="background:#fff;padding:20px;border-radius:12px;max-width:720px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,.25);border:1px solid rgba(2,6,23,0.06);box-sizing:border-box;max-height:calc(100vh - 40px);overflow:auto;">
+      <div style="font-weight:800;margin-bottom:10px;font-size:1.05rem;word-break:break-word;overflow-wrap:break-word;">학생 이름 / Nom de l'élève</div>
+      <input id="pronun-student-name" placeholder="이름을 입력하세요" style="width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;font-size:1rem;box-sizing:border-box;max-width:100%;" />
       <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
         <button id="pronun-student-cancel" style="padding:10px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#0f172a">취소 / Annuler</button>
         <button id="pronun-student-ok" style="background:#06b6d4;color:#fff;padding:10px 16px;border-radius:8px;border:none;font-weight:700">확인 / Confirmer</button>
