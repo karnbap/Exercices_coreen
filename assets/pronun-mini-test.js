@@ -150,10 +150,35 @@ function makeCard(a, b){
   });
 
   const host = wrap.querySelector('[data-pronun]');
-  const liveBox = wrap.querySelector('[data-live]');
-  const refDisplay = wrap.querySelector('[data-ref-display]');
-  const hypDisplay = wrap.querySelector('[data-hyp-display]');
-  const scoreBox= wrap.querySelector('[data-score]');
+  // Ensure these display nodes always exist to avoid null updates that
+  // could leave previous text or cause layout collapse for some cards.
+  let liveBox = wrap.querySelector('[data-live]');
+  if (!liveBox) {
+    liveBox = document.createElement('div');
+    liveBox.setAttribute('data-live','');
+    liveBox.textContent = '—';
+    wrap.appendChild(liveBox);
+  }
+  let refDisplay = wrap.querySelector('[data-ref-display]');
+  if (!refDisplay) {
+    refDisplay = document.createElement('div');
+    refDisplay.setAttribute('data-ref-display','');
+    refDisplay.className = 'sum-box ref-line';
+    refDisplay.innerHTML = '<strong>원문</strong> <span>—</span>';
+    // keep it hidden until scoring populates it
+    refDisplay.style.display = 'none';
+    wrap.appendChild(refDisplay);
+  }
+  let hypDisplay = wrap.querySelector('[data-hyp-display]');
+  if (!hypDisplay) {
+    hypDisplay = document.createElement('div');
+    hypDisplay.setAttribute('data-hyp-display','');
+    hypDisplay.className = 'sum-box hyp-line';
+    hypDisplay.innerHTML = '<strong>내 발음</strong> <span>—</span>';
+    hypDisplay.style.display = 'none';
+    wrap.appendChild(hypDisplay);
+  }
+  const scoreBox= wrap.querySelector('[data-score]') || (function(){ const d=document.createElement('div'); d.setAttribute('data-score',''); wrap.appendChild(d); return d; })();
   // durationsEl: element to show TTS/record durations; avoid ReferenceError in onResult
   const durationsEl = wrap.querySelector('.duration-badge') || wrap.querySelector('.durations') || wrap.querySelector('[data-durations]');
   const getRef  = ()=> sent.ko;
@@ -402,7 +427,9 @@ function makeCard(a, b){
       const { stop } = LiveSTT.start({
         lang:'ko-KR',
         // show raw interim text (don't apply normalization/auto-corrections here)
-        onPartial(txt){ liveBox.textContent = (txt===undefined || txt===null) ? '…' : String(txt).trim() || '…'; }
+        // Use textContent without aggressive trimming so spaces between
+        // words are preserved; fall back to ellipsis when empty.
+        onPartial(txt){ try{ liveBox.textContent = (txt===undefined || txt===null) ? '…' : String(txt) || '…'; }catch(_){ liveBox.textContent='…'; } }
       });
       return stop;
     }
@@ -421,10 +448,13 @@ function makeCard(a, b){
         for (let i = ev.resultIndex; i < ev.results.length; i++){
           const res = ev.results[i];
           if (!res || !res[0]) continue;
-          parts.push(res[0].transcript || '');
+          // preserve chunk spacing; ensure non-empty strings are appended
+          parts.push(String(res[0].transcript || ''));
         }
         const partial = parts.join('');
-        liveBox.textContent = (partial||'').trim() || '…';
+        // Avoid trimming which may remove important spacing — show raw
+        // interim but collapse purely-empty content to an ellipsis.
+        liveBox.textContent = (partial||'') === '' ? '…' : partial;
       }catch(_){ liveBox.textContent = '…'; }
     };
     try { rec.start(); } catch(_) {}
@@ -649,7 +679,7 @@ function makeCard(a, b){
   try {
     const localRecord = host.querySelector('button[data-action="record"]');
     if (localRecord) {
-      localRecord.innerHTML = `<span>녹음 시작 / Démarrer l'enregistrement</span>`;
+  localRecord.innerHTML = `<span>녹음 시작 / Démarrer l'enregistrement</span>`;
     }
   } catch(_){ }
 

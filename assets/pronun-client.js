@@ -205,13 +205,13 @@ window.addEventListener('pagehide', async () => {
     root.classList.add('pronun-classic');
     const title = h('div', { class:'text-sm text-slate-600 mb-1' }, '🎤 Enregistrer & tester / 녹음·발음 평가');
     const ctrl  = h('div', { class:'flex items-center gap-2 mb-1' });
-    ui.btnStart = h('button', { class:'btn btn-secondary' }, 'Démarrer');
+  ui.btnStart = h('button', { class:'btn btn-secondary' }, '녹음 시작 / Démarrer');
     ui.btnStop  = h('button', { class:'btn btn-outline', disabled:'' }, '■ Stop');
     ui.btnEval  = h('button', { class:'btn btn-primary', disabled:'' }, 'Évaluer');
     ctrl.append(ui.btnStart, ui.btnStop, ui.btnEval);
 
     ui.canvas = buildVUCanvas(CFG.canvasW, CFG.canvasH);
-    ui.msg = h('div', { class:'text-sm text-slate-600 mt-1' }, 'Démarrer → Arrêter → Évaluer.');
+  ui.msg = h('div', { class:'text-sm text-slate-600 mt-1' }, '녹음 시작 → 멈추기 → 평가 / Démarrer → Arrêter → Évaluer.');
 
     root.append(title, ctrl, ui.canvas, ui.msg);
     return ui;
@@ -229,7 +229,7 @@ window.addEventListener('pagehide', async () => {
     ctrl.append(ui.btnStart, ui.btnStop, ui.btnEval);
 
     ui.canvas = buildVUCanvas(CFG.canvasW, CFG.canvasH);
-    ui.msg = h('div', { class:'text-xs text-slate-600 mt-1' }, 'Démarrer → Arrêter → Évaluer.');
+  ui.msg = h('div', { class:'text-xs text-slate-600 mt-1' }, '녹음 시작 → 멈추기 → 평가 / Démarrer → Arrêter → Évaluer.');
 
     root.append(title, ctrl, ui.canvas, ui.msg);
     return ui;

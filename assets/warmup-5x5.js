@@ -337,14 +337,14 @@ function renderSpeedToolbar(){
       <div class="mt-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60">
         <div class="text-sm text-slate-700 mb-2">🎤 S’enregistrer & Évaluer</div>
         <div class="flex flex-wrap gap-2 mb-2">
-          <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> Démarrer</button>
+          <button class="btn btn-secondary btn-rec-start"><i class="fa-solid fa-microphone"></i> 녹음 시작 / Démarrer</button>
           <button class="btn btn-outline btn-rec-stop" disabled><i class="fa-solid fa-stop"></i> Arrêter</button>
           <button class="btn btn-primary btn-eval" disabled><i class="fa-solid fa-bolt"></i> Évaluer</button>
         </div>
         <div class="vu"><canvas class="vu-canvas" width="800" height="50"></canvas></div>
         <div class="pronun-live mt-2 text-sm p-2 rounded border bg-white" data-ref="${esc(refDisplay)}"></div>
         <audio class="mt-2 w-full audio-playback hidden" controls></audio>
-        <div class="mt-2 text-sm text-slate-600 status-line">Démarrer → Arrêter → Évaluer.</div>
+  <div class="mt-2 text-sm text-slate-600 status-line">녹음 시작 → 멈추기 → 평가 / Démarrer → Arrêter → Évaluer.</div>
         <div class="mt-2 text-sm"><span class="inline-block bg-white border px-2 py-1 rounded score-pill hidden"></span></div>
 
         <div class="mt-3 feedback-card hidden">
