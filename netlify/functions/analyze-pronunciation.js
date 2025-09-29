@@ -1,9 +1,5 @@
 // netlify/functions/analyze-pronunciation.js
-const sdk = require("microsoft-cognitiveservices-speech-sdk");
 const { Buffer } = require('buffer');
-
-const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY;
-const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,60 +10,32 @@ const CORS = {
 };
 
 const PROVIDERS = {
-  azure: async ({ referenceText, audioBuffer }) => {
-    const speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_SPEECH_KEY, AZURE_SPEECH_REGION);
-    speechConfig.speechRecognitionLanguage = "ko-KR";
-
-    const audioConfig = sdk.AudioConfig.fromWavFileInput(audioBuffer);
-    const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
-
-    const pronunciationAssessmentConfig = new sdk.PronunciationAssessmentConfig(
-      referenceText,
-      sdk.PronunciationAssessmentGradingSystem.HundredMark,
-      sdk.PronunciationAssessmentGranularity.Phoneme,
-      true
-    );
-    pronunciationAssessmentConfig.applyTo(recognizer);
-
-    const result = await new Promise((resolve, reject) => {
-      recognizer.recognizeOnceAsync(result => {
-        resolve(result);
-        recognizer.close();
-      }, error => {
-        reject(error);
-        recognizer.close();
-      });
+  openai: async ({ referenceText, audioBuffer }) => {
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'whisper-1',
+        file: audioBuffer,
+        prompt: referenceText,
+        language: 'ko'
+      })
     });
 
-    if (result.reason === sdk.ResultReason.RecognizedSpeech) {
-      const pronunciationResult = sdk.PronunciationAssessmentResult.fromResult(result);
-      return {
-        ok: true,
-        accuracy: pronunciationResult.accuracyScore / 100,
-        transcript: result.text,
-        pronunciationResult: {
-          accuracyScore: pronunciationResult.accuracyScore,
-          pronunciationScore: pronunciationResult.pronunciationScore,
-          completenessScore: pronunciationResult.completenessScore,
-          fluencyScore: pronunciationResult.fluencyScore,
-        },
-        words: result.detail.Words?.map(word => ({
-          word: word.Word,
-          accuracy: word.PronunciationAssessment.AccuracyScore,
-          errorType: word.PronunciationAssessment.ErrorType,
-        }))
-      };
-    } else {
-      throw new Error(`Speech could not be recognized: ${result.errorDetails}`);
+    if (!response.ok) {
+      throw new Error(`OpenAI STT failed: ${response.statusText}`);
     }
-  },
-  openai: async ({ referenceText, audioBuffer }) => {
-    // OpenAI STT 로직 추가
-    return { message: 'OpenAI STT not implemented yet.' };
-  },
-  gemini: async ({ referenceText, audioBuffer }) => {
-    // Gemini AI STT 로직 추가
-    return { message: 'Gemini AI STT not implemented yet.' };
+
+    const result = await response.json();
+    return {
+      ok: true,
+      transcript: result.text,
+      words: result.words || []
+    };
   }
 };
 
@@ -80,16 +48,12 @@ exports.handler = async (event) => {
   }
 
   const body = JSON.parse(event.body || '{}');
-  const provider = body.provider || 'azure';
+  const provider = 'openai';
   const { referenceText = '', audio = {} } = body;
   const { base64, mimeType = 'audio/wav' } = audio;
 
   if (!base64) {
     return { statusCode: 400, body: JSON.stringify({ message: 'Audio data is required.' }) };
-  }
-
-  if (!PROVIDERS[provider]) {
-    return { statusCode: 400, body: JSON.stringify({ message: `Provider '${provider}' is not supported.` }) };
   }
 
   try {

@@ -24,53 +24,33 @@ function estimateDurationSec({ text = '', ssml = '', speed = 1.0 } = {}) {
 }
 
 const PROVIDERS = {
-  azure: async ({ text, speed, voice }) => {
-    const speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_SPEECH_KEY, AZURE_SPEECH_REGION);
-    speechConfig.speechSynthesisVoiceName = voice;
-    const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
-
-    const ssml = `
-      <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ko-KR">
-        <voice name="${voice}">
-          <prosody rate="${speed}">
-            ${text}
-          </prosody>
-        </voice>
-      </speak>`;
-
-    const result = await new Promise((resolve, reject) => {
-      synthesizer.speakSsmlAsync(
-        ssml,
-        result => {
-          if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-            resolve(result);
-          } else {
-            reject(new Error(`Speech synthesis failed: ${result.errorDetails}`));
-          }
-          synthesizer.close();
-        },
-        error => {
-          reject(error);
-          synthesizer.close();
-        }
-      );
+  openai: async ({ text }) => {
+    // OpenAI TTS logic implementation
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    const response = await fetch('https://api.openai.com/v1/audio/generate', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model: 'whisper-tts',
+        language: 'ko'
+      })
     });
 
-    const audioBuffer = Buffer.from(result.audioData);
+    if (!response.ok) {
+      throw new Error(`OpenAI TTS failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
     return {
-      audioBase64: audioBuffer.toString('base64'),
+      audioBase64: result.audio,
       mimeType: 'audio/wav',
-      durationEstimateSec: estimateDurationSec({ text, speed }),
-      meta: { provider: 'azure', voice, speed }
+      durationEstimateSec: estimateDurationSec({ text }),
+      meta: { provider: 'openai' }
     };
-  },
-  openai: async ({ text }) => {
-    // OpenAI TTS 로직 추가
-    return { message: 'OpenAI TTS not implemented yet.' };
-  },
-  gemini: async ({ text }) => {
-    // Gemini AI TTS 로직 추가
-    return { message: 'Gemini AI TTS not implemented yet.' };
   }
 };
 
@@ -83,7 +63,7 @@ exports.handler = async (event) => {
   }
 
   const body = JSON.parse(event.body || '{}');
-  const provider = body.provider || 'azure';
+  const provider = body.provider || 'openai';
   const text = body.text;
   const speed = body.speed || 1.0;
   const voice = body.voice || 'ko-KR-SunHiNeural';
