@@ -66,10 +66,6 @@ function makeCard(idx, sent){
     <!-- 실시간 비교 -->
     <div class="grid md:grid-cols-2 gap-3">
       <div class="pronun-card">
-        <div class="pronun-title">원문 / Référence (KO)</div>
-        <div class="p-2 border rounded bg-white text-lg" data-ref>${sent.ko}</div>
-      </div>
-      <div class="pronun-card">
         <div class="pronun-title">내 발음 / En direct</div>
         <div class="pronun-live" data-live>—</div>
       </div>
@@ -298,6 +294,20 @@ function mergeStopAndEvaluate(){
   box-shadow:0 6px 14px rgba(14,165,233,.22);
 }
 .pd-bigbtn:hover{ filter:brightness(1.05); }
+
+/* 틀린 발음 부분 하이라이트 */
+[data-diff] {
+  font-weight:500;
+  color:#333;
+}
+[data-diff] ins {
+  background-color:rgba(239,68,68,.2);
+  text-decoration:none;
+}
+[data-diff] del {
+  background-color:rgba(239,68,68,.4);
+  text-decoration:none;
+}
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');
