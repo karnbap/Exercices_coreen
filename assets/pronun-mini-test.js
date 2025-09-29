@@ -54,12 +54,23 @@ async function ttsPlay(text, voice="shimmer", speed=1.0){
 function makeCard(idx, sent){
   const wrap = document.createElement('section');
   wrap.className = 'card';
+  // promptText: for problems 10+ (idx >= 9) blank a couple of initial hangul syllables
+  let promptText = sent.ko;
+  if (typeof idx === 'number' && idx >= 9 && sent.ko){
+    const chars = Array.from(String(sent.ko));
+    let blanks = 0;
+    for (let i=0;i<chars.length && blanks<2;i++){
+      if (/\s/.test(chars[i])) continue;
+      if (/[가-힣]/.test(chars[i])){ chars[i] = '▢'; blanks++; }
+    }
+    promptText = chars.join('');
+  }
 
   wrap.innerHTML = `
     <div class="flex items-start justify-between gap-3">
       <div class="q-badge">문제 ${idx+1} / Question ${idx+1}</div>
       <div>
-        <div class="text-xl font-bold mb-1">${sent.hideText ? '' : sent.ko}</div>
+  <div class="text-xl font-bold mb-1">${sent.hideText ? '' : promptText}</div>
         <div class="text-slate-600 text-sm mb-2">${sent.hideText ? '<em>잘 듣고 따라하세요 / Écoutez et répétez</em>' : 'FR: ' + sent.fr}</div>
       </div>
       <button class="btn btn-secondary btn-sm" data-action="listen" data-requires-name>▶ 듣기 / Écouter</button>
@@ -463,15 +474,18 @@ function makeCard(idx, sent){
         }catch(_){ ttsDur = null; }
   const myRec = duration ? Number(duration.toFixed(2)) : null;
         const ttsNum = ttsDur ? Number(ttsDur.toFixed(2)) : null;
-        // build visual bars inside durationBadge
+        // build visual bars inside durationBadge using local average (client-only)
         if (durationBadge) {
           const t = Number(ttsNum || 0); const r = Number(myRec || 0);
-          const maxRange = Math.max(0.1, t, r);
+          const avgLocal = computeLocalAverageSeconds();
+          const avg = Number((avgLocal || t || 0));
+          const maxRange = Math.max(0.1, t, r, avg);
           const tPct = t ? Math.round((t / maxRange) * 100) : 0;
           const rPct = r ? Math.round((r / maxRange) * 100) : 0;
+          const aPct = avg ? Math.round((avg / maxRange) * 100) : 0;
           durationBadge.innerHTML = `
-            <div class="dur-row"><div class="dur-label">TTS (평균 속도) / Vitesse moyenne:</div>
-              <div class="dur-bar-bg"><div class="dur-bar dur-bar-avg" style="width:${tPct}%">${t? t.toFixed(1)+'s':'?s'}</div></div>
+            <div class="dur-row"><div class="dur-label">평균 발음 속도 / Vitesse moyenne:</div>
+              <div class="dur-bar-bg"><div class="dur-bar dur-bar-avg" style="width:${aPct}%">${avg? Number(avg).toFixed(1)+'s' : '?s'}</div></div>
             </div>
             <div class="dur-row"><div class="dur-label">내 발음 속도 / Ma vitesse:</div>
               <div class="dur-bar-bg"><div class="dur-bar dur-bar-rec" style="width:${rPct}%">${r? r.toFixed(1)+'s':'?s'}</div></div>
@@ -488,7 +502,7 @@ function makeCard(idx, sent){
           // keep only recent 50
           localStorage.setItem(key, JSON.stringify(existing.slice(-50)));
         }catch(_){ }
-        // update len-compare area
+      // update len-compare area
         try{
           const lenWrap = wrap.querySelector('[data-len-compare]');
           if (lenWrap){
@@ -517,6 +531,38 @@ function makeCard(idx, sent){
               if (r <= t){ rBar.style.left = `${50 - rPct}%`; rBar.style.width = `${rPct}%`; }
               else { rBar.style.left = '50%'; rBar.style.width = `${rPct}%`; }
               rBar.title = `녹음: ${duration?duration.toFixed(2)+'s':'?s'}`;
+            }
+          }
+        }catch(_){ }
+        // enable inline edit of hyp (click to edit and re-evaluate locally)
+        try{
+          if (hypDisplay){
+            hypDisplay.classList.add('hyp-editable');
+            hypDisplay.setAttribute('contenteditable','true');
+            hypDisplay.addEventListener('blur', ()=>{
+              // user may edit corrected text; we don't autosave here, but we allow re-evaluate
+            });
+            // add small re-evaluate button if not present
+            if (!wrap.querySelector('.hyp-reval')){
+              const rbtn = document.createElement('button');
+              rbtn.className = 'hyp-reval';
+              rbtn.textContent = '다시 평가 / Réévaluer';
+              rbtn.style.cssText = 'margin-left:8px;padding:6px 10px;border-radius:8px;background:#06b6d4;color:#fff;border:none;font-weight:700';
+              rbtn.addEventListener('click', ()=>{
+                // take edited hypDisplay text and re-run scoring locally
+                const edited = (hypDisplay.textContent||'').trim();
+                try{
+                  const normRef = normalizeForScoring(ref, ref);
+                  const normHyp = normalizeForScoring(ref, edited);
+                  const { pct } = Scoring.gradePronun(normRef, normHyp, 0.10);
+                  scoreBox.textContent = `${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
+                  // regenerate highlight html
+                  const { refHtml: rH, hypHtml: hH } = generateDualHtml(ref, edited);
+                  if (refDisplay) refDisplay.innerHTML = rH;
+                  if (hypDisplay) hypDisplay.innerHTML = hH;
+                }catch(e){ console.error('reval error', e); }
+              });
+              wrap.querySelector('.sum-val')?.appendChild(rbtn);
             }
           }
         }catch(_){ }
@@ -567,20 +613,11 @@ function makeCard(idx, sent){
   const hintDisplay = hintWrap.querySelector('[data-hint-display]');
     if (help1Btn){
       help1Btn.addEventListener('click', ()=>{
-        const keyText = sent.hint1 || '';
-        function toChosung(s){
-          if (!s) return '';
-          const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-          return Array.from(String(s).normalize('NFC')).map(ch => {
-            const code = ch.codePointAt(0);
-            if (code >= 0xAC00 && code <= 0xD7A3){ const base = code - 0xAC00; const cho = Math.floor(base/588); return CHO[Math.max(0, Math.min(CHO.length-1, cho))] || ch; }
-            return ch;
-          }).join('');
-        }
-        const chos = toChosung(sent.ko || '');
-        // insert spaces between displayed 초성 for readability, preserve original spaces
-        const spaced = Array.from(chos).map(ch => (/\s/.test(ch) ? ch : ch + ' ')).join('').trim();
-        const display = (spaced ? spaced + ' · ' : '') + keyText;
+        // Show only keywords (한글 + 불어) — no 초성
+        const kor = (sent.hint1 || '').trim();
+        const frParts = (sent.hint2 || '').split(/[,\/|·]/).map(p=>p.trim()).filter(Boolean);
+        const fr = frParts.map(p=> p.split('=')[1] ? p.split('=')[1].trim() : '').filter(Boolean).join(', ');
+        const display = kor ? (kor + (fr ? ' · ' + fr : '')) : (fr || '—');
         hintDisplay.textContent = (hintDisplay.textContent === display) ? '' : display;
       });
     }
@@ -591,40 +628,22 @@ function makeCard(idx, sent){
         if (!sent.ko) { hintDisplay.textContent = ''; hintDisplay.dataset.hint2 = '0'; return; }
         if (hintDisplay.dataset.hint2 === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.hint2 = '0'; return; }
         const src = String(sent.ko || '');
-        // derive keywords: prefer sent.hint2 (left side of mappings like '단어=tr'), fallback to sent.hint1
-        function extractKeywords(s){
-          if (!s) return [];
-          // split on common separators
-          const parts = s.split(/[\/|,·]/).map(p=>p.trim()).filter(Boolean);
-          const kws = [];
-          parts.forEach(p=>{
-            // if mapping like '단어=tr', take left side
-            const m = p.split('=')[0].trim();
-            if (m) kws.push(m);
-          });
-          return kws;
+        // For problems 10+ (idx >= 9): show 주요 단어 한글/불어 list
+        if (typeof idx === 'number' && idx >= 9){
+          const kor = (sent.hint1 || '').trim();
+          const frParts = (sent.hint2 || '').split(/[,\/|·]/).map(p=>p.trim()).filter(Boolean).map(p=> p.split('=')[1] ? p.split('=')[1].trim() : '');
+          const fr = frParts.filter(Boolean).join(', ');
+          const display = kor ? (kor + (fr ? ' · ' + fr : '')) : (fr || '—');
+          hintDisplay.textContent = display; hintDisplay.dataset.hint2 = '1'; return;
         }
-        let keywords = extractKeywords(sent.hint2 || '');
-        if (!keywords.length) keywords = extractKeywords(sent.hint1 || '');
-        // if still empty, fallback to blank entire sentence
-        if (!keywords.length){
-          hintDisplay.textContent = src.replace(/[^\s]/g,'▢');
-          hintDisplay.dataset.hint2 = '1';
-          return;
-        }
-        // replace only occurrences of keywords with boxes of same visual length
-        // sort by length desc to avoid partial overlaps
+        // Otherwise blank only keywords
+        function extractKeywords(s){ if (!s) return []; return s.split(/[\/|,·]/).map(p=>p.trim()).filter(Boolean).map(p=>p.split('=')[0].trim()); }
+        let keywords = extractKeywords(sent.hint2 || ''); if (!keywords.length) keywords = extractKeywords(sent.hint1 || '');
+        if (!keywords.length){ hintDisplay.textContent = src.replace(/[^ -\u007F\s]/g,'▢'); hintDisplay.dataset.hint2 = '1'; return; }
         keywords = Array.from(new Set(keywords)).sort((a,b)=>b.length - a.length);
-        let out = src;
-        function esc(s){ return s.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&'); }
-        keywords.forEach(kw=>{
-          const k = (kw||'').trim(); if (!k) return;
-          try{
-            out = out.replace(new RegExp(esc(k), 'g'), (m)=> m.split('').map(ch => (/\s/.test(ch) ? ch : '▢')).join(''));
-          }catch(_){ /* ignore regex errors */ }
-        });
-        hintDisplay.textContent = out;
-        hintDisplay.dataset.hint2 = '1';
+        let out = src; function esc(s){ return s.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&'); }
+        keywords.forEach(kw=>{ const k=(kw||'').trim(); if (!k) return; try{ out = out.replace(new RegExp(esc(k), 'g'), (m)=> m.split('').map(ch => (/\s/.test(ch) ? ch : '▢')).join('')); }catch(_){ } });
+        hintDisplay.textContent = out; hintDisplay.dataset.hint2 = '1';
       });
     }
   }catch(_){/*ignore*/}
@@ -711,18 +730,21 @@ async function fetchEstimateSpeedAndUpdate(cardEl){
     if (!resp.ok) return null;
     const json = await resp.json();
     // update duration badge inside the card if present
-    if (cardEl){
-      const durationBadge = cardEl.querySelector('.duration-badge');
-      if (durationBadge){
-        const avg = json.avgSeconds ? Number(json.avgSeconds).toFixed(2) : null;
-        const sps = json.secPerSyll ? Number(json.secPerSyll).toFixed(3) : null;
-        // append server averages as small note
-        const note = `<div style="font-size:0.82rem;margin-top:6px;color:#334155">서버 평균: ${avg?avg+'s':'?s'} ${sps?('· '+sps+' s/음절'):''}</div>`;
-        durationBadge.insertAdjacentHTML('beforeend', note);
-      }
-    }
+    // no server note insertion — keep client-only UI. If desired, server values may be used
+    // to overwrite client display elsewhere; we avoid appending a '서버 평균' line per request.
+    
     return json;
   }catch(e){ console.error('estimate-speed failed', e); return null; }
+}
+
+function computeLocalAverageSeconds(){
+  try{
+    const key = 'pronunSpeedSamples';
+    const samples = JSON.parse(localStorage.getItem(key) || '[]').filter(s=>s && Number(s.duration));
+    if (!samples || !samples.length) return null;
+    const total = samples.reduce((s,it)=>s + Number(it.duration||0), 0);
+    return total / samples.length;
+  }catch(_){ return null; }
 }
 
 
@@ -904,6 +926,14 @@ async function fetchEstimateSpeedAndUpdate(cardEl){
   .sum-box .hyp-line span{ font-size:1.5rem; }
 }
 
+/* shake animation for empty required inputs */
+.pronun-modal-inner.shake{ animation: pronun-shake 540ms cubic-bezier(.36,.07,.19,.97); }
+@keyframes pronun-shake{ 10%,90%{ transform:translateX(-1px) } 20%,80%{ transform:translateX(2px) } 30%,50%,70%{ transform:translateX(-4px) } }
+
+/* hyp inline edit styling */
+.hyp-editable{ outline:2px dashed rgba(6,95,70,0.08); padding:4px; border-radius:6px; cursor:text }
+
+
 /* Tooltip: simple hover title fallback is used; add slight transition for width changes */
 .len-bar{ transition: width 220ms ease; }
 `;
@@ -1016,9 +1046,9 @@ if (recordButton) {
   modal.id = 'pronun-student-modal';
   modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:9999;padding:18px';
   modal.innerHTML = `
-    <div style="background:#fff;padding:20px;border-radius:12px;max-width:720px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,.25);border:1px solid rgba(2,6,23,0.06)">
+    <div class="pronun-modal-inner" style="background:#fff;padding:20px;border-radius:12px;max-width:720px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,.25);border:1px solid rgba(2,6,23,0.06)">
       <div style="font-weight:800;margin-bottom:10px;font-size:1.05rem">학생 이름 / Nom de l'élève</div>
-      <input id="pronun-student-name" placeholder="이름을 입력하세요 / Entrez le nom" style="width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;font-size:1rem" />
+      <input id="pronun-student-name" placeholder="이름을 입력하세요" style="width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;font-size:1rem" />
       <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
         <button id="pronun-student-cancel" style="padding:10px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#0f172a">취소 / Annuler</button>
         <button id="pronun-student-ok" style="background:#06b6d4;color:#fff;padding:10px 16px;border-radius:8px;border:none;font-weight:700">확인 / Confirmer</button>
@@ -1030,10 +1060,15 @@ if (recordButton) {
   modal.querySelector('#pronun-student-cancel').addEventListener('click', ()=>{ modal.style.display='none'; });
   modal.querySelector('#pronun-student-ok').addEventListener('click', ()=>{
     const v = (nameInput.value||'').trim();
-    if (!v) { alert('이름을 입력하세요 / Entrez le nom'); return; }
+    if (!v) {
+      // shake animation on inner container and focus
+      const inner = modal.querySelector('.pronun-modal-inner');
+      if (inner){ inner.classList.remove('shake'); void inner.offsetWidth; inner.classList.add('shake'); }
+      nameInput.focus();
+      return;
+    }
     try{ localStorage.setItem('pronunStudentName', v); }catch(_){ }
     modal.style.display='none';
-    // enable controls once name is set
     try{ enableNameRequiredControls(); }catch(_){ }
   });
 })();
