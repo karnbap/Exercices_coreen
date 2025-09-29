@@ -210,36 +210,35 @@ function makeCard(idx, sent){
       const normChars = [...norm];
 
       function jamoCount(ch){
-        // More conservative: treat Hangul syllable with jongseong as 3 jamo,
-        // without jongseong as 2. Non-Hangul as 1. Ensure undefineds are handled.
+        // Keep this consistent with toJamoSeqLocal: Hangul syllable => 2 or 3
         if (!ch) return 1;
         if (/[가-힣]/.test(ch)){
           const code = ch.codePointAt(0);
-          const base = code - 0xAC00;
-          if (base < 0 || base > (0xD7A3 - 0xAC00)) return 1;
-          const jong = base % 28;
+          const i = code - 0xAC00;
+          if (i < 0 || i > (0xD7A3 - 0xAC00)) return 1;
+          const jong = i % 28;
           return jong === 0 ? 2 : 3;
         }
         return 1;
       }
 
-      // Greedy alignment with safeguards: try to align sequences but avoid
-      // mapping many norm chars to the last raw char (which caused trailing
-      // characters to be marked wrong). We'll distribute leftover norm chars
-      // across remaining raw chars proportionally.
+      // Greedy alignment but keep distribution conservative: align identical
+      // characters first, try small lookahead, and if leftover normalized
+      // chars remain, distribute them evenly across remaining raw chars so
+      // the last raw char doesn't collect a disproportionate number of jamo
+      // positions.
       const normCharToRaw = new Array(normChars.length).fill(-1);
       let iNorm = 0, iRaw = 0;
+      // First pass: direct equal-char matches
       while (iNorm < normChars.length && iRaw < rawChars.length){
-        if (normChars[iNorm] === rawChars[iRaw]){
-          normCharToRaw[iNorm] = iRaw; iNorm++; iRaw++; continue;
-        }
-        // lookahead in raw for a near match within small window
+        if (normChars[iNorm] === rawChars[iRaw]){ normCharToRaw[iNorm] = iRaw; iNorm++; iRaw++; continue; }
+        // lookahead in raw (small window)
         let found = -1;
         for (let k=1;k<=2 && (iRaw+k)<rawChars.length;k++){
           if (normChars[iNorm] === rawChars[iRaw+k]){ found = iRaw+k; break; }
         }
         if (found !== -1){ normCharToRaw[iNorm] = found; iNorm++; iRaw = found+1; continue; }
-        // lookahead in norm for match to current raw char
+        // lookahead in norm for a match to current raw
         found = -1;
         for (let k=1;k<=2 && (iNorm+k)<normChars.length;k++){
           if (normChars[iNorm+k] === rawChars[iRaw]){ found = iNorm+k; break; }
@@ -248,15 +247,28 @@ function makeCard(idx, sent){
         // fallback: map current norm char to current raw and advance norm
         normCharToRaw[iNorm] = iRaw; iNorm++;
       }
-      // if some norm chars remain, distribute them over remaining raw chars
+      // Distribute any remaining norm chars evenly across remaining raw chars
       if (iNorm < normChars.length){
         const remainingNorm = normChars.length - iNorm;
         const remainingRaw = Math.max(1, rawChars.length - iRaw);
-        let rIndex = iRaw;
+        // Spread indexes so each raw char receives roughly even share
+        // Compute base share and extras
+        const base = Math.floor(remainingNorm / remainingRaw);
+        let extras = remainingNorm % remainingRaw;
+        let r = iRaw;
         for (let k=0;k<remainingNorm;k++){
-          normCharToRaw[iNorm + k] = Math.min(rawChars.length-1, rIndex);
-          // advance rIndex occasionally to spread mapping
-          if (((k+1) * remainingRaw) / remainingNorm > (rIndex - iRaw + 1)) rIndex = Math.min(rawChars.length-1, rIndex+1);
+          normCharToRaw[iNorm + k] = Math.min(rawChars.length-1, r);
+          // after assigning base (+maybe one extra) jamos to r, advance r
+          const assigned = base + (extras>0 ? 1 : 0);
+          if (assigned>0){
+            // reduce extras if consumed
+            if (extras>0) extras--;
+            // compute when to advance: move to next raw after assigned
+            // positions have been filled for this raw char
+            if (((k+1) % (base + 1)) === 0) r = Math.min(rawChars.length-1, r+1);
+          } else {
+            r = Math.min(rawChars.length-1, r+1);
+          }
         }
       }
 
@@ -276,18 +288,23 @@ function makeCard(idx, sent){
         }
       }
 
-      // Now decide OK per raw char: if it has no mapped norm-jamo positions,
-      // fall back to comparing the character directly to normalized equivalent.
+      // Decide OK per raw char using majority rule on mapped jamo positions.
+      // If a char has no mapped positions, fall back to a loose direct-char
+      // comparison against the normalized source.
       const htmlParts = [];
       for (let ri=0; ri<rawChars.length; ri++){
         const ch = rawChars[ri];
         const positions = rawCharToNormJamoPositions[ri];
         let ok = true;
         if (positions.length === 0){
-          // no mapping info: treat as ok if raw char also appears unchanged in norm
+          // No mapping: be permissive — consider OK if character exists in norm
           ok = normChars.includes(ch);
         } else {
-          for (const p of positions){ if (!keepArr[p]){ ok = false; break; } }
+          // majority rule: if >=50% of this char's jamo slots are kept,
+          // consider the visible char as correctly pronounced.
+          let kept = 0;
+          for (const p of positions) if (keepArr[p]) kept++;
+          ok = (kept / positions.length) >= 0.5;
         }
         htmlParts.push(ok ? `<span>${ch}</span>` : `<span style=\"color:#dc2626\">${ch}</span>`);
       }
