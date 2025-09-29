@@ -142,9 +142,12 @@
     const jamAcc = 1 - rate;
     const pct = Math.max(0, Math.round(jamAcc*100));
 
-    if (rate <= tol){
-      return { pct: 100, html: [...refRaw.normalize('NFC')].map(ch=>`<span>${ch}</span>`).join('') };
-    }
+      // If texts are exactly the same after normalization, accept 100% immediately
+      try {
+        if (norm(String(refRaw)) === norm(String(hypRaw))) {
+          return { pct: 100, html: [...refRaw.normalize('NFC')].map(ch=>`<span>${ch}</span>`).join('') };
+        }
+      } catch(_) {}
 
     // LCS 기반 빨강 마킹
     const m = refJ.length, n = hypJ.length;
@@ -161,7 +164,8 @@
     }
 
     let ki=0, html='';
-    for (const ch of [...refRaw.normalize('NFC')]){
+      let mismatchFound = false;
+      for (const ch of [...refRaw.normalize('NFC')]){
       if (!/[가-힣0-9A-Za-z]/.test(ch)){
         html += `<span>${ch}</span>`; continue;
       }
@@ -172,9 +176,17 @@
       }
       let ok=true;
       for (let c=0;c<cnt;c++){ if (!keep[ki+c]) {ok=false;break;} }
-      html += ok? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
+        if (!ok) mismatchFound = true;
+        html += ok? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
       ki+=cnt;
     }
+    // Stricter perfect-score rule:
+    // - exact normalized string equality already returned above
+    // - otherwise require very high jamo accuracy AND no highlighted mismatches
+    if (!mismatchFound && jamAcc >= 0.995) {
+      return { pct: 100, html };
+    }
+
     return { pct, html };
   }
 

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>len_compare_report</title>
+<style>
+  body{font-family:Inter,system-ui,Arial;margin:20px;background:#f8fafc;color:#0f172a}
+  .card{background:#fff;border:1px solid #e6eef6;border-radius:8px;padding:16px;max-width:900px;margin:0 auto}
+  .len-abs{position:relative;height:18px;background:transparent;margin-top:12px}
+  .len-center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#e2e8f0;transform:translateX(-50%)}
+  .len-bar{position:absolute;top:3px;height:12px;border-radius:6px}
+  .len-bar-tts{background:linear-gradient(90deg,#bfdbfe,#93c5fd);z-index:1}
+  .len-bar-rec{background:linear-gradient(90deg,#fde68a,#fca5a5);z-index:2}
+  .badges{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .badge{padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #e6eef6}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>len_compare_report snapshot</h2>
+  <div id="content"></div>
+</div>
+<script>
+fetch('/TESTS/len_compare_report.json').then(r=>r.json()).then(j=>{
+  const out = document.getElementById('content');
+  out.innerHTML = `<div class="badges"><div class="badge">${j.badges.duration || ''}</div></div>`;
+  const wrap = document.createElement('div'); wrap.className='len-abs';
+  const center = document.createElement('div'); center.className='len-center'; wrap.appendChild(center);
+  const t = document.createElement('div'); t.className='len-bar len-bar-tts'; t.style.left = j.tBar.left; t.style.width=j.tBar.width; t.title=j.tBar.title; wrap.appendChild(t);
+  const r = document.createElement('div'); r.className='len-bar len-bar-rec'; r.style.left = j.rBar.left; r.style.width=j.rBar.width; r.title=j.rBar.title; wrap.appendChild(r);
+  out.appendChild(wrap);
+}).catch(e=>{ document.getElementById('content').textContent = 'failed to load json: '+e });
+</script>
+</body>
+</html>

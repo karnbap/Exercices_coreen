@@ -47,23 +47,35 @@ function stash(payload) {
     stash(slim);
 
     try {
-      const res = await fetch(ENDPT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-        mode: 'cors',
-        credentials: 'omit',
-        body: JSON.stringify(slim)
-      });
+        const res = await fetch(ENDPT + '?html=1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Return-HTML': '1' },
+          mode: 'cors',
+          credentials: 'omit',
+          body: JSON.stringify(slim)
+        });
 
-      const txt = await res.text().catch(()=>'');
-      let data; try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+        const ctype = (res.headers.get('Content-Type') || '').toLowerCase();
+        const txt = await res.text().catch(()=>'');
 
-      if (!res.ok || data?.ok === false) {
-        console.error('[send-results] HTTP', res.status, data);
-        return { ok:false, status:res.status, data };
-      }
+        // If server returned a full HTML page, open it as a UTF-8 blob in a new tab
+        if (res.ok && ctype.includes('text/html')){
+          try{
+            const blob = new Blob([txt], { type: 'text/html; charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            try { window.open(url, '_blank'); } catch(_){}
+            return { ok:true, status:res.status, data: { raw: txt } };
+          }catch(e){ console.error('[send-results] open html failed', e); }
+        }
 
-      return { ok:true, status:res.status, data };
+        let data; try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+
+        if (!res.ok || data?.ok === false) {
+          console.error('[send-results] HTTP', res.status, data);
+          return { ok:false, status:res.status, data };
+        }
+
+        return { ok:true, status:res.status, data };
     } catch (err) {
       console.error('[send-results] fetch error', err);
       return { ok:false, error:String(err) };

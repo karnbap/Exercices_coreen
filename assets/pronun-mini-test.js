@@ -143,6 +143,8 @@ function makeCard(idx, sent){
   const refDisplay = wrap.querySelector('[data-ref-display]');
   const hypDisplay = wrap.querySelector('[data-hyp-display]');
   const scoreBox= wrap.querySelector('[data-score]');
+  // durationsEl: element to show TTS/record durations; avoid ReferenceError in onResult
+  const durationsEl = wrap.querySelector('.duration-badge') || wrap.querySelector('.durations') || wrap.querySelector('[data-durations]');
   const getRef  = ()=> sent.ko;
 
   // 로컬: ref/hyp 둘 줄 표시를 위한 Jamo 기반 정렬+하이라이트 생성기
@@ -510,20 +512,65 @@ function makeCard(idx, sent){
     }
   });
 
-  // Hint buttons: 도움받기1 / 도움받기2
+  // Hint buttons will be injected just under the listen button (moved)
   try{
+    // find the listen button and insert a hint container right after it
+    const listenBtn = wrap.querySelector('[data-action="listen"]');
     const hintWrap = document.createElement('div');
     hintWrap.style.marginTop = '8px';
     hintWrap.innerHTML = `<button class="btn btn-ghost btn-sm" data-hint="1">도움받기1</button> <button class="btn btn-ghost btn-sm" data-hint="2">도움받기2</button> <span data-hint-display style="margin-left:12px;color:#334155"></span>`;
-    wrap.appendChild(hintWrap);
+    if (listenBtn && listenBtn.parentNode) {
+      listenBtn.parentNode.insertBefore(hintWrap, listenBtn.nextSibling);
+    } else {
+      wrap.appendChild(hintWrap);
+    }
     const hintDisplay = hintWrap.querySelector('[data-hint-display]');
+
+    // 도움받기1: 간단 힌트 텍스트 토글
     hintWrap.querySelector('[data-hint="1"]').addEventListener('click', (e)=>{
       if (!sent.hint1) { hintDisplay.textContent = ''; return; }
-      if (hintDisplay.textContent === sent.hint1) hintDisplay.textContent = ''; else hintDisplay.textContent = sent.hint1;
+      hintDisplay.textContent = (hintDisplay.textContent === sent.hint1) ? '' : sent.hint1;
     });
+
+    // 도움받기2: 문장에서 일부 단어를 빈칸으로 대체해 보여준다
     hintWrap.querySelector('[data-hint="2"]').addEventListener('click', (e)=>{
-      if (!sent.hint2) { hintDisplay.textContent = ''; return; }
-      if (hintDisplay.textContent === sent.hint2) hintDisplay.textContent = ''; else hintDisplay.textContent = sent.hint2;
+      if (!sent.hint2 && !sent.ko) { hintDisplay.textContent = ''; return; }
+      // If currently showing the blanked hint, clear it
+      if (hintDisplay.dataset.blankShown === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.blankShown = '0'; return; }
+      const src = sent.hint2 || sent.ko || '';
+      // split into words (prefer spaces, fallback to syllables)
+      const words = src.split(/(\s+)/).filter(Boolean);
+      if (words.length === 0) { hintDisplay.textContent = ''; hintDisplay.dataset.blankShown='0'; return; }
+      // choose up to 1-2 words to blank based on length
+      const candidateIdx = [];
+      for (let i=0;i<words.length;i++){
+        if (/\s+/.test(words[i])) continue; // skip pure whitespace
+        if (words[i].length >= 2) candidateIdx.push(i);
+      }
+      // if no good candidate, blank a middle character from last word
+      let blanked = words.slice();
+      if (candidateIdx.length === 0){
+        const widx = Math.max(0, words.length-1);
+        const w = words[widx];
+        const pos = Math.floor(w.length/2);
+        blanked[widx] = w.substring(0,pos) + '▢' + w.substring(pos+1);
+      } else {
+        // pick 1 or 2 random indices
+        const nBlank = candidateIdx.length >= 3 ? 2 : 1;
+        const shuffled = candidateIdx.sort(()=>0.5-Math.random());
+        const pick = shuffled.slice(0,nBlank);
+        pick.forEach(pi => {
+          const w = blanked[pi];
+          // replace middle portion with underscore boxes proportional to length
+          const Keep = Math.max(1, Math.floor(w.length/3));
+          const start = Math.floor((w.length - Keep)/2);
+          const end = start + Keep;
+          const blanks = '▢'.repeat(Math.max(1, end-start));
+          blanked[pi] = w.substring(0,start) + blanks + w.substring(end);
+        });
+      }
+      hintDisplay.textContent = blanked.join('');
+      hintDisplay.dataset.blankShown = '1';
     });
   }catch(_){/*ignore*/}
 
