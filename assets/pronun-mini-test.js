@@ -679,6 +679,37 @@ function makeCard(idx, sent){
     mergeStopAndEvaluate();
   setTimeout(mergeStopAndEvaluate, 200);
 
+  // Enforce listen-before-record: if user clicks record without listening,
+  // show a temporary tip and shake the listen button to draw attention.
+  wrap.addEventListener('click', (e)=>{
+    const btn = e.target.closest && e.target.closest('button');
+    if (!btn) return;
+    const label = (btn.textContent || '').toLowerCase();
+    const isRecord = btn.dataset && btn.dataset.action === 'record' || /녹음|démarrer|start|record|enregistrement/i.test(label);
+    if (!isRecord) return;
+    // If this card hasn't been listened to yet, prompt the user
+    if (!wrap.dataset.listened || wrap.dataset.listened !== '1'){
+      const listenBtn = wrap.querySelector('[data-action="listen"]');
+      if (listenBtn){
+        listenBtn.classList.add('need-listen-shake');
+        setTimeout(()=>listenBtn.classList.remove('need-listen-shake'), 700);
+      }
+      // small temporary tip
+      let tip = wrap.querySelector('.pronun-need-listen');
+      if (!tip){
+        tip = document.createElement('div');
+        tip.className = 'pronun-need-listen';
+        tip.innerHTML = '먼저 듣기 버튼을 눌러 문장을 들으세요.<br/><small>Veuillez d\'abord appuyer sur <b>Écouter</b>.</small>';
+        wrap.appendChild(tip);
+        // show/auto-hide
+        setTimeout(()=> tip.classList.add('visible'), 10);
+        setTimeout(()=>{ tip.classList.remove('visible'); setTimeout(()=>tip.remove(), 260); }, 2600);
+      }
+      e.preventDefault(); e.stopPropagation();
+      return;
+    }
+  });
+
 function mergeStopAndEvaluate(){
   const allBtns = Array.from(host.querySelectorAll('button'));
   const normTxt = s => (s||'').replace(/\s+/g,' ').trim().toLowerCase();
@@ -924,6 +955,11 @@ function computeLocalAverageSeconds(){
 /* shake animation for empty required inputs */
 .pronun-modal-inner.shake{ animation: pronun-shake 540ms cubic-bezier(.36,.07,.19,.97); }
 @keyframes pronun-shake{ 10%,90%{ transform:translateX(-1px) } 20%,80%{ transform:translateX(2px) } 30%,50%,70%{ transform:translateX(-4px) } }
+
+/* listen-before-record tip */
+.pronun-need-listen{ position:absolute; right:18px; top:18px; background:#fff8f0; border:1px solid #fde68a; color:#92400e; padding:8px 12px; border-radius:8px; font-size:0.95rem; box-shadow:0 8px 20px rgba(2,6,23,.06); opacity:0; transform:translateY(-6px); transition:all 220ms ease; z-index:80 }
+.pronun-need-listen.visible{ opacity:1; transform:translateY(0); }
+.need-listen-shake{ animation: pronun-shake 560ms cubic-bezier(.36,.07,.19,.97); }
 
 /* hyp inline edit styling */
 .hyp-editable{ outline:2px dashed rgba(6,95,70,0.08); padding:4px; border-radius:6px; cursor:text }
