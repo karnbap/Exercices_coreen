@@ -130,17 +130,32 @@ function buildHtml(payload){
     const acc = (q?.pronunciation && Number.isFinite(q.pronunciation.accuracy))
       ? Math.round(q.pronunciation.accuracy * 100) : null;
     const icon = ok ? '✅' : '❌';
+    const ttsDur = (q?.pronunciation && Number.isFinite(q.pronunciation.ttsDuration)) ? `${Number(q.pronunciation.ttsDuration).toFixed(1)}s` : '–';
+    const recDur = (q?.pronunciation && Number.isFinite(q.pronunciation.recDuration)) ? `${Number(q.pronunciation.recDuration).toFixed(1)}s` : '–';
+    const refH = q?.refHtml ? q.refHtml : esc(q?.ko||'');
+    const hypH = q?.hypHtml ? q.hypHtml : esc('');
     return `
       <tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${n}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb">${esc(q?.ko||'')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb">${esc(q?.fr||'')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${icon}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${k?'✓':'–'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${f?'✓':'–'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${acc!=null? acc+'%':'–'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${lc}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${h1}/${h2}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${n}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top">${esc(q?.ko||'')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top">${esc(q?.fr||'')}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${icon}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${k?'✓':'–'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${f?'✓':'–'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${acc!=null? acc+'%':'–'}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${ttsDur}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${recDur}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${lc}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top">${h1}/${h2}</td>
+      </tr>
+      <tr>
+        <td colspan="11" style="padding:8px 12px;border-bottom:1px solid #e5e7eb;background:#fbfbfd">
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:240px"><strong>Référence / 원문</strong><div style="margin-top:6px;color:#0f172a">${refH}</div></div>
+            <div style="flex:1;min-width:240px"><strong>Prononciation / 내 발음</strong><div style="margin-top:6px;color:#0f172a">${hypH}</div></div>
+            <div style="min-width:160px;color:#475569;font-size:13px;text-align:right">Durée TTS: ${ttsDur}<br/>Durée enregistrement: ${recDur}</div>
+          </div>
+        </td>
       </tr>`;
   }).join('');
 

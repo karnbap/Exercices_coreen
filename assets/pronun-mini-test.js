@@ -59,7 +59,6 @@ function makeCard(idx, sent){
     <div class="flex items-start justify-between gap-3">
       <div class="q-badge">문제 ${idx+1} / Question ${idx+1}</div>
       <div>
-        <div class="text-sm text-slate-500">Q${idx+1}</div>
         <div class="text-xl font-bold mb-1">${sent.ko}</div>
         <div class="text-slate-600 text-sm mb-2">FR: ${sent.fr}</div>
       </div>
@@ -86,7 +85,11 @@ function makeCard(idx, sent){
       <div class="sum-title">틀린 부분 / Parties non conformes</div>
       <div class="sum-val text-base leading-7">
         <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span data-ref-display>—</span></div>
-        <div class="hyp-line mt-1"><strong>내가 녹음한 문장 / Ma phrase :</strong> <span data-hyp-display>—</span></div>
+        <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span data-hyp-display>—</span></div>
+        <div class="sum-stats mt-2" aria-live="polite">
+          <div class="accuracy" data-accuracy style="font-size:1.55rem;font-weight:800;color:#0f172a">정확도: —</div>
+          <div class="durations text-sm text-slate-600" data-durations>길이: — / —</div>
+        </div>
       </div>
       <div class="sum-sub mt-1" data-score></div>
     </div>
@@ -374,7 +377,34 @@ function makeCard(idx, sent){
         const { refHtml, hypHtml } = generateDualHtml(ref, transcript);
         if (refDisplay) refDisplay.innerHTML = refHtml;
         if (hypDisplay) hypDisplay.innerHTML = hypHtml;
-        scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
+        // show accuracy prominently and durations (TTS vs my recording)
+        const accuracyEl = host.querySelector('[data-accuracy]');
+        const durationsEl = host.querySelector('[data-durations]');
+        if (accuracyEl) accuracyEl.textContent = `정확도: ${pct}%`;
+        // try to find tts duration from listen button _audio (stored when played)
+        let ttsDur = null;
+        try{
+          const listenBtn = wrap.querySelector('[data-action="listen"]');
+          const audioObj = listenBtn?listenBtn._audio:null;
+          if (audioObj && typeof audioObj.durationEstimateSec === 'number') ttsDur = audioObj.durationEstimateSec;
+        }catch(_){ ttsDur = null; }
+        const myRec = duration ? `${duration.toFixed(1)}s` : '?s';
+        const ttsStr = ttsDur ? `${ttsDur.toFixed(1)}s` : 'TTS ?s';
+        if (durationsEl) durationsEl.textContent = `TTS: ${ttsStr} · 내 녹음: ${myRec}`;
+        // persist durations & highlight HTML on the card element for send-results
+        try{
+          const cardEl = wrap;
+          if (cardEl) {
+            if (typeof duration === 'number') cardEl.dataset.recDuration = String(Number(duration.toFixed(2)));
+            if (typeof ttsDur === 'number') cardEl.dataset.ttsDuration = String(Number((ttsDur||0).toFixed(2)));
+            // store generated highlight HTML (safe-ish: server sanitizes too)
+            const refHtmlNode = refDisplay; const hypHtmlNode = hypDisplay;
+            cardEl.dataset.refHtml = refHtmlNode ? refHtmlNode.innerHTML : '';
+            cardEl.dataset.hypHtml = hypHtmlNode ? hypHtmlNode.innerHTML : '';
+          }
+        }catch(_){ }
+        // also update compact score box
+        scoreBox.textContent = `${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
       } catch (e) {
         console.error('[pronun-mini-test] scoring error', e);
         if (refDisplay) refDisplay.textContent = ref;
@@ -544,23 +574,40 @@ function mergeStopAndEvaluate(){
 
 /* Card border and question badge */
 .card{
+  position:relative;
   border: 2px solid #0ea5e9; /* sky-500 */
   box-shadow: 0 6px 20px rgba(14,165,233,0.08);
   border-radius:12px;
-  padding:14px;
+  padding:18px;
+  padding-top:40px; /* extra space for absolute badge */
   margin-bottom:18px;
 }
 .card .q-badge{
-  position:relative;
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:6;
   display:inline-block;
   background:linear-gradient(90deg,#0ea5e9,#06b6d4);
   color:#fff;
-  font-weight:700;
-  padding:6px 10px;
+  font-weight:800;
+  font-size:0.95rem;
+  padding:8px 12px;
   border-radius:10px;
-  margin-right:10px;
   box-shadow:0 6px 14px rgba(14,165,233,.18);
 }
+/* optional semantic colors */
+.card .q-badge.warning{ background:linear-gradient(90deg,#f59e0b,#f97316); }
+.card .q-badge.danger{ background:linear-gradient(90deg,#ef4444,#dc2626); }
+
+.q-number{ font-weight:800; font-size:0.95rem; color:#0f172a; }
+
+/* result emphasis */
+.sum-box{ background: #ffffff; border: 1px solid #e6eef6; padding:12px; border-radius:10px; }
+.sum-box .sum-title{ font-weight:700; color:#0f172a; margin-bottom:8px; }
+.sum-box .ref-line strong, .sum-box .hyp-line strong{ width:180px; }
+.sum-box .accuracy{ color:#065f46; }
+.sum-box .durations{ color:#334155; }
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');
@@ -638,51 +685,27 @@ if (recordButton) {
   modal.querySelector('#pronun-student-cancel').addEventListener('click', ()=>{ modal.style.display='none'; });
 });
 
-// Updated finish button to use modal and request HTML response
-if (finishButton) {
-  finishButton.addEventListener('click', async () => {
-    // Show modal to get student name
-    const modal = document.getElementById('pronun-student-modal');
-    if (modal) modal.style.display = 'flex';
-    const nameInput = document.getElementById('pronun-student-name');
+// Generic result modal / error modal used for success & retry UI
+(function injectResultModal(){
+  if (document.getElementById('pronun-result-modal')) return;
+  const m = document.createElement('div');
+  m.id = 'pronun-result-modal';
+  m.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:10000';
+  m.innerHTML = `
+    <div style="background:#fff;padding:18px;border-radius:12px;max-width:640px;width:94%;box-shadow:0 14px 40px rgba(2,6,23,.28)">
+      <div id="pronun-result-body" style="font-size:16px;color:#0f172a"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button id="pronun-result-secondary" style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff">닫기 / Fermer</button>
+        <button id="pronun-result-primary" style="padding:8px 12px;border-radius:8px;background:#0ea5e9;color:#fff">확인 / OK</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  m.querySelector('#pronun-result-secondary').addEventListener('click', ()=>{ m.style.display='none'; });
+  // primary handler set dynamically by caller
+})();
 
-    const getName = () => new Promise(resolve => {
-      const ok = document.getElementById('pronun-student-ok');
-      const cancel = document.getElementById('pronun-student-cancel');
-      const cleanup = () => { ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); };
-      const onOk = () => { cleanup(); modal.style.display='none'; resolve(nameInput.value.trim()); };
-      const onCancel = () => { cleanup(); modal.style.display='none'; resolve(null); };
-      ok.addEventListener('click', onOk); cancel.addEventListener('click', onCancel);
-    });
-
-    const studentName = await getName();
-    if (studentName === null) return; // cancelled
-
-    const payload = collectResults();
-    payload.studentName = studentName || payload.studentName || 'Student';
-
-    try {
-      const response = await fetch('/.netlify/functions/send-results?html=1', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Return-HTML': '1' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) throw new Error('send failed');
-      const html = await response.text();
-      if (html) {
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      } else {
-        window.location.href = '/results.html';
-      }
-    } catch (e) {
-      console.error('send-results error', e);
-      alert('결과 전송에 실패했습니다. 이메일 설정을 확인하세요.');
-    }
-  });
-}
+// (removed earlier duplicate finish-button handler to avoid premature access)
 
 // Normalize text helper (matches server-side canon rules loosely)
 function normalizeTextForCompare(s){
@@ -709,8 +732,8 @@ function collectResults(){
     const ko = koEl?.textContent?.trim() || '';
     const fr = (frEl?.textContent||'').replace(/^FR:\s*/i,'').trim();
 
-    const diffEl = card.querySelector('[data-diff]');
-    const diffHtml = diffEl?.innerHTML?.trim() || '';
+  const diffEl = card.querySelector('[data-diff]');
+  const diffHtml = diffEl?.innerHTML?.trim() || '';
     const scoreEl = card.querySelector('[data-score]');
     const scoreText = scoreEl?.textContent || '';
     const pctMatch = scoreText.match(/(\d{1,3})%/);
@@ -719,6 +742,12 @@ function collectResults(){
     // If diff HTML contains <del> or <ins> it's considered incorrect
     const isCorrect = !!(diffHtml && !(/<del|<ins/i.test(diffHtml)));
 
+    // durations and highlight HTML (saved by onResult)
+    const ttsDuration = card.dataset.ttsDuration ? Number(card.dataset.ttsDuration) : null;
+    const recDuration = card.dataset.recDuration ? Number(card.dataset.recDuration) : null;
+    const refHtml = card.dataset.refHtml || '';
+    const hypHtml = card.dataset.hypHtml || '';
+
     return {
       number,
       ko,
@@ -726,7 +755,9 @@ function collectResults(){
       isCorrect,
       isCorrectKo: isCorrect, // simple heuristic
       isCorrectFr: false,
-      pronunciation: { accuracy: pronunciationAccuracy },
+      pronunciation: { accuracy: pronunciationAccuracy, recDuration, ttsDuration },
+      refHtml,
+      hypHtml,
       listenCount: 0,
       hint1Count: 0,
       hint2Count: 0
@@ -745,45 +776,95 @@ function collectResults(){
   return payload;
 }
 
-// Integrate result submission (updated to send full payload)
+// Unified finish button handler: require student name, show bilingual popup,
+// send results (request HTML view) and open returned HTML in a new tab.
 const finishButton = document.getElementById('finish-btn');
 if (finishButton) {
   finishButton.addEventListener('click', async () => {
+    // Ensure we have a student name via modal
+    const modal = document.getElementById('pronun-student-modal');
+    const nameInput = document.getElementById('pronun-student-name');
+    // show modal
+    if (modal) modal.style.display = 'flex';
+
+    const studentName = await new Promise(resolve => {
+      const ok = document.getElementById('pronun-student-ok');
+      const cancel = document.getElementById('pronun-student-cancel');
+      const cleanup = () => { ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); };
+      const onOk = () => { cleanup(); modal.style.display='none'; resolve((nameInput.value||'').trim()); };
+      const onCancel = () => { cleanup(); modal.style.display='none'; resolve(null); };
+      ok.addEventListener('click', onOk); cancel.addEventListener('click', onCancel);
+    });
+
+    if (studentName === null) return; // user cancelled
+
     const payload = collectResults();
+    payload.studentName = studentName || payload.studentName || 'Student';
+
+    // Disable finish button and show spinner
     try {
-      // Send payload to the server (Netlify function will sanitize and email)
-      const response = await fetch('/.netlify/functions/send-results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      finishButton.disabled = true;
+      const origLabel = finishButton.innerHTML;
+      finishButton.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px"><svg class=\"spin\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\" stroke=\"rgba(255,255,255,0.9)\" stroke-width=\"3\" fill=\"none\"></circle></svg> 전송 중... / Envoi...</span>`;
 
-      const j = await response.json().catch(()=>({ok:false}));
-      if (!response.ok || !j.ok) {
-        console.error('send-results failed', j);
-        throw new Error('Failed to send results');
-      }
+      // try-send with retry dialog on failure
+      const trySend = async (attempt=1, maxAttempts=3) => {
+        try {
+          const resp = await fetch('/.netlify/functions/send-results?html=1', {
+            method:'POST', headers:{'Content-Type':'application/json', 'X-Return-HTML':'1'},
+            body: JSON.stringify(payload)
+          });
+          if (!resp.ok) throw new Error(`send failed ${resp.status}`);
+          const html = await resp.text();
+          // success modal
+          const modal = document.getElementById('pronun-result-modal');
+          const body = document.getElementById('pronun-result-body');
+          const primary = document.getElementById('pronun-result-primary');
+          const secondary = document.getElementById('pronun-result-secondary');
+          const thankKo = '<div style="font-size:18px;font-weight:700">수고하셨습니다! 고생하셨습니다!</div>';
+          const thankFr = '<div style="margin-top:6px;color:#475569">Bravo ! Bon travail !</div>';
+          body.innerHTML = thankKo + thankFr + (html ? '<div style="margin-top:12px;color:#0f172a">결과가 준비되었습니다. 결과 보기 버튼을 눌러 새 탭에서 확인하세요.</div>' : '<div style="margin-top:12px;color:#64748b">결과 페이지로 이동합니다.</div>');
+          primary.textContent = '결과 보기 / Voir résultats';
+          secondary.textContent = '닫기 / Fermer';
+          primary.onclick = () => {
+            if (html) {
+              const blob = new Blob([html], { type:'text/html' });
+              const url = URL.createObjectURL(blob);
+              window.open(url, '_blank');
+            } else {
+              window.location.href = '/results.html';
+            }
+            document.getElementById('pronun-result-modal').style.display = 'none';
+          };
+          modal.style.display = 'flex';
+          return true;
+        } catch (err) {
+          console.error('send-results error attempt', attempt, err);
+          if (attempt >= 3) {
+            const modal = document.getElementById('pronun-result-modal');
+            const body = document.getElementById('pronun-result-body');
+            const primary = document.getElementById('pronun-result-primary');
+            const secondary = document.getElementById('pronun-result-secondary');
+            body.innerHTML = `<div style="font-weight:700;color:#dc2626">전송 실패</div><div style=\"margin-top:8px;color:#475569\">서버에 결과를 전송하지 못했습니다.<br/>네트워크 상태 또는 이메일 설정을 확인하세요.</div><div style=\"margin-top:8px;color:#64748b\">${esc(String(err))}</div>`;
+            primary.textContent = '다시 시도 / Réessayer';
+            secondary.textContent = '취소 / Annuler';
+            primary.onclick = async () => { modal.style.display='none'; await trySend(1, maxAttempts); };
+            secondary.onclick = () => { modal.style.display='none'; };
+            modal.style.display = 'flex';
+            return false;
+          } else {
+            // wait and retry with backoff
+            await new Promise(r => setTimeout(r, 600 * attempt));
+            return await trySend(attempt+1, maxAttempts);
+          }
+        }
+      };
 
-      // Show results page (server will render nicer view; local results page also exists)
-      // Open results in a new tab to keep the exercise available
-      const html = await fetch('/.netlify/functions/send-results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(r => r.text()).catch(()=>null);
-
-      if (html) {
-        // open a blob with HTML
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      } else {
-        // fallback: go to static results page
-        window.location.href = '/results.html';
-      }
-    } catch (error) {
-      console.error('Error submitting results:', error);
-      alert('결과 전송에 실패했습니다. 다시 시도해주세요.');
+      await trySend(1,3);
+    } finally {
+      finishButton.disabled = false;
+      // restore label if still in DOM
+      try { finishButton.innerHTML = finishButton.innerHTML.includes('전송 중') ? '끝내기 / Terminer' : finishButton.innerHTML; } catch(_){}
     }
   });
 }
