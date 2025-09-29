@@ -73,7 +73,10 @@ function makeCard(idx, sent){
 
     <!-- 녹음/평가 -->
     <div class="mt-3" data-pronun></div>
-    <div class="text-sm mt-2 text-slate-600">멈춘 뒤 <b>평가</b>를 누르면 <u>원문과 일치하지 않는 부분만</u> 빨간색으로 표시돼요.</div>
+    <div class="text-sm mt-2 text-slate-600" data-card-eval-instruction>
+      <p>멈춘 뒤 <b>평가</b>를 누르면 <u>원문과 일치하지 않는 부분만</u> 빨간색으로 표시돼요.</p>
+      <p>Après avoir arrêté, cliquez sur <b>Évaluer</b> pour afficher en rouge les parties non conformes.</p>
+    </div>
 
     <!-- 결과: 틀린 부분 마킹 -->
     <div class="mt-3 sum-box">
@@ -184,6 +187,14 @@ function makeCard(idx, sent){
 
     }
   });
+
+  // After Pronun widget mounts, ensure its record button is bilingual
+  try {
+    const localRecord = host.querySelector('button[data-action="record"]');
+    if (localRecord) {
+      localRecord.innerHTML = `<span>녹음 시작 / Démarrer l'enregistrement</span>`;
+    }
+  } catch(_){}
 
   // 녹음 버튼 훅: 공용 위젯의 버튼을 관찰해 실시간 STT 시작/종료
   // 1) 버튼 라벨 직접 감지(Démarrer/Start/녹음)로 STT on/off
@@ -324,6 +335,22 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('finish-btn')?.addEventListener('click', ()=>{
     alert('연습 종료! (이 페이지는 결과 전송 없이 미니 테스트용입니다)');
   });
+
+  // Remove any "Previous Exercise" buttons/links if present
+  try {
+    const prevSelectors = ['.btn-prev-exercise', '#prev-exercise', 'a.prev-exercise', 'button.prev-exercise'];
+    prevSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => el.remove());
+    });
+    // Also try to remove anchors with matching text
+    Array.from(document.querySelectorAll('a,button,span')).forEach(el=>{
+      const t = (el.textContent||'').trim().toLowerCase();
+      if (t.includes('previous exercise') || t.includes('이전 연습') || t.includes('exercice précédent')) {
+        try{ el.remove(); }catch(_){/*ignore*/}
+      }
+    });
+  } catch(_){/*ignore*/}
+
 });
 
 // Translate all instructions to Korean/French
@@ -352,25 +379,169 @@ if (recordButton) {
   `;
 }
 
-// Integrate result submission
+// Simple modal for student name input (injected once)
+(function injectStudentModal(){
+  if (document.getElementById('pronun-student-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'pronun-student-modal';
+  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999';
+  modal.innerHTML = `
+    <div style="background:#fff;padding:18px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 10px 30px rgba(2,6,23,.25)">
+      <div style="font-weight:700;margin-bottom:8px">학생 이름 / Nom de l'élève</div>
+      <input id="pronun-student-name" placeholder="이름을 입력하세요 / Entrez le nom" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:10px" />
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="pronun-student-cancel" style="padding:8px 12px;border-radius:8px">취소 / Annuler</button>
+        <button id="pronun-student-ok" style="background:#0ea5e9;color:#fff;padding:8px 12px;border-radius:8px">확인 / Confirmer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.querySelector('#pronun-student-cancel').addEventListener('click', ()=>{ modal.style.display='none'; });
+});
+
+// Updated finish button to use modal and request HTML response
+if (finishButton) {
+  finishButton.addEventListener('click', async () => {
+    // Show modal to get student name
+    const modal = document.getElementById('pronun-student-modal');
+    if (modal) modal.style.display = 'flex';
+    const nameInput = document.getElementById('pronun-student-name');
+
+    const getName = () => new Promise(resolve => {
+      const ok = document.getElementById('pronun-student-ok');
+      const cancel = document.getElementById('pronun-student-cancel');
+      const cleanup = () => { ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); };
+      const onOk = () => { cleanup(); modal.style.display='none'; resolve(nameInput.value.trim()); };
+      const onCancel = () => { cleanup(); modal.style.display='none'; resolve(null); };
+      ok.addEventListener('click', onOk); cancel.addEventListener('click', onCancel);
+    });
+
+    const studentName = await getName();
+    if (studentName === null) return; // cancelled
+
+    const payload = collectResults();
+    payload.studentName = studentName || payload.studentName || 'Student';
+
+    try {
+      const response = await fetch('/.netlify/functions/send-results?html=1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Return-HTML': '1' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error('send failed');
+      const html = await response.text();
+      if (html) {
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } else {
+        window.location.href = '/results.html';
+      }
+    } catch (e) {
+      console.error('send-results error', e);
+      alert('결과 전송에 실패했습니다. 이메일 설정을 확인하세요.');
+    }
+  });
+}
+
+// Normalize text helper (matches server-side canon rules loosely)
+function normalizeTextForCompare(s){
+  return String(s||'')
+    .replace(/[.,!?;:~、。！？；："'()\[\]{}<>]/g,'')
+    .replace(/\s+/g,'')
+    .toLowerCase();
+}
+
+// Collect results from the page into a payload the server expects
+function collectResults(){
+  const studentNameInput = document.querySelector('#student-name');
+  let studentName = studentNameInput?.value?.trim() || '';
+  if (!studentName) {
+    studentName = window.prompt('학생 이름을 입력하세요 / Entrez le nom de l\'élève', '');
+    if (!studentName) studentName = 'Student';
+  }
+
+  const cards = Array.from(document.querySelectorAll('#cards .card'));
+  const questions = cards.map((card, idx) => {
+    const number = idx + 1;
+    const koEl = card.querySelector('.text-xl.font-bold');
+    const frEl = card.querySelector('.text-slate-600');
+    const ko = koEl?.textContent?.trim() || '';
+    const fr = (frEl?.textContent||'').replace(/^FR:\s*/i,'').trim();
+
+    const diffEl = card.querySelector('[data-diff]');
+    const diffHtml = diffEl?.innerHTML?.trim() || '';
+    const scoreEl = card.querySelector('[data-score]');
+    const scoreText = scoreEl?.textContent || '';
+    const pctMatch = scoreText.match(/(\d{1,3})%/);
+    const pronunciationAccuracy = pctMatch ? (Number(pctMatch[1]) / 100) : null;
+
+    // If diff HTML contains <del> or <ins> it's considered incorrect
+    const isCorrect = !!(diffHtml && !(/<del|<ins/i.test(diffHtml)));
+
+    return {
+      number,
+      ko,
+      fr,
+      isCorrect,
+      isCorrectKo: isCorrect, // simple heuristic
+      isCorrectFr: false,
+      pronunciation: { accuracy: pronunciationAccuracy },
+      listenCount: 0,
+      hint1Count: 0,
+      hint2Count: 0
+    };
+  });
+
+  const payload = {
+    studentName,
+    assignmentTitle: document.title || 'Pronunciation mini-test',
+    assignmentTopic: '',
+    startTime: window.__pronunStartTime || new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    totalTimeSeconds: 0,
+    questions
+  };
+  return payload;
+}
+
+// Integrate result submission (updated to send full payload)
 const finishButton = document.getElementById('finish-btn');
 if (finishButton) {
   finishButton.addEventListener('click', async () => {
-    const results = collectResults(); // Assume this function gathers the necessary results
+    const payload = collectResults();
     try {
-      // Send results to the server
+      // Send payload to the server (Netlify function will sanitize and email)
       const response = await fetch('/.netlify/functions/send-results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ results, teacherEmail: 'teacher@example.com' })
+        body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
+      const j = await response.json().catch(()=>({ok:false}));
+      if (!response.ok || !j.ok) {
+        console.error('send-results failed', j);
         throw new Error('Failed to send results');
       }
 
-      // Show results page
-      window.location.href = '/results.html';
+      // Show results page (server will render nicer view; local results page also exists)
+      // Open results in a new tab to keep the exercise available
+      const html = await fetch('/.netlify/functions/send-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(r => r.text()).catch(()=>null);
+
+      if (html) {
+        // open a blob with HTML
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } else {
+        // fallback: go to static results page
+        window.location.href = '/results.html';
+      }
     } catch (error) {
       console.error('Error submitting results:', error);
       alert('결과 전송에 실패했습니다. 다시 시도해주세요.');

@@ -67,7 +67,7 @@ exports.handler = async (event) => {
 
     // Ensure referenceText is properly initialized and validated
     if (typeof referenceText === 'undefined' || referenceText === null || referenceText.trim() === '') {
-      console.error('referenceText is missing, undefined, or empty:', referenceText);
+      console.error('[Error] referenceText is undefined, null, or empty:', referenceText);
       return json(400, {
         ok: false,
         messageFr: "Texte de référence manquant ou vide.",
@@ -75,7 +75,8 @@ exports.handler = async (event) => {
       });
     }
 
-    console.log('Validated referenceText:', referenceText);
+    // Debugging logs for referenceText
+    console.log('[Debug] Validated referenceText:', referenceText);
 
     // === 숫자 → 한글 수사 강제(표시/채점 공통) ===
  // === 숫자만 한글 수사로 치환(그 외 자동 변환은 없음) ===
@@ -263,9 +264,5 @@ function deriveTips(refC, hypC){
   return tips;
 }
 
-// Add debugging logs to analyze pronunciation
-console.log('Reference Text:', referenceText);
-console.log('Recorded Transcript:', transcriptKo);
-console.log('Normalized Reference:', koCanon(referenceText));
-console.log('Normalized Transcript:', koCanon(transcriptKo));
-console.log('Similarity Score:', similarity(koCanon(referenceText), koCanon(transcriptKo)));
+// Debug logging is performed inside the handler at runtime. No module-level
+// references to handler-scoped variables are allowed.

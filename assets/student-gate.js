@@ -175,11 +175,32 @@
   if (!window.__sendResultsFetchWrapped){
     window.__sendResultsFetchWrapped = true;
     const SEND='/.netlify/functions/send-results';
+    const ANALYZE='/.netlify/functions/analyze-pronunciation';
     const origFetch = window.fetch.bind(window);
     const safeJson = s=>{ try{ return JSON.parse(s||'{}'); }catch{ return {}; } };
 
     window.fetch = async function(input, init){
       const url = (typeof input==='string') ? input : ((input&&input.url)||'');
+
+      // Intercept analyze-pronunciation calls to ensure referenceText is present
+      if (url.includes(ANALYZE)) {
+        try {
+          const bodyStr = (init && typeof init.body === 'string') ? init.body : '';
+          const p = safeJson(bodyStr);
+          const ref = String(p.referenceText || '').trim();
+          if (!ref) {
+            // UX: prevent sending a bad request and prompt student to pick/prepare the sentence
+            alert('문장(원문)이 비어 있어 평가할 수 없습니다. 문장을 확인한 뒤 다시 시도하세요.\nLa phrase de référence est vide — vérifiez la phrase et réessayez.');
+            // focus any name or card area to guide the student
+            const firstCard = document.querySelector('#cards .card');
+            if (firstCard) firstCard.scrollIntoView({behavior:'smooth', block:'center'});
+            return new Response(JSON.stringify({ ok:false, message:'client_missing_reference', messageKo:'클라이언트: 참조 텍스트 누락', messageFr:'Client: référence manquante' }), { status:400, headers:{'Content-Type':'application/json'} });
+          }
+        } catch (e) {
+          // parsing failed - let the original fetch handle it
+        }
+      }
+
       if (!url.includes(SEND)) return origFetch(input, init);
 
       let preview={};

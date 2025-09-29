@@ -256,6 +256,16 @@ exports.handler = async (event) => {
       html: buildHtml(payload)
     });
 
+    // If client asked for HTML, return the HTML page directly
+    const accept = (event?.headers?.accept || '').toLowerCase();
+    const wantHtmlHeader = (event?.headers?.['x-return-html'] || event?.headers?.['X-Return-HTML']);
+    const wantHtmlQuery = event?.queryStringParameters?.html === '1';
+    const wantHtml = accept.includes('text/html') || String(wantHtmlHeader) === '1' || wantHtmlQuery;
+
+    if (wantHtml) {
+      return { statusCode: 200, headers: Object.assign({}, CORS, { 'Content-Type': 'text/html; charset=utf-8' }), body: buildHtml(payload) };
+    }
+
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok:true }) };
   } catch (e) {
     console.error('[send-results] error', e);

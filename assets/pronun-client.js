@@ -95,6 +95,19 @@ window.addEventListener('pagehide', async () => {
   }
 
   async function postJSON(url, payload) {
+    // Safety: ensure analyze-pronunciation calls always include referenceText
+    try {
+      const u = String(url||'');
+      if (u.includes('/analyze-pronunciation')) {
+        const ref = String(payload?.referenceText || '').trim();
+        if (!ref) {
+          // Provide immediate UX feedback and reject the promise
+          alert('문장(원문)이 비어 있어 평가할 수 없습니다. 문장을 확인한 뒤 다시 시도하세요.\nLa phrase de référence est vide — vérifiez la phrase et réessayez.');
+          return Promise.reject(new Error('client_missing_reference'));
+        }
+      }
+    } catch (_) {}
+
     const r = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
