@@ -78,10 +78,13 @@ function makeCard(idx, sent){
       <p>Après avoir arrêté, cliquez sur <b>Évaluer</b> pour afficher en rouge les parties non conformes.</p>
     </div>
 
-    <!-- 결과: 틀린 부분 마킹 -->
+    <!-- 결과: 원문 + 사용자가 말한 문장(틀린 부분만 빨간색) -->
     <div class="mt-3 sum-box">
-      <div class="sum-title">오류 하이라이트 / Parties non conformes</div>
-      <div class="sum-val text-base leading-7" data-diff>—</div>
+      <div class="sum-title">틀린 부분 / Parties non conformes</div>
+      <div class="sum-val text-base leading-7">
+        <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span data-ref-display>—</span></div>
+        <div class="hyp-line mt-1"><strong>내가 녹음한 문장 / Ma phrase :</strong> <span data-hyp-display>—</span></div>
+      </div>
       <div class="sum-sub mt-1" data-score></div>
     </div>
   `;
@@ -94,9 +97,73 @@ function makeCard(idx, sent){
 
   const host = wrap.querySelector('[data-pronun]');
   const liveBox = wrap.querySelector('[data-live]');
-  const diffBox = wrap.querySelector('[data-diff]');
+  const refDisplay = wrap.querySelector('[data-ref-display]');
+  const hypDisplay = wrap.querySelector('[data-hyp-display]');
   const scoreBox= wrap.querySelector('[data-score]');
   const getRef  = ()=> sent.ko;
+
+  // 로컬: ref/hyp 둘 줄 표시를 위한 Jamo 기반 정렬+하이라이트 생성기
+  function generateDualHtml(refRaw, hypRaw){
+    // 내부 복사: scoring.js의 toJamoSeq/LCS 로직(간단화)
+    function toJamoSeqLocal(s){
+      const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+      const JUNG= ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+      const JONG= ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+      const t = String(s||'').normalize('NFC').replace(/\s+/g,'').replace(/[^0-9A-Za-z가-힣]/g,'');
+      const out = [];
+      for (const ch of t){
+        const code = ch.codePointAt(0);
+        if (code>=0xAC00 && code<=0xD7A3){
+          const i = code - 0xAC00;
+          const cho = Math.floor(i / 588);
+          const jung = Math.floor((i % 588) / 28);
+          const jong = i % 28;
+          out.push(CHO[cho], JUNG[jung]);
+          if (JONG[jong]) out.push(JONG[jong]);
+        } else out.push(ch);
+      }
+      return out;
+    }
+
+    const refJ = toJamoSeqLocal(refRaw);
+    const hypJ = toJamoSeqLocal(hypRaw);
+    const m = refJ.length, n = hypJ.length;
+    const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+    for (let i=1;i<=m;i++){
+      for (let j=1;j<=n;j++){
+        dp[i][j] = refJ[i-1]===hypJ[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+      }
+    }
+    let i=m, j=n; const keepRef = new Array(m).fill(false); const keepHyp = new Array(n).fill(false);
+    while (i>0 && j>0){
+      if (refJ[i-1]===hypJ[j-1]){ keepRef[i-1]=true; keepHyp[j-1]=true; i--; j--; }
+      else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
+    }
+
+    // helper: build html for a raw string using keep array for its jamo indices
+    function buildHtmlFromKeep(raw, keepArr){
+      let ki=0, html='';
+      for (const ch of [...String(raw).normalize('NFC')]){
+        if (!/[가-힣0-9A-Za-z]/.test(ch)){
+          html += `<span>${ch}</span>`; continue;
+        }
+        let cnt = 1;
+        if (/[가-힣]/.test(ch)){
+          const code = ch.codePointAt(0) - 0xAC00;
+          cnt = (code % 28) ? 3 : 2;
+        }
+        let ok = true;
+        for (let c=0;c<cnt;c++){ if (!keepArr[ki+c]){ ok=false; break; } }
+        html += ok ? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
+        ki += cnt;
+      }
+      return html;
+    }
+
+    const refHtml = buildHtmlFromKeep(refRaw, keepRef);
+    const hypHtml = buildHtmlFromKeep(hypRaw, keepHyp);
+    return { refHtml, hypHtml };
+  }
 
    // 🔸 녹음 위젯(host) 바로 아래: [원문] 위 / [실시간] 아래로 한 묶음 배치
   (function placeRefAndLive(){
@@ -168,21 +235,25 @@ function makeCard(idx, sent){
     getReferenceText: getRef,
     onResult: ({ status, transcript, accuracy, duration })=>{
       if (status==='retry' || !transcript){
-        diffBox.textContent = '—';
-        scoreBox.textContent = '다시 한번 또박또박 말해볼까요?';
+        if (refDisplay) refDisplay.textContent = '—';
+        if (hypDisplay) hypDisplay.textContent = '—';
+        scoreBox.textContent = '다시 한번 또박또박 말해볼까요? / Réessayez, s\'il vous plaît.';
         return;
       }
       // 최종 비교(정지 후 평가)
         // 발음 채점(공용 scoring.js: 자모 기반, 띄어쓰기/문장부호 무시)
       const ref = sent.ko;
       try {
-        const { pct, html } = Scoring.gradePronun(ref, transcript, 0.10); // tol=10%
-        diffBox.innerHTML = html;
+        const { pct } = Scoring.gradePronun(ref, transcript, 0.10); // tol=10%
+        const { refHtml, hypHtml } = generateDualHtml(ref, transcript);
+        if (refDisplay) refDisplay.innerHTML = refHtml;
+        if (hypDisplay) hypDisplay.innerHTML = hypHtml;
         scoreBox.textContent = `정확도: ${pct}% · 길이: ${duration?.toFixed?.(1)||'?'}s`;
       } catch (e) {
         console.error('[pronun-mini-test] scoring error', e);
-        diffBox.textContent = ref;
-        scoreBox.textContent = '채점 오류';
+        if (refDisplay) refDisplay.textContent = ref;
+        if (hypDisplay) hypDisplay.textContent = transcript || '—';
+        scoreBox.textContent = '채점 오류 / Erreur de notation';
       }
 
     }
@@ -275,20 +346,20 @@ function mergeStopAndEvaluate(){
 .wave,
 .waveform { display:none !important; height:0 !important; }
 
-/* 내 발음(실시간) 박스 강화 */
+/* 내 발음(실시간) 박스 강화 (크기 10% 축소) */
 .pronun-live {
   display:block;
-  font-size:1.8rem;
-  line-height:2.2rem;
-  padding:16px 18px;
-  min-height:96px;
+  font-size:1.62rem; /* 기존 1.8rem -> 10% 작게 */
+  line-height:1.98rem; /* 기존 2.2rem -> 10% 작게 */
+  padding:14px 16px; /* 기존 16px 18px -> 10% 작게 */
+  min-height:86px; /* 기존 96px -> ~10% 작게 */
   background:#fff;
   border:2px solid #e2e8f0;
   border-radius:14px;
   box-shadow:0 1px 0 rgba(0,0,0,.02);
 }
 @media (min-width:768px){
-  .pronun-live{ font-size:2.1rem; line-height:2.6rem; min-height:110px; }
+  .pronun-live{ font-size:1.89rem; line-height:2.34rem; min-height:99px; }
 }
 
 /* 녹음 시작/정지/평가 버튼 크게 & 꾸미기 */
