@@ -172,12 +172,9 @@ function makeCard(idx, sent){
 
     // For better matching with normalization rules (numbers etc.), create
     // a normalized string for scoring but keep the original for display.
-    const normRefRaw = (window.PronunUtils?.NumNormalizer?.refAwareNormalize)
-      ? window.PronunUtils.NumNormalizer.refAwareNormalize(refRaw, refRaw)
-      : (window.NumHangul?.digitsToSinoInText ? window.NumHangul.digitsToSinoInText(refRaw) : refRaw);
-    const normHypRaw = (window.PronunUtils?.NumNormalizer?.refAwareNormalize)
-      ? window.PronunUtils.NumNormalizer.refAwareNormalize(refRaw, hypRaw)
-      : (window.NumHangul?.digitsToSinoInText ? window.NumHangul.digitsToSinoInText(hypRaw) : hypRaw);
+    // Use the same normalization as scoring so highlights align with gradePronun
+    const normRefRaw = normalizeForScoring(refRaw, refRaw);
+    const normHypRaw = normalizeForScoring(refRaw, hypRaw);
 
     const refJ = toJamoSeqLocal(normRefRaw);
     const hypJ = toJamoSeqLocal(normHypRaw);
@@ -204,10 +201,13 @@ function makeCard(idx, sent){
       // characters robustly. We align normalized characters to original
       // characters with a greedy char-match lookahead, then expand char->jamo
       // positions to know which jamo slots belong to which original char.
-      const raw = String(rawOriginal).normalize('NFC');
-      const norm = String(normSource || raw).normalize('NFC');
-      const rawChars = [...raw];
-      const normChars = [...norm];
+  const raw = String(rawOriginal).normalize('NFC');
+  // Use the same cleaning as toJamoSeqLocal so punctuation/spaces are
+  // removed when building normalized jamo sequences for alignment.
+  const norm = String(normSource || raw).normalize('NFC');
+  const cleanNorm = norm.replace(/\s+/g,'').replace(/[^0-9A-Za-z가-힣]/g,'');
+  const rawChars = [...raw];
+  const normChars = [...cleanNorm];
 
       function jamoCount(ch){
         // Keep this consistent with toJamoSeqLocal: Hangul syllable => 2 or 3
@@ -287,6 +287,12 @@ function makeCard(idx, sent){
           rawCharToNormJamoPositions[rawIdx].push(j);
         }
       }
+      // If a raw character is punctuation/non-Korean (e.g. ',', '?') then
+      // ignore any mapped jamo positions so it's treated permissively.
+      for (let ri=0; ri<rawChars.length; ri++){
+        const ch = rawChars[ri];
+        if (/[^0-9A-Za-z가-힣]/.test(ch)) rawCharToNormJamoPositions[ri] = [];
+      }
 
       // Decide OK per raw char using majority rule on mapped jamo positions.
       // If a char has no mapped positions, fall back to a loose direct-char
@@ -297,8 +303,14 @@ function makeCard(idx, sent){
         const positions = rawCharToNormJamoPositions[ri];
         let ok = true;
         if (positions.length === 0){
-          // No mapping: be permissive — consider OK if character exists in norm
-          ok = normChars.includes(ch);
+          // No mapping info: treat punctuation/symbols as OK (don't mark
+          // punctuation red). Otherwise, consider OK if the visible char is
+          // present in the cleaned normalized source.
+          if (/[^0-9A-Za-z가-힣]/.test(ch)) {
+            ok = true;
+          } else {
+            ok = normChars.includes(ch);
+          }
         } else {
           // majority rule: if >=50% of this char's jamo slots are kept,
           // consider the visible char as correctly pronounced.
