@@ -89,10 +89,22 @@ function makeCard(idx, sent){
     </div>
   `;
 
-  // 듣기
+  // 듣기: 재생 중에는 버튼을 일시정지로 바꿔 중복 클릭 방지
   wrap.querySelector('[data-action="listen"]').addEventListener('click', async (e)=>{
-    const btn=e.currentTarget; btn.disabled=true;
-    try{ await ttsPlay(sent.ko); } finally { btn.disabled=false; }
+    const btn = e.currentTarget;
+    // 이미 재생 중이면 무시
+    if (btn.dataset.playing==='1') return;
+    btn.dataset.playing = '1';
+    const original = btn.innerHTML;
+    btn.innerHTML = '⏸ 일시정지 / Pause';
+    try{
+      await ttsPlay(sent.ko);
+    } catch(err) {
+      console.error('TTS play error', err);
+    } finally {
+      delete btn.dataset.playing;
+      btn.innerHTML = original;
+    }
   });
 
   const host = wrap.querySelector('[data-pronun]');
@@ -125,8 +137,17 @@ function makeCard(idx, sent){
       return out;
     }
 
-    const refJ = toJamoSeqLocal(refRaw);
-    const hypJ = toJamoSeqLocal(hypRaw);
+    // For better matching with normalization rules (numbers etc.), create
+    // a normalized string for scoring but keep the original for display.
+    const normRefRaw = (window.PronunUtils?.NumNormalizer?.refAwareNormalize)
+      ? window.PronunUtils.NumNormalizer.refAwareNormalize(refRaw, refRaw)
+      : (window.NumHangul?.digitsToSinoInText ? window.NumHangul.digitsToSinoInText(refRaw) : refRaw);
+    const normHypRaw = (window.PronunUtils?.NumNormalizer?.refAwareNormalize)
+      ? window.PronunUtils.NumNormalizer.refAwareNormalize(refRaw, hypRaw)
+      : (window.NumHangul?.digitsToSinoInText ? window.NumHangul.digitsToSinoInText(hypRaw) : hypRaw);
+
+    const refJ = toJamoSeqLocal(normRefRaw);
+    const hypJ = toJamoSeqLocal(normHypRaw);
     const m = refJ.length, n = hypJ.length;
     const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
     for (let i=1;i<=m;i++){
@@ -140,29 +161,76 @@ function makeCard(idx, sent){
       else if (dp[i-1][j] >= dp[i][j-1]) i--; else j--;
     }
 
-    // helper: build html for a raw string using keep array for its jamo indices
-    function buildHtmlFromKeep(raw, keepArr){
-      let ki=0, html='';
-      for (const ch of [...String(raw).normalize('NFC')]){
-        if (!/[가-힣0-9A-Za-z]/.test(ch)){
-          html += `<span>${ch}</span>`; continue;
-        }
-        let cnt = 1;
+    // helper: map keep flags (computed on normalized jamo arrays) back to
+    // the original raw string for display. We walk the original string and
+    // compute how many jamo units each visible char corresponds to in the
+    // normalized jamo sequence. Then we consult the keepArr (which was
+    // computed on the normalized jamo sequence) by mapping indices.
+    function buildHtmlFromKeep(rawOriginal, keepArr, normSource){
+      // normSource is the normalized string used to compute keepArr
+      const raw = String(rawOriginal).normalize('NFC');
+      const norm = String(normSource||raw).normalize('NFC');
+
+      // Build array of jamo-counts for each character in norm (used when
+      // walking through the normalized string to align indices)
+      const normJamoCounts = [];
+      for (const ch of [...norm]){
         if (/[가-힣]/.test(ch)){
           const code = ch.codePointAt(0) - 0xAC00;
-          cnt = (code % 28) ? 3 : 2;
-        }
-        let ok = true;
-        for (let c=0;c<cnt;c++){ if (!keepArr[ki+c]){ ok=false; break; } }
-        html += ok ? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`;
-        ki += cnt;
+          normJamoCounts.push((code % 28) ? 3 : 2);
+        } else normJamoCounts.push(1);
       }
-      return html;
+
+      // Similarly, compute jamo-counts for original raw string characters
+      const rawJamoCounts = [];
+      for (const ch of [...raw]){
+        if (/[가-힣]/.test(ch)){
+          const code = ch.codePointAt(0) - 0xAC00;
+          rawJamoCounts.push((code % 28) ? 3 : 2);
+        } else rawJamoCounts.push(1);
+      }
+
+      // Walk through normJamoCounts and assign each norm-jamo an incrementing
+      // index. Then, when iterating raw chars, consume the equivalent number
+      // of norm-jamo slots to decide if the original char should be marked ok.
+      let normIndex = 0;
+      const htmlParts = [];
+      for (let ri = 0; ri < rawJamoCounts.length; ri++){
+        const cnt = rawJamoCounts[ri];
+        let ok = true;
+        for (let k = 0; k < cnt; k++){
+          // If norm has fewer slots remaining, assume mismatch
+          if (typeof keepArr[normIndex] === 'undefined' || !keepArr[normIndex]) ok = false;
+          normIndex++;
+        }
+        const ch = raw[ri];
+        htmlParts.push(ok ? `<span>${ch}</span>` : `<span style="color:#dc2626">${ch}</span>`);
+      }
+      return htmlParts.join('');
     }
 
-    const refHtml = buildHtmlFromKeep(refRaw, keepRef);
-    const hypHtml = buildHtmlFromKeep(hypRaw, keepHyp);
+    // Build HTML mapping back to the original visible strings. For the
+    // reference line we map keepRef (which was computed from normRefRaw)
+    // back to refRaw. For the hypothesis we map keepHyp (from normHypRaw)
+    // back to hypRaw.
+    const refHtml = buildHtmlFromKeep(refRaw, keepRef, normRefRaw);
+    const hypHtml = buildHtmlFromKeep(hypRaw, keepHyp, normHypRaw);
     return { refHtml, hypHtml };
+  }
+
+  // 이 테스트 전용: 채점용 정규화 (원문 참조 기반 우선, 없으면 NumHangul 폴백)
+  function normalizeForScoring(refText, txt){
+    try{
+      const r = String(refText||'');
+      let t = String(txt||'');
+      if (window.PronunUtils?.NumNormalizer?.refAwareNormalize) {
+        return window.PronunUtils.NumNormalizer.refAwareNormalize(r, t);
+      }
+      if (window.NumHangul?.digitsToSinoInText) t = window.NumHangul.digitsToSinoInText(t);
+      if (window.NumHangul?.forceHangulNumbers) t = window.NumHangul.forceHangulNumbers(t);
+      // 마지막 정리: 공백/구두점 제거는 Scoring 내부에서도 하므로 여기서는 보존
+      return t;
+    }catch(e){ return String(txt||''); }
   }
 
    // 🔸 녹음 위젯(host) 바로 아래: [원문] 위 / [실시간] 아래로 한 묶음 배치
@@ -244,7 +312,10 @@ function makeCard(idx, sent){
         // 발음 채점(공용 scoring.js: 자모 기반, 띄어쓰기/문장부호 무시)
       const ref = sent.ko;
       try {
-        const { pct } = Scoring.gradePronun(ref, transcript, 0.10); // tol=10%
+        // 이 테스트 모델 한정: 채점은 ref-aware 정규화된 복사본으로만 수행(원문 UI는 변경하지 않음)
+        const normRef = normalizeForScoring(ref, ref);
+        const normHyp = normalizeForScoring(ref, transcript);
+        const { pct } = Scoring.gradePronun(normRef, normHyp, 0.10); // tol=10%
         const { refHtml, hypHtml } = generateDualHtml(ref, transcript);
         if (refDisplay) refDisplay.innerHTML = refHtml;
         if (hypDisplay) hypDisplay.innerHTML = hypHtml;
@@ -390,6 +461,22 @@ function mergeStopAndEvaluate(){
   background-color:rgba(239,68,68,.4);
   text-decoration:none;
 }
+/* 결과 영역: 레이블은 작게, 문장 텍스트는 더 크게 보여줌 */
+.sum-box .ref-line strong,
+.sum-box .hyp-line strong{
+  font-size:0.78rem;
+  font-weight:600;
+  color:#475569; /* slate-600 */
+  display:inline-block;
+  width:160px;
+}
+.sum-box .ref-line span,
+.sum-box .hyp-line span{
+  font-size:1.25rem; /* 큰 문장 텍스트 */
+  line-height:1.6rem;
+  color:#111827;
+}
+.sum-box .hyp-line span{ font-size:1.38rem; /* 사용자 문장은 더 강조 */ }
 `;
   const tag = document.createElement('style');
   tag.setAttribute('data-pronun-mini-style','1');

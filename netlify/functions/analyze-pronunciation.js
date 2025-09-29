@@ -79,10 +79,12 @@ exports.handler = async (event) => {
     console.log('[Debug] Validated referenceText:', referenceText);
 
     // === 숫자 → 한글 수사 강제(표시/채점 공통) ===
- // === 숫자만 한글 수사로 치환(그 외 자동 변환은 없음) ===
-const safeTranscript = blockArabicDigits(transcriptRaw);
-const transcriptKo   = forceHangulNumbers(safeTranscript); // 현재 no-op, 향후 확장 대비
-const refKo          = forceHangulNumbers(referenceText || '');
+    // 서버 측에서도 아라비아 숫자·단위 표기를 한글 표기로 통일합니다.
+    // Convert ASCII digits (e.g. "10") into sino-Korean (십) before any further normalization
+    const transcriptDigitsConverted = digitsToSinoInText(transcriptRaw);
+    const refDigitsConverted = digitsToSinoInText(referenceText || '');
+    const transcriptKo = forceHangulNumbers(transcriptDigitsConverted);
+    const refKo = forceHangulNumbers(refDigitsConverted);
 
 
     // === 유사도(캐논) ===
@@ -243,8 +245,15 @@ function applyCounterVariants(s){
   return x;
 }
 function forceHangulNumbers(s){
-  // 서버도 자동 변환하지 않고 그대로 사용
-  return String(s || '');
+  // 간단한 서버측 변환: 숫자 표기를 한자/한글 형태로 바꾼 뒤
+  // 흔한 단위 축약(스물/열/한/두 등)을 적용합니다.
+  let x = String(s || '');
+  try {
+    x = applyCounterVariants(x);
+  } catch (e) {
+    // 실패하면 입력 그대로 반환
+  }
+  return x;
 }
 
 
