@@ -76,21 +76,21 @@ function makeCard(idx, sent){
     <!-- 녹음/평가 -->
     <div class="mt-3" data-pronun></div>
     <div class="text-sm mt-2 text-slate-600" data-card-eval-instruction>
-      <p>멈춘 뒤 <b>평가</b>를 누르면 <u>원문과 일치하지 않는 부분만</u> 빨간색으로 표시돼요.</p>
-      <p>Après avoir arrêté, cliquez sur <b>Évaluer</b> pour afficher en rouge les parties non conformes.</p>
+  <p>멈춘 다음에 <b>평가 / Évaluer</b> 버튼을 누르면, 틀린 부분만 빨간색으로 보여줘요.</p>
+  <p>Après avoir arrêté, cliquez sur <b>Évaluer</b> pour voir en rouge seulement les erreurs.</p>
     </div>
 
     <!-- 결과: 원문 + 사용자가 말한 문장(틀린 부분만 빨간색) -->
     <div class="mt-3 sum-box">
-      <div class="sum-title">틀린 부분 / Parties non conformes</div>
+  <div class="sum-title">틀린 부분 / Erreurs</div>
       <div class="sum-val text-base leading-7">
         <div class="ref-line"><strong>원래 문장 / Phrase originale :</strong> <span class="ref-bubble" data-ref-display>—</span></div>
         <div class="hyp-line mt-1"><strong>내 발음 / Ma prononciation :</strong> <span class="hyp-bubble" data-hyp-display>—</span></div>
         <div class="sum-stats mt-2" aria-live="polite">
           <div class="len-compare" data-len-compare>
             <div class="len-labels" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <button class="badge accuracy-badge" data-accuracy aria-live="polite"><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: —</button>
-                <button class="badge duration-badge" data-durations title="TTS / 녹음 길이">TTS: — · 녹음: —</button>
+              <button class="badge accuracy-badge" data-accuracy aria-live="polite"><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도 / Précision: —</button>
+                <button class="badge duration-badge" data-durations title="음성 합성(TTS) / 녹음 길이 / Durée">음성 합성(TTS): — · 내 녹음 / Mon enregistrement: —</button>
             </div>
             <div class="len-abs" aria-hidden="true">
               <div class="len-center" aria-hidden="true"></div>
@@ -449,7 +449,7 @@ function makeCard(idx, sent){
     const accuracyBadge = host.querySelector('.accuracy-badge');
     const durationBadge = host.querySelector('.duration-badge');
             if (accuracyBadge) {
-              accuracyBadge.innerHTML = `<svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도: ${pct}%`;
+              accuracyBadge.innerHTML = `<svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도 / Précision: ${pct}%`;
               try{ accuracyBadge.setAttribute('aria-live','polite'); }catch(e){}
             }
         // try to find tts duration from listen button _audio (stored when played)
@@ -469,7 +469,7 @@ function makeCard(idx, sent){
             const t = Number(ttsDur || 0); const r = Number(duration || 0);
             // update badges
             if (durationBadge) {
-              const txt = `TTS: ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 녹음: ${duration?duration.toFixed(1)+'s':'?s'}`;
+              const txt = `음성 합성(TTS): ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 내 녹음 / Mon enregistrement: ${duration?duration.toFixed(1)+'s':'?s'}`;
               durationBadge.textContent = txt;
               try{ durationBadge.setAttribute('title', txt); }catch(e){}
             }
@@ -524,7 +524,7 @@ function makeCard(idx, sent){
     const listenBtn = wrap.querySelector('[data-action="listen"]');
     const hintWrap = document.createElement('div');
     hintWrap.style.marginTop = '8px';
-  hintWrap.innerHTML = `<button class="btn btn-ghost btn-sm hint-help1" data-hint="1">도와주세요 / Aidez-moi</button> <button class="btn btn-ghost btn-sm hint-help2" data-hint="2">살려주세요 / Sauvez-moi</button> <span data-hint-display style="margin-left:12px;color:#334155"></span>`;
+  hintWrap.innerHTML = `<button class="btn btn-ghost btn-sm hint-help2" data-hint="2">힌트 보기 / Voir un indice</button> <span data-hint-display style="margin-left:12px;color:#334155"></span>`;
     if (listenBtn && listenBtn.parentNode) {
       listenBtn.parentNode.insertBefore(hintWrap, listenBtn.nextSibling);
     } else {
@@ -532,38 +532,24 @@ function makeCard(idx, sent){
     }
     const hintDisplay = hintWrap.querySelector('[data-hint-display]');
 
-    // 도움받기1: 초성 + 주요단어 표시 (초성은 직접 생성, 주요단어는 sent.hint1이 제공되면 사용)
-    hintWrap.querySelector('[data-hint="1"]').addEventListener('click', (e)=>{
-      const btn = e.currentTarget;
-      const keyText = sent.hint1 || '';
-      // generate chosung string for display from sent.ko
-      function toChosung(s){
-        if (!s) return '';
-        return [...s.normalize('NFC')].map(ch => {
-          const code = ch.codePointAt(0);
-          if (code >= 0xAC00 && code <= 0xD7A3){
-            const base = code - 0xAC00; const cho = Math.floor(base/588);
-            const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-            return CHO[Math.max(0, Math.min(CHO.length-1, cho))] || ch;
-          }
-          return ch;
-        }).join('');
-      }
-      const chos = toChosung(sent.ko || '');
-      const display = `${chos} · ${keyText}`.trim();
-      hintDisplay.textContent = (hintDisplay.textContent === display) ? '' : display;
-    });
-
-    // 도움받기2: 전체 문장을 빈칸(▢)으로 보여준다 (도움요청은 전체 문장 숨김 토글)
+    // 도움받기2: 전체 문장을 빈칸(▢)으로 보여준다 (토글)
     hintWrap.querySelector('[data-hint="2"]').addEventListener('click', (e)=>{
       const btn = e.currentTarget;
-      if (!sent.ko) { hintDisplay.textContent = ''; return; }
-      if (hintDisplay.dataset.fullBlank === '1') { hintDisplay.textContent = ''; hintDisplay.dataset.fullBlank = '0'; return; }
-      const src = sent.ko || '';
-      // Create full-blank version: replace each non-space char with ▢ except punctuation
-      const blanked = [...src].map(ch => (/\s|[.,!?;:]/.test(ch) ? ch : '▢')).join('');
-      hintDisplay.textContent = blanked;
-      hintDisplay.dataset.fullBlank = '1';
+      const hd = hintWrap.querySelector('[data-hint-display]');
+      if (!sent.ko) { if (hd) hd.textContent = ''; return; }
+      if (hd && hd.dataset.fullBlank === '1') { hd.textContent = ''; hd.dataset.fullBlank = '0'; return; }
+      const src = String(sent.ko || '');
+      // Replace visible Hangul syllables and ASCII alphanumerics with a single box ▢.
+      // Preserve spaces and common punctuation so students can see word boundaries.
+      const blanked = [...src].map(ch => {
+        if (/\s/.test(ch)) return ch; // keep spaces
+        if (/[0-9A-Za-z]/.test(ch)) return '▢';
+        if (/[,\.\!\?;:\-\u3001\u3002\u2014\u2013]/.test(ch)) return ch; // keep punctuation
+        if (/[가-힣]/.test(ch)) return '▢';
+        // fallback: for any other character (e.g. Hangul Jamo), also show a box
+        return '▢';
+      }).join('');
+      if (hd){ hd.textContent = blanked; hd.dataset.fullBlank = '1'; }
     });
   }catch(_){/*ignore*/}
 
