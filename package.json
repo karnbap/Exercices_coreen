@@ -5,7 +5,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "gen-tts": "node scripts/generate-tts-static.js"
+    "gen-tts": "node scripts/generate-tts-static.js",
+    "test": "npx playwright test"
   },
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.2.0",
@@ -16,5 +17,8 @@
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
     "puppeteer": "^24.22.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.1"
   }
 }
