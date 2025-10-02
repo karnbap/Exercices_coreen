@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Natalie 발음 연습 (Etape 1 전용) | Prononciation</title>
+  <link rel="stylesheet" href="/assets/style.css"/>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="topbar p-3 flex items-center justify-between bg-white border-b">
+    <div class="text-sm text-slate-500">made by 성일,Pongdang · Lapeace29@gmail.com</div>
+    <button class="btn btn-outline" onclick="window.print()">인쇄 / Imprimer</button>
+  </div>
+
+  <main class="container">
+    <section class="card mb-4">
+      <label for="student-name" class="block text-sm font-semibold mb-2">이름 / Nom</label>
+      <input id="student-name" class="input" placeholder="Ex. Natalie …"/>
+      <p class="badge-note mt-2">연습 시작 전에 꼭 이름을 입력해주세요.</p>
+    </section>
+
+    <div id="cards" class="space-y-6"></div>
+
+    <footer class="mt-10 text-center text-sm text-slate-500">
+      made by 성일,Pongdang · Lapeace29@gmail.com
+    </footer>
+  </main>
+
+  <!-- 공용 스크립트 -->
+  <script defer src="/assets/student-gate.js"></script>
+  <script defer src="/assets/pronun-client.js"></script>
+  <script defer src="/assets/live-stt.js"></script>
+  <script defer src="/assets/scoring.js?v=20250928i"></script>
+
+  <!-- 이 페이지 전용 (Etape1 전용 문장 + 인라인 TTS/렌더러) -->
+  <script>
+  const SENTENCES = [
+    { ko:"로만: 일주일 동안 강아지랑 숲에서 산책했고 친구랑 롤 게임을 했어요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"일주일 / 강아지 / 숲 / 산책 (도와주세요)", hint2:"동작 나열 / 게임 (살려주세요)" },
+    { ko:"성일: 집 근처에 숲이 있어요?", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"근처 / 위치 질문 (도와주세요)", hint2:"억양 ↑ (살려주세요)" },
+    { ko:"로만: 네, 하지만 차로 가야 해요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"하지만 / 이동수단 (도와주세요)", hint2:"= 차를 타야 해요 (살려주세요)" },
+    { ko:"성일: 집부터 숲까지 얼마나 걸려요?", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"부터~까지 / 얼마나 (도와주세요)", hint2:"À partir de ~ jusqu’à (살려주세요)" },
+    { ko:"로만: 20분 정도 걸려요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"20분 / 정도 (도와주세요)", hint2:"cela me prend 20min (살려주세요)" },
+    { ko:"성일: 아, 그렇군요!", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"그렇구나 / 아 그래요? (도와주세요)", hint2:"Ah je vois (살려주세요)" },
+    { ko:"로만: 아 맞다! 참! 토요일에 벼룩시장에도 갔는데 아무것도 안 샀어요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"벼룩시장 / 아무것도 (도와주세요)", hint2:"rien acheté (살려주세요)" },
+    { ko:"성일: 벼룩시장에 살 게 없었어요?", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"살 게 = 살 것이 (도와주세요)", hint2:"choses à + inf (살려주세요)" },
+    { ko:"로만: 네 살 게 별로 없었어요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"별로 (도와주세요)", hint2:"pas trop (살려주세요)" },
+    { ko:"성일: 어느 벼룩시장에 갔어요?", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"어느 / 선택 의문 (도와주세요)", hint2:"lequel? (살려주세요)" },
+    { ko:"로만: 프랑스 벼룩시장에 갔어요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"장소 대답 (도와주세요)", hint2:"프랑스 / lieu (살려주세요)" },
+    { ko:"감사합니다. 또 오세요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"감사 / 또 오세요 (도와주세요)", hint2:"환대 표현 (살려주세요)" },
+    { ko:"평소에 서브웨이 좋아하세요?", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"평소에 / 좋아하세요 (도와주세요)", hint2:"habitude (살려주세요)" },
+    { ko:"네, 저 오늘도 지하철 타고 왔어요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"오늘도 / 지하철 (도와주세요)", hint2:"encore aujourd'hui (살려주세요)" },
+    { ko:"어서오세요. 서브웨이입니다.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"환영 인사 (도와주세요)", hint2:"bienvenue (살려주세요)" },
+    { ko:"저기 손님손님 주문 이쪽에서 도와드릴게요.", fr:"", hideText:true, voice:"shimmer", speed:1.05, hint1:"주문 / 도와드릴게요 (도와주세요)", hint2:"서비스 표현 (살려주세요)" }
+  ];
+
+  async function ttsPlay(text, voice="shimmer", speed=1.0){
+    const res = await fetch('/.netlify/functions/generate-audio', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, voice, speed })
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const data = await res.json();
+    const b64 = (data.audioBase64 || data.audioData || '').split(',').pop();
+    const bin = atob(b64); const buf = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+    const blob = new Blob([buf], { type: data.mimeType || 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const a = new Audio(url);
+    a.addEventListener('ended', ()=>{ try{ URL.revokeObjectURL(url); }catch(_){} }, { once:true });
+    a.play().catch(()=>{ try{ URL.revokeObjectURL(url); }catch(_){} });
+    a.durationEstimateSec = data.durationEstimateSec || null;
+    return a;
+  }
+
+  function makeCard(idx, sent){
+    const wrap = document.createElement('section');
+    wrap.className = 'card';
+    let promptText = sent.ko;
+    if (typeof idx === 'number' && idx >= 9 && sent.ko){
+      const chars = Array.from(String(sent.ko));
+      const hangulIdxs = chars.map((ch,i)=>/[가-힣]/.test(ch)?i:null).filter(i=>i!==null);
+      const syllableCount = hangulIdxs.length;
+      const blanksWanted = syllableCount >= 12 ? 4 : 3;
+      const pool = hangulIdxs.slice();
+      const pick = [];
+      while (pick.length < blanksWanted && pool.length){
+        const r = Math.floor(Math.random()*pool.length);
+        pick.push(pool[r]);
+        pool.splice(r,1);
+      }
+      pick.forEach(i=>{ chars[i]='▢'; });
+      promptText = chars.join('');
+    }
+
+    wrap.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="q-badge">문제 ${idx+1} / Question ${idx+1}</div>
+        <div>
+          <div class="text-xl font-bold mb-1">${sent.hideText ? '' : promptText}</div>
+          <div class="text-slate-600 text-sm mb-2">${sent.hideText ? '<em>잘 듣고 따라하세요 / Écoutez et répétez</em>' : 'FR: ' + (sent.fr||'')}</div>
+          <div class="text-xs text-slate-500 mb-1">Hint1: ${sent.hint1||''}</div>
+          <div class="text-xs text-slate-400">Hint2: ${sent.hint2||''}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" data-action="listen" data-requires-name>▶ 듣기 / Écouter</button>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-3 mt-2">
+        <div class="pronun-card">
+          <div class="pronun-title">내 발음 / En direct</div>
+          <div class="pronun-live" data-live>—</div>
+        </div>
+      </div>
+
+      <div class="mt-3" data-pronun></div>
+      <div class="text-sm mt-2 text-slate-600" data-card-eval-instruction>
+        <p>멈춘 다음 <b>평가 / Évaluer</b> 버튼을 누르면 틀린 부분만 빨간색으로 표시돼요.</p>
+      </div>
+
+      <div class="mt-3 sum-box">
+        <div class="sum-title">틀린 부분 / Erreurs</div>
+        <div class="sum-val text-base leading-7">
+          <div class="ref-line"><strong>원래 문장:</strong> <span class="ref-bubble" data-ref-display>—</span></div>
+          <div class="hyp-line mt-1"><strong>내 발음:</strong> <span class="hyp-bubble" data-hyp-display>—</span></div>
+          <div class="sum-stats mt-2" aria-live="polite">
+            <div class="len-compare" data-len-compare>
+              <div class="len-labels" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+                <button class="badge accuracy-badge" data-accuracy aria-live="polite">정확도 / Précision: —</button>
+                <button class="badge duration-badge" data-durations title="음성 합성(TTS) / 녹음 길이 / Durée">음성 합성(TTS): — · 내 녹음: —</button>
+              </div>
+              <div class="len-abs" aria-hidden="true">
+                <div class="len-center" aria-hidden="true"></div>
+                <div class="len-bar len-bar-tts" style="left:50%;width:0%" title="TTS: ?s"></div>
+                <div class="len-bar len-bar-rec" style="left:50%;width:0%" title="녹음: ?s"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sum-sub mt-1" data-score></div>
+      </div>
+    `;
+
+    wrap.querySelector('[data-action="listen"]').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      const existing = btn._audio;
+      if (existing && !existing.ended){
+        if (!existing.paused){
+          existing.pause();
+          btn.innerHTML = '▶ 듣기 / Écouter';
+          return;
+        } else {
+          existing.play().catch(()=>{});
+          btn.innerHTML = '⏸ 일시정지 / Pause';
+          return;
+        }
+      }
+      btn.innerHTML = '⏸ 일시정지 / Pause';
+      try{
+        const audioEl = await ttsPlay(sent.ko, sent.voice||'shimmer', sent.speed||1.0);
+        btn._audio = audioEl;
+        try{ wrap.dataset.listened = '1'; }catch(_){}
+        audioEl.addEventListener('ended', ()=>{ btn.innerHTML='듣기 / Écouter'; btn._audio=null; }, { once:true });
+      }catch(err){
+        console.error(err);
+        btn.innerHTML = '듣기 / Écouter';
+      }
+    });
+
+    const host = wrap.querySelector('[data-pronun]');
+    const liveBox = wrap.querySelector('[data-live]');
+    const refDisplay = wrap.querySelector('[data-ref-display]');
+    const hypDisplay = wrap.querySelector('[data-hyp-display]');
+    const scoreBox = wrap.querySelector('[data-score]');
+
+    function highlightDiff(ref, hyp){
+      if(!ref || !hyp){ return { r:ref||'', h:hyp||'' }; }
+      const rChars = [...ref];
+      const hChars = [...hyp];
+      let rOut='', hOut='';
+      const len = Math.max(rChars.length, hChars.length);
+      for(let i=0;i<len;i++){
+        const rc = rChars[i]||'';
+        const hc = hChars[i]||'';
+        if(rc === hc){
+          rOut += `<span>${rc}</span>`;
+          hOut += `<span>${hc}</span>`;
+        } else {
+          if(rc) rOut += `<span style="color:#dc2626">${rc}</span>`;
+          if(hc) hOut += `<span style="color:#dc2626">${hc}</span>`;
+        }
+      }
+      return { r:rOut, h:hOut };
+    }
+
+    Pronun.mount(host, {
+      getReferenceText: ()=> sent.ko,
+      onResult: ({ status, transcript, accuracy, duration })=>{
+        if(status === 'retry' || !transcript){
+          refDisplay.textContent = '—';
+          hypDisplay.textContent = '—';
+          scoreBox.textContent = '다시 시도해요.';
+          return;
+        }
+        const ref = sent.ko;
+        const { r, h } = highlightDiff(ref, transcript);
+        refDisplay.innerHTML = r;
+        hypDisplay.innerHTML = h;
+        const pct = typeof accuracy === 'number'
+          ? (accuracy>1? Math.round(accuracy): Math.round(accuracy*100))
+          : '—';
+        scoreBox.textContent = pct + '%';
+      }
+    });
+
+    return wrap;
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const cardsBox = document.getElementById('cards');
+    const nameInput = document.getElementById('student-name');
+    function requireNameGuard(btn){
+      btn.addEventListener('click', e=>{
+        if(!nameInput.value.trim()){
+          alert('이름을 먼저 입력해주세요.');
+          nameInput.focus();
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+    }
+    SENTENCES.forEach((s,i)=>{
+      const card = makeCard(i, s);
+      requireNameGuard(card.querySelector('[data-action="listen"]'));
+      cardsBox.appendChild(card);
+    });
+  });
+  </script>
+</body>
+</html>
