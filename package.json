@@ -4,13 +4,21 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "gen-tts": "node scripts/generate-tts-static.js",
+    "test": "npx playwright test"
+  },
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.2.0",
     "form-data": "^4.0.0",
     "google-auth-library": "^10.2.1",
     "jsdom": "^27.0.0",
+    "minimist": "^1.2.8",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
     "puppeteer": "^24.22.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.1"
   }
 }

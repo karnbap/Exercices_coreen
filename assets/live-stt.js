@@ -6,6 +6,9 @@
 
 (function (w) {
   const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+  // Enable runtime debugging by setting `window.LIVESTT_DEBUG = true` in the
+  // browser console. Default is false to avoid noisy logs in production.
+  const DBG = Boolean(w.LIVESTT_DEBUG);
 
   function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -23,9 +26,18 @@
   }
 
   function render(box, finalText, interim){
-    const merged = String(finalText||'') + String(interim||'');
+    const f = String(finalText||'');
+    const i = String(interim||'');
+    // If both final and interim have non-space boundary characters, insert a
+    // single space to avoid accidental concatenation across chunk boundaries.
+    let merged;
+    if (f && i && !/\s$/.test(f) && !/^\s/.test(i)) merged = f + ' ' + i;
+    else merged = f + i;
     const safe = escapeHtml(merged);
+    // ensure whitespace is preserved and words don't wrap oddly
+    try { box.style.whiteSpace = 'pre-wrap'; box.style.wordBreak = 'keep-all'; } catch(_){}
     box.innerHTML = `<div><b>En direct / 실시간:</b> ${safe}</div>`;
+    if (DBG) console.log('[LiveSTT] render:', { final: String(finalText||''), interim: String(interim||''), merged });
   }
 
   function attachOneCard(card) {
@@ -49,10 +61,33 @@
         let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
           const res = ev.results[i];
-          if (res.isFinal) finalText += res[0].transcript;
-          else interim += res[0].transcript;
+          if (!res || !res[0]) continue;
+          // Raw text from engine
+          let chunk = String(res[0].transcript || '');
+          // sanitize invisible/zero-width and non-breaking spaces that can
+          // cause visual concatenation issues; replace with normal space
+          chunk = chunk.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ');
+          // collapse multiple whitespace to single to avoid runaway spacing
+          chunk = chunk.replace(/\s+/g, ' ');
+          if (res.isFinal) {
+            // ensure there's a space when consecutive final chunks would
+            // otherwise concatenate without separation
+            if (finalText && chunk && !/\s$/.test(finalText) && !/^\s/.test(chunk)) finalText += ' ' + chunk;
+            else finalText += chunk;
+          } else {
+            interim += chunk;
+          }
+          if (DBG) console.log('[LiveSTT] chunk', { index:i, isFinal: !!res.isFinal, chunk });
         }
+        // collapse final/interim repeated spaces before rendering
+        finalText = String(finalText || '').replace(/\s+/g, ' ');
+        interim = String(interim || '').replace(/\s+/g, ' ');
         render(box, finalText, interim);
+
+        // fire a partial event so pages can listen for interim updates
+        try{
+          card.dispatchEvent(new CustomEvent('livestt:partial', { detail: { interim: interim, final: String(finalText||''), card }, bubbles:true }));
+        }catch(_){ }
 
         // 최종 덩어리 하나가 확정되면 이벤트도 쏴 준다
         if (interim === '') {
@@ -96,6 +131,39 @@
     });
   }
 
-  w.LiveSTT = { init, supported: !!SR };
+  // Expose a small debug simulate() helper so tests can feed synthetic
+  // chunks (transcript + isFinal) into the same pipeline. Usage:
+  // LiveSTT.simulate(cardElementOrSelector, [{ transcript:'오늘', isFinal:false }, ...])
+  function simulate(target, chunks){
+    try{
+      const card = (typeof target === 'string') ? document.querySelector(target) : target;
+      if (!card) return { error: 'no-card' };
+      const box = ensureBox(card);
+      let finalText = '';
+      let interim = '';
+      for (const c of (chunks || [])){
+        let chunk = String(c.transcript || '');
+        chunk = chunk.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ');
+        chunk = chunk.replace(/\s+/g, ' ');
+        if (c.isFinal) {
+          if (finalText && chunk && !/\s$/.test(finalText) && !/^\s/.test(chunk)) finalText += ' ' + chunk;
+          else finalText += chunk;
+        } else {
+          interim += chunk;
+        }
+        // normalize spaces
+        finalText = String(finalText||'').replace(/\s+/g,' ');
+        interim = String(interim||'').replace(/\s+/g,' ');
+        render(box, finalText, interim);
+        try{ card.dispatchEvent(new CustomEvent('livestt:partial',{ detail:{ interim, final: finalText, card }, bubbles:true })); }catch(_){ }
+      }
+      if ((interim||'') === ''){
+        try{ card.dispatchEvent(new CustomEvent('livestt:final',{ detail:{ text: String(finalText||'').trim(), card }, bubbles:true })); }catch(_){ }
+      }
+      return { finalText, interim };
+    }catch(e){ return { error: String(e) }; }
+  }
+
+  w.LiveSTT = { init, supported: !!SR, simulate };
   document.addEventListener('DOMContentLoaded', () => { try { init(); } catch(_){} });
 })(window);

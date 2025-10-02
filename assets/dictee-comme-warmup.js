@@ -111,7 +111,7 @@
           <div class="hint-box hint2-box"><b>🦺 단어:</b> ${q.hint2 ? q.hint2 : '—'}</div>
 
           <div class="mt-1 flex items-center gap-2">
-            <button class="btn btn-ghost rec"  data-requires-name>🎙️ Démarrer</button>
+            <button class="btn btn-ghost rec"  data-requires-name>🎙️ 녹음 시작 / Démarrer</button>
             <button class="btn btn-ghost stop" data-requires-name disabled>⏹️ Arrêter</button>
             <button class="btn btn-primary eval" data-requires-name disabled>⚡ Évaluer</button>
             <span class="text-sm text-slate-500">정지하면 자동 평가</span>
