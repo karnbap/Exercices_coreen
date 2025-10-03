@@ -110,7 +110,11 @@ function makeCard(idx, sent){
           <div class="len-compare" data-len-compare>
             <div class="len-labels" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
               <button class="badge accuracy-badge" data-accuracy aria-live="polite"><svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7v5l3 1" stroke="#065f46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#065f46" stroke-width="1.6" fill="rgba(6,95,70,0.06)"/></svg> 정확도 / Précision: —</button>
-                <button class="badge duration-badge" data-durations title="음성 합성(TTS) / 녹음 길이 / Durée">음성 합성(TTS): — · 내 녹음 / Mon enregistrement: —</button>
+<button class="badge duration-badge" data-durations title="발음 속도 / Temps de prononciation">
+  평균 속도 / Vitesse moyenne: —
+  ·
+  내 속도 / Ma vitesse: —
+</button>
             </div>
             <div class="len-abs" aria-hidden="true">
               <div class="len-center" aria-hidden="true"></div>
