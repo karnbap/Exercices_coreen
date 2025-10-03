@@ -15,417 +15,438 @@
          * Buttons: Effet 3D imitant une fenêtre traditionnelle coréenne (Changho).
          * Palette: Noir encre (먹색), blanc papier, et un rouge sceau pour les accents.
         */
-        body {
-            font-family: 'Inter', 'Gowun Batang', sans-serif;
-            /* Arrière-plan subtil imitant une texture de papier ou une peinture à l'encre */
-            background-color: #f1f1f1;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.03"/></svg>');
-        }
-        .korean-title {
-            font-family: 'Gowun Batang', serif;
-            font-weight: 700;
-        }
-        /* Style du bouton "fenêtre" pour un effet 3D */
-        .window-button {
-            background-color: #ffffff;
-            border: 1px solid #d1d5db; /* Bordure du cadre de la fenêtre */
-            border-radius: 0.75rem; /* Bords légèrement arrondis */
-            /* Ombre portée pour donner de la profondeur et un effet 3D */
-            box-shadow: 
-                inset 1px 1px 2px rgba(255, 255, 255, 0.8), /* Lumière intérieure */
-                inset -1px -1px 2px rgba(0, 0, 0, 0.05),   /* Ombre intérieure */
-                2px 4px 8px rgba(0, 0, 0, 0.08);         /* Ombre extérieure */
-            transition: all 0.2s ease-in-out;
-        }
-        .window-button:hover {
-            transform: translateY(-3px) scale(1.01); /* La fenêtre s'avance légèrement */
-            box-shadow: 
-                inset 1px 1px 2px rgba(255, 255, 255, 0.8),
-                inset -1px -1px 2px rgba(0, 0, 0, 0.05),
-                4px 8px 16px rgba(0, 0, 0, 0.1); /* Ombre plus prononcée */
-        }
-        .window-button:active {
-            transform: translateY(1px) scale(1); /* Effet de pression */
-            box-shadow: 
-                inset 2px 2px 4px rgba(0, 0, 0, 0.08), /* Ombre intérieure plus forte */
-                1px 1px 2px rgba(0, 0, 0, 0.08);
-        }
-        /* Point rouge pour les nouvelles tâches */
-        .new-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #c81e1e; /* Rouge sceau (dojang) */
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.5);
-            flex-shrink: 0; /* Empêche le point de rétrécir */
-        }
+        body { font-family: 'Inter', 'Gowun Batang', sans-serif; background-color:#f1f1f1; background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.03"/></svg>'); }
+        .korean-title { font-family: 'Gowun Batang', serif; font-weight:700; }
+        .window-button { background-color:#fff; border:1px solid #e6e9ee; border-radius:.75rem; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.8), 2px 4px 8px rgba(0,0,0,0.06); transition:all .18s ease; padding:1.1rem; display:block; }
+        .window-button:hover{ transform:translateY(-3px); box-shadow: 6px 12px 24px rgba(0,0,0,0.06); }
+        .new-dot{ width:10px;height:10px;background:#c81e1e;border-radius:999px;border:1px solid rgba(255,255,255,.5); }
+        /* layout tweak: two columns with sticky headings on wide screens */
+        .ex-grid{ display:grid; grid-template-columns: 1fr; gap:1.25rem; }
+        @media(min-width:900px){ .ex-grid{ grid-template-columns: 1fr 320px; align-items:start; } }
+        .section-box{ background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95)); padding:1rem; border-radius:12px; border:1px solid #eef2f7; box-shadow: 0 6px 18px rgba(15,23,42,0.04); }
+        .section-title{ font-weight:700; margin-bottom:.6rem; color:#0f172a; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6">
 
-    <div class="w-full max-w-2xl bg-white/80 backdrop-blur-sm p-8 md:p-12 rounded-2xl shadow-2xl border border-slate-200/80">
-        
-        <header class="flex flex-col items-center mb-10 text-center">
-            <!-- Icône de toit de Hanok, stylisée comme un coup de pinceau -->
-            <svg class="mb-4 text-gray-800" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9.5L12 4L21 9.5" />
-                <path d="M19 9.5V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V9.5" />
-                <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke-width="1"/>
-            </svg>
-            <h1 class="text-4xl font-bold text-slate-800 korean-title">숙제 목록</h1>
-            <p class="text-slate-600 mt-2 text-lg">Liste des devoirs de coréen</p>
-        </header>
+  <div class="w-full max-w-6xl p-6 rounded-2xl">
+    <header class="mb-6 text-center">
+      <!-- Icône de toit de Hanok, stylisée comme un coup de pinceau -->
+      <svg class="mb-4 text-gray-800" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9.5L12 4L21 9.5" />
+        <path d="M19 9.5V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V9.5" />
+        <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke-width="1"/>
+      </svg>
+      <h1 class="text-4xl font-bold korean-title">숙제 목록</h1>
+      <p class="text-slate-600 mt-2">Liste des devoirs de coréen</p>
+    </header>
 
-        <main>
-            <ul class="space-y-5">
-                
-                <!-- Standardisation de chaque item de la liste pour un alignement parfait -->
-                <li>
-                    <a href="assignments/Exercice_cuisine_00.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow">
-                                <span class="text-xl font-semibold text-slate-800"> Exercice cuisine 00 </span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercices sur la négation et le vocabulaire de la cuisine.</span>
-                            </div>
-                        </div>
-                    </a>
-                </li>
+    <div class="ex-grid">
+      <!-- LEFT: 모두를 위한 연습문제 -->
+      <div class="section-box">
+        <div class="section-title">모두를 위한 연습문제 / Exercices pour tous</div>
+        <ul class="space-y-4">
+          <!-- Standardisation de chaque item de la liste pour un alignement parfait -->
+          <li>
+            <a href="assignments/Exercice_cuisine_00.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow">
+                  <span class="text-lg font-semibold text-slate-800">Exercice cuisine 00</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercices sur la négation et le vocabulaire de la cuisine.</span>
+                </div>
+              </div>
+            </a>
+          </li>
 
-                <li>
-                    <a href="assignments/Exercice_cuisine_01.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Exercice cuisine 01 </span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercice cuisine 01.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="assignments/Julie020825.html" class="window-button block w-full text-left p-5">
-                         <div class="flex justify-between items-start">
-                            <div class="flex-grow">
-                                <span class="text-xl font-semibold text-slate-800">Devoirs pour Julie (Flashcards)</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
-                            </div>
-                        </div>
-                    </a>
-                </li>
-                
-                <li>
-                    <a href="assignments/particules_précision_depart.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                             <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Devoirs sur '에' et '에서'</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercices sur les particules de précision et de départ.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/Exercice_cuisine_01.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Exercice cuisine 01 </span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercice cuisine 01.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="assignments/Julie020825.html" class="window-button">
+               <div class="flex justify-between items-start">
+                  <div class="flex-grow">
+                    <span class="text-lg font-semibold text-slate-800">Devoirs pour Julie (Flashcards)</span>
+                    <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
+                  </div>
+                </div>
+            </a>
+          </li>
+          
+          <li>
+            <a href="assignments/particules_précision_depart.html" class="window-button">
+              <div class="flex justify-between items-start">
+                   <div class="flex-grow pr-4">
+                    <span class="text-lg font-semibold text-slate-800">Devoirs sur '에' et '에서'</span>
+                    <span class="block text-slate-500 mt-1 text-sm">Exercices sur les particules de précision et de départ.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
-                <li>
-                    <a href="assignments/exclusive_cedou.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Devoirs pour Cédou (02/08/2025)</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/exclusive_cedou.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Devoirs pour Cédou (02/08/2025)</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercices de révision personnalisés.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
-                <li>
-                    <a href="assignments/comme.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Comment on dit 'comme un ange'</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Expression idiomatique en coréen avec 'comme'.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/comme.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Comment on dit 'comme un ange'</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Expression idiomatique en coréen avec 'comme'.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
-                <li>
-                    <a href="assignments/Exercice_ecrit_comme.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Exercice ecrit comme</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercice ecrit 'comme'.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/Exercice_ecrit_comme.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Exercice ecrit comme</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercice ecrit 'comme'.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
-              <li>
-                    <a href="assignments/Exercice_ecrit_comme2.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Exercice ecrit2 comme</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercice ecrit2 'comme'.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/Exercice_ecrit_comme2.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Exercice ecrit2 comme</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercice ecrit2 'comme'.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
-                <li>
-                    <a href="assignments/Exercice_ecoute_comme.html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Exercice ecoute comme</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercice ecoute 'comme'.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/Exercice_ecoute_comme.html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Exercice ecoute comme</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercice ecoute 'comme'.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
-                <li>
-                    <a href="assignments/Exercices_comme_dictee(nouvelle version).html" class="window-button block w-full text-left p-5">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow pr-4">
-                                <span class="text-xl font-semibold text-slate-800">Exercice dictee comme</span>
-                                <span class="block text-slate-500 mt-1 text-sm">Exercice dictee 'comme'.</span>
-                            </div>
-                            <div class="new-dot mt-1.5"></div>
-                        </div>
-                    </a>
-                </li>
+          <li>
+            <a href="assignments/Exercices_comme_dictee(nouvelle version).html" class="window-button">
+              <div class="flex justify-between items-start">
+                <div class="flex-grow pr-4">
+                  <span class="text-lg font-semibold text-slate-800">Exercice dictee comme</span>
+                  <span class="block text-slate-500 mt-1 text-sm">Exercice dictee 'comme'.</span>
+                </div>
+                <div class="new-dot mt-1.5"></div>
+              </div>
+            </a>
+          </li>
 
 
-                
-                <li class="task-item my-4">
-                    <a href="/assignments/korean-listening-wedding-dialogue-01.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 transition duration-300 ease-in-out shadow-sm hover:shadow-md">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-800">Exercice d'écoute : Dialogue de Mariage</span>
-                            <!-- 새로운 과제임을 표시하는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm">Écoutez un dialogue naturel et testez votre compréhension. (06/08/2025)</span>
-                    </a>
-                </li>
-                
-                <li class="task-item">
-                    <a href="/assignments/Phrases_essentielles.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Phrases essentielles pour les cours</span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm">Exercices d'écoute et de dictée.</span>
-                    </a>
-                </li>
+          
+          <li class="task-item my-4">
+            <a href="/assignments/korean-listening-wedding-dialogue-01.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 transition duration-300 ease-in-out shadow-sm hover:shadow-md">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-800">Exercice d'écoute : Dialogue de Mariage</span>
+                    <!-- 새로운 과제임을 표시하는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm">Écoutez un dialogue naturel et testez votre compréhension. (06/08/2025)</span>
+            </a>
+          </li>
+          
+          <li class="task-item">
+            <a href="/assignments/Phrases_essentielles.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Phrases essentielles pour les cours</span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm">Exercices d'écoute et de dictée.</span>
+            </a>
+          </li>
 
-                 <li class="task-item">
-                    <a href="/assignments/Phrases_essentielles_warmup.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Phrases essentielles en version facile </span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm">Phrases essentielles en version facile .</span>
-                    </a>
-                </li>
-                
-                <li class="task-item">
-                    <a href="/assignments/Prononciation03.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Les mots difficiles à prononcer - 3 </span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm">Exercices pour la prononciation - 3 </span>
-                    </a>
-                </li>
+           <li class="task-item">
+            <a href="/assignments/Phrases_essentielles_warmup.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Phrases essentielles en version facile </span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm">Phrases essentielles en version facile .</span>
+            </a>
+          </li>
+          
+          <li class="task-item">
+            <a href="/assignments/Prononciation03.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Les mots difficiles à prononcer - 3 </span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm">Exercices pour la prononciation - 3 </span>
+            </a>
+          </li>
   
-                           <li class="task-item">
-                    <a href="/assignments/Relative_01.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Phrase relative exo 01 </span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm"> qui que où dont... en coréen ? </span>
-                    </a>
-                </li>
-       
-                  <li class="task-item">
-                    <a href="/assignments/Relative_02.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Phrase relative exo 02 </span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm"> qui que où dont... en coréen ? </span>
-                    </a>
-                </li>
-       
-                  <li class="task-item">
-                    <a href="/assignments/Non_pas_00.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Non pas... ce n'est pas ... </span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm"> Exercice basique pour "이/가 아니라" </span>
-                    </a>
-                </li>
-
-                 <li class="task-item">
-                    <a href="/assignments/Non_pas_01.html"
-                       class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-semibold text-slate-700"> Non pas... ce n'est pas ... 2 </span>
-                            <!-- 새 과제임을 나타내는 빨간 점 -->
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        </div>
-                        <span class="block text-slate-500 mt-1 text-sm"> Exercices 2 pour "이/가 아니라" </span>
-                    </a>
-                </li>
-
-            <!-- === Exercice 가다/오다 === -->
+                     <li class="task-item">
+            <a href="/assignments/Relative_01.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Phrase relative exo 01 </span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm"> qui que où dont... en coréen ? </span>
+            </a>
+          </li>
+     
             <li class="task-item">
-                <a href="/assignments/exercice-gada-oda.html"
-                   class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-semibold text-slate-700">Le secret de 가다 et 오다</span>
-                        <!-- Point rouge pour indiquer la nouveauté -->
-                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    </div>
-                    <span class="block text-slate-500 mt-1 text-sm">Exercice interactif pour maîtriser la différence entre "aller" et "venir".</span>
-                </a>
-            </li>
-
-            <!-- === Lien pour l'exercice pour les formes honorifiques === -->
+            <a href="/assignments/Relative_02.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Phrase relative exo 02 </span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm"> qui que où dont... en coréen ? </span>
+            </a>
+          </li>
+     
             <li class="task-item">
-                <a href="/assignments/honorifique_00.html"
-                   class="block w-full text-left p-5 rounded-lg bg-white hover:bg-gray-50 transition shadow-sm border border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-semibold text-slate-700">Coréen : Focus sur la Forme Honorifique</span>
-                        <!-- Point rouge pour la nouveauté -->
-                        <div class="new-dot"></div>
-                    </div>
-                    <span class="block text-slate-500 mt-1 text-sm">Un exercice ciblé pour maîtriser l'art du respect en coréen.</span>
-                </a>
-            </li>
+            <a href="/assignments/Non_pas_00.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Non pas... ce n'est pas ... </span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm"> Exercice basique pour "이/가 아니라" </span>
+            </a>
+          </li>
 
-            <!-- === Lien pour tester le niveau === -->
-        <li class="task-item">
-          <a href="/assignments/Test_A0_A1.html" class="block w-full text-left p-5 rounded-lg bg-white">
-            <div class="flex justify-between items-center">
-              <span class="text-xl font-semibold text-slate-700">Test A0–A1 (Niveau débutant)</span>
-              <div class="new-dot"></div>
-            </div>
-            <span class="block text-slate-500 mt-1 text-sm">Lecture, vocabulaire, compréhension, expression orale.</span>
+           <li class="task-item">
+            <a href="/assignments/Non_pas_01.html"
+               class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-semibold text-slate-700"> Non pas... ce n'est pas ... 2 </span>
+                    <!-- 새 과제임을 나타내는 빨간 점 -->
+                    <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="block text-slate-500 mt-1 text-sm"> Exercices 2 pour "이/가 아니라" </span>
+            </a>
+          </li>
+
+      <!-- === Exercice 가다/오다 === -->
+      <li class="task-item">
+          <a href="/assignments/exercice-gada-oda.html"
+             class="block w-full text-left p-5 rounded-lg bg-white hover:bg-slate-50 transition">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Le secret de 가다 et 오다</span>
+                  <!-- Point rouge pour indiquer la nouveauté -->
+                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm">Exercice interactif pour maîtriser la différence entre "aller" et "venir".</span>
           </a>
-        </li>
+      </li>
+
+      <!-- === Lien pour l'exercice pour les formes honorifiques === -->
+      <li class="task-item">
+          <a href="/assignments/honorifique_00.html"
+             class="block w-full text-left p-5 rounded-lg bg-white hover:bg-gray-50 transition shadow-sm border border-gray-200">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Coréen : Focus sur la Forme Honorifique</span>
+                  <!-- Point rouge pour la nouveauté -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm">Un exercice ciblé pour maîtriser l'art du respect en coréen.</span>
+          </a>
+      </li>
+
+      <!-- === Lien pour tester le niveau === -->
+  <li class="task-item">
+    <a href="/assignments/Test_A0_A1.html" class="block w-full text-left p-5 rounded-lg bg-white">
+      <div class="flex justify-between items-center">
+        <span class="text-lg font-semibold text-slate-700">Test A0–A1 (Niveau débutant)</span>
+        <div class="new-dot"></div>
+      </div>
+      <span class="block text-slate-500 mt-1 text-sm">Lecture, vocabulaire, compréhension, expression orale.</span>
+    </a>
+  </li>
 
 <!-- === 동사 변화 연습문제 링크 === -->
-        <li class="task-item">
-            <a href="/assignments/Conjugaison_00.html"
-               class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-semibold text-slate-700">Exercice : Conjugaison ( 동사 변화)</span>
-                    <!-- 새로운 과제일 경우 new-dot 표시 -->
-                    <div class="new-dot"></div>
-                </div>
-                <span class="block text-slate-500 mt-1 text-sm">Maîtrisez les temps et les niveaux de politesse. (시제와 높임말을 마스터해요.)</span>
-            </a>
-        </li>
+      <li class="task-item">
+          <a href="/assignments/Conjugaison_00.html"
+             class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Exercice : Conjugaison ( 동사 변화)</span>
+                  <!-- 새로운 과제일 경우 new-dot 표시 -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm">Maîtrisez les temps et les niveaux de politesse. (시제와 높임말을 마스터해요.)</span>
+          </a>
+      </li>
 
 
 <!-- === 조사 은/는 === -->
-        <li class="task-item">
-            <a href="/assignments/Particule_theme.html"
-               class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-semibold text-slate-700">Exercice : Particule de thème </span>
-                    <!-- 새로운 과제일 경우 new-dot 표시 -->
-                    <div class="new-dot"></div>
-                </div>
-                <span class="block text-slate-500 mt-1 text-sm"> Insister, accentuez sur un nom / plusieurs noms se contraste dans le même thème.)</span>
-            </a>
-        </li>
-                
+      <li class="task-item">
+          <a href="/assignments/Particule_theme.html"
+             class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Exercice : Particule de thème </span>
+                  <!-- 새로운 과제일 경우 new-dot 표시 -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm"> Insister, accentuez sur un nom / plusieurs noms se contraste dans le même thème.)</span>
+          </a>
+      </li>
+            
 <!-- === Avant après === -->
-        <li class="task-item">
-            <a href="/assignments/Avant_apres_00.html"
-               class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-semibold text-slate-700">Exercice : Avant, Après.. </span>
-                    <!-- 새로운 과제일 경우 new-dot 표시 -->
-                    <div class="new-dot"></div>
-                </div>
-                <span class="block text-slate-500 mt-1 text-sm"> Après avoir terminé les cours...avant d'aller en Corée... )</span>
-            </a>
-        </li>
+      <li class="task-item">
+          <a href="/assignments/Avant_apres_00.html"
+             class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Exercice : Avant, Après.. </span>
+                  <!-- 새로운 과제일 경우 new-dot 표시 -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm"> Après avoir terminé les cours...avant d'aller en Corée... )</span>
+          </a>
+      </li>
 
 
-        <!-- === 숫자 nombre === -->
-        <li class="task-item">
-            <a href="/assignments/numbers-warmup.html"
-               class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-semibold text-slate-700">Exercice : 숫자! 1 2 3 4 5...</span>
-                    <!-- 새로운 과제일 경우 new-dot 표시 -->
-                    <div class="new-dot"></div>
-                </div>
-                <span class="block text-slate-500 mt-1 text-sm"> 하나둘셋? 일이삼? </span>
-            </a>
-        </li>
+    <!-- === 숫자 nombre === -->
+      <li class="task-item">
+          <a href="/assignments/numbers-warmup.html"
+             class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Exercice : 숫자! 1 2 3 4 5...</span>
+                  <!-- 새로운 과제일 경우 new-dot 표시 -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm"> 하나둘셋? 일이삼? </span>
+          </a>
+      </li>
 
 
-         <!-- === 유창성 훈련 - kobito === -->
-        <li class="task-item">
-            <a href="/assignments/Fluency-exercices-kobito.html"
-               class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-semibold text-slate-700">Flueny exercices for 필립</span>
-                    <!-- 새로운 과제일 경우 new-dot 표시 -->
-                    <div class="new-dot"></div>
-                </div>
-                <span class="block text-slate-500 mt-1 text-sm"> Parler couramment avec les phrases de la semaine ! </span>
-            </a>
-        </li>
-        <!-- === test === -->
-        <li class="task-item">
-            <a href="/assignments/openai-voice-test.html"
-               class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-semibold text-slate-700">test...</span>
-                    <!-- 새로운 과제일 경우 new-dot 표시 -->
-                    <div class="new-dot"></div>
-                </div>
-                <span class="block text-slate-500 mt-1 text-sm"> asdad? </span>
-            </a>
-        </li>
-        <li><a href="/assignments/pronun-mini-test.html">발음 테스트 (미니) · Prononciation — Test</a></li>
-        <li><a href="/assignments/fluent_kobito00.html"> 필립!! — Test</a></li>
+       <!-- === 유창성 훈련 - kobito === -->
+      <li class="task-item">
+          <a href="/assignments/Fluency-exercices-kobito.html"
+             class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">Flueny exercices for 필립</span>
+                  <!-- 새로운 과제일 경우 new-dot 표시 -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm"> Parler couramment avec les phrases de la semaine ! </span>
+          </a>
+      </li>
+      <!-- === test === -->
+      <li class="task-item">
+          <a href="/assignments/openai-voice-test.html"
+             class="block w-full text-left p-5 rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-slate-700">test...</span>
+                  <!-- 새로운 과제일 경우 new-dot 표시 -->
+                  <div class="new-dot"></div>
+              </div>
+              <span class="block text-slate-500 mt-1 text-sm"> asdad? </span>
+          </a>
+      </li>
+      <li><a href="/assignments/pronun-mini-test.html" class="window-button">발음 테스트 (미니) · Prononciation — Test</a></li>
+    </ul>
+      </div>
 
-                
-            </ul>
-        </main>
+      <!-- RIGHT: 개인 맞춤 연습문제 -->
+      <aside class="section-box">
+        <div class="section-title">개인 맞춤 연습문제 / Exercices personnalisés</div>
+
+        <div class="space-y-3">
+          <!-- 개인 링크는 카드 스타일로 깔끔하게 정렬 -->
+          <a href="/assignments/fluent_short_romane.html" class="block p-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-md font-semibold">Fluent — Natalie (Short)</div>
+                <div class="text-sm text-slate-500 mt-1">Etape 1 전용 — 짧은 문장 연습</div>
+              </div>
+              <div class="new-dot"></div>
+            </div>
+          </a>
+
+          <a href="/assignments/fluent_short_romane.html" class="block p-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-md font-semibold">Fluent — Romane (Short)</div>
+                <div class="text-sm text-slate-500 mt-1">Etape 1 전용 — 짧은 문장 연습</div>
+              </div>
+              <div class="new-dot"></div>
+            </div>
+          </a>
+
+          <a href="/assignments/Fluency-exercices-kobito.html" class="block p-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-md font-semibold">Fluency — Kobito</div>
+                <div class="text-sm text-slate-500 mt-1">개인 맞춤 유창성 훈련</div>
+              </div>
+            </div>
+          </a>
+
+          <!-- 다른 개인화된 링크들: 필요한 만큼 추가 -->
+          <!-- <a href="/assignments/Julie020825.html" ...>...</a> -->
+        </div>
+
+        <!-- 빠른 검색 / 필터 (간단) -->
+        <div class="mt-6">
+          <label class="block text-sm font-medium text-slate-700 mb-2">검색 / Rechercher</label>
+          <input id="idx-search" type="search" placeholder="제목으로 검색..." class="w-full p-2 border rounded-md" />
+        </div>
+      </aside>
     </div>
-<nav class="ex-list">
-  <!-- ...existing exercise links... -->
-  <a class="card" href="/assignments/fluent_short_natalie.html">Fluent — Natalie (Short, Etape 1 전용)</a>
-</nav>
+  </div>
+
+  <script>
+    // 간단한 클라이언트 검색 (제목 문자열에서 필터)
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const input = document.getElementById('idx-search');
+      if(!input) return;
+      input.addEventListener('input', ()=> {
+        const q = input.value.trim().toLowerCase();
+        document.querySelectorAll('ul.space-y-4 li').forEach(li=>{
+          const txt = li.textContent.trim().toLowerCase();
+          li.style.display = q && !txt.includes(q) ? 'none' : '';
+        });
+      });
+    });
+  </script>
+
 </body>
 </html>
-
-
 
 
 
