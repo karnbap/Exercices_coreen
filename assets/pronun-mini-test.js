@@ -521,13 +521,23 @@ function makeCard(idx, sent){
           if (lenWrap){
             const t = Number(ttsDur || 0); const r = Number(duration || 0);
             // update badges
-// update badges
+// update badges (DO NOT overwrite innerHTML which contains the bar visuals)
 if (durationBadge) {
   const txt = `평균 속도 / Vitesse moyenne: ${ttsDur ? ttsDur.toFixed(1) + 's' : '?s'} · 내 속도 / Ma vitesse: ${duration ? duration.toFixed(1) + 's' : '?s'}`;
-  durationBadge.textContent = txt;
   try {
     durationBadge.setAttribute('title', '발음 속도 비교 / Comparaison des vitesses');
   } catch (e) {}
+  // keep the bar markup intact; update or create a compact text node (hidden by default)
+  try {
+    let compact = durationBadge.querySelector('.dur-compact-text');
+    if (!compact) {
+      compact = document.createElement('div');
+      compact.className = 'dur-compact-text';
+      compact.style.display = 'none';
+      durationBadge.insertBefore(compact, durationBadge.firstChild);
+    }
+    compact.textContent = txt;
+  } catch (e) { /* ignore DOM errors */ }
 }
 
             // compute absolute difference bars from center: center is 50%
