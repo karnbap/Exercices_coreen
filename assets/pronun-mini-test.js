@@ -521,11 +521,15 @@ function makeCard(idx, sent){
           if (lenWrap){
             const t = Number(ttsDur || 0); const r = Number(duration || 0);
             // update badges
-            if (durationBadge) {
-              const txt = `음성 합성(TTS): ${ttsDur?ttsDur.toFixed(1)+'s':'?s'} · 내 녹음 / Mon enregistrement: ${duration?duration.toFixed(1)+'s':'?s'}`;
-              durationBadge.textContent = txt;
-              try{ durationBadge.setAttribute('title', txt); }catch(e){}
-            }
+// update badges
+if (durationBadge) {
+  const txt = `평균 속도 / Vitesse moyenne: ${ttsDur ? ttsDur.toFixed(1) + 's' : '?s'} · 내 속도 / Ma vitesse: ${duration ? duration.toFixed(1) + 's' : '?s'}`;
+  durationBadge.textContent = txt;
+  try {
+    durationBadge.setAttribute('title', '발음 속도 비교 / Comparaison des vitesses');
+  } catch (e) {}
+}
+
             // compute absolute difference bars from center: center is 50%
             const absDiff = Math.abs((t || 0) - (r || 0));
             const maxRange = Math.max(0.1, t, r, absDiff);
