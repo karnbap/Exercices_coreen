@@ -544,7 +544,7 @@
 
     // ===== 제출/전송 =====
     finishBtn.addEventListener('click', async ()=>{
-      if (finishInProgress) return; // 이중 방지
+      if (finishInProgress) return;
       finishInProgress = true;
       finishBtn.disabled = true;
       finishBtn.textContent = '결과를 전송하는 중...';
@@ -553,6 +553,7 @@
       const endTime = new Date();
 
       const payload = {
+        assignmentId: 'Test_A0_A1',
         studentName: studentData.name,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
@@ -560,7 +561,18 @@
         questions
       };
 
-      try{
+      // recordings 중 첫 번째(있다면)를 top-level audio로 첨부 (서버가 단일 audioBase64를 처리함)
+      try {
+        for (const k of Object.keys(studentData.recordings || {})) {
+          const rec = studentData.recordings[k];
+          if (rec && rec.base64) {
+            payload.audioBase64 = rec.base64;
+            payload.audioFilename = rec.filename || `recording_${k}.webm`;
+            payload.audioMimeType = rec.mimeType || 'audio/webm';
+            break;
+          }
+        }
+
         const res = await fetch('/.netlify/functions/send-results',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
@@ -569,7 +581,6 @@
 
         if (!res.ok) throw new Error('Server responded with an error');
 
-        // ✅ 학생에게는 점수/세부내용 미표시 — 간단 메시지만
         const resultHTML = `
           <div class="task-container text-center">
             <h1 class="text-3xl font-bold text-green-600 mb-6">✅ 테스트 완료</h1>
@@ -580,8 +591,8 @@
               </span>
             </p>
             <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-              <a href="/assignments/" class="w-full sm:w-auto text-center bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
-                ⬅️ 이전 연습문제로 가기
+              <a href="./Test_A0_A1.html" class="w-full sm:w-auto text-center bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
+                ⬅️ 첫 페이지로 돌아가기 · Retour à la première page
               </a>
               <button id="print-result-btn" class="w-full sm:w-auto bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-100">
                 🖨️ 인쇄하기 / Imprimer
@@ -597,7 +608,7 @@
         `;
         document.body.innerHTML = resultHTML;
 
-      }catch(err){
+      } catch(err){
         console.error('결과 전송 실패:', err);
         alert('결과 전송에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.');
         finishBtn.disabled=false;

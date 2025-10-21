@@ -12,10 +12,9 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const { assignmentId, studentName, studentEmail, answers, audioBase64, audioFilename } = body;
 
-    const { GMAIL_USER, GMAIL_APP_PASSWORD, TEACHER_EMAIL, RECIPIENT_EMAIL } = process.env;
-    const teacherEmail = TEACHER_EMAIL || RECIPIENT_EMAIL;
-    if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !teacherEmail) {
-      console.warn('[send-results] MISSING_ENV', { GMAIL_USER:!!GMAIL_USER, GMAIL_APP_PASSWORD:!!GMAIL_APP_PASSWORD, teacherEmail:!!teacherEmail });
+    const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL } = process.env;
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
+      console.warn('[send-results] MISSING_ENV', { GMAIL_USER:!!GMAIL_USER, GMAIL_APP_PASSWORD:!!GMAIL_APP_PASSWORD, RECIPIENT_EMAIL:!!RECIPIENT_EMAIL });
       return { statusCode:500, headers:{ ...CORS, 'Content-Type':'application/json; charset=utf-8' }, body: JSON.stringify({ ok:false, reason:'MISSING_ENV' }) };
     }
 
@@ -58,7 +57,7 @@ exports.handler = async (event) => {
 
       const mailOptions = {
         from: `"Korean Homework" <${GMAIL_USER}>`,
-        to: teacherEmail,
+        to: RECIPIENT_EMAIL,
         subject,
         html: htmlBody,
         attachments: audioBase64 ? [{
