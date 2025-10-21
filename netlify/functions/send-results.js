@@ -10,7 +10,7 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: JSON.stringify({ ok:false, reason:'METHOD_NOT_ALLOWED' }) };
 
     const body = JSON.parse(event.body || '{}');
-    const { assignmentId, studentName, studentEmail, answers, audioBase64, audioFilename } = body;
+    const { assignmentId, studentName, studentEmail, questions, startTime, endTime, totalTimeSeconds } = body;
 
     const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL } = process.env;
     if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
@@ -20,67 +20,186 @@ exports.handler = async (event) => {
 
     // Test A0_A1 전용 처리 (대소문자 무시)
     if ((assignmentId||'').toString().toLowerCase() === 'test_a0_a1' || (assignmentId||'').toString().toLowerCase() === 'test_a0-a1') {
-      // 간단 채점(실제 정답/로직은 필요에 맞게 수정)
-      function evaluateTestA0A1(answers = {}) {
-        const expected = { q1: '안녕하세요', q2: '감사합니다', q3: '이름이 뭐예요?' };
-        let score = 0, total = Object.keys(expected).length, feedback = [];
-        for (const k of Object.keys(expected)) {
-          const got = (answers[k]||'').toString().trim();
-          const ok = got && got.toLowerCase() === expected[k].toLowerCase();
-          if (ok) score++;
-          feedback.push({ q:k, ok, got, expected: expected[k] });
-        }
-        return { score, total, percent: Math.round((score/total)*100), feedback };
-      }
+      // A0-A1 테스트 결과 처리 함수
+      function processTestResults() {
+        // 테스트 완료 시각 정보
+        const testDate = new Date(endTime || new Date()).toLocaleString('fr-FR', {
+          year: 'numeric', month: 'long', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
 
-      const evaluation = evaluateTestA0A1(answers || {});
+        // 시험 소요 시간 계산
+        const duration = totalTimeSeconds ? `${Math.floor(totalTimeSeconds / 60)}분 ${totalTimeSeconds % 60}초` : '측정 불가';
+        
+        // 단계별 섹션 분리
+        const listenReadQuestions = questions.filter(q => q.number >= 1 && q.number <= 5);
+        const readAloneQuestions = questions.filter(q => q.number >= 6 && q.number <= 10);
+        const vocabQuestion = questions.find(q => q.ko === '어휘 짝짓기 게임');
+        const vocabScore = vocabQuestion ? vocabQuestion.userAnswer : 'N/A';
+        
+        const comprehensionQuestions = questions.filter(q => q.fr && q.fr.includes('Question de compréhension'));
+        
+        const listenSpeakQuestions = questions.filter(q => 
+          q.ko && q.ko.includes('질문') && 
+          typeof q.userAnswer === 'string' && 
+          (q.userAnswer.includes('dictation') || q.userAnswer.includes('translation'))
+        );
+        
+        // 각 녹음파일 추출
+        const recordingsMap = new Map();
+        questions.forEach(q => {
+          if (q.recording && q.recording.base64) {
+            recordingsMap.set(`recording_q${q.number}.webm`, {
+              filename: `${studentName}_q${q.number}.webm`,
+              content: Buffer.from(q.recording.base64, 'base64'),
+              contentType: q.recording.mimeType || 'audio/webm'
+            });
+          }
+        });
+        
+        // 첨부파일 배열 생성
+        const attachments = Array.from(recordingsMap.values());
+        
+        // 이메일 HTML 템플릿 생성
+        return {
+          subject: `Test A0–A1 결과 — ${studentName || '학생'} — ${testDate}`,
+          htmlBody: `
+            <div style="font-family: Arial, Helvetica, sans-serif; max-width: 800px; margin: 0 auto;">
+              <h1 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                <b>한국어 A0-A1 테스트 결과</b>
+              </h1>
+              
+              <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p><b>학생:</b> ${escapeHtml(studentName || '이름 없음')}</p>
+                <p><b>이메일:</b> ${escapeHtml(studentEmail || '없음')}</p>
+                <p><b>테스트 완료:</b> ${testDate}</p>
+                <p><b>소요 시간:</b> ${duration}</p>
+              </div>
+              
+              <!-- 1단계: 듣고 읽기 -->
+              <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">1단계: 듣고 읽기</h2>
+              <div style="margin-left: 15px;">
+                ${listenReadQuestions.map(q => `
+                  <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid #93c5fd; background-color: #f0f9ff;">
+                    <p><b>문제 ${q.number}:</b> ${escapeHtml(q.ko)}</p>
+                    <p><i>불어:</i> ${escapeHtml(q.fr)}</p>
+                    <p><b>듣기 횟수:</b> ${q.listenCount || 0}회</p>
+                    ${q.recording ? 
+                      `<p style="color: #059669;"><b>✓ 녹음 완료</b> (첨부파일 참조: ${studentName}_q${q.number}.webm)</p>` : 
+                      `<p style="color: #dc2626;"><b>✗ 녹음 없음</b></p>`}
+                  </div>
+                `).join('')}
+              </div>
+              
+              <!-- 2단계: 혼자 읽기 -->
+              <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">2단계: 혼자 읽기</h2>
+              <div style="margin-left: 15px;">
+                ${readAloneQuestions.map(q => `
+                  <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid #93c5fd; background-color: #f0f9ff;">
+                    <p><b>문제 ${q.number}:</b> ${escapeHtml(q.ko)}</p>
+                    <p><i>불어:</i> ${escapeHtml(q.fr)}</p>
+                    ${q.recording ? 
+                      `<p style="color: #059669;"><b>✓ 녹음 완료</b> (첨부파일 참조: ${studentName}_q${q.number}.webm)</p>` : 
+                      `<p style="color: #dc2626;"><b>✗ 녹음 없음</b></p>`}
+                  </div>
+                `).join('')}
+              </div>
+              
+              <!-- 3단계: 어휘 짝짓기 -->
+              <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">3단계: 어휘 짝짓기</h2>
+              <div style="margin-left: 15px; margin-bottom: 15px; padding: 10px; border-left: 4px solid #a5b4fc; background-color: #f5f3ff;">
+                <p><b>점수:</b> ${vocabScore}</p>
+              </div>
+              
+              <!-- 4단계: 이해력 -->
+              <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">4단계: 이해력</h2>
+              <div style="margin-left: 15px;">
+                ${comprehensionQuestions.map(q => `
+                  <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid #a78bfa; background-color: #f5f3ff;">
+                    <p><b>문제 ${q.number}:</b> ${escapeHtml(q.ko)}</p>
+                    <p><i>정답:</i> ${escapeHtml(q.fr.replace('(Question de compréhension) ', ''))}</p>
+                    <p><b>학생 답변:</b> ${escapeHtml(q.userAnswer || '(응답 없음)')}</p>
+                  </div>
+                `).join('')}
+              </div>
+              
+              <!-- 5단계: 듣고 말하기 -->
+              <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">5단계: 듣고 말하기</h2>
+              <div style="margin-left: 15px;">
+                ${listenSpeakQuestions.map(q => {
+                  let response = {};
+                  try {
+                    response = JSON.parse(q.userAnswer || '{}');
+                  } catch (e) {
+                    response = { dictation: '', translation: '', selfDictation: '' };
+                  }
+                  
+                  return `
+                    <div style="margin-bottom: 20px; padding: 12px; border-left: 4px solid #c084fc; background-color: #faf5ff;">
+                      <p><b>문제 ${q.number}:</b> ${escapeHtml(q.ko.replace('(질문) ', ''))}</p>
+                      <p><i>불어:</i> ${escapeHtml(q.fr.replace('(Question) ', ''))}</p>
+                      
+                      <div style="margin: 10px 0; padding: 8px; background-color: #f9fafb; border-radius: 4px;">
+                        <p><b>a) 듣고 받아쓰기:</b> ${escapeHtml(response.dictation || '(응답 없음)')}</p>
+                        <p><b>b) 번역:</b> ${escapeHtml(response.translation || '(응답 없음)')}</p>
+                        <p><b>c) 자기 녹음 받아쓰기:</b> ${escapeHtml(response.selfDictation || '(응답 없음)')}</p>
+                        ${q.recording ? 
+                          `<p style="color: #059669;"><b>✓ 답변 녹음 완료</b> (첨부파일 참조: ${studentName}_q${q.number}.webm)</p>` : 
+                          `<p style="color: #dc2626;"><b>✗ 답변 녹음 없음</b></p>`}
+                      </div>
+                      
+                      <p><b>듣기 횟수:</b> ${q.listenCount || 0}회</p>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+              
+              <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 0.9rem; text-align: center;">
+                자동 생성된 테스트 결과 보고서입니다.<br>
+                모든 녹음 파일은 이메일에 첨부되어 있습니다.
+              </p>
+            </div>
+          `,
+          attachments
+        };
+      }
 
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
       });
 
-      // 메일 제목은 메일 헤더에선 볼드가 적용되지 않음 — 본문에서 강조(bold) 처리
-      const subject = `Test A0–A1 결과 — ${studentName || '학생'} — ${evaluation.percent}%`;
-      const htmlBody = `
-        <div style="font-family:Arial,Helvetica,sans-serif; max-width:680px;">
-          <h2><b>Test A0–A1 결과</b></h2>
-          <p><b>학생:</b> ${escapeHtml(studentName || '이름 없음')}</p>
-          <p><b>학생 이메일:</b> ${escapeHtml(studentEmail || '없음')}</p>
-          <p><b>점수:</b> ${evaluation.score}/${evaluation.total} (${evaluation.percent}%)</p>
-          <h3>채점 상세</h3>
-          <ul>
-            ${evaluation.feedback.map(f => `<li style="margin-bottom:8px;padding:8px;background:${f.ok? '#e6ffed':'#fff0f0'};border-radius:4px;"><b>${f.q}</b>: ${f.ok? '정답':'오답'}<br>학생 답: ${escapeHtml(f.got||'')} ${f.ok? '': `<br>정답: ${escapeHtml(f.expected)}`}</li>`).join('')}
-          </ul>
-        </div>
-      `;
-
+      const result = processTestResults();
+      
       const mailOptions = {
         from: `"Korean Homework" <${GMAIL_USER}>`,
         to: RECIPIENT_EMAIL,
-        subject,
-        html: htmlBody,
-        attachments: audioBase64 ? [{
-          filename: audioFilename || `${(studentName||'student').replace(/\s+/g,'_')}_recording.webm`,
-          content: Buffer.from(audioBase64, 'base64'),
-          contentType: 'audio/webm'
-        }] : []
+        subject: result.subject,
+        html: result.htmlBody,
+        attachments: result.attachments
       };
 
       const info = await transporter.sendMail(mailOptions);
-
-      return { statusCode:200, headers:{ ...CORS, 'Content-Type':'application/json; charset=utf-8' }, body: JSON.stringify({ ok:true, evaluation, mailInfo: info }) };
+      
+      return { statusCode:200, headers:{ ...CORS, 'Content-Type':'application/json; charset=utf-8' }, body: JSON.stringify({ ok:true }) };
     }
 
     // 기존(기본) 처리 로직은 그대로 유지
-    // ...existing code...
     return { statusCode:200, headers:CORS, body: JSON.stringify({ ok:true }) };
 
   } catch (err) {
-    console.error('[send-results] EX', err);
-    return { statusCode:500, headers:{ 'Content-Type':'application/json; charset=utf-8' }, body: JSON.stringify({ ok:false, reason:'EXCEPTION', message: err.message }) };
+    console.error('[send-results] ERROR', err);
+    return { statusCode:500, headers:{ ...CORS, 'Content-Type':'application/json; charset=utf-8' }, body: JSON.stringify({ ok:false, reason:'SERVER_ERROR', message: err.message }) };
   }
 };
 
-// 간단 HTML 이스케이프 (XSS 방지)
-function escapeHtml(s='') { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// HTML 안전 출력을 위한 이스케이프 함수
+function escapeHtml(s='') { 
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp',
+    '<': '&lt',
+    '>': '&gt',
+    '"': '&quot',
+    "'": '&#39;'
+  }[c])); 
+}
