@@ -76,6 +76,13 @@
     color:var(--texte-doux); background:#eef1f6; border:1px solid var(--bordure);
     border-radius:999px; padding:0 7px; margin-left:3px; vertical-align:middle;
   }
+  .duree{
+    display:inline-block; font-size:.72rem; font-weight:500; color:var(--texte-doux);
+    background:#eef1f6; border-radius:999px; padding:2px 10px; margin-left:8px; vertical-align:middle;
+  }
+  .pagaille{font-size:1.3rem; letter-spacing:.02em; font-weight:600;}
+  .carte ul{margin:8px 0; padding-left:22px;}
+  .carte li{margin:4px 0;}
 
   /* ---------- Boîtes règle / astuce ---------- */
   .regle{border-left:4px solid var(--particule); background:#fffbeb; padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0;}
@@ -234,23 +241,62 @@
     <p class="sous-titre">Apprendre une langue, c'est apprendre une nouvelle logique.</p>
 
     <div class="carte">
-      <h3>🇫🇷 En français : Sujet + Verbe + Complément</h3>
-      <div class="phrase">
-        <span class="langue">Français</span>
-        Paul <span class="role">Sujet</span> mange <span class="role">Verbe</span> une pomme <span class="role">COD</span>.
+      <h3>😵‍💫 Sans indication : quelle pagaille ! <span class="duree">~2 min</span></h3>
+      <p>Regarde cette suite de mots :</p>
+      <div class="phrase pagaille">paul marie poulet mon ami marine <span class="role">= ?!?!?!</span></div>
+      <p>Tout est écrit en minuscules. Il n'y a ni ordre clair ni indication de rôle. Alors…</p>
+      <ul>
+        <li><strong>marie</strong> : le prénom Marie… ou le verbe <em>marier</em> ? 💍</li>
+        <li><strong>marine</strong> : le prénom Marine… ou le verbe <em>mariner</em> ? 🍗</li>
+        <li><strong>paul marie</strong> : deux personnes… ou une seule personne qui s'appelle Paul-Marie ?</li>
+      </ul>
+      <p>Qui fait quoi, à qui et où ? 😵‍💫</p>
+      <div class="astuce">
+        <strong>😄 Pourquoi « marine marine » ?!</strong>
+        Haha, parce que cette phrase est <em>parfaitement</em> confuse — et c'est exactement pour ça qu'elle est parfaite : elle montre mieux que n'importe quelle explication pourquoi l'ordre des mots (surtout la place du verbe) et les petites indications de rôle sont si importants !
       </div>
-      <p>Le sujet est <strong>au début</strong>, l'objet (COD) est <strong>après le verbe</strong>. L'ordre est fixé !</p>
     </div>
 
     <div class="carte">
-      <h3>🇰🇷 En coréen : Sujet + Complément + Verbe</h3>
+      <h3>🏷️ Le rôle sous chaque groupe <span class="duree">~2 min</span></h3>
+      <p>Ne changeons <strong>aucun mot</strong>. Écrivons seulement le rôle en dessous :</p>
+      <table class="regles">
+        <tr><th>paul marie</th><th>poulet</th><th>mon ami</th><th>marine</th></tr>
+        <tr>
+          <td><span class="role">sujet</span></td>
+          <td><span class="role">COD</span></td>
+          <td><span class="role">complément circonstanciel de lieu</span></td>
+          <td><span class="role">verbe</span></td>
+        </tr>
+      </table>
+      <p>Maintenant on comprend : <strong>paul marie</strong> fait l'action, <strong>poulet</strong> la reçoit, <strong>mon ami</strong> indique le lieu, <strong>marine</strong> = le verbe <em>mariner</em>.</p>
+      <p>Mais ces indications sont longues… « paul marie, sujet… poulet, COD… mon ami, complément circonstanciel de lieu… » On comprendrait tout, mais <strong>on finirait la phrase demain matin !</strong> ⏰</p>
+    </div>
+
+    <div class="carte">
+      <h3>🇫🇷🇰🇷 Deux façons de montrer les rôles <span class="duree">~3 min</span></h3>
+      <p><strong>Le français utilise surtout la place</strong> (et la conjugaison) :</p>
+      <div class="phrase">
+        <span class="langue">Français</span>
+        Paul-Marie <span class="role">Sujet</span> marine <span class="role">Verbe</span> le poulet <span class="role">COD</span> chez mon ami <span class="role">Lieu</span>.
+      </div>
+      <ul>
+        <li>Le sujet est placé <strong>avant</strong> le verbe.</li>
+        <li>Le verbe arrive juste après et <strong>change avec le sujet</strong> (je marine, nous marinons…).</li>
+        <li>Le COD arrive après le verbe ; <strong>chez</strong> indique le lieu.</li>
+      </ul>
+      <p>À l'écrit, la majuscule et le trait d'union montrent que Paul-Marie est un prénom. Mais <strong>à l'oral, on n'entend pas les majuscules !</strong> L'ordre, la conjugaison et les mots comme <em>chez</em> restent donc essentiels.</p>
+      <p style="margin-top:14px;"><strong>Le coréen utilise de petits badges</strong> collés après les noms :</p>
       <div class="phrase">
         <span class="langue">Coréen</span>
-        폴<span class="particule">이</span><span class="role">Sujet</span>
-        사과<span class="particule">를</span><span class="role">COD</span>
-        먹어요<span class="role">Verbe</span>.
+        폴마리<span class="particule">가</span><span class="role">Sujet</span> 내 친구 집<span class="particule">에서</span><span class="role">Lieu</span> 닭고기<span class="particule">를</span><span class="role">COD</span> 재워요<span class="role">Verbe</span>.
       </div>
-      <p style="font-size:.85rem; color:var(--texte-doux); margin:8px 0 0;">💡 Seule la <strong>particule</strong> (이/가/을/를) est en couleur : elle est collée au mot et indique son rôle.</p>
+      <p><em>Paul-Marie fait mariner le poulet chez mon ami.</em></p>
+      <div class="astuce">
+        <strong>😴🐔 Petit piège amusant</strong>
+        재워요 peut aussi faire penser à « faire dormir ». Mais ici, le poulet ne met pas son pyjama : il marine !
+      </div>
+      <p>Compare : <em>chez mon ami</em> → <strong>chez</strong> arrive <em>avant</em> la personne · <em>내 친구 집에서</em> → <strong>에서</strong> arrive <em>après</em> le lieu.</p>
       <div class="attention">
         <strong>🚨 À retenir</strong>
         En coréen, <strong>le prédicat (verbe ou adjectif) se place généralement à la fin de la phrase</strong>. Pour commencer, retiens le schéma simple : noms + particules, puis prédicat.
@@ -258,16 +304,16 @@
     </div>
 
     <div class="carte">
-      <h3>😵 Mais alors… qui fait quoi ?</h3>
-      <p>Prenez cette phrase française :</p>
-      <div class="phrase">Paul <span class="role">Sujet</span> envoie <span class="role">Verbe</span> Marie <span class="role">COD</span> chez Jean pour récupérer un colis.</div>
-      <p>En coréen, l'ordre des mots donne : <em>Paul — Marie — chez Jean — un colis — envoie</em>. Sans autre indication, impossible de savoir <strong>qui envoie qui</strong> !</p>
-      <p>C'est là que le coréen a une astuce géniale : <strong>les particules</strong> 🦸</p>
+      <h3>🔀 L'ordre peut varier… mais écoute jusqu'au bout ! <span class="duree">~2 min</span></h3>
+      <p>Grâce aux particules, un groupe peut changer de place sans perdre son rôle :</p>
+      <div class="phrase">폴마리<span class="particule">가</span> 내 친구 집<span class="particule">에서</span> 닭고기<span class="particule">를</span> 재워요. — <em>Paul-Marie fait mariner le poulet chez mon ami.</em></div>
+      <div class="phrase">내 친구 집<span class="particule">에서</span> 폴마리<span class="particule">가</span> 닭고기<span class="particule">를</span> 재워요. — <em>Chez mon ami, Paul-Marie fait mariner le poulet.</em></div>
+      <div class="phrase">닭고기<span class="particule">를</span> 폴마리<span class="particule">가</span> 내 친구 집<span class="particule">에서</span> 재워요. — <em>Le poulet, c'est Paul-Marie qui le fait mariner chez mon ami.</em></div>
+      <p>Le sens principal reste le même ; le déplacement met un mot en valeur. Pour commencer, utilise l'ordre neutre : <strong>Sujet + (Lieu) + Objet + Verbe</strong>.</p>
       <div class="astuce">
-        <strong>💡 Les particules</strong>
-        Les noms <strong>peuvent être suivis</strong> de petites particules qui indiquent leur rôle dans la phrase : sujet, objet, lieu, temps… Grâce à elles, le rôle des mots reste souvent clair <strong>même lorsque l'ordre varie</strong>.
+        <strong>🛗 Le verbe est encore dans l'ascenseur !</strong>
+        Comme le verbe arrive à la fin, il faut écouter jusqu'au bout. Pas étonnant qu'on entende parfois en Corée : « 내 말 좀 끊지 말고 끝까지 들어봐 ! » — <em>Arrête de m'interrompre, écoute jusqu'au bout !</em> 😄
       </div>
-      <p>En français, ce rôle est plutôt indiqué par <strong>la position</strong> du nom et par des <strong>prépositions</strong> (<em>à, chez, en, dans…</em>). En coréen, il est indiqué par une <strong>particule collée au nom</strong>.</p>
     </div>
   </section>
 
