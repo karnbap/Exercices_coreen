@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le coréen pour débutants — Les particules 이/가 &amp; 을/를</title>
+<style>
+  :root{
+    --sujet:#2563eb;      /* bleu  : sujet */
+    --cod:#e11d48;        /* rouge : complément d'objet direct */
+    --verbe:#059669;      /* vert  : verbe */
+    --particule:#d97706;  /* ambre : particules */
+    --fond:#f6f7fb;
+    --carte:#ffffff;
+    --texte:#1f2430;
+    --texte-doux:#5b6270;
+    --bordure:#e3e6ee;
+    --ok:#16a34a;
+    --ko:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+    background:var(--fond); color:var(--texte); line-height:1.6;
+  }
+  .conteneur{max-width:880px; margin:0 auto; padding:0 20px;}
+
+  /* ---------- En-tête ---------- */
+  header{
+    background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 60%,#60a5fa 100%);
+    color:#fff; padding:56px 0 48px;
+  }
+  header h1{margin:0 0 10px; font-size:2rem; letter-spacing:-.5px;}
+  header p{margin:4px 0; opacity:.92; font-size:1.05rem;}
+  .badge-debutant{
+    display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.4);
+    border-radius:999px; padding:3px 14px; font-size:.85rem; margin-bottom:16px;
+  }
+
+  /* ---------- Navigation sommaire ---------- */
+  nav.sommaire{
+    background:var(--carte); border-bottom:1px solid var(--bordure);
+    position:sticky; top:0; z-index:10;
+  }
+  nav.sommaire .conteneur{display:flex; flex-wrap:wrap; gap:4px; padding-top:8px; padding-bottom:8px;}
+  nav.sommaire a{
+    text-decoration:none; color:var(--texte-doux); font-size:.9rem;
+    padding:6px 12px; border-radius:8px;
+  }
+  nav.sommaire a:hover{background:#eef2ff; color:var(--sujet);}
+
+  /* ---------- Sections ---------- */
+  section{padding:36px 0 8px;}
+  section h2{font-size:1.5rem; margin:0 0 6px;}
+  section .sous-titre{color:var(--texte-doux); margin:0 0 18px;}
+  .carte{
+    background:var(--carte); border:1px solid var(--bordure); border-radius:14px;
+    padding:22px 24px; margin:16px 0; box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  .carte h3{margin-top:0;}
+
+  /* ---------- Comparaison FR / KO ---------- */
+  .phrase{font-size:1.15rem; margin:10px 0; padding:12px 16px; border-radius:10px; background:#f8fafc; border:1px solid var(--bordure);}
+  .phrase .langue{display:block; font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--texte-doux); margin-bottom:4px;}
+  .sujet{color:var(--sujet); font-weight:700;}
+  .cod{color:var(--cod); font-weight:700;}
+  .verbe{color:var(--verbe); font-weight:700;}
+  .particule{color:var(--particule); font-weight:700;}
+  .legende{display:flex; flex-wrap:wrap; gap:14px; font-size:.85rem; color:var(--texte-doux); margin-top:8px;}
+  .legende span::before{content:"●"; margin-right:5px;}
+  .legende .l-sujet::before{color:var(--sujet);}
+  .legende .l-cod::before{color:var(--cod);}
+  .legende .l-verbe::before{color:var(--verbe);}
+
+  /* ---------- Boîtes règle / astuce ---------- */
+  .regle{border-left:4px solid var(--particule); background:#fffbeb; padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0;}
+  .astuce{border-left:4px solid var(--verbe); background:#ecfdf5; padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0;}
+  .attention{border-left:4px solid var(--ko); background:#fef2f2; padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0;}
+  .regle strong, .astuce strong, .attention strong{display:block; margin-bottom:4px;}
+
+  table.regles{width:100%; border-collapse:collapse; margin:12px 0; font-size:.95rem;}
+  table.regles th, table.regles td{border:1px solid var(--bordure); padding:8px 12px; text-align:left; vertical-align:top;}
+  table.regles th{background:#f1f5f9;}
+  .ko-grand{font-size:1.25rem;}
+
+  /* ---------- Exercices ---------- */
+  #exercices h2{margin-bottom:2px;}
+  .niveau-onglets{display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 6px;}
+  .niveau-onglets button{
+    border:1px solid var(--bordure); background:var(--carte); color:var(--texte-doux);
+    padding:9px 16px; border-radius:999px; cursor:pointer; font-size:.9rem; font-family:inherit;
+  }
+  .niveau-onglets button.actif{background:var(--sujet); border-color:var(--sujet); color:#fff; font-weight:600;}
+  .niveau-onglets button .etoile{opacity:.7; margin-right:2px;}
+
+  .niveau-info{font-size:.9rem; color:var(--texte-doux); margin:6px 0 0;}
+  .score-ligne{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:14px 0;
+    font-size:.95rem;
+  }
+  .score-badge{background:#eef2ff; color:var(--sujet); font-weight:700; padding:4px 14px; border-radius:999px;}
+  .meilleur-badge{background:#ecfdf5; color:var(--ok); padding:4px 14px; border-radius:999px; font-size:.85rem;}
+
+  .question{
+    background:var(--carte); border:1px solid var(--bordure); border-radius:12px;
+    padding:16px 18px; margin:12px 0;
+  }
+  .question .enonce{font-size:1.05rem; margin-bottom:10px;}
+  .question .traduction{color:var(--texte-doux); font-size:.85rem; margin-top:2px;}
+  .question .options{display:flex; flex-wrap:wrap; gap:8px;}
+  .question .options button{
+    font-family:inherit; font-size:1.05rem; padding:7px 20px; border-radius:10px;
+    border:1.5px solid var(--bordure); background:#fff; cursor:pointer; color:var(--texte);
+  }
+  .question .options button:hover{border-color:var(--sujet);}
+  .question .options button.choisi{border-color:var(--sujet); background:#eef2ff; font-weight:700;}
+  .question .options button.bonne{border-color:var(--ok); background:#ecfdf5; color:var(--ok); font-weight:700;}
+  .question .options button.mauvaise{border-color:var(--ko); background:#fef2f2; color:var(--ko); font-weight:700;}
+  .question .options button:disabled{cursor:default;}
+  .feedback{margin-top:10px; font-size:.9rem; display:none; padding:8px 12px; border-radius:8px;}
+  .feedback.ok{display:block; background:#ecfdf5; color:#14532d;}
+  .feedback.ko{display:block; background:#fef2f2; color:#7f1d1d;}
+
+  /* Ordre des mots : jetons cliquables */
+  .jetons{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0;}
+  .jetons .jeton{
+    font-family:inherit; font-size:1.05rem; padding:7px 16px; border-radius:10px;
+    border:1.5px solid var(--sujet); background:#eef2ff; color:var(--sujet); cursor:pointer; font-weight:600;
+  }
+  .jetons .jeton.utilise{opacity:.35; cursor:default;}
+  .reponse-construite{
+    min-height:46px; border:1.5px dashed var(--bordure); border-radius:10px; padding:6px 8px;
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#fafbff;
+  }
+  .reponse-construite .jeton{border-color:var(--cod); background:#fff1f2; color:var(--cod);}
+  .reponse-construite .consigne{color:#9aa1af; font-size:.85rem; padding:0 6px;}
+  .question.correcte{border-color:var(--ok); background:#f7fef9;}
+  .question.incorrecte{border-color:var(--ko);}
+
+  .actions-exo{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 30px;}
+  .actions-exo button{
+    font-family:inherit; font-size:.95rem; padding:11px 20px; border-radius:10px; cursor:pointer;
+    border:1.5px solid var(--bordure); background:var(--carte); color:var(--texte);
+  }
+  .actions-exo button:hover{border-color:var(--sujet);}
+  .actions-exo button.principal{background:var(--sujet); border-color:var(--sujet); color:#fff; font-weight:700;}
+  .actions-exo button.principal:hover{background:#1d4ed8;}
+  .actions-exo button:disabled{opacity:.45; cursor:default;}
+
+  /* ---------- Échauffement vocabulaire ---------- */
+  .vocab-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin:14px 0;}
+  .vocab-carte{border:1px solid var(--bordure); border-radius:10px; padding:8px 12px; background:#fafbff; text-align:center;}
+  .vocab-carte .ko{font-size:1.15rem; font-weight:700; color:var(--sujet);}
+  .vocab-carte .fr{font-size:.85rem; color:var(--texte-doux);}
+  .match-colonnes{display:flex; gap:18px; flex-wrap:wrap; margin:14px 0;}
+  .match-colonne{display:flex; flex-direction:column; gap:8px; flex:1; min-width:160px;}
+  .match-colonne button{
+    font-family:inherit; font-size:1rem; padding:9px 14px; border-radius:10px; cursor:pointer;
+    border:1.5px solid var(--bordure); background:#fff; color:var(--texte);
+  }
+  .match-colonne button.sel{border-color:var(--sujet); background:#eef2ff; font-weight:700;}
+  .match-colonne button.trouve{border-color:var(--ok); background:#ecfdf5; color:var(--ok); cursor:default; font-weight:700;}
+  .match-colonne button.erreur{border-color:var(--ko); background:#fef2f2; color:var(--ko);}
+  .match-colonne button:disabled{cursor:default;}
+
+  /* ---------- Accueil élève ---------- */
+  #accueil-eleve{
+    position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:100;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  #accueil-eleve[hidden]{display:none;}
+  #accueil-eleve .carte{max-width:430px; width:100%; margin:0;}
+  #accueil-eleve label{font-weight:600; font-size:.9rem;}
+  #accueil-eleve input{
+    width:100%; font-family:inherit; font-size:1rem; padding:10px 12px; margin:6px 0 14px;
+    border:1.5px solid var(--bordure); border-radius:10px;
+  }
+  #accueil-eleve input:focus{outline:none; border-color:var(--sujet);}
+
+  footer{margin-top:40px; padding:28px 0 40px; border-top:1px solid var(--bordure); color:var(--texte-doux); font-size:.9rem;}
+  footer a{color:var(--sujet);}
+
+  @media (max-width:600px){
+    header h1{font-size:1.5rem;}
+    .carte{padding:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="accueil-eleve" hidden>
+  <div class="carte">
+    <h3>👋 Bienvenue ! 안녕 !</h3>
+    <p style="margin-top:0;">Dis-nous qui tu es : tes résultats pourront t'être envoyés par email (et le chat saura à qui ronronner dessus 🐱).</p>
+    <label for="champ-nom">Ton prénom / nom</label>
+    <input id="champ-nom" type="text" autocomplete="name">
+    <label for="champ-email">Ton email</label>
+    <input id="champ-email" type="email" autocomplete="email">
+    <div class="actions-exo" style="margin:0;">
+      <button class="principal" id="btn-accueil">🚀 C'est parti !</button>
+    </div>
+    <p class="niveau-info" id="accueil-message"></p>
+  </div>
+</div>
+
+<header>
+  <div class="conteneur">
+    <span class="badge-debutant">🇰🇷 Débutant complet · environ 25 minutes</span>
+    <h1>La structure basique : le coréen vs le français</h1>
+    <p>L'ordre des mots change tout ! Apprenons les deux premières particules coréennes : <strong>이/가</strong> (sujet) et <strong>을/를</strong> (objet).</p>
+  </div>
+</header>
+
+<nav class="sommaire">
+  <div class="conteneur">
+    <a href="#ordre">1. L'ordre des mots</a>
+    <a href="#iga">2. 이/가 — le sujet</a>
+    <a href="#eulreul">3. 을/를 — l'objet</a>
+    <a href="#euneun">4. Et 은/는 ?</a>
+    <a href="#exercices">5. Exercices</a>
+  </div>
+</nav>
+
+<div class="conteneur">
+
+  <!-- ============ 1. L'ORDRE DES MOTS ============ -->
+  <section id="ordre">
+    <h2>1️⃣ L'ordre des mots : le verbe à la fin !</h2>
+    <p class="sous-titre">Apprendre une langue, c'est apprendre une nouvelle logique.</p>
+
+    <div class="carte">
+      <h3>🇫🇷 En français : Sujet + Verbe + Complément</h3>
+      <div class="phrase">
+        <span class="langue">Français</span>
+        <span class="sujet">Paul</span> <span class="verbe">mange</span> <span class="cod">une pomme</span>.
+      </div>
+      <p>Le sujet est <strong>au début</strong>, l'objet (COD) est <strong>après le verbe</strong>. L'ordre est fixé !</p>
+    </div>
+
+    <div class="carte">
+      <h3>🇰🇷 En coréen : Sujet + Complément + <span style="color:var(--verbe)">Verbe</span></h3>
+      <div class="phrase">
+        <span class="langue">Coréen</span>
+        <span class="sujet">폴<span class="particule">이</span></span> <span class="cod">사과<span class="particule">를</span></span> <span class="verbe">먹어요</span>.
+      </div>
+      <div class="legende">
+        <span class="l-sujet">Sujet</span>
+        <span class="l-cod">Objet (COD)</span>
+        <span class="l-verbe">Verbe</span>
+      </div>
+      <div class="attention">
+        <strong>🚨 À retenir</strong>
+        En coréen, <strong>le verbe est toujours à la fin de la phrase</strong>. On place d'abord les noms (avec leurs particules), puis l'action.
+      </div>
+    </div>
+
+    <div class="carte">
+      <h3>😵 Mais alors… qui fait quoi ?</h3>
+      <p>Prenez cette phrase française :</p>
+      <div class="phrase"><span class="sujet">Paul</span> <span class="verbe">envoie</span> <span class="cod">Marie</span> chez Jean pour récupérer un colis.</div>
+      <p>En coréen, l'ordre des mots donne : <em>Paul — Marie — chez Jean — un colis — envoie</em>. Sans autre indication, impossible de savoir <strong>qui envoie qui</strong> !</p>
+      <p>C'est là que le coréen a une astuce géniale : <strong>les particules</strong> 🦸</p>
+      <div class="astuce">
+        <strong>💡 Les particules</strong>
+        Chaque nom est accompagné d'une petite particule qui indique <strong>son rôle</strong> dans la phrase : sujet, objet, lieu, temps… Grâce à elles, on sait immédiatement qui fait quoi, <strong>quel que soit l'ordre des mots</strong>.
+      </div>
+      <p>En français, ce rôle est plutôt indiqué par <strong>la position</strong> du nom et par des <strong>prépositions</strong> (<em>à, chez, en, dans…</em>). En coréen, il est indiqué par une <strong>particule collée au nom</strong>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. 이/가 ============ -->
+  <section id="iga">
+    <h2>2️⃣ <span style="color:var(--sujet)">이/가</span> : qui fait l'action ?</h2>
+    <p class="sous-titre">La particule du <strong>sujet</strong>.</p>
+
+    <div class="carte">
+      <h3>📌 La règle</h3>
+      <table class="regles">
+        <tr><th>Le nom se termine par…</th><th>Particule</th><th>Exemple</th></tr>
+        <tr>
+          <td>une <strong>consonne finale</strong> (받침)</td>
+          <td class="ko-grand"><span class="particule">이</span></td>
+          <td><span class="sujet">폴</span> + <span class="particule">이</span> → <strong>폴이</strong> [포리] — <em>Paul</em><br>
+              <span class="sujet">책</span> + <span class="particule">이</span> → <strong>책이</strong> — <em>le livre</em></td>
+        </tr>
+        <tr>
+          <td><strong>pas</strong> de consonne finale</td>
+          <td class="ko-grand"><span class="particule">가</span></td>
+          <td><span class="sujet">마리</span> + <span class="particule">가</span> → <strong>마리가</strong> — <em>Marie</em><br>
+              <span class="sujet">고양이</span> + <span class="particule">가</span> → <strong>고양이가</strong> — <em>le chat</em></td>
+        </tr>
+      </table>
+      <div class="regle">
+        <strong>⚠️ Petite exception</strong>
+        « Je » se dit <strong>저</strong>, mais avec la particule sujet on dit <strong>제가</strong> (et non <em>저가</em>).
+      </div>
+    </div>
+
+    <div class="carte">
+      <h3>💡 Comment trouver le sujet ?</h3>
+      <p>Pose la question : <strong>« Qui fait l'action ? »</strong> ou <strong>« De qui / de quoi parle-t-on ? »</strong> La réponse prend <span class="particule">이</span> ou <span class="particule">가</span>.</p>
+      <div class="phrase">
+        <span class="sujet">폴<span class="particule">이</span></span> <span class="verbe">먹어요</span>. — <em>Paul mange.</em> (Qui mange ? → Paul !)
+      </div>
+      <div class="phrase">
+        <span class="sujet">마리<span class="particule">가</span></span> <span class="verbe">와요</span>. — <em>Marie vient.</em> (Qui vient ? → Marie !)
+      </div>
+      <div class="phrase">
+        <span class="sujet">고양이<span class="particule">가</span></span> <span class="verbe">귀여워요</span>. — <em>Le chat est mignon.</em> (De quoi parle-t-on ? → du chat !)
+      </div>
+      <p><strong>Exemples pour désigner une personne précise :</strong></p>
+      <div class="phrase">
+        — Qui est Sarah ? → C'est moi ! → <span class="sujet">제<span class="particule">가</span></span> 사라예요. 🙋<br>
+        — Qui veut manger le bonbon ? → Moi ! → <span class="sujet">제<span class="particule">가</span></span> 먹을래요!
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. 을/를 ============ -->
+  <section id="eulreul">
+    <h2>3️⃣ <span style="color:var(--cod)">을/를</span> : l'action concerne quoi ?</h2>
+    <p class="sous-titre">La particule du <strong>complément d'objet direct (COD)</strong>.</p>
+
+    <div class="carte">
+      <h3>📌 La règle</h3>
+      <table class="regles">
+        <tr><th>Le nom se termine par…</th><th>Particule</th><th>Exemple</th></tr>
+        <tr>
+          <td>une <strong>consonne finale</strong> (받침)</td>
+          <td class="ko-grand"><span class="particule">을</span></td>
+          <td><span class="cod">빵</span> + <span class="particule">을</span> → <strong>빵을</strong> — <em>du pain</em><br>
+              <span class="cod">밥</span> + <span class="particule">을</span> → <strong>밥을</strong> — <em>du riz</em></td>
+        </tr>
+        <tr>
+          <td><strong>pas</strong> de consonne finale</td>
+          <td class="ko-grand"><span class="particule">를</span></td>
+          <td><span class="cod">커피</span> + <span class="particule">를</span> → <strong>커피를</strong> — <em>du café</em><br>
+              <span class="cod">김치</span> + <span class="particule">를</span> → <strong>김치를</strong> — <em>du kimchi</em></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="carte">
+      <h3>💡 Comment trouver le COD ?</h3>
+      <p>Pose la question : <strong>« L'action concerne quoi ou qui ? »</strong> (manger <em>quoi</em> ? lire <em>quoi</em> ?). La réponse prend <span class="particule">을</span> ou <span class="particule">를</span>.</p>
+      <div class="phrase">
+        <span class="cod">빵<span class="particule">을</span></span> <span class="verbe">먹어요</span>. — <em>Je mange du pain.</em>
+      </div>
+      <div class="phrase">
+        <span class="cod">커피<span class="particule">를</span></span> <span class="verbe">마셔요</span>. — <em>Je bois du café.</em>
+      </div>
+      <div class="phrase">
+        <span class="sujet">폴<span class="particule">이</span></span> <span class="cod">김치<span class="particule">를</span></span> <span class="verbe">먹어요</span>. — <em>Paul mange du kimchi.</em>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. 은/는 ============ -->
+  <section id="euneun">
+    <h2>4️⃣ Et <span class="particule">은/는</span> alors ?</h2>
+    <p class="sous-titre">Un petit avant-goût… pour plus tard !</p>
+    <div class="carte">
+      <p>Tu rencontreras aussi <strong>은/는</strong>, la particule du <strong>thème</strong>. Elle sert à mettre en évidence un sujet de conversation, souvent avec une idée de <strong>contraste</strong> :</p>
+      <div class="phrase">
+        <span class="sujet">저<span class="particule">는</span></span> 사라예요. — <em>Moi, je suis Sarah.</em> (et toi, tu es… ?)
+      </div>
+      <div class="phrase">
+        <span class="sujet">오늘<span class="particule">은</span></span> 날씨가 좋아요. — <em>Aujourd'hui, il fait beau.</em> (mais hier… ?)
+      </div>
+      <p>Dans cette leçon, concentrons-nous sur <strong>이/가</strong> et <strong>을/를</strong>. 은/는 aura sa propre leçon ! 😉</p>
+    </div>
+  </section>
+
+  <!-- ============ 5. EXERCICES ============ -->
+  <section id="exercices">
+    <h2>5️⃣ À toi de jouer ! 🎯</h2>
+    <p class="sous-titre">Choisis un niveau. Tu peux réessayer les mêmes questions, en obtenir de nouvelles, ou passer au niveau suivant.</p>
+
+    <p class="niveau-info" id="bonjour-eleve"></p>
+    <div class="niveau-onglets" id="onglets"></div>
+    <p class="niveau-info" id="niveau-info"></p>
+
+    <div class="carte">
+      <div class="regle" id="rappel-regle" style="margin-top:0;"></div>
+      <div class="score-ligne">
+        <span class="score-badge" id="score">Score : –</span>
+        <span class="meilleur-badge" id="meilleur"></span>
+      </div>
+      <div id="zone-questions"></div>
+      <div class="actions-exo" id="actions-exo">
+        <button class="principal" id="btn-verifier">✔️ Vérifier mes réponses</button>
+        <button id="btn-memes">🔁 Réessayer (mêmes questions)</button>
+        <button id="btn-nouvelles">🎲 Nouvelles questions (même niveau)</button>
+        <button id="btn-vocab">📚 Réviser les mots</button>
+        <button id="btn-suivant">⬆️ Niveau suivant</button>
+      </div>
+      <p class="niveau-info" id="resultat-message"></p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="conteneur">
+    <p><strong>Le coréen pour débutants</strong> — leçon sur les particules 이/가 &amp; 을/를.</p>
+    <p>Pour aller plus loin : <a href="https://korean-pongdang.netlify.app/assignments/particules_pr%C3%A9cision_depart.html" target="_blank" rel="noopener">Exercices sur 에 vs 에서</a> 🌱</p>
+    <p>Collaborateurs : voir le fichier <code>GUIDE.md</code> pour ajouter des questions ou proposer des modifications.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+/* =========================================================================
+   DONNÉES DES EXERCICES
+   Chaque niveau a un "pool" de questions. À l'affichage, on en tire
+   NB_QUESTIONS au hasard. Pour ajouter une question, il suffit de
+   l'ajouter au pool (voir GUIDE.md).
+   ========================================================================= */
+
+const NB_QUESTIONS = 5;
+
+const NIVEAUX = [
+  {
+    id: 1,
+    onglet: "⭐ Niveau 1",
+    titre: "Niveau 1 — 이/가 : la particule du sujet",
+    info: "Choisis 이 ou 가 pour le sujet de la phrase.",
+    rappel: "<strong>Rappel :</strong> consonne finale à la fin du nom → <b>이</b> · pas de consonne finale → <b>가</b>. (Exception : 저 → <b>제가</b>)",
+    type: "qcm",
+    options: ["이", "가"],
+    pool: [
+      { avant: "폴", apres: "와요. (venir)", reponse: "이", explication: "폴 se termine par la consonne finale ㄹ → 이. 폴이 와요. = Paul vient." },
+      { avant: "마리", apres: "먹어요. (manger)", reponse: "가", explication: "마리 n'a pas de consonne finale → 가. 마리가 먹어요. = Marie mange." },
+      { avant: "친구", apres: "자요. (dormir)", reponse: "가", explication: "La dernière syllabe 구 n'a pas de consonne finale → 가. 친구가 자요. = Mon ami dort." },
+      { avant: "책", apres: "싸요. (être bon marché)", reponse: "이", explication: "책 se termine par la consonne finale ㄱ → 이. 책이 싸요. = Le livre n'est pas cher." },
+      { avant: "고양이", apres: "귀여워요. (être mignon)", reponse: "가", explication: "고양이 n'a pas de consonne finale → 가. 고양이가 귀여워요. = Le chat est mignon." },
+      { avant: "빵", apres: "맛있어요. (être délicieux)", reponse: "이", explication: "빵 se termine par la consonne finale ㅇ → 이. 빵이 맛있어요. = Le pain est délicieux." },
+      { avant: "커피", apres: "맛있어요. (être délicieux)", reponse: "가", explication: "커피 n'a pas de consonne finale → 가. 커피가 맛있어요. = Le café est bon." },
+      { avant: "물", apres: "있어요. (il y a)", reponse: "이", explication: "물 se termine par la consonne finale ㄹ → 이. 물이 있어요. = Il y a de l'eau." },
+      { avant: "선생님", apres: "교실에 있어요. (être dans la salle de classe)", reponse: "이", explication: "선생님 se termine par la consonne finale ㅁ → 이. 선생님이 교실에 있어요." },
+      { avant: "사라", apres: "와요. (venir)", reponse: "가", explication: "사라 n'a pas de consonne finale → 가. 사라가 와요. = Sarah vient." }
+    ]
+  },
+  {
+    id: 2,
+    onglet: "⭐ Niveau 2",
+    titre: "Niveau 2 — 을/를 : la particule de l'objet (COD)",
+    info: "Choisis 을 ou 를 pour le complément d'objet direct.",
+    rappel: "<strong>Rappel :</strong> consonne finale à la fin du nom → <b>을</b> · pas de consonne finale → <b>를</b>.",
+    type: "qcm",
+    options: ["을", "를"],
+    pool: [
+      { avant: "밥", apres: "먹어요. (manger)", reponse: "을", explication: "밥 se termine par la consonne finale ㅂ → 을. 밥을 먹어요. = Je mange du riz." },
+      { avant: "영화", apres: "봐요. (regarder)", reponse: "를", explication: "영화 n'a pas de consonne finale → 를. 영화를 봐요. = Je regarde un film." },
+      { avant: "물", apres: "마셔요. (boire)", reponse: "을", explication: "물 se termine par la consonne finale ㄹ → 을. 물을 마셔요. = Je bois de l'eau." },
+      { avant: "빵", apres: "먹어요. (manger)", reponse: "을", explication: "빵 se termine par la consonne finale ㅇ → 을. 빵을 먹어요. = Je mange du pain." },
+      { avant: "커피", apres: "마셔요. (boire)", reponse: "를", explication: "커피 n'a pas de consonne finale → 를. 커피를 마셔요. = Je bois du café." },
+      { avant: "책", apres: "읽어요. (lire)", reponse: "을", explication: "책 se termine par la consonne finale ㄱ → 을. 책을 읽어요. = Je lis un livre." },
+      { avant: "김치", apres: "먹어요. (manger)", reponse: "를", explication: "김치 n'a pas de consonne finale → 를. 김치를 먹어요. = Je mange du kimchi." },
+      { avant: "한국어", apres: "공부해요. (étudier)", reponse: "를", explication: "한국어 n'a pas de consonne finale → 를. 한국어를 공부해요. = J'étudie le coréen." },
+      { avant: "음악", apres: "들어요. (écouter)", reponse: "을", explication: "악 se termine par la consonne finale ㄱ → 을. 음악을 들어요. = J'écoute de la musique." },
+      { avant: "사과", apres: "좋아해요. (aimer)", reponse: "를", explication: "사과 n'a pas de consonne finale → 를. 사과를 좋아해요. = J'aime les pommes." }
+    ]
+  },
+  {
+    id: 3,
+    onglet: "⭐⭐ Niveau 3",
+    titre: "Niveau 3 — 이/가 ou 을/를 ? À toi de trouver le rôle !",
+    info: "Regarde le verbe : le mot troué est-il le SUJET (qui fait l'action) ou l'OBJET (ce que l'action concerne) ?",
+    rappel: "<strong>Rappel :</strong> sujet → <b>이/가</b> · objet → <b>을/를</b>. Ensuite : consonne finale → <b>이 / 을</b> · pas de consonne finale → <b>가 / 를</b>.",
+    type: "qcm",
+    options: ["이", "가", "을", "를"],
+    pool: [
+      { avant: "폴", apres: "사과를 먹어요. (Paul mange une pomme.)", reponse: "이", explication: "Qui mange ? → Paul : c'est le SUJET. 폴 a une consonne finale → 이. 폴이 사과를 먹어요." },
+      { avant: "마리가 빵", apres: "먹어요. (Marie mange du pain.)", reponse: "을", explication: "Marie mange QUOI ? → le pain : c'est l'OBJET. 빵 a une consonne finale → 을. 마리가 빵을 먹어요." },
+      { avant: "친구", apres: "물을 마셔요. (Mon ami boit de l'eau.)", reponse: "가", explication: "Qui boit ? → mon ami : c'est le SUJET. 구 n'a pas de consonne finale → 가. 친구가 물을 마셔요." },
+      { avant: "제가 커피", apres: "마셔요. (Je bois du café.)", reponse: "를", explication: "Je bois QUOI ? → le café : c'est l'OBJET. 피 n'a pas de consonne finale → 를. 제가 커피를 마셔요." },
+      { avant: "선생님", apres: "오셨어요. (Le professeur est venu.)", reponse: "이", explication: "Qui est venu ? → le professeur : c'est le SUJET. 님 a une consonne finale → 이. 선생님이 오셨어요." },
+      { avant: "저는 한국어", apres: "공부해요. (J'étudie le coréen.)", reponse: "를", explication: "J'étudie QUOI ? → le coréen : c'est l'OBJET. 어 n'a pas de consonne finale → 를. 저는 한국어를 공부해요." },
+      { avant: "고양이", apres: "귀여워요. (Le chat est mignon.)", reponse: "가", explication: "De quoi parle-t-on ? → du chat : c'est le SUJET. 이 n'a pas de consonne finale → 가. 고양이가 귀여워요." },
+      { avant: "저는 영화", apres: "봤어요. (J'ai regardé un film.)", reponse: "를", explication: "J'ai regardé QUOI ? → le film : c'est l'OBJET. 화 n'a pas de consonne finale → 를. 저는 영화를 봤어요." },
+      { avant: "동생", apres: "자요. (Mon petit frère / ma petite sœur dort.)", reponse: "이", explication: "Qui dort ? → 동생 : c'est le SUJET. 생 a une consonne finale → 이. 동생이 자요." },
+      { avant: "저는 책", apres: "읽어요. (Je lis un livre.)", reponse: "을", explication: "Je lis QUOI ? → le livre : c'est l'OBJET. 책 a une consonne finale → 을. 저는 책을 읽어요." }
+    ]
+  },
+  {
+    id: 4,
+    onglet: "⭐⭐⭐ Niveau 4",
+    titre: "Niveau 4 — Construis la phrase !",
+    info: "Clique sur les mots dans le bon ordre : Sujet + Objet + Verbe (à la fin !). Clique sur un mot placé pour le retirer.",
+    rappel: "<strong>Rappel :</strong> ordre coréen → <b>Sujet + Objet + Verbe</b>. Le verbe est toujours à la fin !",
+    type: "ordre",
+    pool: [
+      { mots: ["마리가", "빵을", "먹어요"], traduction: "Marie mange du pain.", indice: "manger = 먹어요" },
+      { mots: ["폴이", "영화를", "봤어요"], traduction: "Paul a regardé un film.", indice: "passé de voir = 봤어요" },
+      { mots: ["친구가", "물을", "마셔요"], traduction: "Mon ami boit de l'eau.", indice: "boire = 마셔요" },
+      { mots: ["저는", "한국어를", "공부해요"], traduction: "J'étudie le coréen.", indice: "étudier = 공부해요" },
+      { mots: ["고양이가", "우유를", "마셔요"], traduction: "Le chat boit du lait.", indice: "lait = 우유" },
+      { mots: ["제가", "사과를", "좋아해요"], traduction: "J'aime les pommes.", indice: "aimer = 좋아해요" },
+      { mots: ["동생이", "우유를", "마셔요"], traduction: "Mon petit frère / ma petite sœur boit du lait.", indice: "petit frère / petite sœur = 동생" },
+      { mots: ["폴이", "책을", "읽어요"], traduction: "Paul lit un livre.", indice: "lire = 읽어요" },
+      { mots: ["마리가", "커피를", "마셔요"], traduction: "Marie boit du café.", indice: "café = 커피" },
+      { mots: ["저는", "음악을", "들어요"], traduction: "J'écoute de la musique.", indice: "écouter = 들어요" },
+      { mots: ["친구가", "영화를", "봐요"], traduction: "Mon ami regarde un film.", indice: "voir = 봐요" },
+      { mots: ["선생님이", "한국어를", "가르쳐요"], traduction: "Le professeur enseigne le coréen.", indice: "enseigner = 가르치다 → 가르쳐요" }
+    ]
+  }
+];
+
+/* =========================================================================
+   VOCABULAIRE PAR NIVEAU (pour l'échauffement)
+   ========================================================================= */
+const VOCAB = {
+  1: [
+    { ko: "폴", fr: "Paul" }, { ko: "마리", fr: "Marie" }, { ko: "사라", fr: "Sarah" },
+    { ko: "친구", fr: "ami·e" }, { ko: "책", fr: "livre" }, { ko: "고양이", fr: "chat" },
+    { ko: "빵", fr: "pain" }, { ko: "커피", fr: "café" }, { ko: "물", fr: "eau" },
+    { ko: "선생님", fr: "professeur" },
+    { ko: "와요", fr: "venir" }, { ko: "먹어요", fr: "manger" }, { ko: "자요", fr: "dormir" },
+    { ko: "싸요", fr: "être bon marché" }, { ko: "귀여워요", fr: "être mignon" },
+    { ko: "맛있어요", fr: "être délicieux" }, { ko: "있어요", fr: "il y a" }
+  ],
+  2: [
+    { ko: "밥", fr: "riz" }, { ko: "영화", fr: "film" }, { ko: "김치", fr: "kimchi" },
+    { ko: "한국어", fr: "coréen (langue)" }, { ko: "음악", fr: "musique" }, { ko: "사과", fr: "pomme" },
+    { ko: "물", fr: "eau" }, { ko: "빵", fr: "pain" }, { ko: "커피", fr: "café" }, { ko: "책", fr: "livre" },
+    { ko: "먹어요", fr: "manger" }, { ko: "봐요", fr: "regarder" }, { ko: "마셔요", fr: "boire" },
+    { ko: "읽어요", fr: "lire" }, { ko: "공부해요", fr: "étudier" }, { ko: "들어요", fr: "écouter" },
+    { ko: "좋아해요", fr: "aimer" }
+  ]
+};
+function fusionVocab(listes) {
+  const vu = new Set(), out = [];
+  listes.forEach(l => l.forEach(v => { if (!vu.has(v.ko)) { vu.add(v.ko); out.push(v); } }));
+  return out;
+}
+VOCAB[3] = fusionVocab([VOCAB[1], VOCAB[2]]);
+VOCAB[4] = fusionVocab([VOCAB[3], [
+  { ko: "우유", fr: "lait" }, { ko: "동생", fr: "petit frère / petite sœur" },
+  { ko: "가르쳐요", fr: "enseigner" }, { ko: "봤어요", fr: "avoir regardé (passé)" }
+]]);
+
+/* =========================================================================
+   HUMOUR
+   ========================================================================= */
+const HUMOUR = {
+  parfait: [
+    "🎉 Parfait ! Même le 고양이 (chat) t'applaudit avec ses petites pattes. 🐾",
+    "🏆 대박 (daebak = génial) ! Tu mérites le 김치 d'or. 🥇"
+  ],
+  bien: [
+    "👍 Bien joué ! Le verbe coréen est content : tu l'as bien laissé à la fin de la phrase. 🎬",
+    "😃 Pas mal du tout ! Encore un petit effort et le chat te prêtera ses pattes."
+  ],
+  rate: [
+    "💪 Courage ! Le chat a peut-être marché sur ton clavier… Relis la règle et réessaie ! 🐱",
+    "🌱 Pas grave ! Même Paul a confondu 이 et 가 au début. (C'est inventé, mais ça rassure.)"
+  ],
+  warmupOk: [
+    "🔥 Trop fort ! Les mots coréens n'ont plus de secret pour toi. Place aux exercices !",
+    "🐱 Le chat confirme : tu es prêt·e ! (Il ne dit jamais rien, mais on le sait.)"
+  ],
+  warmupKo: [
+    "😅 Presque ! Ce mot coréen joue à cache-cache… regarde mieux !",
+    "🙈 Pas tout à fait ! Respire, regarde, réessaie : le coréen aime qu'on l'apprivoise. 🐾"
+  ]
+};
+function blague(categorie) {
+  const liste = HUMOUR[categorie];
+  return liste[Math.floor(Math.random() * liste.length)];
+}
+
+/* =========================================================================
+   ENVOI DES RÉSULTATS PAR EMAIL (EmailJS — optionnel)
+   Pour activer : créer un compte gratuit sur emailjs.com puis remplir
+   les trois identifiants (voir GUIDE.md §8). Sans clés, tout fonctionne
+   quand même : les résultats restent sauvegardés localement.
+   ========================================================================= */
+const EMAIL_CONFIG = {
+  publicKey: "",      // EmailJS → Account → General → Public Key
+  serviceId: "",      // EmailJS → Email Services → ton service Gmail → Service ID
+  templateProf: "",   // ID du template destiné au professeur
+  templateEleve: "",  // ID du template destiné à l'élève (optionnel)
+  emailProf: "lapeace29@gmail.com"
+};
+
+/* =========================================================================
+   ÉTAT
+   ========================================================================= */
+let niveauActuel = 0;          // index dans NIVEAUX
+let warmupEnCours = false;     // true pendant l'échauffement vocabulaire
+let eleve = null;              // { nom, email } sauvegardé localement
+let questionsActuelles = [];   // questions tirées pour la manche en cours
+let reponses = [];             // réponses de l'élève (chaînes ou tableaux)
+let verifie = false;
+
+const zone = document.getElementById("zone-questions");
+const ongletsEl = document.getElementById("onglets");
+const infoEl = document.getElementById("niveau-info");
+const rappelEl = document.getElementById("rappel-regle");
+const scoreEl = document.getElementById("score");
+const meilleurEl = document.getElementById("meilleur");
+const messageEl = document.getElementById("resultat-message");
+const btnVerifier = document.getElementById("btn-verifier");
+const btnMemes = document.getElementById("btn-memes");
+const btnNouvelles = document.getElementById("btn-nouvelles");
+const btnSuivant = document.getElementById("btn-suivant");
+const btnVocab = document.getElementById("btn-vocab");
+const actionsEl = document.getElementById("actions-exo");
+
+function melanger(tab) {
+  const t = tab.slice();
+  for (let i = t.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [t[i], t[j]] = [t[j], t[i]];
+  }
+  return t;
+}
+
+function cleMeilleur(niveau) { return "coreen_particules_meilleur_" + niveau.id; }
+
+function majMeilleur(score, total) {
+  try {
+    const cle = cleMeilleur(niveau);
+    const ancien = parseInt(localStorage.getItem(cle) || "-1", 10);
+    if (score > ancien) localStorage.setItem(cle, String(score));
+    afficherMeilleur(total);
+  } catch (e) { /* stockage non disponible : sans gravité */ }
+}
+
+function afficherMeilleur(total) {
+  try {
+    const ancien = parseInt(localStorage.getItem(cleMeilleur(niveau())) || "-1", 10);
+    meilleurEl.textContent = ancien >= 0 ? "🏆 Meilleur score : " + ancien + "/" + total : "";
+  } catch (e) { meilleurEl.textContent = ""; }
+}
+
+function niveau() { return NIVEAUX[niveauActuel]; }
+
+/* ---------- Onglets ---------- */
+function construireOnglets() {
+  ongletsEl.innerHTML = "";
+  NIVEAUX.forEach((niv, i) => {
+    const b = document.createElement("button");
+    b.textContent = niv.onglet;
+    b.className = i === niveauActuel ? "actif" : "";
+    b.addEventListener("click", () => {
+      niveauActuel = i;
+      demarrerNiveau();
+    });
+    ongletsEl.appendChild(b);
+  });
+}
+
+/* ---------- Échauffement vocabulaire ---------- */
+function cleWarmup(niv) { return "coreen_warmup_fait_" + niv.id; }
+function warmupFait(niv) {
+  try { return sessionStorage.getItem(cleWarmup(niv)) === "1"; } catch (e) { return false; }
+}
+
+function demarrerNiveau() {
+  if (!warmupFait(niveau())) afficherWarmup();
+  else nouvelleManche(true);
+}
+
+function afficherWarmup() {
+  warmupEnCours = true;
+  const niv = niveau();
+  afficherEntete();
+  scoreEl.textContent = "Score : –";
+  messageEl.textContent = "";
+  meilleurEl.textContent = "";
+  actionsEl.style.display = "none";
+  zone.innerHTML = "";
+  const carte = document.createElement("div");
+  carte.className = "question";
+  carte.innerHTML =
+    '<div class="enonce">📚 <strong>Échauffement :</strong> les mots de ce niveau. Regarde-les bien, ils arrivent dans les exercices !</div>' +
+    '<div class="vocab-grille"></div>' +
+    '<div class="actions-exo"><button class="principal" id="btn-pret">✅ Je suis prêt·e ! Place au jeu !</button></div>';
+  zone.appendChild(carte);
+  const grille = carte.querySelector(".vocab-grille");
+  (VOCAB[niv.id] || []).forEach(v => {
+    const c = document.createElement("div");
+    c.className = "vocab-carte";
+    c.innerHTML = '<div class="ko">' + v.ko + '</div><div class="fr">' + v.fr + '</div>';
+    grille.appendChild(c);
+  });
+  carte.querySelector("#btn-pret").addEventListener("click", afficherJeuVocab);
+}
+
+function afficherJeuVocab() {
+  const niv = niveau();
+  const paires = melanger(VOCAB[niv.id] || []).slice(0, 5);
+  zone.innerHTML = "";
+  const carte = document.createElement("div");
+  carte.className = "question";
+  carte.innerHTML =
+    '<div class="enonce">🎯 <strong>Échauffement :</strong> relie chaque mot coréen à son sens !</div>' +
+    '<div class="match-colonnes"><div class="match-colonne" id="match-ko"></div>' +
+    '<div class="match-colonne" id="match-fr"></div></div>' +
+    '<div class="feedback" id="feedback-match"></div>';
+  zone.appendChild(carte);
+  const colKo = carte.querySelector("#match-ko");
+  const colFr = carte.querySelector("#match-fr");
+  const fb = carte.querySelector("#feedback-match");
+  let selKo = null, restants = paires.length;
+  melanger(paires).forEach(p => {
+    const b = document.createElement("button");
+    b.textContent = p.ko;
+    b.dataset.cible = p.ko;
+    b.addEventListener("click", () => {
+      if (b.disabled) return;
+      colKo.querySelectorAll("button").forEach(x => x.classList.remove("sel"));
+      b.classList.add("sel");
+      selKo = b;
+    });
+    colKo.appendChild(b);
+  });
+  melanger(paires).forEach(p => {
+    const b = document.createElement("button");
+    b.textContent = p.fr;
+    b.dataset.cible = p.ko;
+    b.addEventListener("click", () => {
+      if (b.disabled) return;
+      if (!selKo) {
+        fb.className = "feedback ko";
+        fb.textContent = "😅 Choisis d'abord un mot coréen à gauche !";
+        return;
+      }
+      if (selKo.dataset.cible === b.dataset.cible) {
+        b.classList.add("trouve"); b.disabled = true;
+        selKo.classList.remove("sel"); selKo.classList.add("trouve"); selKo.disabled = true;
+        selKo = null;
+        restants--;
+        if (restants === 0) {
+          fb.className = "feedback ok";
+          fb.textContent = blague("warmupOk");
+          try { sessionStorage.setItem(cleWarmup(niv), "1"); } catch (e) { /* sans gravité */ }
+          const pied = document.createElement("div");
+          pied.className = "actions-exo";
+          const btn = document.createElement("button");
+          btn.className = "principal";
+          btn.textContent = "➡️ Commencer les exercices !";
+          btn.addEventListener("click", () => nouvelleManche(true));
+          pied.appendChild(btn);
+          carte.appendChild(pied);
+        }
+      } else {
+        b.classList.add("erreur");
+        fb.className = "feedback ko";
+        fb.textContent = blague("warmupKo");
+        setTimeout(() => b.classList.remove("erreur"), 600);
+      }
+    });
+    colFr.appendChild(b);
+  });
+}
+
+/* ---------- Manches ---------- */
+function nouvelleManche(nouveauTirage) {
+  warmupEnCours = false;
+  actionsEl.style.display = "";
+  const niv = niveau();
+  if (nouveauTirage) {
+    questionsActuelles = melanger(niv.pool).slice(0, NB_QUESTIONS);
+  }
+  reponses = questionsActuelles.map(q => niv.type === "ordre" ? [] : null);
+  verifie = false;
+  messageEl.textContent = "";
+  scoreEl.textContent = "Score : –";
+  afficherEntete();
+  afficherQuestions();
+  afficherMeilleur(NB_QUESTIONS);
+  btnVerifier.disabled = false;
+  btnSuivant.disabled = niveauActuel >= NIVEAUX.length - 1;
+}
+
+function afficherEntete() {
+  const niv = niveau();
+  construireOnglets();
+  infoEl.textContent = niv.titre + " — " + niv.info;
+  rappelEl.innerHTML = niv.rappel;
+}
+
+/* ---------- Rendu des questions ---------- */
+function afficherQuestions() {
+  const niv = niveau();
+  zone.innerHTML = "";
+  questionsActuelles.forEach((q, i) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.id = "question-" + i;
+    if (niv.type === "qcm") {
+      div.innerHTML =
+        '<div class="enonce">' + (i + 1) + '. <strong class="sujet">' + q.avant + '</strong>' +
+        '<span class="particule"> ( ＿ )</span> ' + q.apres + '</div>' +
+        '<div class="options" data-i="' + i + '"></div>' +
+        '<div class="feedback" id="feedback-' + i + '"></div>';
+      const opts = div.querySelector(".options");
+      melanger(niv.options).forEach(op => {
+        const b = document.createElement("button");
+        b.textContent = op;
+        b.dataset.valeur = op;
+        b.addEventListener("click", () => choisir(i, op));
+        opts.appendChild(b);
+      });
+    } else { // ordre
+      div.innerHTML =
+        '<div class="enonce">' + (i + 1) + '. Remets la phrase dans l\'ordre : <em>' + q.traduction + '</em>' +
+        '<div class="traduction">💡 ' + q.indice + '</div></div>' +
+        '<div class="reponse-construite" id="construite-' + i + '">' +
+        '<span class="consigne">Ta phrase apparaîtra ici…</span></div>' +
+        '<div class="jetons" id="jetons-' + i + '"></div>' +
+        '<div class="feedback" id="feedback-' + i + '"></div>';
+      const jetons = div.querySelector("#jetons-" + i);
+      melanger(q.mots).forEach(mot => {
+        const b = document.createElement("button");
+        b.className = "jeton";
+        b.textContent = mot;
+        b.addEventListener("click", () => ajouterMot(i, mot, b));
+        jetons.appendChild(b);
+      });
+    }
+    zone.appendChild(div);
+  });
+  if (niv.type === "ordre") {
+    // re-render des zones construites (vide)
+    questionsActuelles.forEach((_, i) => rendreConstruite(i));
+  }
+}
+
+function choisir(i, valeur) {
+  if (verifie) return;
+  reponses[i] = valeur;
+  const opts = document.querySelectorAll('#question-' + i + ' .options button');
+  opts.forEach(b => b.classList.toggle("choisi", b.dataset.valeur === valeur));
+}
+
+/* ---------- Niveau "ordre" ---------- */
+function ajouterMot(i, mot, boutonJeton) {
+  if (verifie || boutonJeton.classList.contains("utilise")) return;
+  reponses[i].push(mot);
+  boutonJeton.classList.add("utilise");
+  rendreConstruite(i);
+}
+
+function retirerMot(i, position) {
+  if (verifie) return;
+  const mot = reponses[i].splice(position, 1)[0];
+  // réactiver le jeton correspondant
+  const jetons = document.querySelectorAll('#jetons-' + i + ' .jeton');
+  for (const j of jetons) {
+    if (j.textContent === mot && j.classList.contains("utilise")) {
+      j.classList.remove("utilise");
+      break;
+    }
+  }
+  rendreConstruite(i);
+}
+
+function rendreConstruite(i) {
+  const zoneC = document.getElementById("construite-" + i);
+  if (!zoneC) return;
+  zoneC.innerHTML = "";
+  if (reponses[i].length === 0) {
+    const s = document.createElement("span");
+    s.className = "consigne";
+    s.textContent = "Clique sur les mots ci-dessous…";
+    zoneC.appendChild(s);
+    return;
+  }
+  reponses[i].forEach((mot, pos) => {
+    const b = document.createElement("button");
+    b.className = "jeton";
+    b.textContent = mot;
+    b.addEventListener("click", () => retirerMot(i, pos));
+    zoneC.appendChild(b);
+  });
+}
+
+/* ---------- Vérification ---------- */
+btnVerifier.addEventListener("click", () => {
+  const niv = niveau();
+  let score = 0;
+  questionsActuelles.forEach((q, i) => {
+    const feedback = document.getElementById("feedback-" + i);
+    const carte = document.getElementById("question-" + i);
+    let correct = false;
+    if (niv.type === "qcm") {
+      correct = reponses[i] === q.reponse;
+      const opts = carte.querySelectorAll(".options button");
+      opts.forEach(b => {
+        b.disabled = true;
+        b.classList.remove("choisi");
+        if (b.dataset.valeur === q.reponse) b.classList.add("bonne");
+        else if (b.dataset.valeur === reponses[i]) b.classList.add("mauvaise");
+      });
+    } else {
+      correct = reponses[i].length === q.mots.length &&
+                reponses[i].every((m, k) => m === q.mots[k]);
+      carte.querySelectorAll(".jeton").forEach(j => j.style.pointerEvents = "none");
+    }
+    if (correct) {
+      score++;
+      carte.classList.add("correcte");
+      feedback.className = "feedback ok";
+      feedback.innerHTML = "✅ Correct ! " + (niv.type === "ordre" ? q.mots.join(" ") + "." : q.explication);
+    } else {
+      carte.classList.add("incorrecte");
+      feedback.className = "feedback ko";
+      if (niv.type === "ordre") {
+        feedback.innerHTML = "❌ Pas tout à fait. Bonne réponse : <strong>" + q.mots.join(" ") + ".</strong>";
+      } else if (reponses[i] === null) {
+        feedback.innerHTML = "❌ Tu n'as rien choisi. Bonne réponse : <strong>" + q.reponse + "</strong>. " + q.explication;
+      } else {
+        feedback.innerHTML = "❌ Tu as choisi « " + reponses[i] + " ». Bonne réponse : <strong>" + q.reponse + "</strong>. " + q.explication;
+      }
+    }
+  });
+  verifie = true;
+  scoreEl.textContent = "Score : " + score + "/" + questionsActuelles.length;
+  majMeilleur(score, questionsActuelles.length);
+  const stats = chargerStats();
+  stats.manches++;
+  stats.rounds.push({ ts: Date.now(), niveau: niveau().id, score: score, total: questionsActuelles.length });
+  if (stats.rounds.length > 100) stats.rounds = stats.rounds.slice(-100);
+  sauverStats(stats);
+  if (score === questionsActuelles.length) {
+    messageEl.textContent = blague("parfait");
+  } else if (score >= Math.ceil(questionsActuelles.length / 2)) {
+    messageEl.textContent = blague("bien");
+  } else {
+    messageEl.textContent = blague("rate");
+  }
+  envoyerRapport("fin_d_exercice");
+});
+
+/* ---------- Boutons de manche ---------- */
+btnMemes.addEventListener("click", () => nouvelleManche(false));      // mêmes questions
+btnNouvelles.addEventListener("click", () => nouvelleManche(true));  // nouveau tirage, même niveau
+btnVocab.addEventListener("click", () => afficherWarmup());          // réviser le vocabulaire
+btnSuivant.addEventListener("click", () => {
+  if (niveauActuel < NIVEAUX.length - 1) {
+    niveauActuel++;
+    demarrerNiveau();
+    document.getElementById("exercices").scrollIntoView({ behavior: "smooth" });
+  }
+});
+
+/* ---------- Identité de l'élève ---------- */
+function chargerEleve() {
+  try { eleve = JSON.parse(localStorage.getItem("coreen_particules_eleve") || "null"); } catch (e) { eleve = null; }
+}
+
+document.getElementById("btn-accueil").addEventListener("click", () => {
+  const nom = document.getElementById("champ-nom").value.trim();
+  const email = document.getElementById("champ-email").value.trim();
+  const msg = document.getElementById("accueil-message");
+  if (!nom) { msg.textContent = "😅 Dis-nous ton nom, sinon le chat ne saura pas qui féliciter !"; return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = "📮 Cet email a une tête bizarre… Vérifie-le !"; return; }
+  eleve = { nom: nom, email: email };
+  try { localStorage.setItem("coreen_particules_eleve", JSON.stringify(eleve)); } catch (e) { /* sans gravité */ }
+  document.getElementById("accueil-eleve").hidden = true;
+  initSession();
+});
+
+function initSession() {
+  document.getElementById("bonjour-eleve").textContent =
+    "Bonjour " + eleve.nom + " ! 👋 (안녕 ! « annyeong » = salut !)";
+  const stats = chargerStats();
+  if (!stats.premiere_session) stats.premiere_session = new Date().toISOString();
+  sauverStats(stats);
+  try {
+    if (!localStorage.getItem("coreen_debut_session")) {
+      localStorage.setItem("coreen_debut_session", new Date().toISOString());
+    }
+  } catch (e) { /* sans gravité */ }
+  armerInactivite();
+  demarrerNiveau();
+}
+
+/* ---------- Suivi de progression (effort / croissance) ---------- */
+function chargerStats() {
+  try {
+    return JSON.parse(localStorage.getItem("coreen_stats") || "null") ||
+      { premiere_session: null, manches: 0, rounds: [] };
+  } catch (e) { return { premiere_session: null, manches: 0, rounds: [] }; }
+}
+function sauverStats(stats) {
+  try { localStorage.setItem("coreen_stats", JSON.stringify(stats)); } catch (e) { /* sans gravité */ }
+}
+
+/* ---------- Envoi des résultats ---------- */
+function emailActif() {
+  return typeof emailjs !== "undefined" &&
+    EMAIL_CONFIG.publicKey && EMAIL_CONFIG.serviceId && EMAIL_CONFIG.templateProf;
+}
+
+function construireRapport(trigger) {
+  const scores = NIVEAUX.map(niv => {
+    let m = null;
+    try { m = localStorage.getItem(cleMeilleur(niv)); } catch (e) { /* ignore */ }
+    return niv.onglet.replace(/⭐/g, "").trim() + " : " + (m === null ? "non essayé" : m + "/" + NB_QUESTIONS);
+  }).join(" · ");
+  const stats = chargerStats();
+  const historique = stats.rounds.slice(-10)
+    .map(r => "N" + r.niveau + " " + r.score + "/" + r.total)
+    .join(" · ") || "–";
+  return {
+    student_name: eleve ? eleve.nom : "(anonyme)",
+    student_email: eleve ? eleve.email : "",
+    email_prof: EMAIL_CONFIG.emailProf,
+    trigger: trigger,
+    date: new Date().toLocaleString("fr-FR"),
+    debut_session: stats.premiere_session ? new Date(stats.premiere_session).toLocaleString("fr-FR") : "–",
+    nombre_manches: String(stats.manches),
+    historique: historique,
+    meilleurs_scores: scores,
+    dernier_round: niveau().titre + " — " + scoreEl.textContent
+  };
+}
+
+function sauvegarderRapport(trigger, params) {
+  try {
+    localStorage.setItem("coreen_dernier_rapport", JSON.stringify({ trigger: trigger, params: params, ts: Date.now() }));
+  } catch (e) { /* stockage non disponible */ }
+}
+
+function envoiRecent() {
+  try {
+    const t = parseInt(sessionStorage.getItem("coreen_dernier_envoi") || "0", 10);
+    return Date.now() - t < 5 * 60 * 1000;
+  } catch (e) { return false; }
+}
+
+function marquerEnvoi() {
+  try { sessionStorage.setItem("coreen_dernier_envoi", String(Date.now())); } catch (e) { /* ignore */ }
+}
+
+function envoyerRapport(trigger) {
+  if (!eleve) return;
+  const params = construireRapport(trigger);
+  sauvegarderRapport(trigger, params);
+  if (!emailActif()) return;                       // sans clés : sauvegarde locale seulement
+  if (trigger === "page_fermee" && envoiRecent()) return;
+  emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateProf, params).catch(() => {});
+  if (EMAIL_CONFIG.templateEleve) {
+    emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateEleve, params).catch(() => {});
+  }
+  marquerEnvoi();
+}
+
+/* Envoi fiable même quand la page se ferme (sendBeacon) */
+function envoyerRapportBeacon(trigger) {
+  if (!eleve) return;
+  const params = construireRapport(trigger);
+  sauvegarderRapport(trigger, params);
+  if (!emailActif() || envoiRecent()) return;
+  const payload = {
+    service_id: EMAIL_CONFIG.serviceId,
+    template_id: EMAIL_CONFIG.templateProf,
+    user_id: EMAIL_CONFIG.publicKey,
+    template_params: params
+  };
+  navigator.sendBeacon(
+    "https://api.emailjs.com/api/v1.0/email/send",
+    new Blob([JSON.stringify(payload)], { type: "application/json" })
+  );
+  marquerEnvoi();
+}
+window.addEventListener("pagehide", () => envoyerRapportBeacon("page_fermee"));
+
+/* 1 heure sans aucune interaction → envoi automatique */
+let minuteurInactivite = null;
+function armerInactivite() {
+  if (minuteurInactivite) clearTimeout(minuteurInactivite);
+  minuteurInactivite = setTimeout(() => envoyerRapport("sans_reponse_1h"), 60 * 60 * 1000);
+}
+["click", "keydown", "scroll", "touchstart"].forEach(ev =>
+  window.addEventListener(ev, armerInactivite, { passive: true })
+);
+
+/* ---------- Démarrage ---------- */
+const EXEMPLES_ELEVES = [
+  { nom: "Camille", email: "camille.dubois@exemple.fr" },
+  { nom: "Léo", email: "leo.martin@exemple.fr" },
+  { nom: "Emma", email: "emma.wilson@example.com" },
+  { nom: "Hugo", email: "hugo.bernard@exemple.fr" },
+  { nom: "Chloé", email: "chloe.moreau@exemple.fr" },
+  { nom: "Lucas", email: "lucas.smith@example.com" },
+  { nom: "Manon", email: "manon.laurent@exemple.fr" },
+  { nom: "Nathan", email: "nathan.brown@example.com" },
+  { nom: "Inès", email: "ines.garcia@exemple.fr" },
+  { nom: "Tom", email: "tom.jones@example.com" }
+];
+const exemple = EXEMPLES_ELEVES[Math.floor(Math.random() * EXEMPLES_ELEVES.length)];
+document.getElementById("champ-nom").placeholder = "Ex. : " + exemple.nom;
+document.getElementById("champ-email").placeholder = "Ex. : " + exemple.email;
+
+if (typeof emailjs !== "undefined" && EMAIL_CONFIG.publicKey) {
+  emailjs.init({ publicKey: EMAIL_CONFIG.publicKey });
+}
+chargerEleve();
+if (eleve) {
+  initSession();
+} else {
+  document.getElementById("accueil-eleve").hidden = false;
+}
+</script>
+
+</body>
+</html>
