@@ -419,7 +419,6 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 /* =========================================================================
    DONNÉES DES EXERCICES
@@ -582,18 +581,13 @@ function blague(categorie) {
 }
 
 /* =========================================================================
-   ENVOI DES RÉSULTATS PAR EMAIL (EmailJS — optionnel)
-   Pour activer : créer un compte gratuit sur emailjs.com puis remplir
-   les trois identifiants (voir GUIDE.md §8). Sans clés, tout fonctionne
-   quand même : les résultats restent sauvegardés localement.
+   ENVOI DES RÉSULTATS PAR EMAIL
+   Utilise la fonction Netlify existante du site (/.netlify/functions/send-results),
+   comme les autres exercices de korean-pongdang : l'email part vers le professeur
+   (RECIPIENT_EMAIL) et vers l'élève. Aucune clé à configurer côté page.
    ========================================================================= */
-const EMAIL_CONFIG = {
-  publicKey: "",      // EmailJS → Account → General → Public Key
-  serviceId: "",      // EmailJS → Email Services → ton service Gmail → Service ID
-  templateProf: "",   // ID du template destiné au professeur
-  templateEleve: "",  // ID du template destiné à l'élève (optionnel)
-  emailProf: "lapeace29@gmail.com"
-};
+const SEND_ENDPOINT = "/.netlify/functions/send-results";
+const EMAIL_PROF = "lapeace29@gmail.com";
 
 /* =========================================================================
    ÉTAT
@@ -1004,38 +998,9 @@ function sauverStats(stats) {
 }
 
 /* ---------- Envoi des résultats ---------- */
-function emailActif() {
-  return typeof emailjs !== "undefined" &&
-    EMAIL_CONFIG.publicKey && EMAIL_CONFIG.serviceId && EMAIL_CONFIG.templateProf;
-}
-
-function construireRapport(trigger) {
-  const scores = NIVEAUX.map(niv => {
-    let m = null;
-    try { m = localStorage.getItem(cleMeilleur(niv)); } catch (e) { /* ignore */ }
-    return niv.onglet.replace(/⭐/g, "").trim() + " : " + (m === null ? "non essayé" : m + "/" + NB_QUESTIONS);
-  }).join(" · ");
-  const stats = chargerStats();
-  const historique = stats.rounds.slice(-10)
-    .map(r => "N" + r.niveau + " " + r.score + "/" + r.total)
-    .join(" · ") || "–";
-  return {
-    student_name: eleve ? eleve.nom : "(anonyme)",
-    student_email: eleve ? eleve.email : "",
-    email_prof: EMAIL_CONFIG.emailProf,
-    trigger: trigger,
-    date: new Date().toLocaleString("fr-FR"),
-    debut_session: stats.premiere_session ? new Date(stats.premiere_session).toLocaleString("fr-FR") : "–",
-    nombre_manches: String(stats.manches),
-    historique: historique,
-    meilleurs_scores: scores,
-    dernier_round: niveau().titre + " — " + scoreEl.textContent
-  };
-}
-
-function sauvegarderRapport(trigger, params) {
+function sauvegarderRapport(trigger, payload) {
   try {
-    localStorage.setItem("coreen_dernier_rapport", JSON.stringify({ trigger: trigger, params: params, ts: Date.now() }));
+    localStorage.setItem("coreen_dernier_rapport", JSON.stringify({ trigger: trigger, payload: payload, ts: Date.now() }));
   } catch (e) { /* stockage non disponible */ }
 }
 
@@ -1050,35 +1015,48 @@ function marquerEnvoi() {
   try { sessionStorage.setItem("coreen_dernier_envoi", String(Date.now())); } catch (e) { /* ignore */ }
 }
 
+function construirePayload(trigger) {
+  const stats = chargerStats();
+  const scores = NIVEAUX.map(niv => {
+    let m = null;
+    try { m = localStorage.getItem(cleMeilleur(niv)); } catch (e) { /* ignore */ }
+    return niv.onglet.replace(/⭐/g, "").trim() + " : " + (m === null ? "non essayé" : m + "/" + NB_QUESTIONS);
+  }).join(" · ");
+  const historique = stats.rounds.slice(-10)
+    .map(r => "N" + r.niveau + " " + r.score + "/" + r.total)
+    .join(" · ") || "–";
+  return {
+    assignmentId: "particules_sujet_objet",
+    studentName: eleve ? eleve.nom : "(anonyme)",
+    studentEmail: eleve ? eleve.email : "",
+    startTime: stats.premiere_session || new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    trigger: trigger,
+    nombreManches: stats.manches,
+    meilleursScores: scores,
+    historique: historique,
+    questions: stats.rounds.slice(-20).map((r, i) => ({ number: i + 1, niveau: r.niveau, score: r.score, total: r.total, ts: r.ts }))
+  };
+}
+
 function envoyerRapport(trigger) {
   if (!eleve) return;
-  const params = construireRapport(trigger);
-  sauvegarderRapport(trigger, params);
-  if (!emailActif()) return;                       // sans clés : sauvegarde locale seulement
-  if (trigger === "page_fermee" && envoiRecent()) return;
-  emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateProf, params).catch(() => {});
-  if (EMAIL_CONFIG.templateEleve) {
-    emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateEleve, params).catch(() => {});
-  }
-  marquerEnvoi();
+  const payload = construirePayload(trigger);
+  sauvegarderRapport(trigger, payload);
+  fetch(SEND_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => { /* hors-ligne : le rapport reste sauvegardé localement */ });
 }
 
 /* Envoi fiable même quand la page se ferme (sendBeacon) */
 function envoyerRapportBeacon(trigger) {
   if (!eleve) return;
-  const params = construireRapport(trigger);
-  sauvegarderRapport(trigger, params);
-  if (!emailActif() || envoiRecent()) return;
-  const payload = {
-    service_id: EMAIL_CONFIG.serviceId,
-    template_id: EMAIL_CONFIG.templateProf,
-    user_id: EMAIL_CONFIG.publicKey,
-    template_params: params
-  };
-  navigator.sendBeacon(
-    "https://api.emailjs.com/api/v1.0/email/send",
-    new Blob([JSON.stringify(payload)], { type: "application/json" })
-  );
+  const payload = construirePayload(trigger);
+  sauvegarderRapport(trigger, payload);
+  if (envoiRecent()) return;
+  navigator.sendBeacon(SEND_ENDPOINT, new Blob([JSON.stringify(payload)], { type: "application/json" }));
   marquerEnvoi();
 }
 window.addEventListener("pagehide", () => envoyerRapportBeacon("page_fermee"));
@@ -1110,9 +1088,6 @@ const exemple = EXEMPLES_ELEVES[Math.floor(Math.random() * EXEMPLES_ELEVES.lengt
 document.getElementById("champ-nom").placeholder = "Ex. : " + exemple.nom;
 document.getElementById("champ-email").placeholder = "Ex. : " + exemple.email;
 
-if (typeof emailjs !== "undefined" && EMAIL_CONFIG.publicKey) {
-  emailjs.init({ publicKey: EMAIL_CONFIG.publicKey });
-}
 chargerEleve();
 if (eleve) {
   initSession();

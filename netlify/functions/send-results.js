@@ -10,7 +10,8 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: JSON.stringify({ ok:false, reason:'METHOD_NOT_ALLOWED' }) };
 
     const body = JSON.parse(event.body || '{}');
-    const { assignmentId, studentName, studentEmail, questions, startTime, endTime, totalTimeSeconds } = body;
+    const { assignmentId, studentName, studentEmail, questions, startTime, endTime, totalTimeSeconds, trigger, nombreManches, meilleursScores, historique } = body;
+    const AID = (assignmentId || '').toString().toLowerCase();
 
     const { GMAIL_USER, GMAIL_APP_PASSWORD, RECIPIENT_EMAIL } = process.env;
     if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !RECIPIENT_EMAIL) {
@@ -182,6 +183,121 @@ exports.handler = async (event) => {
       const info = await transporter.sendMail(mailOptions);
       
       return { statusCode:200, headers:{ ...CORS, 'Content-Type':'application/json; charset=utf-8' }, body: JSON.stringify({ ok:true }) };
+    }
+
+    // ---------- Particules 이/가 & 을/를 (leçon débutant) ----------
+    if (AID === 'particules_sujet_objet' || AID === 'particules-sujet-objet') {
+      const TRIGGERS = {
+        fin_d_exercice: "Fin d'une manche d'exercices",
+        sans_reponse_1h: '1 heure sans réponse',
+        page_fermee: 'Page fermée en cours de route'
+      };
+      const triggerLabel = TRIGGERS[trigger] || trigger || '–';
+      const rounds = Array.isArray(questions) ? questions : [];
+      const fmtDate = ts => ts ? new Date(ts).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
+      const dateStr = new Date().toLocaleString('fr-FR');
+
+      // Progression par niveau : premier → dernier score (mesure la croissance)
+      const progressRows = [1, 2, 3, 4].map(n => {
+        const rs = rounds.filter(r => Number(r.niveau) === n);
+        if (!rs.length) return `<tr><td>Niveau ${n}</td><td colspan="3" style="color:#9ca3af;">non essayé</td></tr>`;
+        const first = rs[0], last = rs[rs.length - 1];
+        const delta = Number(last.score) - Number(first.score);
+        const arrow = delta > 0 ? `<span style="color:#059669;font-weight:bold;">▲ +${delta}</span>`
+          : delta < 0 ? `<span style="color:#dc2626;font-weight:bold;">▼ ${delta}</span>`
+          : '<span style="color:#6b7280;">=</span>';
+        return `<tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">Niveau ${n}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${rs.length} manche${rs.length > 1 ? 's' : ''}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${first.score}/${first.total} → <b>${last.score}/${last.total}</b></td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${arrow}</td>
+        </tr>`;
+      }).join('');
+
+      const historyRows = rounds.slice(-10).map(r =>
+        `<tr><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${fmtDate(r.ts)}</td><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">Niveau ${r.niveau}</td><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;"><b>${r.score}/${r.total}</b></td></tr>`
+      ).join('') || '<tr><td colspan="3" style="color:#9ca3af;padding:6px 10px;">aucune manche</td></tr>';
+
+      const teacherHtml = `
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 800px; margin: 0 auto;">
+          <h1 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            Résultats — Particules 이/가 &amp; 을/를
+          </h1>
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p><b>Élève :</b> ${escapeHtml(studentName || '(anonyme)')}</p>
+            <p><b>Email :</b> ${escapeHtml(studentEmail || '–')}</p>
+            <p><b>Première session :</b> ${fmtDate(startTime)}</p>
+            <p><b>Date du rapport :</b> ${dateStr}</p>
+            <p><b>Déclencheur :</b> ${escapeHtml(triggerLabel)}</p>
+          </div>
+
+          <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">📈 Effort &amp; progression par niveau</h2>
+          <p><b>Manches vérifiées (total) :</b> ${escapeHtml(String(nombreManches != null ? nombreManches : rounds.length))}</p>
+          <table style="width:100%; border-collapse: collapse; margin: 10px 0 20px;">
+            <tr style="background:#eef2ff;">
+              <th style="text-align:left;padding:6px 10px;">Niveau</th>
+              <th style="text-align:left;padding:6px 10px;">Essais</th>
+              <th style="text-align:left;padding:6px 10px;">Premier → Dernier</th>
+              <th style="text-align:left;padding:6px 10px;">Tendance</th>
+            </tr>
+            ${progressRows}
+          </table>
+
+          <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">🕐 Historique (10 dernières manches)</h2>
+          <table style="width:100%; border-collapse: collapse; margin: 10px 0 20px;">
+            <tr style="background:#eef2ff;">
+              <th style="text-align:left;padding:6px 10px;">Date</th>
+              <th style="text-align:left;padding:6px 10px;">Niveau</th>
+              <th style="text-align:left;padding:6px 10px;">Score</th>
+            </tr>
+            ${historyRows}
+          </table>
+
+          <h2 style="color: #4338ca; border-bottom: 1px solid #e5e7eb;">🏆 Meilleurs scores</h2>
+          <p>${escapeHtml(meilleursScores || '–')}</p>
+
+          <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 0.9rem; text-align: center;">
+            Rapport généré automatiquement — leçon « Particules 이/가 &amp; 을/를 » (korean-pongdang.netlify.app)
+          </p>
+        </div>`;
+
+      const studentHtml = `
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto;">
+          <h1 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            안녕 ${escapeHtml(studentName || '')} ! 👋
+          </h1>
+          <p>Bravo pour ta séance de coréen ! Voici ton bilan :</p>
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <p>📊 <b>Meilleurs scores :</b> ${escapeHtml(meilleursScores || '–')}</p>
+            <p>🕐 <b>Date :</b> ${dateStr}</p>
+          </div>
+          <p>Rappel : en coréen, <b>le verbe va toujours à la fin</b> de la phrase, et les particules
+          <b style="color:#d97706;">이/가</b> (sujet) et <b style="color:#d97706;">을/를</b> (objet) indiquent qui fait quoi.</p>
+          <p style="margin-top: 20px;"><b>화이팅 !</b> (hwaiting = courage !) À bientôt pour la prochaine leçon ! 🇰🇷</p>
+        </div>`;
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
+      });
+
+      await transporter.sendMail({
+        from: `"Korean Homework" <${GMAIL_USER}>`,
+        to: RECIPIENT_EMAIL,
+        subject: `Particules 이/가·을/를 — ${studentName || 'élève'} — ${triggerLabel} — ${dateStr}`,
+        html: teacherHtml
+      });
+
+      if (studentEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(studentEmail)) {
+        await transporter.sendMail({
+          from: `"Korean Homework" <${GMAIL_USER}>`,
+          to: studentEmail,
+          subject: `안녕 ${studentName || ''} ! Tes résultats de coréen 🇰🇷`,
+          html: studentHtml
+        });
+      }
+
+      return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify({ ok: true }) };
     }
 
     // 기존(기본) 처리 로직은 그대로 유지
