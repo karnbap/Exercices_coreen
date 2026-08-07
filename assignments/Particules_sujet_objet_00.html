@@ -71,6 +71,11 @@
   .legende .l-sujet::before{color:var(--sujet);}
   .legende .l-cod::before{color:var(--cod);}
   .legende .l-verbe::before{color:var(--verbe);}
+  .role{
+    display:inline-block; font-size:.68rem; font-weight:600; letter-spacing:.03em;
+    color:var(--texte-doux); background:#eef1f6; border:1px solid var(--bordure);
+    border-radius:999px; padding:0 7px; margin-left:3px; vertical-align:middle;
+  }
 
   /* ---------- Boîtes règle / astuce ---------- */
   .regle{border-left:4px solid var(--particule); background:#fffbeb; padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0;}
@@ -232,22 +237,20 @@
       <h3>🇫🇷 En français : Sujet + Verbe + Complément</h3>
       <div class="phrase">
         <span class="langue">Français</span>
-        <span class="sujet">Paul</span> <span class="verbe">mange</span> <span class="cod">une pomme</span>.
+        Paul <span class="role">Sujet</span> mange <span class="role">Verbe</span> une pomme <span class="role">COD</span>.
       </div>
       <p>Le sujet est <strong>au début</strong>, l'objet (COD) est <strong>après le verbe</strong>. L'ordre est fixé !</p>
     </div>
 
     <div class="carte">
-      <h3>🇰🇷 En coréen : Sujet + Complément + <span style="color:var(--verbe)">Verbe</span></h3>
+      <h3>🇰🇷 En coréen : Sujet + Complément + Verbe</h3>
       <div class="phrase">
         <span class="langue">Coréen</span>
-        <span class="sujet">폴<span class="particule">이</span></span> <span class="cod">사과<span class="particule">를</span></span> <span class="verbe">먹어요</span>.
+        폴<span class="particule">이</span><span class="role">Sujet</span>
+        사과<span class="particule">를</span><span class="role">COD</span>
+        먹어요<span class="role">Verbe</span>.
       </div>
-      <div class="legende">
-        <span class="l-sujet">Sujet</span>
-        <span class="l-cod">Objet (COD)</span>
-        <span class="l-verbe">Verbe</span>
-      </div>
+      <p style="font-size:.85rem; color:var(--texte-doux); margin:8px 0 0;">💡 Seule la <strong>particule</strong> (이/가/을/를) est en couleur : elle est collée au mot et indique son rôle.</p>
       <div class="attention">
         <strong>🚨 À retenir</strong>
         En coréen, <strong>le verbe est toujours à la fin de la phrase</strong>. On place d'abord les noms (avec leurs particules), puis l'action.
@@ -257,7 +260,7 @@
     <div class="carte">
       <h3>😵 Mais alors… qui fait quoi ?</h3>
       <p>Prenez cette phrase française :</p>
-      <div class="phrase"><span class="sujet">Paul</span> <span class="verbe">envoie</span> <span class="cod">Marie</span> chez Jean pour récupérer un colis.</div>
+      <div class="phrase">Paul <span class="role">Sujet</span> envoie <span class="role">Verbe</span> Marie <span class="role">COD</span> chez Jean pour récupérer un colis.</div>
       <p>En coréen, l'ordre des mots donne : <em>Paul — Marie — chez Jean — un colis — envoie</em>. Sans autre indication, impossible de savoir <strong>qui envoie qui</strong> !</p>
       <p>C'est là que le coréen a une astuce géniale : <strong>les particules</strong> 🦸</p>
       <div class="astuce">
@@ -270,7 +273,7 @@
 
   <!-- ============ 2. 이/가 ============ -->
   <section id="iga">
-    <h2>2️⃣ <span style="color:var(--sujet)">이/가</span> : qui fait l'action ?</h2>
+    <h2>2️⃣ <span style="color:var(--particule)">이/가</span> : la particule du sujet</h2>
     <p class="sous-titre">La particule du <strong>sujet</strong>.</p>
 
     <div class="carte">
@@ -280,14 +283,14 @@
         <tr>
           <td>une <strong>consonne finale</strong> (받침)</td>
           <td class="ko-grand"><span class="particule">이</span></td>
-          <td><span class="sujet">폴</span> + <span class="particule">이</span> → <strong>폴이</strong> [포리] — <em>Paul</em><br>
-              <span class="sujet">책</span> + <span class="particule">이</span> → <strong>책이</strong> — <em>le livre</em></td>
+          <td>폴 + <span class="particule">이</span> → <strong>폴이</strong> [포리] — <em>Paul</em><br>
+              책 + <span class="particule">이</span> → <strong>책이</strong> — <em>le livre</em></td>
         </tr>
         <tr>
           <td><strong>pas</strong> de consonne finale</td>
           <td class="ko-grand"><span class="particule">가</span></td>
-          <td><span class="sujet">마리</span> + <span class="particule">가</span> → <strong>마리가</strong> — <em>Marie</em><br>
-              <span class="sujet">고양이</span> + <span class="particule">가</span> → <strong>고양이가</strong> — <em>le chat</em></td>
+          <td>마리 + <span class="particule">가</span> → <strong>마리가</strong> — <em>Marie</em><br>
+              고양이 + <span class="particule">가</span> → <strong>고양이가</strong> — <em>le chat</em></td>
         </tr>
       </table>
       <div class="regle">
@@ -298,27 +301,35 @@
 
     <div class="carte">
       <h3>💡 Comment trouver le sujet ?</h3>
-      <p>Pose la question : <strong>« Qui fait l'action ? »</strong> ou <strong>« De qui / de quoi parle-t-on ? »</strong> La réponse prend <span class="particule">이</span> ou <span class="particule">가</span>.</p>
+      <p>Tout dépend du verbe de la phrase :</p>
+      <ul style="margin:6px 0 10px; padding-left:20px;">
+        <li><strong>Verbe d'action</strong> (manger, venir, dormir…) → pose la question : <strong>« Qui fait l'action ? »</strong></li>
+        <li><strong>Verbe d'état ou description</strong> (être mignon, être délicieux, « je suis Paul »…) → pose la question : <strong>« De qui / de quoi parle-t-on ? »</strong> — c'est le mot qu'on décrit.</li>
+      </ul>
+      <p>Dans les deux cas, la réponse prend <span class="particule">이</span> ou <span class="particule">가</span>.</p>
       <div class="phrase">
-        <span class="sujet">폴<span class="particule">이</span></span> <span class="verbe">먹어요</span>. — <em>Paul mange.</em> (Qui mange ? → Paul !)
+        폴<span class="particule">이</span><span class="role">Sujet</span> 먹어요. — <em>Paul mange.</em> (Qui mange ? → Paul !)
       </div>
       <div class="phrase">
-        <span class="sujet">마리<span class="particule">가</span></span> <span class="verbe">와요</span>. — <em>Marie vient.</em> (Qui vient ? → Marie !)
+        마리<span class="particule">가</span><span class="role">Sujet</span> 와요. — <em>Marie vient.</em> (Qui vient ? → Marie !)
       </div>
       <div class="phrase">
-        <span class="sujet">고양이<span class="particule">가</span></span> <span class="verbe">귀여워요</span>. — <em>Le chat est mignon.</em> (De quoi parle-t-on ? → du chat !)
+        고양이<span class="particule">가</span><span class="role">Sujet</span> 귀여워요. — <em>Le chat est mignon.</em> (De quoi parle-t-on ? → du chat, qu'on décrit !)
+      </div>
+      <div class="phrase">
+        제<span class="particule">가</span><span class="role">Sujet</span> 폴이에요. — <em>Je suis Paul.</em> (De qui parle-t-on ? → de moi, qu'on décrit !)
       </div>
       <p><strong>Exemples pour désigner une personne précise :</strong></p>
       <div class="phrase">
-        — Qui est Sarah ? → C'est moi ! → <span class="sujet">제<span class="particule">가</span></span> 사라예요. 🙋<br>
-        — Qui veut manger le bonbon ? → Moi ! → <span class="sujet">제<span class="particule">가</span></span> 먹을래요!
+        — Qui est Sarah ? → C'est moi ! → 제<span class="particule">가</span> 사라예요. 🙋<br>
+        — Qui veut manger le bonbon ? → Moi ! → 제<span class="particule">가</span> 먹을래요!
       </div>
     </div>
   </section>
 
   <!-- ============ 3. 을/를 ============ -->
   <section id="eulreul">
-    <h2>3️⃣ <span style="color:var(--cod)">을/를</span> : l'action concerne quoi ?</h2>
+    <h2>3️⃣ <span style="color:var(--particule)">을/를</span> : la particule de l'objet (COD)</h2>
     <p class="sous-titre">La particule du <strong>complément d'objet direct (COD)</strong>.</p>
 
     <div class="carte">
@@ -328,14 +339,14 @@
         <tr>
           <td>une <strong>consonne finale</strong> (받침)</td>
           <td class="ko-grand"><span class="particule">을</span></td>
-          <td><span class="cod">빵</span> + <span class="particule">을</span> → <strong>빵을</strong> — <em>du pain</em><br>
-              <span class="cod">밥</span> + <span class="particule">을</span> → <strong>밥을</strong> — <em>du riz</em></td>
+          <td>빵 + <span class="particule">을</span> → <strong>빵을</strong> — <em>du pain</em><br>
+              밥 + <span class="particule">을</span> → <strong>밥을</strong> — <em>du riz</em></td>
         </tr>
         <tr>
           <td><strong>pas</strong> de consonne finale</td>
           <td class="ko-grand"><span class="particule">를</span></td>
-          <td><span class="cod">커피</span> + <span class="particule">를</span> → <strong>커피를</strong> — <em>du café</em><br>
-              <span class="cod">김치</span> + <span class="particule">를</span> → <strong>김치를</strong> — <em>du kimchi</em></td>
+          <td>커피 + <span class="particule">를</span> → <strong>커피를</strong> — <em>du café</em><br>
+              김치 + <span class="particule">를</span> → <strong>김치를</strong> — <em>du kimchi</em></td>
         </tr>
       </table>
     </div>
@@ -344,13 +355,13 @@
       <h3>💡 Comment trouver le COD ?</h3>
       <p>Pose la question : <strong>« L'action concerne quoi ou qui ? »</strong> (manger <em>quoi</em> ? lire <em>quoi</em> ?). La réponse prend <span class="particule">을</span> ou <span class="particule">를</span>.</p>
       <div class="phrase">
-        <span class="cod">빵<span class="particule">을</span></span> <span class="verbe">먹어요</span>. — <em>Je mange du pain.</em>
+        빵<span class="particule">을</span><span class="role">COD</span> 먹어요. — <em>Je mange du pain.</em>
       </div>
       <div class="phrase">
-        <span class="cod">커피<span class="particule">를</span></span> <span class="verbe">마셔요</span>. — <em>Je bois du café.</em>
+        커피<span class="particule">를</span><span class="role">COD</span> 마셔요. — <em>Je bois du café.</em>
       </div>
       <div class="phrase">
-        <span class="sujet">폴<span class="particule">이</span></span> <span class="cod">김치<span class="particule">를</span></span> <span class="verbe">먹어요</span>. — <em>Paul mange du kimchi.</em>
+        폴<span class="particule">이</span><span class="role">Sujet</span> 김치<span class="particule">를</span><span class="role">COD</span> 먹어요. — <em>Paul mange du kimchi.</em>
       </div>
     </div>
   </section>
@@ -362,10 +373,10 @@
     <div class="carte">
       <p>Tu rencontreras aussi <strong>은/는</strong>, la particule du <strong>thème</strong>. Elle sert à mettre en évidence un sujet de conversation, souvent avec une idée de <strong>contraste</strong> :</p>
       <div class="phrase">
-        <span class="sujet">저<span class="particule">는</span></span> 사라예요. — <em>Moi, je suis Sarah.</em> (et toi, tu es… ?)
+        저<span class="particule">는</span><span class="role">Thème</span> 사라예요. — <em>Moi, je suis Sarah.</em> (et toi, tu es… ?)
       </div>
       <div class="phrase">
-        <span class="sujet">오늘<span class="particule">은</span></span> 날씨가 좋아요. — <em>Aujourd'hui, il fait beau.</em> (mais hier… ?)
+        오늘<span class="particule">은</span><span class="role">Thème</span> 날씨가 좋아요. — <em>Aujourd'hui, il fait beau.</em> (mais hier… ?)
       </div>
       <p>Dans cette leçon, concentrons-nous sur <strong>이/가</strong> et <strong>을/를</strong>. 은/는 aura sa propre leçon ! 😉</p>
     </div>
@@ -792,8 +803,9 @@ function afficherQuestions() {
     div.className = "question";
     div.id = "question-" + i;
     if (niv.type === "qcm") {
+      const roleTag = niv.id === 1 ? '<span class="role">Sujet</span>' : (niv.id === 2 ? '<span class="role">COD</span>' : '');
       div.innerHTML =
-        '<div class="enonce">' + (i + 1) + '. <strong class="sujet">' + q.avant + '</strong>' +
+        '<div class="enonce">' + (i + 1) + '. <strong>' + q.avant + '</strong>' + roleTag +
         '<span class="particule"> ( ＿ )</span> ' + q.apres + '</div>' +
         '<div class="options" data-i="' + i + '"></div>' +
         '<div class="feedback" id="feedback-' + i + '"></div>';
