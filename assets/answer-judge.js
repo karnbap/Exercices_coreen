@@ -190,8 +190,8 @@
     const smEnd = /니다[.?!]*$/.test(tr);
     const haeEnd= /[다]$/.test(tr) || /(아|어|해)[.?!]*$/.test(tr);
 
-    if (hasJe && haeEnd) return { ok:false, ko:"저는/전 ↔ -아/어(해체) ❌ → -요/-(스)ㅂ니다", fr:"« je/jeon » → -yo / -seumnida" };
-    if (hasNa && (yoEnd || smEnd)) return { ok:false, ko:"나는/난 ↔ -요/-(스)ㅂ니다 ❌ → -아/어", fr:"« na/nan » → style familier" };
+    if (hasJe && haeEnd) return { ok:false, ko:"저는/전 ↔ -아/어(해체) ❌ → -요/-(스)ㅂ니다", fr:"« 저는/전 » (poli) → terminaison -요 / -(스)ㅂ니다" };
+    if (hasNa && (yoEnd || smEnd)) return { ok:false, ko:"나는/난 ↔ -요/-(스)ㅂ니다 ❌ → -아/어", fr:"« 나는/난 » (familier) → terminaison -아/어" };
     return { ok:true };
   }
 

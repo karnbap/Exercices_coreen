@@ -1019,7 +1019,7 @@ document.getElementById("btn-accueil").addEventListener("click", () => {
 
 function initSession() {
   document.getElementById("bonjour-eleve").textContent =
-    "Bonjour " + eleve.nom + " ! 👋 (안녕 ! « annyeong » = salut !)";
+    "Bonjour " + eleve.nom + " ! 👋 (안녕 ! = salut !)";
   const stats = chargerStats();
   if (!stats.premiere_session) stats.premiere_session = new Date().toISOString();
   sauverStats(stats);

@@ -273,7 +273,7 @@ exports.handler = async (event) => {
           </div>
           <p>Rappel : en coréen, <b>le verbe va toujours à la fin</b> de la phrase, et les particules
           <b style="color:#d97706;">이/가</b> (sujet) et <b style="color:#d97706;">을/를</b> (objet) indiquent qui fait quoi.</p>
-          <p style="margin-top: 20px;"><b>화이팅 !</b> (hwaiting = courage !) À bientôt pour la prochaine leçon ! 🇰🇷</p>
+          <p style="margin-top: 20px;"><b>화이팅 !</b> (= courage !) À bientôt pour la prochaine leçon ! 🇰🇷</p>
         </div>`;
 
       const transporter = nodemailer.createTransport({
